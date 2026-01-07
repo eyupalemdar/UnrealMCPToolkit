@@ -2,6 +2,34 @@
 
 Export Unreal Engine assets to simplified text format for AI analysis (Claude Code, GPT, etc.)
 
+## Getting Started
+
+### Step 1: Install Plugin
+Copy the `CommonAIExport` folder to your project's `Plugins/` directory and rebuild the project.
+
+### Step 2: Launch Unreal Editor
+Start your Unreal Engine project. **The editor must remain open** during the export process - the TCP server runs inside the editor.
+
+### Step 3: Configure Your AI Assistant
+Tell your AI assistant (Claude Code, GPT, etc.) to read the `AI_QUICKSTART.md` file in this plugin. This file contains:
+- How to connect to the TCP server
+- Available export commands
+- Output path conventions
+
+### Step 4: Customize Settings (Optional)
+Open **Project Settings → Plugins → Common AI Export** to configure:
+- Output directory
+- Export mode (Raw/Simplified/Both)
+- Python path
+
+### Step 5: Manual Export (Alternative)
+You can also export assets directly from the editor without AI:
+1. Right-click any asset in Content Browser
+2. Select **"Export for AI"**
+3. Find the output in `Dev/AIExports/`
+
+![Export for AI Context Menu](Resources/Images/ExportForAI.png)
+
 ## Overview
 
 CommonAIExport converts UE assets into text format that Claude Code can read and understand. It works as a C++ and Python hybrid system: C++ exports assets to raw text, Python scripts simplify this text for AI consumption.
