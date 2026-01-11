@@ -560,6 +560,19 @@ FString UAIExporterBase::ExportPinSimplified(UEdGraphPin* Pin)
 	{
 		DefaultStr = FString::Printf(TEXT(" = %s"), *Pin->DefaultValue);
 	}
+	// For object pins, check DefaultObject
+	else if (Pin->DefaultObject)
+	{
+		// Show asset path for assets, just name for others
+		if (Pin->DefaultObject->IsAsset())
+		{
+			DefaultStr = FString::Printf(TEXT(" = %s"), *Pin->DefaultObject->GetPathName());
+		}
+		else
+		{
+			DefaultStr = FString::Printf(TEXT(" = %s"), *Pin->DefaultObject->GetName());
+		}
+	}
 
 	// Connections
 	FString ConnStr;
