@@ -11,6 +11,7 @@
 #include "Exporters/AIAudioExporter.h"
 #include "Exporters/AIWorldExporter.h"
 #include "Exporters/AITextureExporter.h"
+#include "Exporters/AIMaterialExporter.h"
 
 UAIExporterRegistry* UAIExporterRegistry::Instance = nullptr;
 
@@ -169,6 +170,9 @@ void UAIExporterRegistry::RegisterDefaultExporters()
 
 	// Texture (priority 50)
 	RegisterExporter(UAITextureExporter::StaticClass());
+
+	// Material (priority 45 - between DataAsset:40 and standard:50)
+	RegisterExporter(UAIMaterialExporter::StaticClass());
 
 	UE_LOG(LogTemp, Log, TEXT("AIExporterRegistry: Registered %d default exporters"), RegisteredExporters.Num());
 }

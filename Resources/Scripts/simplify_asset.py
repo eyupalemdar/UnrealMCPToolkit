@@ -33,6 +33,7 @@ SIMPLIFIERS = {
     'dataasset': 'dataasset_simplify.py',
     'input': 'input_simplify.py',
     'ability': 'ability_simplify.py',
+    'material': 'material_simplify.py',
 }
 
 
@@ -70,6 +71,10 @@ def detect_asset_type(file_path: str) -> str:
     if '=== DATA ASSET:' in content:
         return 'dataasset'
 
+    # Material detection (check before generic Blueprint)
+    if '=== MATERIAL:' in content or '=== MATERIAL INSTANCE' in content:
+        return 'material'
+
     # Generic Blueprint with C++ format (covers all Blueprint-derived classes)
     if '=== BLUEPRINT:' in content:
         return 'blueprint'
@@ -77,6 +82,13 @@ def detect_asset_type(file_path: str) -> str:
     # ========================================
     # UE Copy/Paste Format Detection
     # ========================================
+
+    # Material markers (check before AnimBlueprint since both can have expressions)
+    if 'MaterialDomain' in content and 'MaterialGraphNode' in content:
+        return 'material'
+
+    if 'MaterialExpression' in content and 'BlendMode' in content:
+        return 'material'
 
     # AnimBlueprint markers
     if 'AnimBlueprintGeneratedClass' in content or 'AnimGraph' in content:

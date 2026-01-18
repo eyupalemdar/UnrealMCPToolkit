@@ -779,7 +779,7 @@ FString UAIWidgetBlueprintExporter::ExportMovieSceneTracks(UMovieScene* MovieSce
 	bool bHasTracks = false;
 
 	// Object bindings - these are widget-specific tracks
-	const TArray<FMovieSceneBinding>& Bindings = MovieScene->GetBindings();
+	const TArray<FMovieSceneBinding>& Bindings = static_cast<const UMovieScene*>(MovieScene)->GetBindings();
 	for (const FMovieSceneBinding& Binding : Bindings)
 	{
 		const TArray<UMovieSceneTrack*>& Tracks = Binding.GetTracks();
@@ -879,7 +879,7 @@ FString UAIWidgetBlueprintExporter::ExportMovieSceneTracksSimplified(UMovieScene
 	FFrameRate FrameRate = MovieScene->GetTickResolution();
 
 	// Group tracks by widget using ObjectGuid -> Possessable mapping
-	const TArray<FMovieSceneBinding>& Bindings = MovieScene->GetBindings();
+	const TArray<FMovieSceneBinding>& Bindings = static_cast<const UMovieScene*>(MovieScene)->GetBindings();
 	for (const FMovieSceneBinding& Binding : Bindings)
 	{
 		// Get widget name from Possessable
