@@ -73,4 +73,5 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
-.claude/***/__pycache__/
+.claude/*
+__pycache__/
