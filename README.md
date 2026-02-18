@@ -84,7 +84,10 @@ CommonAIExport/
 │   │       ├── AIDataAssetExporter.h    # UDataAsset (Priority: 40)
 │   │       ├── AIInputExporter.h        # InputAction/IMC (Priority: 50)
 │   │       ├── AIAudioExporter.h        # Audio assets (Priority: 50)
-│   │       └── AIWorldExporter.h        # UWorld/Map (Priority: 50) [NEW]
+│   │       ├── AIWorldExporter.h        # UWorld/Map (Priority: 50)
+│   │       ├── AIPhysicalMaterialExporter.h  # PhysicalMaterial (Priority: 46)
+│   │       ├── AIMaterialExporter.h     # Material/MaterialInstance (Priority: 45)
+│   │       └── AITextureExporter.h      # Texture assets (Priority: 50)
 │   └── Private/
 │       ├── AIExportFunctionLibrary.cpp
 │       ├── AIExportCommandlet.cpp
@@ -100,7 +103,10 @@ CommonAIExport/
 │           ├── AIDataAssetExporter.cpp
 │           ├── AIInputExporter.cpp
 │           ├── AIAudioExporter.cpp
-│           └── AIWorldExporter.cpp      # Map/World export [NEW]
+│           ├── AIWorldExporter.cpp      # Map/World export
+│           ├── AIPhysicalMaterialExporter.cpp  # PhysicalMaterial export
+│           ├── AIMaterialExporter.cpp   # Material/MaterialInstance export
+│           └── AITextureExporter.cpp    # Texture export
 └── Resources/
     └── Scripts/                         # Python simplifier scripts
         ├── simplify_asset.py            # Main dispatcher (detects asset type)
@@ -110,6 +116,7 @@ CommonAIExport/
         ├── dataasset_simplify.py        # DataAsset simplifier
         ├── input_simplify.py            # Input Action/Context simplifier
         ├── ability_simplify.py          # Gameplay Ability simplifier
+        ├── material_simplify.py         # Material/MaterialInstance simplifier
         ├── export_asset.py              # Export utility script
         └── ai_export_client.py          # TCP client for Claude Code
 ```
@@ -161,9 +168,10 @@ The plugin uses a **Strategy Pattern with Registry** for extensible asset export
 | `bp_simplify.py` | Blueprint | Parses nodes, removes GUID/position |
 | `widget_simplify.py` | Widget Blueprint | Simplifies widget tree |
 | `animbp_simplify.py` | Anim Blueprint | Parses state machines |
-| `dataasset_simplify.py` | DataAsset | Cleans properties |
+| `dataasset_simplify.py` | DataAsset, PhysicalMaterial | Cleans properties |
 | `input_simplify.py` | Input Action/Context | Simplifies bindings |
 | `ability_simplify.py` | Gameplay Ability | Cleans ability configs |
+| `material_simplify.py` | Material/MaterialInstance | Simplifies material graph |
 
 ## Usage
 
@@ -194,11 +202,15 @@ UnrealEditor-Cmd.exe "Project.uproject" -run=AIExport -asset="/Game/UI/W_Menu" -
 | Asset Type | Exporter Class | Priority | Status |
 |------------|----------------|----------|--------|
 | Widget Blueprint | `UAIWidgetBlueprintExporter` | 100 | ✅ |
+| Animation Blueprint | `UAIAnimBlueprintExporter` | 90 | ✅ |
 | Blueprint | `UAIBlueprintExporter` | 50 | ✅ |
-| Animation Blueprint | `UAIBlueprintExporter` | 50 | ✅ |
-| **World/Map** | `UAIWorldExporter` | 50 | ✅ **NEW** |
+| World/Map | `UAIWorldExporter` | 50 | ✅ |
 | Input Action | `UAIInputExporter` | 50 | ✅ |
 | Input Mapping Context | `UAIInputExporter` | 50 | ✅ |
+| Audio (SoundClass, etc.) | `UAIAudioExporter` | 50 | ✅ |
+| Texture | `UAITextureExporter` | 50 | ✅ |
+| **PhysicalMaterial** | `UAIPhysicalMaterialExporter` | 46 | ✅ **NEW** |
+| Material/MaterialInstance | `UAIMaterialExporter` | 45 | ✅ |
 | DataAsset | `UAIDataAssetExporter` | 40 | ✅ |
 
 > **Priority:** Higher values are checked first. WidgetBlueprint (100) takes precedence over generic Blueprint (50).
@@ -316,6 +328,25 @@ TurnTimeLimit=30
 TargetScore=101
 bEnableOkey=True
 ```
+
+### PhysicalMaterial (Simplified)
+
+```
+=== PHYSICAL MATERIAL: PhysMat_Player ===
+Class: PhysicalMaterialWithTags
+
+=== PROPERTIES ===
+Tags=()
+Friction=1.000000
+StaticFriction=1.000000
+Restitution=0.000000
+Density=1.000000
+SurfaceType=SurfaceType1
+Strength=(TensileStrength=2.000000,CompressionStrength=20.000000,ShearStrength=6.000000)
+DamageModifier=(DamageThresholdMultiplier=1.000000)
+```
+
+**Note:** PhysicalMaterial export uses reflection-based `ExportObjectProperties()`, so subclass-specific fields (e.g., `Tags` from `UPhysicalMaterialWithTags`) are included automatically without compile-time dependencies on the subclass module.
 
 ### DataAsset with Embedded Objects (v4.1.0+)
 
@@ -745,11 +776,18 @@ Simplified mode runs Python simplifier. Make sure Python is installed.
 
 ---
 
-*Version: 4.1.0*
+*Version: 4.2.0*
 *Created by: Alemdar Labs*
-*Last Updated: 2025-12-19*
+*Last Updated: 2026-02-19*
 
 ### Changelog
+
+**v4.2.0** - PhysicalMaterial Export Support
+- **NEW:** `UAIPhysicalMaterialExporter` - Export `UPhysicalMaterial` and all subclasses (Priority: 46)
+- **FEATURE:** Reflection-based export via `ExportObjectProperties()` — subclass fields (e.g., `UPhysicalMaterialWithTags.Tags`) exported automatically without compile-time dependency
+- **FEATURE:** Python simplification reuses `dataasset_simplify.py` with `=== PHYSICAL MATERIAL:` header detection
+- **DEPENDENCY:** Added `PhysicsCore` module to Build.cs
+- **TCP:** Added `PhysicalMaterial` to `list_supported_types` response
 
 **v4.1.0** - Deep Property Export for Embedded Objects
 - **NEW:** `ExportObjectPropertiesDeep()` - Recursively exports embedded/instanced subobjects

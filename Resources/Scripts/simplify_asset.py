@@ -71,6 +71,10 @@ def detect_asset_type(file_path: str) -> str:
     if '=== DATA ASSET:' in content:
         return 'dataasset'
 
+    # Physical Material (check before Material — same property format as DataAsset)
+    if '=== PHYSICAL MATERIAL:' in content:
+        return 'dataasset'
+
     # Material detection (check before generic Blueprint)
     if '=== MATERIAL:' in content or '=== MATERIAL INSTANCE' in content:
         return 'material'

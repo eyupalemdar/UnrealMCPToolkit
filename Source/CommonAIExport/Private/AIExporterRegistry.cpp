@@ -13,6 +13,7 @@
 #include "Exporters/AIWorldExporter.h"
 #include "Exporters/AITextureExporter.h"
 #include "Exporters/AIMaterialExporter.h"
+#include "Exporters/AIPhysicalMaterialExporter.h"
 
 UAIExporterRegistry* UAIExporterRegistry::Instance = nullptr;
 
@@ -174,6 +175,9 @@ void UAIExporterRegistry::RegisterDefaultExporters()
 
 	// Texture (priority 50)
 	RegisterExporter(UAITextureExporter::StaticClass());
+
+	// Physical Material (priority 46 - above Material:45, checked before Material)
+	RegisterExporter(UAIPhysicalMaterialExporter::StaticClass());
 
 	// Material (priority 45 - between DataAsset:40 and standard:50)
 	RegisterExporter(UAIMaterialExporter::StaticClass());

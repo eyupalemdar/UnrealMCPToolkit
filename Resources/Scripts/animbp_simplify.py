@@ -35,6 +35,11 @@ try:
 except ImportError:
     BlueprintSimplifier = None
 
+try:
+    from strip_utils import strip_file
+except ImportError:
+    strip_file = None
+
 
 # ===========================================================================
 #  Dataclasses (kept for UE copy/paste format backward compat)
@@ -245,10 +250,27 @@ class UnrealBPSimplifier:
     }
 
     _CDO_ANIM_KEYS = {
+        # Existing keys
         'Name', 'SlotName', 'CachePoseName', 'Layer', 'LayerGroup',
         'Interface', 'ControlRigClass', 'BlendSpace', 'StateMachine',
         'bCanEnterTransition', 'StateIndex', 'FunctionName',
         'BecomeRelevantFunction', 'UpdateFunction', 'StateEntryFunction',
+        # Bone references
+        'IKBone', 'SourceBone', 'TargetBone', 'TipBone', 'RootBone', 'EndBone',
+        # IK settings
+        'EffectorLocation', 'EffectorTarget', 'JointTarget',
+        'EffectorLocationSpace', 'JointTargetLocationSpace',
+        'StartStretchRatio', 'MaxStretchScale',
+        # Blend settings
+        'Alpha', 'AlphaInputType', 'BlendMode', 'BlendWeights',
+        # State machine
+        'LinkID', 'SourceLinkID', 'Result',
+        'InitialUpdateFunction', 'StateFullyBlendedInFunction',
+        'StateExitFunction', 'StateFullyBlendedOutFunction',
+        # Animation
+        'PlayRate', 'bLoopAnimation',
+        # Transform
+        'TranslationMode', 'RotationMode', 'TranslationSpace', 'RotationSpace',
     }
 
     def _emit_filtered_class_defaults(self, body: str, out: List[str]):
@@ -319,9 +341,18 @@ class UnrealBPSimplifier:
 
         out.append('')
 
+    # Function name keys that use FunctionName="..." nested syntax
+    _CDO_FUNCTION_KEYS = {
+        'BecomeRelevantFunction', 'UpdateFunction', 'StateEntryFunction',
+        'InitialUpdateFunction', 'StateFullyBlendedInFunction',
+        'StateExitFunction', 'StateFullyBlendedOutFunction',
+    }
+
     def _compact_cdo_anim_node(self, key: str, value: str) -> Optional[str]:
         """Extract key properties from an AnimGraphNode CDO line."""
         props = {}
+
+        # Primary pass: extract whitelisted keys
         for prop_key in self._CDO_ANIM_KEYS:
             pattern = rf'{prop_key}="([^"]*)"'
             m = re.search(pattern, value)
@@ -337,11 +368,32 @@ class UnrealBPSimplifier:
                 if v and v not in ('', 'None', '()', 'False', '0', '-1'):
                     props[prop_key] = v
                 continue
-            if prop_key in ('BecomeRelevantFunction', 'UpdateFunction', 'StateEntryFunction'):
+            # Function name keys with nested syntax
+            if prop_key in self._CDO_FUNCTION_KEYS:
                 pattern = rf'{prop_key}=\(FunctionName="([^"]+)"'
                 m = re.search(pattern, value)
                 if m:
                     props[prop_key] = m.group(1)
+
+        # Secondary pass: extract BoneReference=(BoneName="xxx") patterns
+        # These appear in IK nodes like EffectorTarget, JointTarget, IKBone etc.
+        for bone_match in re.finditer(
+            r'(\w+)=\(BoneReference=\(BoneName="([^"]+)"\)', value
+        ):
+            parent_key = bone_match.group(1)
+            bone_name = bone_match.group(2)
+            if bone_name and bone_name != 'None':
+                props[parent_key] = bone_name
+
+        # Also catch direct BoneName in nested bone structs:
+        # IKBone=(BoneName="hand_r") or SourceBone=(BoneName="pelvis")
+        for bone_match in re.finditer(
+            r'(\w+Bone)=\(BoneName="([^"]+)"\)', value
+        ):
+            bone_key = bone_match.group(1)
+            bone_name = bone_match.group(2)
+            if bone_name and bone_name != 'None' and bone_key not in props:
+                props[bone_key] = bone_name
 
         # Shorten Interface path
         if 'Interface' in props:
@@ -567,7 +619,7 @@ class UnrealBPSimplifier:
 
         out.append(f'  States: {", ".join(states.values()) if states else "(none found)"}')
         if entry_target and entry_target in states:
-            out.append(f'  Entry → {states[entry_target]}')
+            out.append(f'  Entry -> {states[entry_target]}')
 
         # Extract transitions
         transitions = []
@@ -594,7 +646,7 @@ class UnrealBPSimplifier:
             if sources and targets:
                 for s in sources:
                     for t in targets:
-                        transitions.append(f'{s} → {t}')
+                        transitions.append(f'{s} -> {t}')
 
         out.append('  Transitions:')
         if transitions:
@@ -609,27 +661,44 @@ class UnrealBPSimplifier:
     # -----------------------------------------------------------------------
 
     def _emit_anim_graph(self, graph_name: str, body: str, out: List[str]):
-        """Simplify the main AnimGraph with node chain tracing."""
+        """Simplify the main AnimGraph with node connections."""
         out.append(f'=== GRAPH: {graph_name} (simplified) ===')
         nodes = self._parse_anim_nodes(body)
+        self._emit_anim_nodes_with_connections(nodes, out, indent=2)
+        out.append('')
+
+    def _emit_anim_nodes_with_connections(self, nodes: Dict[str, dict],
+                                          out: List[str], indent: int = 2):
+        """Emit anim nodes with arrow connection annotations."""
+        pad = ' ' * indent
+        cpad = ' ' * (indent + 2)
+
+        # Build reverse map: target_node -> [(source_node, pin_name)]
+        input_conns = defaultdict(list)
+        for node_name, info in nodes.items():
+            for conn in info.get('connections', []):
+                if isinstance(conn, dict) and conn['is_output'] and conn['target'] in nodes:
+                    pair = (node_name, conn['pin'])
+                    if pair not in input_conns[conn['target']]:
+                        input_conns[conn['target']].append(pair)
 
         for node_name, info in nodes.items():
             node_type = info['type_short']
             props = info.get('props', {})
-            connections = info.get('connections', [])
-
-            prop_parts = []
-            for pk, pv in props.items():
-                prop_parts.append(f'{pk}={pv}')
+            prop_parts = [f'{k}={v}' for k, v in props.items()]
             prop_str = f' ({", ".join(prop_parts)})' if prop_parts else ''
+            out.append(f'{pad}[{node_type}] {node_name}{prop_str}')
 
-            conn_str = ''
-            if connections:
-                conn_str = ' → ' + ', '.join(connections)
+            for source_node, pin_name in input_conns.get(node_name, []):
+                out.append(f'{cpad}<- {source_node} ({pin_name})')
 
-            out.append(f'  [{node_type}] {node_name}{prop_str}{conn_str}')
-
-        out.append('')
+            seen_out = set()
+            for conn in info.get('connections', []):
+                if isinstance(conn, dict) and conn['is_output'] and conn['target'] in nodes:
+                    key = (conn['target'], conn['pin'])
+                    if key not in seen_out:
+                        seen_out.add(key)
+                        out.append(f'{cpad}-> {conn["target"]} ({conn["pin"]})')
 
     def _parse_anim_nodes(self, body: str) -> Dict[str, dict]:
         """Parse Begin Object blocks from a graph body, extracting key info."""
@@ -670,16 +739,23 @@ class UnrealBPSimplifier:
                 if m:
                     info['props']['CachePose'] = m.group(1)
 
-            # Output pin connections (LinkedTo)
-            for pin_match in re.finditer(r'CustomProperties Pin \(([^)]+(?:\([^)]*\))*[^)]*)\)', block):
-                pin_str = pin_match.group(1)
-                is_output = 'Direction="EGPD_Output"' in pin_str
-
-                linked = re.search(r'LinkedTo=\(([^)]+)\)', pin_str)
-                if linked and is_output:
-                    targets = re.findall(r'(\w+)\s+[A-F0-9]+', linked.group(1))
+            # Pin connections (line-based — avoids nested-paren regex bug)
+            for line in block.splitlines():
+                line_s = line.strip()
+                if not line_s.startswith('CustomProperties Pin ('):
+                    continue
+                pin_name_m = re.search(r'PinName="([^"]+)"', line_s)
+                is_output = 'Direction="EGPD_Output"' in line_s
+                linked_m = re.search(r'LinkedTo=\(([^)]+)\)', line_s)
+                if linked_m:
+                    targets = re.findall(r'(\w+)\s+[A-F0-9]{20,}', linked_m.group(1))
+                    pin_name = pin_name_m.group(1) if pin_name_m else '?'
                     for target in targets:
-                        info['connections'].append(target)
+                        info['connections'].append({
+                            'pin': pin_name,
+                            'target': target,
+                            'is_output': is_output,
+                        })
 
             # Comment nodes
             if class_name == 'EdGraphNode_Comment':
@@ -700,6 +776,20 @@ class UnrealBPSimplifier:
             func_ref = re.search(r'FunctionReference=\(.*?MemberName="([^"]+)"', block)
             if func_ref:
                 info['props']['Function'] = func_ref.group(1)
+
+            # Graceful degradation: if no props were extracted for an
+            # AnimGraph node, try to capture basic key=value pairs from
+            # the Node=(...) text so unknown types are not silently empty.
+            if not info['props'] and node_prop:
+                for m in re.finditer(
+                    r'(\w+)=(?:"([^"]+)"|([^,)\s]+))', node_prop.group(1)
+                ):
+                    key = m.group(1)
+                    val = m.group(2) or m.group(3)
+                    if val and val not in (
+                        '', 'None', '()', 'False', '0', '-1', '0.000000',
+                    ):
+                        info['props'][key] = val
 
             nodes[node_name] = info
 
@@ -756,7 +846,7 @@ class UnrealBPSimplifier:
         i = 0
         while i < len(lines):
             stripped = lines[i].strip()
-            if stripped.startswith('Begin Object Class=') and 'Name="' in stripped:
+            if stripped.startswith('Begin Object') and 'Name="' in stripped:
                 depth = 1
                 block_lines = [lines[i]]
                 i += 1
@@ -784,22 +874,14 @@ class UnrealBPSimplifier:
             return
 
         out.append(f'  --- State: {graph_name} ---')
-        for node_name, info in nodes.items():
-            props = info.get('props', {})
-            conns = info.get('connections', [])
-            prop_str = ', '.join(f'{k}={v}' for k, v in props.items()) if props else ''
-            conn_str = (' → ' + ', '.join(conns)) if conns else ''
-            if prop_str:
-                out.append(f'    [{info["type_short"]}] {node_name} ({prop_str}){conn_str}')
-            else:
-                out.append(f'    [{info["type_short"]}] {node_name}{conn_str}')
+        self._emit_anim_nodes_with_connections(nodes, out, indent=4)
 
     # -----------------------------------------------------------------------
     #  K2 Logic Graphs
     # -----------------------------------------------------------------------
 
     def _emit_k2_graph(self, graph_name: str, body: str, out: List[str]):
-        """Compact K2 logic graph: extract entry, calls, variables, flow."""
+        """K2 logic graph with execution flow and data flow tracing."""
         out.append(f'=== FUNCTION: {graph_name} ===')
 
         blocks = self._extract_top_level_objects(body)
@@ -808,26 +890,23 @@ class UnrealBPSimplifier:
             out.append('')
             return
 
-        # Collect nodes for compact output
-        local_vars = []
-        func_calls = []     # (name, node_name)
-        var_gets = []
-        var_sets = []
-        branches = []
+        # Phase 1: Parse all K2 nodes with full pin data
+        k2_nodes = OrderedDict()
+        pin_id_map = {}  # pin_id -> (node_name, pin_name)
         comments = []
-        exec_flow = []      # ordered by exec pin chain
-        other_nodes = []
+        entry_name = None
 
-        # Build a map: PinId -> (node_name, pin_name) for exec flow tracing
-        pin_owner = {}       # pinId -> node_class_info
-        node_exec_out = {}   # node_name -> [target_node_names]
+        # Summary collectors
+        all_calls = []
+        all_reads = []
+        all_writes = []
+        all_ops = []
+        branch_count = 0
 
         for block in blocks:
-            cm = re.search(r'Begin Object Class=\S+\.(\w+)\s+Name="([^"]+)"', block)
-            if not cm:
+            class_name, node_name = self._extract_k2_class_and_name(block)
+            if not class_name:
                 continue
-            class_name = cm.group(1)
-            node_name = cm.group(2)
 
             if class_name == 'EdGraphNode_Comment':
                 cmt = re.search(r'NodeComment="([^"]+)"', block)
@@ -838,73 +917,363 @@ class UnrealBPSimplifier:
                     comments.append(text)
                 continue
 
+            node_info = {
+                'class': class_name,
+                'func_name': None,
+                'var_name': None,
+                'prop_path': None,
+                'local_vars': [],
+                'pins': {},
+                'is_pure': False,
+            }
+
+            # Class-specific info
             if class_name == 'K2Node_FunctionEntry':
-                # Extract local variables
-                for lv in re.finditer(r'VarName="([^"]+)"', block):
-                    vtype = ''
-                    tm = re.search(rf'{re.escape(lv.group(1))}.*?PinCategory="([^"]+)"', block)
-                    if tm:
-                        vtype = f': {tm.group(1)}'
-                    local_vars.append(f'{lv.group(1)}{vtype}')
-                # Extract function name
+                entry_name = node_name
                 fn = re.search(r'FunctionReference=.*?MemberName="([^"]+)"', block)
                 if fn:
-                    out.append(f'  Entry: {fn.group(1)}')
-
-            elif class_name == 'K2Node_FunctionResult':
-                pass  # Just marks the end
+                    node_info['func_name'] = fn.group(1)
+                for lv in re.finditer(r'VarName="([^"]+)"', block):
+                    node_info['local_vars'].append(lv.group(1))
 
             elif class_name == 'K2Node_CallFunction':
                 fn = re.search(r'MemberName="([^"]+)"', block)
                 if fn:
-                    func_calls.append(fn.group(1))
+                    node_info['func_name'] = fn.group(1)
+                    all_calls.append(fn.group(1))
 
             elif class_name == 'K2Node_VariableGet':
                 vn = re.search(r'MemberName="([^"]+)"', block)
                 if vn:
-                    var_gets.append(vn.group(1))
+                    node_info['var_name'] = vn.group(1)
+                    all_reads.append(vn.group(1))
 
             elif class_name == 'K2Node_VariableSet':
                 vn = re.search(r'MemberName="([^"]+)"', block)
                 if vn:
-                    var_sets.append(vn.group(1))
+                    node_info['var_name'] = vn.group(1)
+                    all_writes.append(vn.group(1))
 
             elif class_name == 'K2Node_IfThenElse':
-                branches.append('Branch')
+                branch_count += 1
 
-            elif 'K2Node_CommutativeAssociativeBinaryOperator' in class_name:
+            elif class_name in ('K2Node_CommutativeAssociativeBinaryOperator',
+                                'K2Node_PromotableOperator'):
                 fn = re.search(r'MemberName="([^"]+)"', block)
                 if fn:
-                    other_nodes.append(fn.group(1))
-
-            elif class_name == 'K2Node_PromotableOperator':
-                fn = re.search(r'MemberName="([^"]+)"', block)
-                if fn:
-                    other_nodes.append(fn.group(1))
+                    node_info['func_name'] = fn.group(1)
+                    all_ops.append(fn.group(1))
 
             elif class_name == 'K2Node_PropertyAccess':
-                # Thread-safe property access
-                pa = re.search(r'PathAsText="([^"]+)"', block)
+                pa = (re.search(r'TextPath="([^"]+)"', block)
+                      or re.search(r'PathAsText="([^"]+)"', block))
                 if pa:
-                    var_gets.append(f'@{pa.group(1)}')
+                    node_info['prop_path'] = pa.group(1)
+                    all_reads.append(f'@{pa.group(1)}')
 
-        if local_vars:
-            out.append(f'  Locals: {", ".join(dict.fromkeys(local_vars))}')
-        if comments:
-            for c in comments:
-                out.append(f'  // {c}')
-        if func_calls:
-            out.append(f'  Calls: {", ".join(dict.fromkeys(func_calls))}')
-        if var_gets:
-            out.append(f'  Reads: {", ".join(dict.fromkeys(var_gets))}')
-        if var_sets:
-            out.append(f'  Writes: {", ".join(dict.fromkeys(var_sets))}')
-        if branches:
-            out.append(f'  Branches: {len(branches)}')
-        if other_nodes:
-            out.append(f'  Ops: {", ".join(dict.fromkeys(other_nodes))}')
+            else:
+                # Unknown K2Node type — try to extract basic info
+                fn = re.search(r'MemberName="([^"]+)"', block)
+                if fn:
+                    node_info['func_name'] = fn.group(1)
+
+            # Parse pins (line-based)
+            for line in block.splitlines():
+                line_s = line.strip()
+                if not line_s.startswith('CustomProperties Pin ('):
+                    continue
+                pin_id_m = re.search(r'PinId=([A-F0-9]+)', line_s)
+                pin_name_m = re.search(r'PinName="([^"]+)"', line_s)
+                is_output = 'Direction="EGPD_Output"' in line_s
+                pin_type_m = re.search(r'PinType\.PinCategory="([^"]+)"', line_s)
+                linked_m = re.search(r'LinkedTo=\(([^)]+)\)', line_s)
+                default_m = re.search(r'DefaultValue="([^"]*)"', line_s)
+
+                pin_id = pin_id_m.group(1) if pin_id_m else ''
+                pin_name = pin_name_m.group(1) if pin_name_m else '?'
+                pin_type = pin_type_m.group(1) if pin_type_m else ''
+
+                linked_targets = []
+                if linked_m:
+                    for t_m in re.finditer(r'(\w+)\s+([A-F0-9]{20,})', linked_m.group(1)):
+                        linked_targets.append((t_m.group(1), t_m.group(2)))
+
+                pin_info = {
+                    'name': pin_name,
+                    'direction': 'output' if is_output else 'input',
+                    'type': pin_type,
+                    'is_exec': pin_type == 'exec',
+                    'linked_to': linked_targets,
+                    'default': default_m.group(1) if default_m else None,
+                }
+                if pin_id:
+                    node_info['pins'][pin_id] = pin_info
+                    pin_id_map[pin_id] = (node_name, pin_name)
+
+            # Determine purity: no exec pins = pure
+            node_info['is_pure'] = not any(
+                p['is_exec'] for p in node_info['pins'].values()
+            )
+            k2_nodes[node_name] = node_info
+
+        # Phase 2: Emit entry + locals + comments
+        if entry_name and entry_name in k2_nodes:
+            entry = k2_nodes[entry_name]
+            func_display = entry['func_name'] or graph_name
+            params = []
+            for _pid, pin in entry['pins'].items():
+                if pin['direction'] == 'output' and not pin['is_exec']:
+                    params.append(f'{pin["name"]}: {pin["type"]}')
+            param_str = ', '.join(params)
+            out.append(f'  Entry: {func_display}({param_str})')
+            if entry['local_vars']:
+                out.append(f'  Locals: {", ".join(entry["local_vars"])}')
+
+        for c in comments:
+            out.append(f'  // {c}')
+
+        # Phase 3: Trace and emit execution flow
+        if entry_name:
+            flow_lines = []
+            visited = set()
+            self._trace_k2_flow(entry_name, k2_nodes, pin_id_map,
+                                flow_lines, 4, visited)
+            if flow_lines:
+                out.append('  Flow:')
+                out.extend(flow_lines)
+
+        # Phase 4: Summary
+        summary_parts = []
+        if all_calls:
+            summary_parts.append(f'Calls: {", ".join(dict.fromkeys(all_calls))}')
+        if all_reads:
+            summary_parts.append(f'Reads: {", ".join(dict.fromkeys(all_reads))}')
+        if all_writes:
+            summary_parts.append(f'Writes: {", ".join(dict.fromkeys(all_writes))}')
+        if branch_count:
+            summary_parts.append(f'Branches: {branch_count}')
+        if all_ops:
+            summary_parts.append(f'Ops: {", ".join(dict.fromkeys(all_ops))}')
+        if summary_parts:
+            out.append(f'  Summary: {" | ".join(summary_parts)}')
 
         out.append('')
+
+    # -- K2 helper: extract class and name from Begin Object line -----------
+
+    def _extract_k2_class_and_name(self, block: str):
+        """Extract class name and node name from a Begin Object block."""
+        cm = re.search(
+            r'Begin Object Class=\S+\.(\w+)\s+Name="([^"]+)"', block)
+        if cm:
+            return cm.group(1), cm.group(2)
+        # Name-first format: extract class from ExportPath
+        nm = re.search(r'Begin Object\s+Name="([^"]+)"', block)
+        ep = re.search(r"ExportPath=\"/Script/\w+\.(\w+)'", block)
+        if nm and ep:
+            return ep.group(1), nm.group(1)
+        return None, None
+
+    # -- K2 helper: find exec output targets --------------------------------
+
+    def _find_k2_exec_targets(self, node_info: dict) -> Dict[str, str]:
+        """Return {pin_name: target_node_name} for all connected exec outputs."""
+        targets = {}
+        for _pid, pin in node_info['pins'].items():
+            if (pin['is_exec'] and pin['direction'] == 'output'
+                    and pin['linked_to']):
+                targets[pin['name']] = pin['linked_to'][0][0]
+        return targets
+
+    # -- K2 helper: trace execution flow ------------------------------------
+
+    def _trace_k2_flow(self, current_name: str, k2_nodes: dict,
+                       pin_id_map: dict, flow_lines: List[str],
+                       indent: int, visited: set):
+        """Recursively trace execution chain and emit formatted flow lines."""
+        pad = ' ' * indent
+
+        while current_name and current_name not in visited:
+            visited.add(current_name)
+            node = k2_nodes.get(current_name)
+            if not node:
+                break
+
+            cls = node['class']
+
+            # Skip entry (already displayed)
+            if cls == 'K2Node_FunctionEntry':
+                exec_targets = self._find_k2_exec_targets(node)
+                current_name = exec_targets.get('then')
+                continue
+
+            # Skip result
+            if cls == 'K2Node_FunctionResult':
+                break
+
+            # VariableSet
+            if cls == 'K2Node_VariableSet':
+                var = node.get('var_name') or '?'
+                value = self._get_k2_set_value_expr(
+                    node, k2_nodes, pin_id_map)
+                flow_lines.append(f'{pad}Set {var} <- {value}')
+
+            # CallFunction (impure — has exec pins)
+            elif cls == 'K2Node_CallFunction':
+                func = node.get('func_name') or '?'
+                args = self._collect_k2_data_inputs(
+                    node, k2_nodes, pin_id_map, 0)
+                arg_str = ', '.join(args)
+                flow_lines.append(f'{pad}{func}({arg_str})')
+
+            # Branch
+            elif cls == 'K2Node_IfThenElse':
+                cond = self._get_k2_condition_expr(
+                    node, k2_nodes, pin_id_map)
+                flow_lines.append(f'{pad}Branch({cond}):')
+
+                exec_targets = self._find_k2_exec_targets(node)
+                true_target = exec_targets.get('then')
+                false_target = None
+                for pn, tgt in exec_targets.items():
+                    if pn != 'then':
+                        false_target = tgt
+                        break
+
+                if true_target:
+                    flow_lines.append(f'{pad}  true:')
+                    self._trace_k2_flow(
+                        true_target, k2_nodes, pin_id_map,
+                        flow_lines, indent + 4, visited)
+                if false_target:
+                    flow_lines.append(f'{pad}  false:')
+                    self._trace_k2_flow(
+                        false_target, k2_nodes, pin_id_map,
+                        flow_lines, indent + 4, visited)
+                return  # Branch handled recursively
+
+            # Sequence
+            elif cls == 'K2Node_ExecutionSequence':
+                flow_lines.append(f'{pad}Sequence:')
+                exec_targets = self._find_k2_exec_targets(node)
+                sorted_pins = sorted(exec_targets.items(),
+                                     key=lambda x: x[0])
+                for _pn, tgt in sorted_pins:
+                    self._trace_k2_flow(
+                        tgt, k2_nodes, pin_id_map,
+                        flow_lines, indent + 2, visited)
+                return
+
+            # Other impure node (unknown K2 type — graceful degradation)
+            else:
+                label = cls
+                if node.get('func_name'):
+                    label = f'{cls}: {node["func_name"]}'
+                flow_lines.append(f'{pad}[K2: {label}]')
+
+            # Follow linear exec chain
+            exec_targets = self._find_k2_exec_targets(node)
+            current_name = exec_targets.get('then')
+
+    # -- K2 helper: build data expression -----------------------------------
+
+    def _build_k2_data_expr(self, node_name: str, k2_nodes: dict,
+                            pin_id_map: dict, depth: int = 0) -> str:
+        """Build a human-readable expression for a data-source node."""
+        if depth > 4:
+            return '...'
+
+        node = k2_nodes.get(node_name)
+        if not node:
+            return node_name
+
+        cls = node['class']
+
+        if cls == 'K2Node_VariableGet':
+            return node.get('var_name') or node_name
+
+        if cls == 'K2Node_VariableSet':
+            return node.get('var_name') or node_name
+
+        if cls == 'K2Node_PropertyAccess':
+            return f'@{node.get("prop_path") or "?"}'
+
+        if cls in ('K2Node_CallFunction',
+                    'K2Node_CommutativeAssociativeBinaryOperator',
+                    'K2Node_PromotableOperator'):
+            func = node.get('func_name') or '?'
+            args = self._collect_k2_data_inputs(
+                node, k2_nodes, pin_id_map, depth)
+            return f'{func}({", ".join(args)})' if args else func
+
+        if cls == 'K2Node_Knot':
+            for _pid, pin in node['pins'].items():
+                if pin['direction'] == 'input' and pin['linked_to']:
+                    src_node = pin['linked_to'][0][0]
+                    return self._build_k2_data_expr(
+                        src_node, k2_nodes, pin_id_map, depth + 1)
+
+        return node_name
+
+    # -- K2 helper: collect data inputs -------------------------------------
+
+    def _collect_k2_data_inputs(self, node: dict, k2_nodes: dict,
+                                pin_id_map: dict, depth: int) -> List[str]:
+        """Collect human-readable expressions for all data input pins."""
+        args = []
+        for _pid, pin in node['pins'].items():
+            if (pin['direction'] == 'input' and not pin['is_exec']
+                    and pin['name'] not in ('self', 'Self')):
+                if pin['linked_to']:
+                    src_node = pin['linked_to'][0][0]
+                    args.append(self._build_k2_data_expr(
+                        src_node, k2_nodes, pin_id_map, depth + 1))
+                elif (pin.get('default')
+                      and pin['default'] not in (
+                          '', 'false', 'False', '0', '0.0', '0.000000',
+                          '(LinkID=-1,SourceLinkID=-1)')):
+                    args.append(pin['default'])
+        return args
+
+    # -- K2 helper: value for VariableSet -----------------------------------
+
+    def _get_k2_set_value_expr(self, node: dict, k2_nodes: dict,
+                               pin_id_map: dict) -> str:
+        """Get the data expression feeding the value pin of a VariableSet."""
+        var_name = node.get('var_name') or '?'
+        # The value input pin has the same name as the variable
+        for _pid, pin in node['pins'].items():
+            if (pin['direction'] == 'input' and not pin['is_exec']
+                    and pin['name'] == var_name):
+                if pin['linked_to']:
+                    src = pin['linked_to'][0][0]
+                    return self._build_k2_data_expr(
+                        src, k2_nodes, pin_id_map, 0)
+                elif pin.get('default'):
+                    return pin['default']
+        # Fallback: any non-exec, non-self, non-Output_Get input
+        for _pid, pin in node['pins'].items():
+            if (pin['direction'] == 'input' and not pin['is_exec']
+                    and pin['name'] not in ('self', 'Self', 'Output_Get')):
+                if pin['linked_to']:
+                    src = pin['linked_to'][0][0]
+                    return self._build_k2_data_expr(
+                        src, k2_nodes, pin_id_map, 0)
+        return '?'
+
+    # -- K2 helper: condition for Branch ------------------------------------
+
+    def _get_k2_condition_expr(self, node: dict, k2_nodes: dict,
+                               pin_id_map: dict) -> str:
+        """Get the data expression for a Branch node's condition pin."""
+        for _pid, pin in node['pins'].items():
+            if (pin['direction'] == 'input' and not pin['is_exec']
+                    and pin['name'] == 'Condition'):
+                if pin['linked_to']:
+                    src = pin['linked_to'][0][0]
+                    return self._build_k2_data_expr(
+                        src, k2_nodes, pin_id_map, 0)
+        return '?'
 
     # -----------------------------------------------------------------------
     #  Comment-only Graphs (e.g., EventGraph)
@@ -1272,8 +1641,16 @@ def main():
         print("Example: python animbp_simplify.py ABP_Mannequin_Base_raw.txt")
         sys.exit(1)
 
-    simplifier = UnrealBPSimplifier()
     input_file = sys.argv[1]
+
+    # Pass 1: Universal safe strip -> _stripped.txt
+    if strip_file is not None and '_temp_raw' not in input_file:
+        strip_file(input_file)
+    else:
+        print("Warning: strip_utils not found, skipping strip pass")
+
+    # Pass 2: Type-specific simplify -> _simplified.txt
+    simplifier = UnrealBPSimplifier()
 
     base_name = os.path.splitext(input_file)[0]
     if base_name.endswith('_raw'):

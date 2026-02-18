@@ -18,6 +18,16 @@ import os
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 
+# Import universal strip
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
+
+try:
+    from strip_utils import strip_file
+except ImportError:
+    strip_file = None
+
 
 @dataclass
 class AbilityTaskInfo:
@@ -240,6 +250,34 @@ class GameplayAbilitySimplifier:
             if event in content and event not in self.functions:
                 self.functions.append(event)
 
+        # Graceful degradation: capture unknown GAS-related node types
+        # that aren't covered by the K2Node patterns above
+        known_k2_prefixes = (
+            'K2Node_FunctionEntry', 'K2Node_FunctionResult',
+            'K2Node_CustomEvent', 'K2Node_Event',
+            'K2Node_CallFunction', 'K2Node_VariableGet',
+            'K2Node_VariableSet', 'K2Node_IfThenElse',
+            'K2Node_ExecutionSequence', 'K2Node_LatentAbilityCall',
+            'K2Node_PromotableOperator', 'K2Node_DynamicCast',
+            'K2Node_Knot', 'K2Node_MacroInstance',
+            'K2Node_CommutativeAssociativeBinaryOperator',
+            'K2Node_PropertyAccess', 'K2Node_Message',
+        )
+        for m in re.finditer(
+            r'Begin Object Class=\S+\.(\w+)\s+Name="([^"]+)"', content
+        ):
+            cls = m.group(1)
+            name = m.group(2)
+            if cls.startswith('K2Node_') and not cls.startswith(known_k2_prefixes):
+                member = re.search(
+                    rf'Begin Object.*?Name="{re.escape(name)}".*?MemberName="([^"]+)"',
+                    content, re.DOTALL
+                )
+                label = f'{cls}: {member.group(1)}' if member else cls
+                entry = f"[Unknown: {label}]"
+                if entry not in self.functions:
+                    self.functions.append(entry)
+
     def generate_simplified(self) -> str:
         """Generate simplified output format"""
         output = []
@@ -344,6 +382,13 @@ def main():
         print(f"Error: File not found: {input_file}")
         sys.exit(1)
 
+    # Pass 1: Universal safe strip -> _stripped.txt
+    if strip_file is not None and '_temp_raw' not in input_file:
+        strip_file(input_file)
+    else:
+        print("Warning: strip_utils not found, skipping strip pass")
+
+    # Pass 2: Type-specific simplify -> _simplified.txt
     # Read input
     try:
         with open(input_file, 'r', encoding='utf-8', errors='ignore') as f:

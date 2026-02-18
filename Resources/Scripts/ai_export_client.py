@@ -223,6 +223,8 @@ def cmd_export_widget(args):
         print(f"  Type: {data.get('asset_type')}")
         print(f"  Raw: {data.get('raw_file')}")
         print(f"  Simplified: {data.get('simplified_file')}")
+        if data.get('stripped_file'):
+            print(f"  Stripped: {data.get('stripped_file')}")
         return 0
     else:
         print(f"\nExport failed: {response.get('error')}")
@@ -267,6 +269,8 @@ def cmd_export_blueprint(args):
         print(f"  Type: {data.get('asset_type')}")
         print(f"  Raw: {data.get('raw_file')}")
         print(f"  Simplified: {data.get('simplified_file')}")
+        if data.get('stripped_file'):
+            print(f"  Stripped: {data.get('stripped_file')}")
         return 0
     else:
         print(f"\nExport failed: {response.get('error')}")

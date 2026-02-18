@@ -427,6 +427,10 @@ FString FAIExportTCPServer::HandleExportWidget(TSharedPtr<FJsonObject> Params)
 		Data->SetStringField(TEXT("asset_type"), Result.AssetType);
 		Data->SetStringField(TEXT("raw_file"), Result.RawFilePath);
 		Data->SetStringField(TEXT("simplified_file"), Result.SimplifiedFilePath);
+		if (!Result.StrippedFilePath.IsEmpty())
+		{
+			Data->SetStringField(TEXT("stripped_file"), Result.StrippedFilePath);
+		}
 		return CreateSuccessResponse(Data);
 	}
 	else
@@ -488,6 +492,10 @@ FString FAIExportTCPServer::HandleExportBlueprint(TSharedPtr<FJsonObject> Params
 		Data->SetStringField(TEXT("asset_type"), Result.AssetType);
 		Data->SetStringField(TEXT("raw_file"), Result.RawFilePath);
 		Data->SetStringField(TEXT("simplified_file"), Result.SimplifiedFilePath);
+		if (!Result.StrippedFilePath.IsEmpty())
+		{
+			Data->SetStringField(TEXT("stripped_file"), Result.StrippedFilePath);
+		}
 		return CreateSuccessResponse(Data);
 	}
 	else
@@ -519,6 +527,8 @@ FString FAIExportTCPServer::HandleListSupportedTypes()
 	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundControlBus")));
 	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundControlBusMix")));
 	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundModulationPatch")));
+	// Physics
+	Types.Add(MakeShared<FJsonValueString>(TEXT("PhysicalMaterial")));
 
 	Data->SetArrayField(TEXT("types"), Types);
 	return CreateSuccessResponse(Data);

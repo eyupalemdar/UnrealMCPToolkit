@@ -43,7 +43,8 @@ public class CommonAIExport : ModuleRules
 			"CommonUI",  // For UCommonTextBlock
 			"ImageWrapper",  // For PNG export (IImageWrapper)
 			"MovieScene",  // For UWidgetAnimation export
-			"MovieSceneTracks"  // For section types (FloatSection, ColorSection, etc.)
+			"MovieSceneTracks",  // For section types (FloatSection, ColorSection, etc.)
+			"PhysicsCore"  // For UPhysicalMaterial
 		});
 	}
 }

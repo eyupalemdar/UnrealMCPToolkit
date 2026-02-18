@@ -25,6 +25,16 @@ import os
 from collections import defaultdict, OrderedDict
 from pathlib import Path
 
+# Import universal strip
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
+
+try:
+    from strip_utils import strip_file
+except ImportError:
+    strip_file = None
+
 
 class MaterialSimplifier:
     def __init__(self):
@@ -528,6 +538,10 @@ def main():
     if not os.path.exists(input_file):
         print(f"Error: Input file not found: {input_file}")
         sys.exit(1)
+
+    # Pass 1: Universal safe strip -> _stripped.txt
+    if strip_file is not None and '_temp_raw' not in input_file:
+        strip_file(input_file)
 
     try:
         with open(input_file, 'r', encoding='utf-8', errors='ignore') as f:

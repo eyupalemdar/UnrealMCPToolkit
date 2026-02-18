@@ -18,6 +18,16 @@ import os
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 
+# Import universal strip
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
+
+try:
+    from strip_utils import strip_file
+except ImportError:
+    strip_file = None
+
 
 @dataclass
 class PropertyInfo:
@@ -38,9 +48,20 @@ class DataAssetSimplifier:
         self.asset_class = "UDataAsset"
         self.properties: Dict[str, PropertyInfo] = {}
         self.nested_objects: Dict[str, Dict] = {}
+        self._is_cpp_format = False
+        self._cpp_header_prefix = "DATA ASSET"  # or "PHYSICAL MATERIAL"
+        self._cpp_header_lines: List[str] = []
+        self._cpp_properties_body = ""
 
     def parse_content(self, content: str):
         """Parse the DataAsset text content"""
+        # C++ format detection
+        if '=== DATA ASSET:' in content or '=== PHYSICAL MATERIAL:' in content:
+            self._is_cpp_format = True
+            self._parse_cpp_format(content)
+            return
+
+        # UE copy/paste format (existing logic, unchanged)
         # Expand escaped characters
         content = content.replace('\\r\\n', '\n')
         content = content.replace('\\n', '\n')
@@ -64,6 +85,85 @@ class DataAssetSimplifier:
 
         # Parse nested Begin Object blocks
         self._parse_nested_objects(content)
+
+    def _parse_cpp_format(self, content: str):
+        """Parse C++ commandlet export format (=== DATA ASSET: Name === sections)."""
+        # Split into sections by === HEADER === markers
+        pattern = re.compile(r'^(===\s+.+?\s+===)\s*$', re.MULTILINE)
+        parts = pattern.split(content)
+
+        sections = []
+        i = 1
+        while i < len(parts) - 1:
+            header = parts[i].strip()
+            body = parts[i + 1]
+            sections.append((header, body))
+            i += 2
+
+        for header, body in sections:
+            name_match = re.match(r'===\s+(.+?)\s+===', header)
+            if not name_match:
+                continue
+            name = name_match.group(1)
+
+            if name.startswith('DATA ASSET:') or name.startswith('PHYSICAL MATERIAL:'):
+                # Extract asset name from header (handle both prefixes)
+                for prefix in ('DATA ASSET:', 'PHYSICAL MATERIAL:'):
+                    if name.startswith(prefix):
+                        self.asset_name = name[len(prefix):].strip()
+                        self._cpp_header_prefix = prefix[:-1]  # Strip trailing colon
+                        break
+                # Parse body for Class and other header info
+                for line in body.strip().splitlines():
+                    line = line.strip()
+                    if line.startswith('Class:'):
+                        self.asset_class = line[len('Class:'):].strip()
+                    elif line:
+                        self._cpp_header_lines.append(line)
+            elif name == 'PROPERTIES':
+                self._cpp_properties_body = body.strip()
+            else:
+                # Other sections (rare) — store header lines
+                self._cpp_header_lines.append(header)
+                body_stripped = body.strip()
+                if body_stripped:
+                    self._cpp_header_lines.append(body_stripped)
+
+    @staticmethod
+    def _shorten_asset_paths(line: str) -> str:
+        """Shorten UE asset paths like /Script/Module.Class to just Class."""
+        # Pattern: /Script/Module.ClassName or /Game/Path/Asset.AssetName
+        line = re.sub(
+            r"/Script/[A-Za-z0-9_]+\.([A-Za-z0-9_]+)",
+            r"\1",
+            line,
+        )
+        # Shorten /Game/... paths to last segment
+        line = re.sub(
+            r"'/Game/[^']*?/([^/']+)\.[^']*'",
+            r"'\1'",
+            line,
+        )
+        return line
+
+    def _generate_simplified_cpp(self) -> str:
+        """Generate simplified output for C++ export format."""
+        output = []
+        output.append(f"=== {self._cpp_header_prefix}: {self.asset_name} ===")
+        output.append(f"Class: {self.asset_class}")
+        for line in self._cpp_header_lines:
+            output.append(line)
+        output.append('')
+
+        if self._cpp_properties_body:
+            output.append('=== PROPERTIES ===')
+            for line in self._cpp_properties_body.splitlines():
+                # Shorten verbose UE asset paths for readability
+                shortened = self._shorten_asset_paths(line)
+                output.append(shortened)
+            output.append('')
+
+        return '\n'.join(output)
 
     def _parse_simple_properties(self, content: str):
         """Parse simple property=value assignments"""
@@ -233,6 +333,9 @@ class DataAssetSimplifier:
 
     def generate_simplified(self) -> str:
         """Generate simplified output format"""
+        if self._is_cpp_format:
+            return self._generate_simplified_cpp()
+
         output = []
         output.append("=" * 60)
         output.append(f"DATAASSET: {self.asset_name}")
@@ -349,6 +452,10 @@ def main():
     if not os.path.exists(input_file):
         print(f"Error: File not found: {input_file}")
         sys.exit(1)
+
+    # Pass 1: Universal safe strip -> _stripped.txt
+    if strip_file is not None and '_temp_raw' not in input_file:
+        strip_file(input_file)
 
     # Read input
     try:

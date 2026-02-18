@@ -24,6 +24,9 @@ struct FAIExportResult
 	FString SimplifiedFilePath;
 
 	UPROPERTY()
+	FString StrippedFilePath;
+
+	UPROPERTY()
 	FString ErrorMessage;
 
 	UPROPERTY()

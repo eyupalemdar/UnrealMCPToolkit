@@ -146,6 +146,13 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 			FString SimplifiedPath;
 			if (RunSimplifier(TempRawPath, SimplifiedPath))
 			{
+				// Rename _temp_simplified.txt → _simplified.txt
+				FString FinalSimplifiedPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_simplified.txt"), *SanitizedName));
+				if (SimplifiedPath != FinalSimplifiedPath)
+				{
+					IFileManager::Get().Move(*FinalSimplifiedPath, *SimplifiedPath);
+					SimplifiedPath = FinalSimplifiedPath;
+				}
 				OutResult.SimplifiedFilePath = SimplifiedPath;
 			}
 			else
@@ -160,6 +167,9 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 
 			// Delete temp raw file
 			IFileManager::Get().Delete(*TempRawPath);
+			// Also clean up temp stripped file if it was created
+			FString TempStrippedPath = TempRawPath.Replace(TEXT("_raw.txt"), TEXT("_stripped.txt"));
+			IFileManager::Get().Delete(*TempStrippedPath);
 			break;
 		}
 
@@ -189,6 +199,12 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 			if (RunSimplifier(RawPath, SimplifiedPath))
 			{
 				OutResult.SimplifiedFilePath = SimplifiedPath;
+				// Check if stripped file was also produced
+				FString StrippedPath = RawPath.Replace(TEXT("_raw.txt"), TEXT("_stripped.txt"));
+				if (FPaths::FileExists(StrippedPath))
+				{
+					OutResult.StrippedFilePath = StrippedPath;
+				}
 			}
 			else
 			{
@@ -327,6 +343,19 @@ FAIExportResult UAIExportFunctionLibrary::ExportAssetByPath(const FString& Asset
 		}
 		Result.RawFilePath = RawPath;
 
+		// Run strip on the real raw file to produce _stripped.txt
+		// (The simplifier will run on a temp file where strip is skipped via _temp_raw guard)
+		{
+			FString StripScriptPath = FPaths::Combine(FCommonAIExportModule::GetScriptsDir(), TEXT("strip_utils.py"));
+			if (FPaths::FileExists(StripScriptPath))
+			{
+				FString StripArgs = FString::Printf(TEXT("\"%s\" \"%s\""), *StripScriptPath, *RawPath);
+				int32 StripReturnCode = 0;
+				FString StripStdOut, StripStdErr;
+				FPlatformProcess::ExecProcess(TEXT("python"), *StripArgs, &StripReturnCode, &StripStdOut, &StripStdErr);
+			}
+		}
+
 		// Generate filtered content for simplifier (separate from raw)
 		FString FilteredContent = ExportAssetContent(Asset, true);
 		FString TempRawPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_temp_raw.txt"), *SanitizedName));
@@ -336,7 +365,20 @@ FAIExportResult UAIExportFunctionLibrary::ExportAssetByPath(const FString& Asset
 		FString SimplifiedPath;
 		if (RunSimplifier(TempRawPath, SimplifiedPath))
 		{
+			// Rename _temp_simplified.txt → _simplified.txt
+			FString FinalSimplifiedPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_simplified.txt"), *SanitizedName));
+			if (SimplifiedPath != FinalSimplifiedPath)
+			{
+				IFileManager::Get().Move(*FinalSimplifiedPath, *SimplifiedPath);
+				SimplifiedPath = FinalSimplifiedPath;
+			}
 			Result.SimplifiedFilePath = SimplifiedPath;
+			// Check if stripped file was also produced (from the real raw file)
+			FString StrippedPath = RawPath.Replace(TEXT("_raw.txt"), TEXT("_stripped.txt"));
+			if (FPaths::FileExists(StrippedPath))
+			{
+				Result.StrippedFilePath = StrippedPath;
+			}
 		}
 		else
 		{
@@ -349,6 +391,9 @@ FAIExportResult UAIExportFunctionLibrary::ExportAssetByPath(const FString& Asset
 
 		// Delete temp file
 		IFileManager::Get().Delete(*TempRawPath);
+		// Also clean up temp stripped file if it was created
+		FString TempStrippedPath = TempRawPath.Replace(TEXT("_raw.txt"), TEXT("_stripped.txt"));
+		IFileManager::Get().Delete(*TempStrippedPath);
 	}
 	else
 	{
@@ -374,6 +419,13 @@ FAIExportResult UAIExportFunctionLibrary::ExportAssetByPath(const FString& Asset
 		FString SimplifiedPath;
 		if (RunSimplifier(TempRawPath, SimplifiedPath))
 		{
+			// Rename _temp_simplified.txt → _simplified.txt
+			FString FinalSimplifiedPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_simplified.txt"), *SanitizedName));
+			if (SimplifiedPath != FinalSimplifiedPath)
+			{
+				IFileManager::Get().Move(*FinalSimplifiedPath, *SimplifiedPath);
+				SimplifiedPath = FinalSimplifiedPath;
+			}
 			Result.SimplifiedFilePath = SimplifiedPath;
 		}
 		else
@@ -387,6 +439,9 @@ FAIExportResult UAIExportFunctionLibrary::ExportAssetByPath(const FString& Asset
 
 		// Delete temp raw file
 		IFileManager::Get().Delete(*TempRawPath);
+		// Also clean up temp stripped file if it was created
+		FString TempStrippedPath = TempRawPath.Replace(TEXT("_raw.txt"), TEXT("_stripped.txt"));
+		IFileManager::Get().Delete(*TempStrippedPath);
 	}
 
 	// Special handling for texture assets - also export PNG file
