@@ -113,7 +113,7 @@ private:
 	/**
 	 * Decompose a struct property into sub-properties with dot notation.
 	 * Simple structs (FVector2D, FLinearColor, etc.) are exported as a single line.
-	 * Complex structs are iterated one level deep, producing "Prefix.SubProp=Value" lines.
+	 * Complex structs are recursively decomposed, producing "Prefix.SubProp=Value" lines.
 	 *
 	 * @param StructProp The struct property descriptor
 	 * @param StructPtr Pointer to the struct value
@@ -122,9 +122,11 @@ private:
 	 * @param Prefix The property name prefix (e.g., "Font", "Slot.LayoutData")
 	 * @param IndentLevel Current indentation level
 	 * @param bFilterDefaults Whether to skip sub-properties identical to archetype
+	 * @param Depth Current recursion depth (max 4 to prevent infinite recursion)
 	 * @return Formatted decomposed property text
 	 */
 	FString ExportStructDecomposed(FStructProperty* StructProp, const void* StructPtr,
 		const void* ArchetypeStructPtr, UObject* Outer,
-		const FString& Prefix, int32 IndentLevel, bool bFilterDefaults);
+		const FString& Prefix, int32 IndentLevel, bool bFilterDefaults,
+		int32 Depth = 0);
 };

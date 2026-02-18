@@ -651,11 +651,29 @@ FString UAIWidgetBlueprintExporter::ExportSlotPropertiesViaReflection(UPanelSlot
 
 FString UAIWidgetBlueprintExporter::ExportStructDecomposed(FStructProperty* StructProp, const void* StructPtr,
 	const void* ArchetypeStructPtr, UObject* Outer,
-	const FString& Prefix, int32 IndentLevel, bool bFilterDefaults)
+	const FString& Prefix, int32 IndentLevel, bool bFilterDefaults,
+	int32 Depth)
 {
 	if (!StructProp || !StructPtr)
 	{
 		return TEXT("");
+	}
+
+	// Guard against excessive recursion
+	if (Depth > 4)
+	{
+		FString ValueStr;
+		StructProp->ExportTextItem_Direct(ValueStr, StructPtr, nullptr, Outer, PPF_None);
+		if (ValueStr.IsEmpty() || ValueStr == TEXT("None") || ValueStr == TEXT("()"))
+		{
+			return TEXT("");
+		}
+		if (ValueStr.Len() > 400)
+		{
+			ValueStr = ValueStr.Left(400) + TEXT("...(truncated)");
+		}
+		FString Indent = GetIndent(IndentLevel);
+		return FString::Printf(TEXT("%s%s=%s\n"), *Indent, *Prefix, *ValueStr);
 	}
 
 	UScriptStruct* Struct = StructProp->Struct;
@@ -686,7 +704,7 @@ FString UAIWidgetBlueprintExporter::ExportStructDecomposed(FStructProperty* Stru
 		return FString::Printf(TEXT("%s%s=%s\n"), *Indent, *Prefix, *ValueStr);
 	}
 
-	// Complex struct: decompose into sub-properties (1 level deep)
+	// Complex struct: recursively decompose into sub-properties
 	FString Output;
 
 	for (TFieldIterator<FProperty> It(Struct); It; ++It)
@@ -711,7 +729,18 @@ FString UAIWidgetBlueprintExporter::ExportStructDecomposed(FStructProperty* Stru
 			}
 		}
 
-		// Export sub-property value
+		// If sub-property is also a struct, recursively decompose
+		if (FStructProperty* SubStructProp = CastField<FStructProperty>(SubProp))
+		{
+			const void* SubArchPtr = (bFilterDefaults && ArchetypeStructPtr)
+				? SubProp->ContainerPtrToValuePtr<void>(ArchetypeStructPtr) : nullptr;
+			FString SubPrefix = FString::Printf(TEXT("%s.%s"), *Prefix, *SubProp->GetName());
+			Output += ExportStructDecomposed(SubStructProp, SubValuePtr, SubArchPtr,
+				Outer, SubPrefix, IndentLevel, bFilterDefaults, Depth + 1);
+			continue;
+		}
+
+		// Scalar sub-property: export as single line
 		FString ValueStr;
 		SubProp->ExportTextItem_Direct(ValueStr, SubValuePtr, nullptr, Outer, PPF_None);
 

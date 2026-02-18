@@ -5,6 +5,7 @@
 
 // All exporter headers
 #include "Exporters/AIBlueprintExporter.h"
+#include "Exporters/AIAnimBlueprintExporter.h"
 #include "Exporters/AIWidgetBlueprintExporter.h"
 #include "Exporters/AIDataAssetExporter.h"
 #include "Exporters/AIInputExporter.h"
@@ -152,6 +153,9 @@ void UAIExporterRegistry::RegisterDefaultExporters()
 
 	// Widget Blueprint (priority 100 - most specific, checked before Blueprint)
 	RegisterExporter(UAIWidgetBlueprintExporter::StaticClass());
+
+	// AnimBlueprint (priority 90 - between Widget:100 and Blueprint:50)
+	RegisterExporter(UAIAnimBlueprintExporter::StaticClass());
 
 	// Blueprint (priority 50 - base blueprint)
 	RegisterExporter(UAIBlueprintExporter::StaticClass());

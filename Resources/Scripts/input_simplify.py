@@ -187,6 +187,77 @@ class InputAssetSimplifier:
         if not self.mapping_contexts:
             self._parse_toplevel_mappings(content)
 
+        # Try human-readable C++ export format
+        if not self.mapping_contexts:
+            self._parse_human_readable_context(content)
+
+    def _parse_human_readable_context(self, content: str):
+        """Parse human-readable C++ export format for Input Mapping Context.
+
+        The C++ exporter produces format like:
+            === INPUT MAPPING CONTEXT: IMC_Default ===
+            ...
+            [0] IA_Move
+              Key: W
+              Modifiers:
+                - Negate (...)
+              Triggers:
+                - Down
+            [1] IA_Look
+              Key: Mouse2D
+        """
+        # Header: === INPUT MAPPING CONTEXT: IMC_Default ===
+        header_match = re.search(
+            r'=== INPUT MAPPING CONTEXT:\s+(\S+)\s+===', content)
+        if not header_match:
+            return
+
+        context_name = header_match.group(1)
+        context = MappingContextInfo(name=context_name)
+
+        # Split content into mapping blocks starting with [N]
+        # Find all [N] markers and extract blocks between them
+        block_starts = list(re.finditer(r'^\s*\[(\d+)\]\s+(\S+)', content, re.MULTILINE))
+
+        for i, match in enumerate(block_starts):
+            action_name = match.group(2)
+
+            # Get block content (from this [N] to next [N] or end)
+            block_start = match.end()
+            if i + 1 < len(block_starts):
+                block_end = block_starts[i + 1].start()
+            else:
+                block_end = len(content)
+
+            block_content = content[block_start:block_end]
+
+            # Parse Key
+            key_match = re.search(r'Key:\s+(\S+)', block_content)
+            key = key_match.group(1) if key_match else "Unknown"
+
+            mapping = KeyMappingInfo(action_name=action_name, key=key)
+
+            # Parse Modifiers block
+            modifiers_section = re.search(
+                r'Modifiers:\s*\n((?:\s+-\s+.*\n)*)', block_content)
+            if modifiers_section:
+                for mod_match in re.finditer(r'-\s+(\w+)', modifiers_section.group(1)):
+                    modifier = ModifierInfo(modifier_type=mod_match.group(1))
+                    mapping.modifiers.append(modifier)
+
+            # Parse Triggers block
+            triggers_section = re.search(
+                r'Triggers:\s*\n((?:\s+-\s+.*\n)*)', block_content)
+            if triggers_section:
+                for trig_match in re.finditer(r'-\s+(\w+)', triggers_section.group(1)):
+                    trigger = TriggerInfo(trigger_type=trig_match.group(1))
+                    mapping.triggers.append(trigger)
+
+            context.mappings.append(mapping)
+
+        if context.mappings:
+            self.mapping_contexts[context_name] = context
+
     def _parse_toplevel_mappings(self, content: str):
         """Parse top-level Mappings array"""
         # Look for Mappings array
