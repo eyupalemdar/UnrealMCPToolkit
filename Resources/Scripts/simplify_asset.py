@@ -177,6 +177,18 @@ def main():
         print(f"Error: Input file not found: {input_file}")
         sys.exit(1)
 
+    # If C++ pipeline passes a _temp_raw.txt (filtered defaults), replace its
+    # contents with the full _raw.txt when available. Python simplifiers do
+    # their own filtering and need complete Begin Object blocks that C++
+    # default-value filtering strips out. We overwrite in-place so the
+    # simplifier still writes output to _temp_simplified.txt (which C++ expects).
+    if '_temp_raw' in input_file:
+        full_raw = input_file.replace('_temp_raw', '_raw')
+        if os.path.exists(full_raw):
+            import shutil
+            shutil.copy2(full_raw, input_file)
+            print(f"Replaced filtered temp with full raw content")
+
     # Optional output file argument
     output_file = None
     if len(sys.argv) > 2 and sys.argv[2] == '--output' and len(sys.argv) > 3:
