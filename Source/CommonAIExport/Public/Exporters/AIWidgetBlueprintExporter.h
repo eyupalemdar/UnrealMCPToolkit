@@ -108,4 +108,23 @@ protected:
 	 * Returns format like "0.0→1.0" for float, "Y: -8→0" for transform.
 	 */
 	FString ExtractKeyframeValues(class UMovieSceneSection* Section, const struct FFrameRate& FrameRate, float& OutStartTime, float& OutEndTime);
+
+private:
+	/**
+	 * Decompose a struct property into sub-properties with dot notation.
+	 * Simple structs (FVector2D, FLinearColor, etc.) are exported as a single line.
+	 * Complex structs are iterated one level deep, producing "Prefix.SubProp=Value" lines.
+	 *
+	 * @param StructProp The struct property descriptor
+	 * @param StructPtr Pointer to the struct value
+	 * @param ArchetypeStructPtr Pointer to the archetype struct value (nullptr to skip filtering)
+	 * @param Outer The owning UObject (for ExportTextItem context)
+	 * @param Prefix The property name prefix (e.g., "Font", "Slot.LayoutData")
+	 * @param IndentLevel Current indentation level
+	 * @param bFilterDefaults Whether to skip sub-properties identical to archetype
+	 * @return Formatted decomposed property text
+	 */
+	FString ExportStructDecomposed(FStructProperty* StructProp, const void* StructPtr,
+		const void* ArchetypeStructPtr, UObject* Outer,
+		const FString& Prefix, int32 IndentLevel, bool bFilterDefaults);
 };

@@ -124,18 +124,18 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 
 		case EAIExportOutputMode::SimplifiedOnly:
 		{
-			// First generate raw content
-			FString RawContent = GenerateExport(false);
-			if (RawContent.IsEmpty())
+			// Generate filtered content (bFilterDefaults=true) for simplifier
+			FString FilteredContent = GenerateExport(true);
+			if (FilteredContent.IsEmpty())
 			{
 				OutResult.bSuccess = false;
 				OutResult.ErrorMessage = TEXT("Export produced no content");
 				return false;
 			}
 
-			// Write to temp raw file for simplifier
+			// Write to temp raw file for simplifier (expects _raw.txt suffix)
 			FString TempRawPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_temp_raw.txt"), *SanitizedName));
-			if (!WriteToFile(RawContent, TempRawPath))
+			if (!WriteToFile(FilteredContent, TempRawPath))
 			{
 				OutResult.bSuccess = false;
 				OutResult.ErrorMessage = FString::Printf(TEXT("Failed to write temp file: %s"), *TempRawPath);
@@ -150,11 +150,11 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 			}
 			else
 			{
-				// Fallback: if simplifier fails, use raw content
+				// Fallback: if simplifier fails, use filtered content
 				SimplifiedPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_simplified.txt"), *SanitizedName));
-				WriteToFile(RawContent, SimplifiedPath);
+				WriteToFile(FilteredContent, SimplifiedPath);
 				OutResult.SimplifiedFilePath = SimplifiedPath;
-				UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using raw content as simplified"));
+				UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using filtered content as simplified"));
 			}
 
 			// Delete temp raw file
@@ -164,7 +164,7 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 
 		case EAIExportOutputMode::Both:
 		{
-			// Generate raw first
+			// Generate raw (unfiltered) for the raw file
 			FString RawContent = GenerateExport(false);
 			if (RawContent.IsEmpty())
 			{
@@ -182,20 +182,28 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 			}
 			OutResult.RawFilePath = RawPath;
 
-			// Run Python simplifier to create simplified version
+			// Generate filtered content for simplifier (separate from raw)
+			FString FilteredContent = GenerateExport(true);
+			FString TempRawPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_temp_raw.txt"), *SanitizedName));
+			WriteToFile(FilteredContent, TempRawPath);
+
+			// Run Python simplifier on filtered temp file
 			FString SimplifiedPath;
-			if (RunSimplifier(RawPath, SimplifiedPath))
+			if (RunSimplifier(TempRawPath, SimplifiedPath))
 			{
 				OutResult.SimplifiedFilePath = SimplifiedPath;
 			}
 			else
 			{
-				// Fallback: if simplifier fails, copy raw as simplified
+				// Fallback: if simplifier fails, copy filtered as simplified
 				SimplifiedPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_simplified.txt"), *SanitizedName));
-				WriteToFile(RawContent, SimplifiedPath);
+				WriteToFile(FilteredContent, SimplifiedPath);
 				OutResult.SimplifiedFilePath = SimplifiedPath;
-				UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using raw content as simplified"));
+				UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using filtered content as simplified"));
 			}
+
+			// Delete temp file
+			IFileManager::Get().Delete(*TempRawPath);
 			break;
 		}
 	}
@@ -305,7 +313,7 @@ FAIExportResult UAIExportFunctionLibrary::ExportAssetByPath(const FString& Asset
 
 	if (bBothFormats)
 	{
-		// Raw export
+		// Raw export (unfiltered)
 		FString RawContent = ExportAssetContent(Asset, false);
 		if (RawContent.IsEmpty())
 		{
@@ -323,35 +331,43 @@ FAIExportResult UAIExportFunctionLibrary::ExportAssetByPath(const FString& Asset
 		}
 		Result.RawFilePath = RawPath;
 
-		// Run Python simplifier to create simplified version
+		// Generate filtered content for simplifier (separate from raw)
+		FString FilteredContent = ExportAssetContent(Asset, true);
+		FString TempRawPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_temp_raw.txt"), *SanitizedName));
+		WriteToFile(FilteredContent, TempRawPath);
+
+		// Run Python simplifier on filtered temp file
 		FString SimplifiedPath;
-		if (RunSimplifier(RawPath, SimplifiedPath))
+		if (RunSimplifier(TempRawPath, SimplifiedPath))
 		{
 			Result.SimplifiedFilePath = SimplifiedPath;
 		}
 		else
 		{
-			// Fallback: if simplifier fails, copy raw as simplified
+			// Fallback: if simplifier fails, copy filtered as simplified
 			SimplifiedPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_simplified.txt"), *SanitizedName));
-			WriteToFile(RawContent, SimplifiedPath);
+			WriteToFile(FilteredContent, SimplifiedPath);
 			Result.SimplifiedFilePath = SimplifiedPath;
-			UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using raw content as simplified"));
+			UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using filtered content as simplified"));
 		}
+
+		// Delete temp file
+		IFileManager::Get().Delete(*TempRawPath);
 	}
 	else
 	{
-		// Simplified only - first generate raw content
-		FString RawContent = ExportAssetContent(Asset, false);
-		if (RawContent.IsEmpty())
+		// Simplified only - generate filtered content (bFilterDefaults=true)
+		FString FilteredContent = ExportAssetContent(Asset, true);
+		if (FilteredContent.IsEmpty())
 		{
 			Result.bSuccess = false;
 			Result.ErrorMessage = TEXT("Export produced no content");
 			return Result;
 		}
 
-		// Write to temp raw file for simplifier
+		// Write to temp raw file for simplifier (expects _raw.txt suffix)
 		FString TempRawPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_temp_raw.txt"), *SanitizedName));
-		if (!WriteToFile(RawContent, TempRawPath))
+		if (!WriteToFile(FilteredContent, TempRawPath))
 		{
 			Result.bSuccess = false;
 			Result.ErrorMessage = FString::Printf(TEXT("Failed to write temp file: %s"), *TempRawPath);
@@ -366,11 +382,11 @@ FAIExportResult UAIExportFunctionLibrary::ExportAssetByPath(const FString& Asset
 		}
 		else
 		{
-			// Fallback: if simplifier fails, use raw content
+			// Fallback: if simplifier fails, use filtered content
 			SimplifiedPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_simplified.txt"), *SanitizedName));
-			WriteToFile(RawContent, SimplifiedPath);
+			WriteToFile(FilteredContent, SimplifiedPath);
 			Result.SimplifiedFilePath = SimplifiedPath;
-			UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using raw content as simplified"));
+			UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using filtered content as simplified"));
 		}
 
 		// Delete temp raw file
@@ -532,9 +548,8 @@ FString UAIExportFunctionLibrary::GetOutputPathForAsset(UObject* Asset)
 	// Get asset's package path (e.g., "/Game/UI/MyWidget")
 	FString PackagePath = Asset->GetOutermost()->GetName();
 
-	// Remove "/Game" prefix and replace with our output structure
+	// Keep Game/ prefix so output mirrors Content Browser structure
 	FString RelativePath = PackagePath;
-	RelativePath.RemoveFromStart(TEXT("/Game"));
 	RelativePath.RemoveFromStart(TEXT("/"));
 
 	// Get directory part only

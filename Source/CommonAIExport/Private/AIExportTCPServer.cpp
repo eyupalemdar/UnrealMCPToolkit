@@ -391,10 +391,8 @@ FString FAIExportTCPServer::HandleExportWidget(TSharedPtr<FJsonObject> Params)
 		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
 	}
 
-	if (!Params->TryGetStringField(TEXT("output_directory"), OutputDirectory))
-	{
-		return CreateErrorResponse(TEXT("Missing 'output_directory' parameter"));
-	}
+	// output_directory is optional — omitting it triggers auto-mirrored path
+	Params->TryGetStringField(TEXT("output_directory"), OutputDirectory);
 
 	Params->TryGetBoolField(TEXT("both_formats"), bBothFormats);
 
@@ -453,10 +451,8 @@ FString FAIExportTCPServer::HandleExportBlueprint(TSharedPtr<FJsonObject> Params
 		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
 	}
 
-	if (!Params->TryGetStringField(TEXT("output_directory"), OutputDirectory))
-	{
-		return CreateErrorResponse(TEXT("Missing 'output_directory' parameter"));
-	}
+	// output_directory is optional — omitting it triggers auto-mirrored path
+	Params->TryGetStringField(TEXT("output_directory"), OutputDirectory);
 
 	Params->TryGetBoolField(TEXT("both_formats"), bBothFormats);
 

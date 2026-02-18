@@ -118,16 +118,10 @@ FString UAIWidgetBlueprintExporter::ExportWidgetTree(UWidget* Widget, int32 Inde
 	FString WidgetType = GetWidgetTypeName(Widget);
 	Output += FString::Printf(TEXT("%s[%s] %s\n"), *Indent, *Widget->GetName(), *WidgetType);
 
-	// Export key widget properties (legacy hardcoded export for backward compatibility)
-	Output += ExportWidgetProperties(Widget, IndentLevel + 1, bFilterDefaults);
-
-	// Export ALL widget properties via reflection (captures protected members too)
+	// Export ALL widget properties via reflection (with struct decompose)
 	Output += ExportWidgetPropertiesViaReflection(Widget, IndentLevel + 1, bFilterDefaults);
 
-	// Export slot properties (legacy hardcoded export)
-	Output += ExportSlotProperties(Widget, IndentLevel + 1);
-
-	// Export ALL slot properties via reflection
+	// Export ALL slot properties via reflection (with struct decompose)
 	if (Widget->Slot)
 	{
 		Output += ExportSlotPropertiesViaReflection(Widget->Slot, IndentLevel + 1, bFilterDefaults);
@@ -178,14 +172,10 @@ FString UAIWidgetBlueprintExporter::ExportWidgetProperties(UWidget* Widget, int3
 		Output += FString::Printf(TEXT("%sToolTip: %s\n"), *Indent, *ToolTip.ToString());
 	}
 
-	// For simplified export, skip most default properties
-	if (!bFilterDefaults)
+	// RenderOpacity (always include when non-default)
+	if (Widget->GetRenderOpacity() != 1.0f)
 	{
-		// RenderTransform, RenderOpacity, etc.
-		if (Widget->GetRenderOpacity() != 1.0f)
-		{
-			Output += FString::Printf(TEXT("%sRenderOpacity: %.2f\n"), *Indent, Widget->GetRenderOpacity());
-		}
+		Output += FString::Printf(TEXT("%sRenderOpacity: %.2f\n"), *Indent, Widget->GetRenderOpacity());
 	}
 
 	// ========== Widget-Specific Properties ==========
@@ -294,11 +284,8 @@ FString UAIWidgetBlueprintExporter::ExportWidgetProperties(UWidget* Widget, int3
 			Output += FString::Printf(TEXT("%sFont.Typeface: %s\n"), *Indent, *Font.TypefaceFontName.ToString());
 		}
 
-		// Size (if not default)
-		if (Font.Size != 24.0f)
-		{
-			Output += FString::Printf(TEXT("%sFont.Size: %.0f\n"), *Indent, Font.Size);
-		}
+		// Size (always output)
+		Output += FString::Printf(TEXT("%sFont.Size: %.0f\n"), *Indent, Font.Size);
 
 		// Letter Spacing
 		if (Font.LetterSpacing != 0)
@@ -543,7 +530,18 @@ FString UAIWidgetBlueprintExporter::ExportWidgetPropertiesViaReflection(UWidget*
 			}
 		}
 
-		// Export property value using reflection
+		// Struct property: decompose into sub-properties with dot notation
+		if (FStructProperty* StructProp = CastField<FStructProperty>(Property))
+		{
+			const void* StructPtr = StructProp->ContainerPtrToValuePtr<void>(Widget);
+			const void* ArchPtr = (bFilterDefaults && Archetype)
+				? StructProp->ContainerPtrToValuePtr<void>(Archetype) : nullptr;
+			Output += ExportStructDecomposed(StructProp, StructPtr, ArchPtr,
+				Widget, Property->GetName(), IndentLevel, bFilterDefaults);
+			continue;
+		}
+
+		// Scalar property: export as single line
 		const void* ValuePtr = Property->ContainerPtrToValuePtr<void>(Widget);
 		FString ValueStr;
 		Property->ExportTextItem_Direct(ValueStr, ValuePtr, nullptr, Widget, PPF_None);
@@ -615,7 +613,19 @@ FString UAIWidgetBlueprintExporter::ExportSlotPropertiesViaReflection(UPanelSlot
 			}
 		}
 
-		// Export property value using reflection
+		// Struct property: decompose into sub-properties with Slot. prefix
+		if (FStructProperty* StructProp = CastField<FStructProperty>(Property))
+		{
+			const void* StructPtr = StructProp->ContainerPtrToValuePtr<void>(Slot);
+			const void* ArchPtr = (bFilterDefaults && Archetype)
+				? StructProp->ContainerPtrToValuePtr<void>(Archetype) : nullptr;
+			FString SlotPrefix = FString::Printf(TEXT("Slot.%s"), *PropertyName.ToString());
+			Output += ExportStructDecomposed(StructProp, StructPtr, ArchPtr,
+				Slot, SlotPrefix, IndentLevel, bFilterDefaults);
+			continue;
+		}
+
+		// Scalar property: export as single line
 		const void* ValuePtr = Property->ContainerPtrToValuePtr<void>(Slot);
 		FString ValueStr;
 		Property->ExportTextItem_Direct(ValueStr, ValuePtr, nullptr, Slot, PPF_None);
@@ -639,6 +649,88 @@ FString UAIWidgetBlueprintExporter::ExportSlotPropertiesViaReflection(UPanelSlot
 	return Output;
 }
 
+FString UAIWidgetBlueprintExporter::ExportStructDecomposed(FStructProperty* StructProp, const void* StructPtr,
+	const void* ArchetypeStructPtr, UObject* Outer,
+	const FString& Prefix, int32 IndentLevel, bool bFilterDefaults)
+{
+	if (!StructProp || !StructPtr)
+	{
+		return TEXT("");
+	}
+
+	UScriptStruct* Struct = StructProp->Struct;
+	FString Indent = GetIndent(IndentLevel);
+
+	// Simple structs: export as a single line (don't decompose)
+	static const TSet<FName> SimpleStructs = {
+		TEXT("Vector2D"), TEXT("LinearColor"), TEXT("Color"),
+		TEXT("Vector"), TEXT("Rotator"), TEXT("IntPoint"),
+		TEXT("Vector4"), TEXT("Guid")
+	};
+
+	if (SimpleStructs.Contains(Struct->GetFName()))
+	{
+		FString ValueStr;
+		StructProp->ExportTextItem_Direct(ValueStr, StructPtr, nullptr, Outer, PPF_None);
+
+		if (ValueStr.IsEmpty() || ValueStr == TEXT("None") || ValueStr == TEXT("()"))
+		{
+			return TEXT("");
+		}
+
+		if (ValueStr.Len() > 400)
+		{
+			ValueStr = ValueStr.Left(400) + TEXT("...(truncated)");
+		}
+
+		return FString::Printf(TEXT("%s%s=%s\n"), *Indent, *Prefix, *ValueStr);
+	}
+
+	// Complex struct: decompose into sub-properties (1 level deep)
+	FString Output;
+
+	for (TFieldIterator<FProperty> It(Struct); It; ++It)
+	{
+		FProperty* SubProp = *It;
+
+		// Skip transient/deprecated sub-properties
+		if (SubProp->HasAnyPropertyFlags(CPF_Transient | CPF_DuplicateTransient | CPF_Deprecated))
+		{
+			continue;
+		}
+
+		const void* SubValuePtr = SubProp->ContainerPtrToValuePtr<void>(StructPtr);
+
+		// Per-sub-property archetype comparison
+		if (bFilterDefaults && ArchetypeStructPtr)
+		{
+			const void* ArchSubPtr = SubProp->ContainerPtrToValuePtr<void>(ArchetypeStructPtr);
+			if (SubProp->Identical(SubValuePtr, ArchSubPtr))
+			{
+				continue;
+			}
+		}
+
+		// Export sub-property value
+		FString ValueStr;
+		SubProp->ExportTextItem_Direct(ValueStr, SubValuePtr, nullptr, Outer, PPF_None);
+
+		if (ValueStr.IsEmpty() || ValueStr == TEXT("None") || ValueStr == TEXT("()"))
+		{
+			continue;
+		}
+
+		if (ValueStr.Len() > 400)
+		{
+			ValueStr = ValueStr.Left(400) + TEXT("...(truncated)");
+		}
+
+		Output += FString::Printf(TEXT("%s%s.%s=%s\n"), *Indent, *Prefix, *SubProp->GetName(), *ValueStr);
+	}
+
+	return Output;
+}
+
 bool UAIWidgetBlueprintExporter::ShouldSkipWidgetProperty(FProperty* Property, const FName& PropertyName) const
 {
 	if (!Property)
@@ -646,7 +738,9 @@ bool UAIWidgetBlueprintExporter::ShouldSkipWidgetProperty(FProperty* Property, c
 		return true;
 	}
 
-	// Skip internal UWidget/UObject properties that aren't useful for export
+	// Skip internal UWidget/UObject properties that aren't useful for export.
+	// NOTE: Visibility, RenderOpacity, bIsVariable, ToolTipText, bIsEnabled are NOT skipped —
+	// reflection + archetype comparison handles them automatically.
 	static TSet<FName> SkipProperties = {
 		// UObject internals
 		TEXT("NativeClass"),
@@ -654,24 +748,24 @@ bool UAIWidgetBlueprintExporter::ShouldSkipWidgetProperty(FProperty* Property, c
 		TEXT("ObjectFlags"),
 		TEXT("ExternalPackage"),
 
-		// UWidget internals - already handled separately or redundant
-		TEXT("Slot"),                    // Handled separately with slot-specific export
-		TEXT("bIsVariable"),             // Already handled in ExportWidgetProperties
-		TEXT("ToolTipText"),             // Already handled in ExportWidgetProperties
-		TEXT("Visibility"),              // Already handled in ExportWidgetProperties
-		TEXT("RenderOpacity"),           // Already handled in ExportWidgetProperties
-		TEXT("bIsEnabled"),              // Usually default
-		TEXT("bOverride_Cursor"),        // Rarely needed
-		TEXT("Cursor"),                  // Rarely needed
-		TEXT("Clipping"),                // Usually default
-		TEXT("bIsVolatile"),             // Performance hint
-		TEXT("Navigation"),              // Complex object, rarely needed
-		TEXT("FlowDirectionPreference"), // Usually default
-		TEXT("bCreatedByConstructionScript"), // Internal
-		TEXT("AccessibleBehavior"),      // Accessibility
-		TEXT("AccessibleSummaryBehavior"), // Accessibility
-		TEXT("AccessibleText"),          // Accessibility
-		TEXT("AccessibleSummaryText"),   // Accessibility
+		// Widget internals
+		TEXT("Slot"),                    // Exported separately via ExportSlotPropertiesViaReflection
+		TEXT("Slots"),                   // Internal UPanelWidget slot array
+		TEXT("bIsVolatile"),             // Performance hint, not semantic
+		TEXT("Navigation"),              // Complex object, rarely needed for export
+		TEXT("bCreatedByConstructionScript"), // Internal construction flag
+
+		// Accessibility (noise for AI export)
+		TEXT("AccessibleBehavior"),
+		TEXT("AccessibleSummaryBehavior"),
+		TEXT("AccessibleText"),
+		TEXT("AccessibleSummaryText"),
+
+		// Rarely needed
+		TEXT("bOverride_Cursor"),
+		TEXT("Cursor"),
+		TEXT("Clipping"),
+		TEXT("FlowDirectionPreference"),
 	};
 
 	return SkipProperties.Contains(PropertyName);

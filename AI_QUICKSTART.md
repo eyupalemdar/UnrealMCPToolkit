@@ -70,7 +70,18 @@ python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py list_types
 
 ## TCP Protocol
 
-**Request:**
+**Request** (minimal — `output_directory` is optional, omitting it auto-mirrors):
+```json
+{
+  "type": "export_blueprint",
+  "params": {
+    "asset_path": "/Game/UI/W_Menu",
+    "both_formats": true
+  }
+}
+```
+
+**Request** (explicit override):
 ```json
 {
   "type": "export_blueprint",

@@ -103,6 +103,14 @@ def check_port(port):
         return False
 
 
+def get_mirrored_output_path(asset_path, base_output_dir):
+    """Mirror asset's Content path in output directory.
+    /Game/UI/W_Menu -> {base}/Game/UI/
+    """
+    relative = asset_path.lstrip("/").rsplit("/", 1)[0]
+    return os.path.join(base_output_dir, relative)
+
+
 def send_command(command_type, params=None, project_dir=None, port=None):
     """
     Send a command to the TCP server.
@@ -187,14 +195,15 @@ def cmd_export_widget(args):
     asset_path = args[0]
     output_dir = args[1] if len(args) > 1 else ""
 
-    # Auto-discover output directory if not specified
+    # Auto-discover mirrored output directory if not specified
     if not output_dir:
         port_file = find_port_file_upward()
         if port_file:
             project_dir = port_file.parent.parent
-            output_dir = str(project_dir / "Dev" / "AIExports")
+            base_dir = str(project_dir / "Dev" / "AIExports")
         else:
-            output_dir = "Dev/AIExports"
+            base_dir = "Dev/AIExports"
+        output_dir = get_mirrored_output_path(asset_path, base_dir)
 
     params = {
         "asset_path": asset_path,
@@ -230,14 +239,15 @@ def cmd_export_blueprint(args):
     asset_path = args[0]
     output_dir = args[1] if len(args) > 1 else ""
 
-    # Auto-discover output directory if not specified
+    # Auto-discover mirrored output directory if not specified
     if not output_dir:
         port_file = find_port_file_upward()
         if port_file:
             project_dir = port_file.parent.parent
-            output_dir = str(project_dir / "Dev" / "AIExports")
+            base_dir = str(project_dir / "Dev" / "AIExports")
         else:
-            output_dir = "Dev/AIExports"
+            base_dir = "Dev/AIExports"
+        output_dir = get_mirrored_output_path(asset_path, base_dir)
 
     params = {
         "asset_path": asset_path,

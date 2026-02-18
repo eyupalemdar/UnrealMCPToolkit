@@ -327,11 +327,19 @@ class WidgetBlueprintSimplifier:
 
     def _is_noise_property(self, prop_name: str, prop_value: str) -> bool:
         """Check if a property should be filtered as noise"""
-        # Check null delegates
+        # Check null delegates (any delegate with (null).None or containing (null))
         if prop_value == '(null).None':
             return True
+        if prop_name.endswith('Delegate') and '(null)' in prop_value:
+            return True
+        if prop_name.startswith('OnMouse') and prop_name.endswith('Event') and '(null)' in prop_value:
+            return True
 
-        # Check designer flags
+        # Slots (internal UMG slot references)
+        if prop_name == 'Slots':
+            return True
+
+        # Check designer flags and known noise properties
         noise_props = [
             'bHiddenInDesigner', 'bExpandedInDesigner', 'bLockedInDesigner',
             'bOverrideAccessibleDefaults', 'bCanChildrenBeAccessible',
@@ -340,6 +348,10 @@ class WidgetBlueprintSimplifier:
             'VisibilityDelegate', 'PersistentGuid', 'NodeGuid', 'DisplayLabel'
         ]
         if prop_name in noise_props:
+            return True
+
+        # bOverride_* flags: drop when False (override disabled)
+        if prop_name.startswith('bOverride_') and prop_value.strip().lower() == 'false':
             return True
 
         # Check default transform values
@@ -355,6 +367,78 @@ class WidgetBlueprintSimplifier:
 
         # Check default pixel snapping
         if prop_name == 'PixelSnapping' and prop_value == 'Inherit':
+            return True
+
+        # ShadowColorAndOpacity: noise when alpha is 0
+        if prop_name == 'ShadowColorAndOpacity':
+            if 'A=0.000000' in prop_value or 'A=0' in prop_value:
+                return True
+
+        # ShadowOffset: default (X=1,Y=1)
+        if prop_name == 'ShadowOffset':
+            v = prop_value.strip()
+            if v in ('(X=1.000000,Y=1.000000)', '(X=1,Y=1)'):
+                return True
+
+        # StrikeBrush: default (ImageSize 32x32)
+        if prop_name == 'StrikeBrush':
+            if 'ImageSize=(X=32.000000,Y=32.000000)' in prop_value or \
+               'ImageSize=(X=32,Y=32)' in prop_value:
+                return True
+
+        # DesiredSizeScale: default (1,1)
+        if prop_name == 'DesiredSizeScale':
+            v = prop_value.strip()
+            if v in ('(X=1.000000,Y=1.000000)', '(X=1,Y=1)', '(1,1)'):
+                return True
+
+        # ContentColorAndOpacity: default white (1,1,1,1)
+        if prop_name == 'ContentColorAndOpacity':
+            v = prop_value.strip()
+            if v in ('(R=1.000000,G=1.000000,B=1.000000,A=1.000000)',
+                     '(R=1,G=1,B=1,A=1)', '(1,1,1,1)'):
+                return True
+
+        # BrushColor: default white (1,1,1,1)
+        if prop_name == 'BrushColor':
+            v = prop_value.strip()
+            if v in ('(R=1.000000,G=1.000000,B=1.000000,A=1.000000)',
+                     '(R=1,G=1,B=1,A=1)', '(1,1,1,1)'):
+                return True
+
+        # Default alignment values
+        if prop_name == 'HorizontalAlignment' and prop_value.strip() == 'HAlign_Fill':
+            return True
+        if prop_name == 'VerticalAlignment' and prop_value.strip() == 'VAlign_Fill':
+            return True
+
+        # Default text properties
+        if prop_name == 'Justification' and prop_value.strip() in ('Left', 'ETextJustify::Left'):
+            return True
+        if prop_name == 'TextOverflowPolicy' and prop_value.strip() in ('Clip', 'ETextOverflowPolicy::Clip'):
+            return True
+        if prop_name == 'WrappingPolicy' and prop_value.strip() in ('DefaultWrapping', 'ETextWrappingPolicy::DefaultWrapping'):
+            return True
+        if prop_name == 'AutoWrapText' and prop_value.strip().lower() == 'false':
+            return True
+        if prop_name == 'MinDesiredWidth' and prop_value.strip() in ('0', '0.0', '0.000000'):
+            return True
+        if prop_name == 'WrapTextAt' and prop_value.strip() in ('0', '0.0', '0.000000'):
+            return True
+        if prop_name == 'LineHeightPercentage' and prop_value.strip() in ('1.0', '1.000000', '1'):
+            return True
+
+        # Default boolean properties (noise when at default value)
+        default_true_bools = {
+            'bShowEffectWhenDisabled', 'ApplyLineHeightToBottomLine',
+        }
+        default_false_bools = {
+            'bFlipForRightToLeftFlowDirection', 'bWrapWithInvalidationPanel',
+            'bSimpleTextMode',
+        }
+        if prop_name in default_true_bools and prop_value.strip().lower() == 'true':
+            return True
+        if prop_name in default_false_bools and prop_value.strip().lower() == 'false':
             return True
 
         return False
@@ -799,8 +883,49 @@ class WidgetBlueprintSimplifier:
 
         return '\n'.join(output)
 
+    def _deduplicate_properties(self, properties: Dict[str, str]) -> Dict[str, str]:
+        """Remove redundant struct properties and apply SizeBox override logic.
+
+        - Struct dedup: if both 'Font' (full struct) and 'Font.Typeface' (decomposed) exist, drop 'Font'
+        - SizeBox override: if bOverride_HeightOverride=False, drop both flag and HeightOverride;
+          if =True, keep HeightOverride but drop the flag (implied)
+        """
+        result = dict(properties)
+
+        # --- Struct dedup: drop full struct if decomposed sub-properties exist ---
+        struct_prefixes = set()
+        for key in result:
+            if '.' in key:
+                struct_prefixes.add(key.split('.')[0])
+        for prefix in struct_prefixes:
+            if prefix in result:
+                del result[prefix]
+
+        # --- SizeBox override pattern ---
+        override_keys = [k for k in result if k.startswith('bOverride_')]
+        for flag_key in override_keys:
+            # e.g. bOverride_HeightOverride -> HeightOverride
+            value_key = flag_key[len('bOverride_'):]
+            flag_val = result[flag_key].strip().lower()
+            if flag_val == 'false':
+                # Override disabled: drop both flag and value
+                result.pop(flag_key, None)
+                result.pop(value_key, None)
+            elif flag_val == 'true':
+                # Override enabled: keep value, drop flag (implied)
+                result.pop(flag_key, None)
+
+        return result
+
+    @staticmethod
+    def _format_value(value: str, max_len: int = 120) -> str:
+        """Truncate value at max_len chars."""
+        if len(value) > max_len:
+            return value[:max_len] + "..."
+        return value
+
     def _output_widget_tree_detailed(self, widget_name: str, output: List[str], indent: int = 0):
-        """Recursively output widget tree with properties"""
+        """Recursively output widget tree with ALL meaningful properties"""
         widget = self.widgets.get(widget_name)
         if not widget:
             return
@@ -809,15 +934,23 @@ class WidgetBlueprintSimplifier:
         var_marker = " [VAR]" if widget.is_variable else ""
         output.append(f"{prefix}- {widget.name} ({widget.widget_class}){var_marker}")
 
-        # Output key properties
-        key_props = ['Text', 'Visibility', 'Font.Size', 'Font.Typeface', 'ColorAndOpacity']
-        for prop in key_props:
-            if prop in widget.properties:
-                value = widget.properties[prop]
-                # Clean up the value
-                if len(value) > 80:
-                    value = value[:80] + "..."
-                output.append(f"{prefix}    {prop}: {value}")
+        # Deduplicate and clean properties
+        props = self._deduplicate_properties(widget.properties)
+
+        # Priority ordering: high-priority props first, then rest alphabetically
+        priority_prefixes = ['Visibility', 'Text', 'Font.', 'ColorAndOpacity']
+
+        def prop_sort_key(key: str):
+            for i, prefix in enumerate(priority_prefixes):
+                if key == prefix or key.startswith(prefix):
+                    return (0, i, key)
+            return (1, 0, key)
+
+        sorted_props = sorted(props.keys(), key=prop_sort_key)
+
+        for prop in sorted_props:
+            value = self._format_value(props[prop])
+            output.append(f"{prefix}    {prop}: {value}")
 
         # Output slot properties
         for prop, value in widget.slot_properties.items():
