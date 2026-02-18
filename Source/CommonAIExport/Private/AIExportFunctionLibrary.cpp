@@ -124,9 +124,9 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 
 		case EAIExportOutputMode::SimplifiedOnly:
 		{
-			// Generate filtered content (bFilterDefaults=true) for simplifier
-			FString FilteredContent = GenerateExport(true);
-			if (FilteredContent.IsEmpty())
+			// Generate unfiltered content - Python simplifier does its own intelligent filtering
+			FString RawContent = GenerateExport(false);
+			if (RawContent.IsEmpty())
 			{
 				OutResult.bSuccess = false;
 				OutResult.ErrorMessage = TEXT("Export produced no content");
@@ -135,7 +135,7 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 
 			// Write to temp raw file for simplifier (expects _raw.txt suffix)
 			FString TempRawPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_temp_raw.txt"), *SanitizedName));
-			if (!WriteToFile(FilteredContent, TempRawPath))
+			if (!WriteToFile(RawContent, TempRawPath))
 			{
 				OutResult.bSuccess = false;
 				OutResult.ErrorMessage = FString::Printf(TEXT("Failed to write temp file: %s"), *TempRawPath);
@@ -150,8 +150,9 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 			}
 			else
 			{
-				// Fallback: if simplifier fails, use filtered content
+				// Fallback: if simplifier fails, generate filtered content
 				SimplifiedPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_simplified.txt"), *SanitizedName));
+				FString FilteredContent = GenerateExport(true);
 				WriteToFile(FilteredContent, SimplifiedPath);
 				OutResult.SimplifiedFilePath = SimplifiedPath;
 				UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using filtered content as simplified"));
@@ -182,28 +183,23 @@ bool UAIExportFunctionLibrary::ExportAsset(UObject* Asset, FAIExportResult& OutR
 			}
 			OutResult.RawFilePath = RawPath;
 
-			// Generate filtered content for simplifier (separate from raw)
-			FString FilteredContent = GenerateExport(true);
-			FString TempRawPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_temp_raw.txt"), *SanitizedName));
-			WriteToFile(FilteredContent, TempRawPath);
-
-			// Run Python simplifier on filtered temp file
+			// Run Python simplifier directly on the raw file
+			// Python simplifier does its own intelligent filtering/simplification
 			FString SimplifiedPath;
-			if (RunSimplifier(TempRawPath, SimplifiedPath))
+			if (RunSimplifier(RawPath, SimplifiedPath))
 			{
 				OutResult.SimplifiedFilePath = SimplifiedPath;
 			}
 			else
 			{
-				// Fallback: if simplifier fails, copy filtered as simplified
+				// Fallback: if simplifier fails, generate filtered content
 				SimplifiedPath = FPaths::Combine(OutputDir, FString::Printf(TEXT("%s_simplified.txt"), *SanitizedName));
+				FString FilteredContent = GenerateExport(true);
 				WriteToFile(FilteredContent, SimplifiedPath);
 				OutResult.SimplifiedFilePath = SimplifiedPath;
 				UE_LOG(LogTemp, Warning, TEXT("Simplifier failed, using filtered content as simplified"));
 			}
 
-			// Delete temp file
-			IFileManager::Get().Delete(*TempRawPath);
 			break;
 		}
 	}
