@@ -226,7 +226,23 @@ class UnrealBPSimplifier:
         'AnimBlueprintExtension_',
     )
 
-    _CDO_EMPTY_VALUES = {'()', 'False', '0', '0.000000', 'None', '""', '-1'}
+    _CDO_EMPTY_VALUES = {
+        '()', 'False', '0', '0.000000', 'None', '""', '-1',
+        '(X=0.000000,Y=0.000000,Z=0.000000)',
+        '(Pitch=0.000000,Yaw=0.000000,Roll=0.000000)',
+        'NewEnumerator0',
+    }
+
+    # CDO keys whose default values are uninteresting
+    _CDO_SKIP_KEYS = {
+        'RootMotionMode', 'bUseMultiThreadedAnimationUpdate',
+        'bUsingCopyPoseFromMesh', 'bReceiveNotifiesFromLinkedInstances',
+        'bPropagateNotifiesToLinkedInstances', 'bUseMainInstanceMontageEvaluationData',
+        'OnMontageBlendingOut', 'OnMontageBlendedIn', 'OnMontageStarted',
+        'OnMontageEnded', 'OnAllMontageInstancesEnded', 'OnMontageSectionChanged',
+        'GroundDistance', 'WorldLocation', 'WorldRotation', 'WorldVelocity',
+        'LocalVelocity2D', 'LocalAcceleration2D', 'PivotDirection2D',
+    }
 
     _CDO_ANIM_KEYS = {
         'Name', 'SlotName', 'CachePoseName', 'Layer', 'LayerGroup',
@@ -285,6 +301,10 @@ class UnrealBPSimplifier:
             if key.startswith('__CustomProperty_'):
                 if value in ('0.000000', 'False'):
                     continue
+
+            # Skip known uninteresting keys
+            if key in self._CDO_SKIP_KEYS:
+                continue
 
             # Skip lines whose value is only empty function refs
             if self._is_all_empty_parens(value):
@@ -383,27 +403,30 @@ class UnrealBPSimplifier:
         if not body_stripped:
             return
 
-        anim_node_count = len(re.findall(r'AnimGraphNode_', body_stripped))
         k2_node_count = len(re.findall(r'K2Node_', body_stripped))
-        has_begin_object = 'Begin Object' in body_stripped
+
+        # Use Begin Object Class= to detect actual node types (not ExportPath refs)
+        has_state_entry = bool(re.search(r'Begin Object Class=\S*AnimStateEntryNode', body_stripped))
+        has_state_node = bool(re.search(r'Begin Object Class=\S*AnimStateNode\s', body_stripped))
 
         # 1. Transition graphs
         if graph_name == 'Transition':
             self._emit_transition_graph(body_stripped, out)
             return
 
-        # 2. State machine (LocomotionSM or similar)
-        if 'AnimStateEntryNode' in body_stripped or 'AnimStateNode' in body_stripped:
-            self._emit_state_machine_graph(graph_name, body_stripped, out)
-            return
-
-        # 3. Main AnimGraph
+        # 2. Main AnimGraph (check BEFORE state machine — AnimGraph body contains SM nodes)
         if graph_name == 'AnimGraph':
             self._emit_anim_graph(graph_name, body_stripped, out)
             return
 
+        # 3. State machine (has actual AnimStateEntryNode or AnimStateNode as top-level classes)
+        if has_state_entry or has_state_node:
+            self._emit_state_machine_graph(graph_name, body_stripped, out)
+            return
+
         # 4. State inner graphs with only AnimGraphNodes (Idle, Start, etc.)
-        if anim_node_count > 0 and k2_node_count == 0:
+        has_anim_nodes = bool(re.search(r'Begin Object Class=\S*AnimGraphNode_', body_stripped))
+        if has_anim_nodes and k2_node_count == 0:
             self._emit_anim_state_graph(graph_name, body_stripped, out)
             return
 
@@ -425,7 +448,7 @@ class UnrealBPSimplifier:
             out.append('')
         else:
             out.append(f'=== GRAPH: {graph_name} === ({line_count} lines, summarized)')
-            out.append(f'  Contains: {anim_node_count} AnimGraphNodes, {k2_node_count} K2Nodes')
+            out.append(f'  (contains {line_count} lines of node data)')
             out.append('')
 
     # -----------------------------------------------------------------------
@@ -469,15 +492,28 @@ class UnrealBPSimplifier:
             if not can_enter_pin:
                 return
 
-        if BlueprintSimplifier is not None and has_k2_nodes:
-            bp = BlueprintSimplifier()
-            simplified = bp.parse_blueprint_text(body)
-            if simplified and simplified.strip():
-                out.append(f'  --- Transition #{self._transition_counter} ---')
-                for line in simplified.strip().splitlines():
-                    out.append(f'    {line}')
-        else:
-            out.append(f'  --- Transition #{self._transition_counter} (logic present) ---')
+        # Compact: extract variable reads and operators for the condition
+        var_reads = []
+        for m in re.finditer(r'K2Node_VariableGet.*?MemberName="([^"]+)"', body, re.DOTALL):
+            var_reads.append(m.group(1))
+        ops = []
+        for m in re.finditer(r'MemberName="(Boolean\w+|Not_PreBool|[A-Z]\w*_\w+)"', body):
+            ops.append(m.group(1))
+        func_calls = []
+        for m in re.finditer(r'K2Node_CallFunction.*?MemberName="([^"]+)"', body, re.DOTALL):
+            func_calls.append(m.group(1))
+
+        parts = []
+        if var_reads:
+            parts.append(' && '.join(dict.fromkeys(var_reads)))
+        if func_calls:
+            parts.append(', '.join(dict.fromkeys(func_calls)) + '()')
+        if ops:
+            unique_ops = list(dict.fromkeys(ops))
+            parts.append(f'[{", ".join(unique_ops)}]')
+
+        condition = ' | '.join(parts) if parts else '(logic)'
+        out.append(f'  Transition #{self._transition_counter}: {condition}')
 
     # -----------------------------------------------------------------------
     #  State Machine Graph (LocomotionSM)
@@ -763,23 +799,110 @@ class UnrealBPSimplifier:
     # -----------------------------------------------------------------------
 
     def _emit_k2_graph(self, graph_name: str, body: str, out: List[str]):
-        """Delegate K2 logic graphs to BlueprintSimplifier."""
+        """Compact K2 logic graph: extract entry, calls, variables, flow."""
         out.append(f'=== FUNCTION: {graph_name} ===')
 
-        if BlueprintSimplifier is not None:
-            bp = BlueprintSimplifier()
-            simplified = bp.parse_blueprint_text(body)
-            if simplified and simplified.strip():
-                out.append(simplified.strip())
-            else:
-                out.append('  (no parseable nodes)')
-        else:
-            func_calls = re.findall(r'MemberName="([^"]+)"', body)
-            if func_calls:
-                unique_funcs = list(dict.fromkeys(func_calls))
-                out.append(f'  References: {", ".join(unique_funcs[:20])}')
-            else:
-                out.append(f'  ({body.count(chr(10))} lines)')
+        blocks = self._extract_top_level_objects(body)
+        if not blocks:
+            out.append('  (empty)')
+            out.append('')
+            return
+
+        # Collect nodes for compact output
+        local_vars = []
+        func_calls = []     # (name, node_name)
+        var_gets = []
+        var_sets = []
+        branches = []
+        comments = []
+        exec_flow = []      # ordered by exec pin chain
+        other_nodes = []
+
+        # Build a map: PinId -> (node_name, pin_name) for exec flow tracing
+        pin_owner = {}       # pinId -> node_class_info
+        node_exec_out = {}   # node_name -> [target_node_names]
+
+        for block in blocks:
+            cm = re.search(r'Begin Object Class=\S+\.(\w+)\s+Name="([^"]+)"', block)
+            if not cm:
+                continue
+            class_name = cm.group(1)
+            node_name = cm.group(2)
+
+            if class_name == 'EdGraphNode_Comment':
+                cmt = re.search(r'NodeComment="([^"]+)"', block)
+                if cmt:
+                    text = cmt.group(1).replace('\\r\\n', ' ').replace('\\n', ' ').replace("\\'", "'")
+                    if len(text) > 150:
+                        text = text[:147] + '...'
+                    comments.append(text)
+                continue
+
+            if class_name == 'K2Node_FunctionEntry':
+                # Extract local variables
+                for lv in re.finditer(r'VarName="([^"]+)"', block):
+                    vtype = ''
+                    tm = re.search(rf'{re.escape(lv.group(1))}.*?PinCategory="([^"]+)"', block)
+                    if tm:
+                        vtype = f': {tm.group(1)}'
+                    local_vars.append(f'{lv.group(1)}{vtype}')
+                # Extract function name
+                fn = re.search(r'FunctionReference=.*?MemberName="([^"]+)"', block)
+                if fn:
+                    out.append(f'  Entry: {fn.group(1)}')
+
+            elif class_name == 'K2Node_FunctionResult':
+                pass  # Just marks the end
+
+            elif class_name == 'K2Node_CallFunction':
+                fn = re.search(r'MemberName="([^"]+)"', block)
+                if fn:
+                    func_calls.append(fn.group(1))
+
+            elif class_name == 'K2Node_VariableGet':
+                vn = re.search(r'MemberName="([^"]+)"', block)
+                if vn:
+                    var_gets.append(vn.group(1))
+
+            elif class_name == 'K2Node_VariableSet':
+                vn = re.search(r'MemberName="([^"]+)"', block)
+                if vn:
+                    var_sets.append(vn.group(1))
+
+            elif class_name == 'K2Node_IfThenElse':
+                branches.append('Branch')
+
+            elif 'K2Node_CommutativeAssociativeBinaryOperator' in class_name:
+                fn = re.search(r'MemberName="([^"]+)"', block)
+                if fn:
+                    other_nodes.append(fn.group(1))
+
+            elif class_name == 'K2Node_PromotableOperator':
+                fn = re.search(r'MemberName="([^"]+)"', block)
+                if fn:
+                    other_nodes.append(fn.group(1))
+
+            elif class_name == 'K2Node_PropertyAccess':
+                # Thread-safe property access
+                pa = re.search(r'PathAsText="([^"]+)"', block)
+                if pa:
+                    var_gets.append(f'@{pa.group(1)}')
+
+        if local_vars:
+            out.append(f'  Locals: {", ".join(dict.fromkeys(local_vars))}')
+        if comments:
+            for c in comments:
+                out.append(f'  // {c}')
+        if func_calls:
+            out.append(f'  Calls: {", ".join(dict.fromkeys(func_calls))}')
+        if var_gets:
+            out.append(f'  Reads: {", ".join(dict.fromkeys(var_gets))}')
+        if var_sets:
+            out.append(f'  Writes: {", ".join(dict.fromkeys(var_sets))}')
+        if branches:
+            out.append(f'  Branches: {len(branches)}')
+        if other_nodes:
+            out.append(f'  Ops: {", ".join(dict.fromkeys(other_nodes))}')
 
         out.append('')
 
