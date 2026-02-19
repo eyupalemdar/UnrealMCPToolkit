@@ -41,26 +41,28 @@ CommonAIExport converts UE assets into text format that Claude Code can read and
 ## System Architecture
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   UE Asset      │────▶│  C++ Exporter    │────▶│  Python         │────▶│  Simplified     │
-│  (Blueprint,    │     │  (_raw.txt)      │     │  Simplifier     │     │  (_simplified)  │
-│   Widget, etc)  │     │  All properties  │     │  Non-default    │     │  AI-ready       │
-└─────────────────┘     └──────────────────┘     └─────────────────┘     └─────────────────┘
-        │                                                                       │
-        │                                                                       │
-   Context Menu                                                            Claude Code
-   "Export for AI"                                                         reads & understands
+┌─────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   UE Asset      │────▶│  C++ Exporter    │────▶│  C++ Exporter    │────▶│  Python         │
+│  (Blueprint,    │     │  (_raw.txt)      │     │  (_stripped.txt) │     │  Simplifier     │
+│   Widget, etc)  │     │  All properties  │     │  Non-default     │     │  (_simplified)  │
+└─────────────────┘     └──────────────────┘     │  UE text format  │     │  AI-ready       │
+        │                                         └──────────────────┘     └─────────────────┘
+        │                                                                         │
+   Context Menu                                                              Claude Code
+   "Export for AI"                                                           reads & understands
 ```
 
-### Raw vs Simplified
+### Export Formats (3-Tier)
 
-| Type | Content | Usage |
-|------|---------|-------|
-| **Raw** | All property values | Debug, full view |
-| **Simplified** | Only non-default values | AI analysis, minimal |
+| Format | Suffix | Producer | Content | Best For |
+|--------|--------|----------|---------|----------|
+| **Raw** | `_raw.txt` | C++ exporter | ALL property values including defaults, GUIDs, node positions, internal UE metadata | Debugging the export pipeline |
+| **Stripped** | `_stripped.txt` | C++ exporter (archetype-filtered) | Only non-default values, but still in UE serialization format (`Begin Object`, `CustomProperties Pin(...)`) | Exact pin types, transition conditions, full AnimGraph node properties |
+| **Simplified** | `_simplified.txt` | Python post-processor | Human/AI-readable restructured output: widget trees, node flow chains, clean key=value properties | General AI analysis — **start here** |
 
-Raw export is done by C++ (`Property->Identical_InContainer` archetype comparison).
-Simplification is done by Python scripts (different parsers per asset type).
+Raw export uses C++ `Property->Identical_InContainer` archetype comparison to detect non-default values.
+Stripped is the raw output with default-valued properties removed.
+Simplification is done by Python scripts that restructure stripped data into AI-friendly format.
 
 ## Plugin Structure (v4.0 - Modular Architecture)
 
@@ -550,11 +552,22 @@ Project Settings → Plugins → AI Export:
 
 ## Size Comparison
 
-| Asset | Raw | Simplified | Reduction |
-|-------|-----|------------|-----------|
-| W_SinglePlayerSetup | 3,649 B | 1,499 B | 59% |
-| BP_GameMode | ~50 KB | ~5 KB | ~90% |
-| DA_Experience | ~10 KB | ~2 KB | ~80% |
+| Asset | Raw | Stripped | Simplified | Raw→Simplified |
+|-------|-----|----------|------------|----------------|
+| ABP_Mannequin_Base (large AnimBP) | 2,702 KB | 865 KB | 42 KB | **98%** reduction |
+| UIExperienceMacros (small macro BP) | 18 KB | 7 KB | 3.4 KB | **81%** reduction |
+| W_SinglePlayerSetup (Widget) | 3,649 B | ~1,800 B | 1,499 B | **59%** reduction |
+| BP_GameMode | ~50 KB | ~8 KB | ~5 KB | **~90%** reduction |
+| DA_Experience (DataAsset) | ~10 KB | ~3 KB | ~2 KB | **~80%** reduction |
+
+### Typical Reduction Ratios
+
+| Asset Type | Raw → Stripped | Stripped → Simplified | Raw → Simplified |
+|------------|---------------|----------------------|------------------|
+| Small Blueprint | ~60% | ~50% | ~80% |
+| Large AnimBlueprint | ~68% | ~95% | ~98% |
+| Widget Blueprint | ~60% | ~50-80% | ~80-90% |
+| DataAsset | ~80% | ~50% | ~90% |
 
 ## Technical Notes
 

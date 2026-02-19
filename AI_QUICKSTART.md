@@ -68,6 +68,16 @@ python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py list_types
 
 ---
 
+## Reading Exported Files
+
+Each export produces 3 files: `_simplified.txt`, `_stripped.txt`, `_raw.txt`.
+
+1. **Always read `_simplified.txt` first** — AI-readable format with clean structure, enough for most tasks
+2. **Read `_stripped.txt` when simplified isn't enough** — non-default values in UE serialization format, has full pin types, transition conditions, AnimGraph node details. Read specific sections with offset/limit, not the whole file
+3. **Don't read `_raw.txt`** — includes all default values, extremely verbose, only useful for debugging the export pipeline
+
+---
+
 ## TCP Protocol
 
 **Request** (minimal — `output_directory` is optional, omitting it auto-mirrors):
