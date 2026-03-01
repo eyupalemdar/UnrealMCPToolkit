@@ -39,6 +39,20 @@ Typical workflow:
 6. get_widget_tree - Verify the result
 
 Property values use UE ImportText format (same format the export system produces).
+
+Material Builder workflow:
+1. create_material - Create a new Material asset (domain, blend mode, shading model)
+2. add_expression - Add expression nodes (Multiply, Add, Color, ScalarParam, etc.)
+3. set_expression_property - Set node properties via reflection
+4. connect_expressions - Wire nodes together
+5. connect_to_material_property - Wire to root (EmissiveColor, Opacity, etc.)
+6. compile_material - Recompile and save
+7. get_material_graph - Verify the result
+
+Material Instance workflow:
+1. create_material_instance - Create MIC with parent
+2. set_instance_parameter - Set scalar/vector/texture parameters
+3. save_material_instance - Save to disk
 """)
 
 DEFAULT_PORT = 55560
@@ -495,6 +509,364 @@ def export_blueprint(
     if output_directory:
         params["output_directory"] = output_directory
     return _format_response(_send_command("export_blueprint", params))
+
+
+# =============================================================================
+# MATERIAL BUILDER
+# =============================================================================
+
+@mcp.tool()
+def create_material(
+    package_path: str,
+    asset_name: str,
+    domain: str = "Surface",
+    blend_mode: str = "Opaque",
+    shading_model: str = "DefaultLit",
+    two_sided: bool = False
+) -> str:
+    """
+    Create a new Material asset.
+
+    Args:
+        package_path: Content path, e.g. "/Game/Materials"
+        asset_name: Asset name, e.g. "M_Gold"
+        domain: "Surface", "PostProcess", "UI", "Volume", "LightFunction", "DeferredDecal"
+        blend_mode: "Opaque", "Masked", "Translucent", "Additive", "Modulate"
+        shading_model: "DefaultLit", "Unlit", "Subsurface", "TwoSidedFoliage", etc.
+        two_sided: Enable two-sided rendering
+
+    Returns:
+        JSON with asset_path and asset_name on success.
+    """
+    params = {
+        "package_path": package_path,
+        "asset_name": asset_name,
+        "domain": domain,
+        "blend_mode": blend_mode,
+        "shading_model": shading_model,
+        "two_sided": two_sided,
+    }
+    return _format_response(_send_command("create_material", params))
+
+
+@mcp.tool()
+def set_material_property(
+    asset_path: str,
+    property_name: str,
+    value: str
+) -> str:
+    """
+    Set a material-level property.
+
+    Args:
+        asset_path: Asset path of the Material
+        property_name: UMaterial property name (e.g. "BlendMode", "bTwoSided")
+        value: Value in ImportText format
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("set_material_property", {
+        "asset_path": asset_path,
+        "property_name": property_name,
+        "value": value,
+    }))
+
+
+@mcp.tool()
+def add_expression(
+    asset_path: str,
+    expression_class: str,
+    node_name: str,
+    pos_x: int = 0,
+    pos_y: int = 0
+) -> str:
+    """
+    Add a material expression node to the material graph.
+
+    Args:
+        asset_path: Asset path of the Material
+        expression_class: Short class name or alias:
+            Math: Multiply, Add, Subtract, Divide, Lerp, Clamp, OneMinus, Power, Abs, Saturate
+            Constants: Constant, Constant3 (Color), Constant4
+            Parameters: ScalarParam, VectorParam, TextureSample (Texture)
+            Coords: TexCoord (UV), Panner
+            Vector: Append, Mask (ComponentMask), Dot, Cross, Normalize, Length, Distance
+            Logic: If, StaticSwitch
+            Utility: Time, VertexColor, Fresnel, WorldPos, Comment
+        node_name: Logical name for the node (used for lookup in other commands)
+        pos_x: X position in graph (negative = left of root inputs)
+        pos_y: Y position in graph
+
+    Returns:
+        JSON with node_name, expression_class, and position.
+    """
+    return _format_response(_send_command("add_expression", {
+        "asset_path": asset_path,
+        "expression_class": expression_class,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+    }))
+
+
+@mcp.tool()
+def set_expression_property(
+    asset_path: str,
+    node_name: str,
+    property_name: str,
+    value: str
+) -> str:
+    """
+    Set a property on a material expression node via UE reflection.
+
+    Args:
+        asset_path: Asset path of the Material
+        node_name: Node name (as set by add_expression)
+        property_name: Property on the expression class (supports dot-notation)
+        value: Value in ImportText format. Examples:
+               - Constant3Vector color: "(R=1.0,G=0.843,B=0.0,A=1.0)"
+               - ScalarParameter default: "0.5"
+               - TextureSample texture: "Texture2D'/Game/Textures/T_Gold.T_Gold'"
+               - ComponentMask R: "true"
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("set_expression_property", {
+        "asset_path": asset_path,
+        "node_name": node_name,
+        "property_name": property_name,
+        "value": value,
+    }))
+
+
+@mcp.tool()
+def connect_expressions(
+    asset_path: str,
+    from_node: str,
+    from_output: str,
+    to_node: str,
+    to_input: str
+) -> str:
+    """
+    Connect two material expression nodes.
+
+    Args:
+        asset_path: Asset path of the Material
+        from_node: Source node name
+        from_output: Output pin name on source (e.g. "RGB", "R", "G", "" for default)
+        to_node: Target node name
+        to_input: Input pin name on target (e.g. "A", "B", "Alpha", "Base")
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("connect_expressions", {
+        "asset_path": asset_path,
+        "from_node": from_node,
+        "from_output": from_output,
+        "to_node": to_node,
+        "to_input": to_input,
+    }))
+
+
+@mcp.tool()
+def connect_to_material_property(
+    asset_path: str,
+    from_node: str,
+    from_output: str,
+    material_property: str
+) -> str:
+    """
+    Connect an expression output to a material root input property.
+
+    Args:
+        asset_path: Asset path of the Material
+        from_node: Source node name
+        from_output: Output pin (e.g. "RGB", "" for default)
+        material_property: Root property name:
+            "BaseColor", "Metallic", "Roughness", "Specular", "Normal",
+            "EmissiveColor" (or "Emissive"), "Opacity", "OpacityMask",
+            "WorldPositionOffset" (or "WPO"), "AmbientOcclusion" (or "AO"),
+            "SubsurfaceColor", "Refraction", "PixelDepthOffset" (or "PDO")
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("connect_to_material_property", {
+        "asset_path": asset_path,
+        "from_node": from_node,
+        "from_output": from_output,
+        "material_property": material_property,
+    }))
+
+
+@mcp.tool()
+def disconnect_input(
+    asset_path: str,
+    node_name: str,
+    input_name: str
+) -> str:
+    """
+    Disconnect a specific input on an expression node.
+
+    Args:
+        asset_path: Asset path of the Material
+        node_name: Target expression node name
+        input_name: Input pin name to disconnect (e.g. "A", "B", "Alpha")
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("disconnect_input", {
+        "asset_path": asset_path,
+        "node_name": node_name,
+        "input_name": input_name,
+    }))
+
+
+@mcp.tool()
+def remove_expression(asset_path: str, node_name: str) -> str:
+    """
+    Remove an expression node from the material graph.
+
+    Args:
+        asset_path: Asset path of the Material
+        node_name: Node name to remove
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("remove_expression", {
+        "asset_path": asset_path,
+        "node_name": node_name,
+    }))
+
+
+@mcp.tool()
+def compile_material(asset_path: str) -> str:
+    """
+    Recompile a material and save to disk.
+
+    Args:
+        asset_path: Asset path of the Material
+
+    Returns:
+        JSON with compiled/saved status and any warnings.
+    """
+    return _format_response(_send_command("compile_material", {"asset_path": asset_path}))
+
+
+@mcp.tool()
+def get_material_graph(asset_path: str) -> str:
+    """
+    Get the material graph as JSON (expressions + connections).
+
+    Args:
+        asset_path: Asset path of the Material
+
+    Returns:
+        JSON with domain, blend_mode, expressions array, and connections array.
+    """
+    return _format_response(_send_command("get_material_graph", {"asset_path": asset_path}))
+
+
+@mcp.tool()
+def list_expression_classes() -> str:
+    """
+    List all available material expression classes.
+
+    Returns:
+        JSON with array of class names.
+    """
+    return _format_response(_send_command("list_expression_classes"))
+
+
+# =============================================================================
+# MATERIAL INSTANCE
+# =============================================================================
+
+@mcp.tool()
+def create_material_instance(
+    package_path: str,
+    asset_name: str,
+    parent_material_path: str
+) -> str:
+    """
+    Create a Material Instance Constant (MIC).
+
+    Args:
+        package_path: Content path, e.g. "/Game/Materials/Instances"
+        asset_name: Asset name, e.g. "MI_GoldVariant"
+        parent_material_path: Path to parent material, e.g. "/Game/Materials/M_Gold"
+
+    Returns:
+        JSON with asset_path and asset_name on success.
+    """
+    return _format_response(_send_command("create_material_instance", {
+        "package_path": package_path,
+        "asset_name": asset_name,
+        "parent_material_path": parent_material_path,
+    }))
+
+
+@mcp.tool()
+def set_instance_parameter(
+    asset_path: str,
+    param_name: str,
+    param_type: str,
+    value: str
+) -> str:
+    """
+    Set a parameter on a Material Instance Constant.
+
+    Args:
+        asset_path: Asset path of the MIC
+        param_name: Parameter name (must match parameter in parent material)
+        param_type: "scalar", "vector", or "texture"
+        value: Value string:
+               scalar: "0.5"
+               vector: "(R=1.0,G=0.0,B=0.0,A=1.0)"
+               texture: "/Game/Textures/T_MyTex"
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("set_instance_parameter", {
+        "asset_path": asset_path,
+        "param_name": param_name,
+        "param_type": param_type,
+        "value": value,
+    }))
+
+
+@mcp.tool()
+def save_material_instance(asset_path: str) -> str:
+    """
+    Save a Material Instance Constant to disk.
+
+    Args:
+        asset_path: Asset path of the MIC
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("save_material_instance", {"asset_path": asset_path}))
+
+
+@mcp.tool()
+def get_material_instance_info(asset_path: str) -> str:
+    """
+    Get info about a Material Instance Constant as JSON.
+
+    Args:
+        asset_path: Asset path of the MIC
+
+    Returns:
+        JSON with parent material, scalar/vector/texture parameters.
+    """
+    return _format_response(_send_command("get_material_instance_info", {"asset_path": asset_path}))
 
 
 if __name__ == "__main__":

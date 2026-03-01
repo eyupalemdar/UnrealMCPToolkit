@@ -706,7 +706,74 @@ bool UAIWidgetBlueprintBuilder::SetPropertyByPath(
 			void* ValuePtr = Prop->ContainerPtrToValuePtr<void>(CurrentContainer);
 			const TCHAR* ValueCStr = *Value;
 			const TCHAR* Result = Prop->ImportText_Direct(ValueCStr, ValuePtr, Object, PPF_None);
-			return Result != nullptr;
+			if (Result != nullptr)
+			{
+				return true;
+			}
+
+			// Fallback: handle enum properties with alternative name formats
+			// MCP sends "EHorizontalAlignment::Center" but UE expects "HAlign_Center"
+			FByteProperty* ByteProp = CastField<FByteProperty>(Prop);
+			FEnumProperty* EnumProp = CastField<FEnumProperty>(Prop);
+			UEnum* Enum = nullptr;
+			if (ByteProp && ByteProp->Enum)
+			{
+				Enum = ByteProp->Enum;
+			}
+			else if (EnumProp)
+			{
+				Enum = EnumProp->GetEnum();
+			}
+
+			if (Enum)
+			{
+				FString CleanValue = Value;
+
+				// Strip enum class prefix: "EHorizontalAlignment::Center" -> "Center"
+				int32 ColonIdx;
+				if (CleanValue.FindLastChar(TEXT(':'), ColonIdx))
+				{
+					CleanValue = CleanValue.Mid(ColonIdx + 1);
+				}
+
+				// Try all enum values, match by short name (case-insensitive)
+				for (int32 EnumIdx = 0; EnumIdx < Enum->NumEnums() - 1; ++EnumIdx)
+				{
+					FString EnumName = Enum->GetNameStringByIndex(EnumIdx);
+					FString DisplayName = Enum->GetDisplayNameTextByIndex(EnumIdx).ToString();
+
+					// Match against: full name "HAlign_Center", display name "Center", or short "Center"
+					if (EnumName.Equals(CleanValue, ESearchCase::IgnoreCase) ||
+						DisplayName.Equals(CleanValue, ESearchCase::IgnoreCase))
+					{
+						int64 EnumValue = Enum->GetValueByIndex(EnumIdx);
+						if (ByteProp)
+						{
+							ByteProp->SetPropertyValue_InContainer(CurrentContainer, (uint8)EnumValue);
+						}
+						else if (EnumProp)
+						{
+							// Use the underlying numeric property
+							FNumericProperty* UnderlyingProp = EnumProp->GetUnderlyingProperty();
+							if (UnderlyingProp)
+							{
+								UnderlyingProp->SetIntPropertyValue(
+									Prop->ContainerPtrToValuePtr<void>(CurrentContainer), EnumValue);
+							}
+						}
+						UE_LOG(LogAIWidgetBuilder, Verbose,
+							TEXT("SetPropertyByPath: Enum fallback matched '%s' -> '%s' = %lld"),
+							*Value, *EnumName, EnumValue);
+						return true;
+					}
+				}
+
+				UE_LOG(LogAIWidgetBuilder, Warning,
+					TEXT("SetPropertyByPath: Enum '%s' has no value matching '%s'"),
+					*Enum->GetName(), *Value);
+			}
+
+			return false;
 		}
 		else
 		{

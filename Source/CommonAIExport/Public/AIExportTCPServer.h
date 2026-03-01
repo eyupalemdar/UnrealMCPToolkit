@@ -29,6 +29,23 @@ class FSocket;
  * - compile_and_save: Compile and save a Widget Blueprint
  * - get_widget_tree: Get widget tree as JSON
  * - list_widget_classes: List available widget classes
+ *
+ * Material Builder commands:
+ * - create_material: Create a new Material asset
+ * - set_material_property: Set material domain/blend/shading
+ * - add_expression: Add expression node to material graph
+ * - set_expression_property: Set expression property via reflection
+ * - connect_expressions: Connect two expression nodes
+ * - connect_to_material_property: Connect node to material root input
+ * - disconnect_input: Disconnect an expression input
+ * - remove_expression: Remove expression from graph
+ * - compile_material: Recompile and save material
+ * - get_material_graph: Get material graph as JSON
+ * - list_expression_classes: List available expression types
+ * - create_material_instance: Create Material Instance Constant
+ * - set_instance_parameter: Set scalar/vector/texture parameter
+ * - save_material_instance: Save MIC to disk
+ * - get_material_instance_info: Get MIC info as JSON
  */
 class FAIExportTCPServer : public FRunnable
 {
@@ -88,6 +105,23 @@ private:
 	FString HandleCompileAndSave(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetWidgetTree(TSharedPtr<class FJsonObject> Params);
 	FString HandleListWidgetClasses();
+
+	/** Command handlers — Material Builder */
+	FString HandleCreateMaterial(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetMaterialProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddExpression(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetExpressionProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleConnectExpressions(TSharedPtr<class FJsonObject> Params);
+	FString HandleConnectToMaterialProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleDisconnectInput(TSharedPtr<class FJsonObject> Params);
+	FString HandleRemoveExpression(TSharedPtr<class FJsonObject> Params);
+	FString HandleCompileMaterial(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetMaterialGraph(TSharedPtr<class FJsonObject> Params);
+	FString HandleListExpressionClasses();
+	FString HandleCreateMaterialInstance(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetInstanceParameter(TSharedPtr<class FJsonObject> Params);
+	FString HandleSaveMaterialInstance(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetMaterialInstanceInfo(TSharedPtr<class FJsonObject> Params);
 
 	/** Create error response JSON */
 	FString CreateErrorResponse(const FString& ErrorMessage);

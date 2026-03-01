@@ -45,7 +45,8 @@ public class CommonAIExport : ModuleRules
 			"MovieScene",  // For UWidgetAnimation export
 			"MovieSceneTracks",  // For section types (FloatSection, ColorSection, etc.)
 			"PhysicsCore",  // For UPhysicalMaterial
-			"KismetCompiler"  // For FKismetEditorUtilities::CompileBlueprint
+			"KismetCompiler",  // For FKismetEditorUtilities::CompileBlueprint
+			"MaterialEditor"  // For UMaterialEditingLibrary (Material Builder)
 		});
 	}
 }

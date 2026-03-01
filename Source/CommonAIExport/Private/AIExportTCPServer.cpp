@@ -3,7 +3,11 @@
 #include "AIExportTCPServer.h"
 #include "AIExportFunctionLibrary.h"
 #include "Builders/AIWidgetBlueprintBuilder.h"
+#include "Builders/AIMaterialBuilder.h"
 #include "CommonAIExportModule.h"
+
+#include "Materials/Material.h"
+#include "Materials/MaterialInstanceConstant.h"
 
 #include "WidgetBlueprint.h"
 #include "Components/Widget.h"
@@ -408,6 +412,67 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 	else if (CommandType == TEXT("list_widget_classes"))
 	{
 		return HandleListWidgetClasses();
+	}
+	// Material Builder commands
+	else if (CommandType == TEXT("create_material"))
+	{
+		return HandleCreateMaterial(Params);
+	}
+	else if (CommandType == TEXT("set_material_property"))
+	{
+		return HandleSetMaterialProperty(Params);
+	}
+	else if (CommandType == TEXT("add_expression"))
+	{
+		return HandleAddExpression(Params);
+	}
+	else if (CommandType == TEXT("set_expression_property"))
+	{
+		return HandleSetExpressionProperty(Params);
+	}
+	else if (CommandType == TEXT("connect_expressions"))
+	{
+		return HandleConnectExpressions(Params);
+	}
+	else if (CommandType == TEXT("connect_to_material_property"))
+	{
+		return HandleConnectToMaterialProperty(Params);
+	}
+	else if (CommandType == TEXT("disconnect_input"))
+	{
+		return HandleDisconnectInput(Params);
+	}
+	else if (CommandType == TEXT("remove_expression"))
+	{
+		return HandleRemoveExpression(Params);
+	}
+	else if (CommandType == TEXT("compile_material"))
+	{
+		return HandleCompileMaterial(Params);
+	}
+	else if (CommandType == TEXT("get_material_graph"))
+	{
+		return HandleGetMaterialGraph(Params);
+	}
+	else if (CommandType == TEXT("list_expression_classes"))
+	{
+		return HandleListExpressionClasses();
+	}
+	else if (CommandType == TEXT("create_material_instance"))
+	{
+		return HandleCreateMaterialInstance(Params);
+	}
+	else if (CommandType == TEXT("set_instance_parameter"))
+	{
+		return HandleSetInstanceParameter(Params);
+	}
+	else if (CommandType == TEXT("save_material_instance"))
+	{
+		return HandleSaveMaterialInstance(Params);
+	}
+	else if (CommandType == TEXT("get_material_instance_info"))
+	{
+		return HandleGetMaterialInstanceInfo(Params);
 	}
 	else
 	{
@@ -1232,5 +1297,490 @@ FString FAIExportTCPServer::HandleListWidgetClasses()
 	{
 		return CreateErrorResponse(TEXT("List widget classes timed out"));
 	}
+	return Future.Get();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Material Builder Handlers
+
+FString FAIExportTCPServer::HandleCreateMaterial(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString PackagePath, AssetName;
+	FString Domain = TEXT("Surface"), BlendMode = TEXT("Opaque"), ShadingModel = TEXT("DefaultLit");
+	bool bTwoSided = false;
+
+	if (!Params->TryGetStringField(TEXT("package_path"), PackagePath))
+		return CreateErrorResponse(TEXT("Missing 'package_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("asset_name"), AssetName))
+		return CreateErrorResponse(TEXT("Missing 'asset_name' parameter"));
+
+	Params->TryGetStringField(TEXT("domain"), Domain);
+	Params->TryGetStringField(TEXT("blend_mode"), BlendMode);
+	Params->TryGetStringField(TEXT("shading_model"), ShadingModel);
+	Params->TryGetBoolField(TEXT("two_sided"), bTwoSided);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [PackagePath, AssetName, Domain, BlendMode, ShadingModel, bTwoSided, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::CreateMaterial(PackagePath, AssetName, Domain, BlendMode, ShadingModel, bTwoSided);
+		if (!Material)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Failed to create material")));
+			return;
+		}
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), Material->GetPathName());
+		Data->SetStringField(TEXT("asset_name"), AssetName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Create material timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleSetMaterialProperty(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, PropertyName, Value;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+	if (!Params->TryGetStringField(TEXT("property_name"), PropertyName))
+		return CreateErrorResponse(TEXT("Missing 'property_name'"));
+	if (!Params->TryGetStringField(TEXT("value"), Value))
+		return CreateErrorResponse(TEXT("Missing 'value'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, PropertyName, Value, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::LoadMaterial(AssetPath);
+		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIMaterialBuilder::SetMaterialProperty(Material, PropertyName, Value);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("success"), bSuccess);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set material property timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddExpression(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, ExprClass, NodeName;
+	double PosX = 0, PosY = 0;
+
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+	if (!Params->TryGetStringField(TEXT("expression_class"), ExprClass))
+		return CreateErrorResponse(TEXT("Missing 'expression_class'"));
+	if (!Params->TryGetStringField(TEXT("node_name"), NodeName))
+		return CreateErrorResponse(TEXT("Missing 'node_name'"));
+
+	Params->TryGetNumberField(TEXT("pos_x"), PosX);
+	Params->TryGetNumberField(TEXT("pos_y"), PosY);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, ExprClass, NodeName, PosX, PosY, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::LoadMaterial(AssetPath);
+		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
+
+		UMaterialExpression* Expr = UAIMaterialBuilder::AddExpression(Material, ExprClass, NodeName, (int32)PosX, (int32)PosY);
+		if (!Expr) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add expression '%s'"), *ExprClass))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("expression_class"), Expr->GetClass()->GetName());
+		Data->SetNumberField(TEXT("pos_x"), PosX);
+		Data->SetNumberField(TEXT("pos_y"), PosY);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add expression timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleSetExpressionProperty(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, NodeName, PropertyName, Value;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+	if (!Params->TryGetStringField(TEXT("node_name"), NodeName))
+		return CreateErrorResponse(TEXT("Missing 'node_name'"));
+	if (!Params->TryGetStringField(TEXT("property_name"), PropertyName))
+		return CreateErrorResponse(TEXT("Missing 'property_name'"));
+	if (!Params->TryGetStringField(TEXT("value"), Value))
+		return CreateErrorResponse(TEXT("Missing 'value'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, NodeName, PropertyName, Value, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::LoadMaterial(AssetPath);
+		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIMaterialBuilder::SetExpressionProperty(Material, NodeName, PropertyName, Value);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("success"), bSuccess);
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("property_name"), PropertyName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set expression property timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleConnectExpressions(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, FromNode, FromOutput, ToNode, ToInput;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+	if (!Params->TryGetStringField(TEXT("from_node"), FromNode))
+		return CreateErrorResponse(TEXT("Missing 'from_node'"));
+	if (!Params->TryGetStringField(TEXT("from_output"), FromOutput))
+		FromOutput = TEXT("");
+	if (!Params->TryGetStringField(TEXT("to_node"), ToNode))
+		return CreateErrorResponse(TEXT("Missing 'to_node'"));
+	if (!Params->TryGetStringField(TEXT("to_input"), ToInput))
+		ToInput = TEXT("");
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, FromNode, FromOutput, ToNode, ToInput, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::LoadMaterial(AssetPath);
+		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIMaterialBuilder::ConnectExpressions(Material, FromNode, FromOutput, ToNode, ToInput);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("success"), bSuccess);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Connect expressions timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleConnectToMaterialProperty(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, FromNode, FromOutput, MaterialProperty;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+	if (!Params->TryGetStringField(TEXT("from_node"), FromNode))
+		return CreateErrorResponse(TEXT("Missing 'from_node'"));
+	if (!Params->TryGetStringField(TEXT("from_output"), FromOutput))
+		FromOutput = TEXT("");
+	if (!Params->TryGetStringField(TEXT("material_property"), MaterialProperty))
+		return CreateErrorResponse(TEXT("Missing 'material_property'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, FromNode, FromOutput, MaterialProperty, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::LoadMaterial(AssetPath);
+		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIMaterialBuilder::ConnectToMaterialProperty(Material, FromNode, FromOutput, MaterialProperty);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("success"), bSuccess);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Connect to material property timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleDisconnectInput(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, NodeName, InputName;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+	if (!Params->TryGetStringField(TEXT("node_name"), NodeName))
+		return CreateErrorResponse(TEXT("Missing 'node_name'"));
+	if (!Params->TryGetStringField(TEXT("input_name"), InputName))
+		return CreateErrorResponse(TEXT("Missing 'input_name'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, NodeName, InputName, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::LoadMaterial(AssetPath);
+		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIMaterialBuilder::DisconnectInput(Material, NodeName, InputName);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("success"), bSuccess);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Disconnect input timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRemoveExpression(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, NodeName;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+	if (!Params->TryGetStringField(TEXT("node_name"), NodeName))
+		return CreateErrorResponse(TEXT("Missing 'node_name'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, NodeName, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::LoadMaterial(AssetPath);
+		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIMaterialBuilder::RemoveExpression(Material, NodeName);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("success"), bSuccess);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Remove expression timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleCompileMaterial(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::LoadMaterial(AssetPath);
+		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
+
+		TArray<FString> Warnings;
+		bool bCompiled = UAIMaterialBuilder::CompileMaterial(Material, &Warnings);
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("compiled"), bCompiled);
+		Data->SetBoolField(TEXT("saved"), true);
+
+		if (Warnings.Num() > 0)
+		{
+			TArray<TSharedPtr<FJsonValue>> WarnArray;
+			for (const FString& W : Warnings)
+			{
+				WarnArray.Add(MakeShared<FJsonValueString>(W));
+			}
+			Data->SetArrayField(TEXT("warnings"), WarnArray);
+		}
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Compile material timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleGetMaterialGraph(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		UMaterial* Material = UAIMaterialBuilder::LoadMaterial(AssetPath);
+		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
+
+		TSharedPtr<FJsonObject> Data = UAIMaterialBuilder::GetMaterialGraphAsJson(Material);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get material graph timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleListExpressionClasses()
+{
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [Promise, this]()
+	{
+		TArray<FString> Classes = UAIMaterialBuilder::GetAvailableExpressionClasses();
+
+		TArray<TSharedPtr<FJsonValue>> ClassArray;
+		for (const FString& ClassName : Classes)
+		{
+			ClassArray.Add(MakeShared<FJsonValueString>(ClassName));
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetArrayField(TEXT("classes"), ClassArray);
+		Data->SetNumberField(TEXT("count"), Classes.Num());
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("List expression classes timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleCreateMaterialInstance(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString PackagePath, AssetName, ParentMaterialPath;
+	if (!Params->TryGetStringField(TEXT("package_path"), PackagePath))
+		return CreateErrorResponse(TEXT("Missing 'package_path'"));
+	if (!Params->TryGetStringField(TEXT("asset_name"), AssetName))
+		return CreateErrorResponse(TEXT("Missing 'asset_name'"));
+	if (!Params->TryGetStringField(TEXT("parent_material_path"), ParentMaterialPath))
+		return CreateErrorResponse(TEXT("Missing 'parent_material_path'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [PackagePath, AssetName, ParentMaterialPath, Promise, this]()
+	{
+		UMaterialInstanceConstant* MIC = UAIMaterialBuilder::CreateMaterialInstance(PackagePath, AssetName, ParentMaterialPath);
+		if (!MIC) { Promise->SetValue(CreateErrorResponse(TEXT("Failed to create material instance"))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), MIC->GetPathName());
+		Data->SetStringField(TEXT("asset_name"), AssetName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Create material instance timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleSetInstanceParameter(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, ParamName, ParamType, Value;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+	if (!Params->TryGetStringField(TEXT("param_name"), ParamName))
+		return CreateErrorResponse(TEXT("Missing 'param_name'"));
+	if (!Params->TryGetStringField(TEXT("param_type"), ParamType))
+		return CreateErrorResponse(TEXT("Missing 'param_type'"));
+	if (!Params->TryGetStringField(TEXT("value"), Value))
+		return CreateErrorResponse(TEXT("Missing 'value'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, ParamName, ParamType, Value, Promise, this]()
+	{
+		UMaterialInstanceConstant* MIC = UAIMaterialBuilder::LoadMaterialInstance(AssetPath);
+		if (!MIC) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("MIC not found: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIMaterialBuilder::SetInstanceParameter(MIC, ParamName, ParamType, Value);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("success"), bSuccess);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set instance parameter timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleSaveMaterialInstance(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		UMaterialInstanceConstant* MIC = UAIMaterialBuilder::LoadMaterialInstance(AssetPath);
+		if (!MIC) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("MIC not found: %s"), *AssetPath))); return; }
+
+		bool bSaved = UAIMaterialBuilder::SaveMaterialInstance(MIC);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("saved"), bSaved);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Save material instance timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleGetMaterialInstanceInfo(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path'"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		UMaterialInstanceConstant* MIC = UAIMaterialBuilder::LoadMaterialInstance(AssetPath);
+		if (!MIC) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("MIC not found: %s"), *AssetPath))); return; }
+
+		TSharedPtr<FJsonObject> Data = UAIMaterialBuilder::GetMaterialInstanceInfoAsJson(MIC);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get material instance info timed out"));
 	return Future.Get();
 }
