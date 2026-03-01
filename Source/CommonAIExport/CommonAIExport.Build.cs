@@ -44,7 +44,8 @@ public class CommonAIExport : ModuleRules
 			"ImageWrapper",  // For PNG export (IImageWrapper)
 			"MovieScene",  // For UWidgetAnimation export
 			"MovieSceneTracks",  // For section types (FloatSection, ColorSection, etc.)
-			"PhysicsCore"  // For UPhysicalMaterial
+			"PhysicsCore",  // For UPhysicalMaterial
+			"KismetCompiler"  // For FKismetEditorUtilities::CompileBlueprint
 		});
 	}
 }

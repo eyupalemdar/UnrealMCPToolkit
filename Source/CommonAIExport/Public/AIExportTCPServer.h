@@ -16,6 +16,19 @@ class FSocket;
  * - export_widget: Export Widget Blueprint
  * - export_blueprint: Export regular Blueprint
  * - list_supported_types: List supported asset types
+ *
+ * Widget Builder commands:
+ * - create_widget_blueprint: Create a new Widget Blueprint asset
+ * - add_widget: Add a widget to the widget tree
+ * - remove_widget: Remove a widget from the widget tree
+ * - move_widget: Move a widget to a new parent
+ * - set_widget_property: Set a widget property via reflection
+ * - set_slot_property: Set a slot property via reflection
+ * - set_canvas_slot_layout: Set canvas slot layout (convenience)
+ * - set_widget_properties: Batch set multiple properties
+ * - compile_and_save: Compile and save a Widget Blueprint
+ * - get_widget_tree: Get widget tree as JSON
+ * - list_widget_classes: List available widget classes
  */
 class FAIExportTCPServer : public FRunnable
 {
@@ -57,11 +70,24 @@ private:
 	/** Process a JSON command and return JSON response */
 	FString ProcessCommand(const FString& JsonCommand);
 
-	/** Command handlers */
+	/** Command handlers — Export */
 	FString HandlePing();
 	FString HandleExportWidget(TSharedPtr<class FJsonObject> Params);
 	FString HandleExportBlueprint(TSharedPtr<class FJsonObject> Params);
 	FString HandleListSupportedTypes();
+
+	/** Command handlers — Widget Builder */
+	FString HandleCreateWidgetBlueprint(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddWidget(TSharedPtr<class FJsonObject> Params);
+	FString HandleRemoveWidget(TSharedPtr<class FJsonObject> Params);
+	FString HandleMoveWidget(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetWidgetProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetSlotProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetCanvasSlotLayout(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetWidgetProperties(TSharedPtr<class FJsonObject> Params);
+	FString HandleCompileAndSave(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetWidgetTree(TSharedPtr<class FJsonObject> Params);
+	FString HandleListWidgetClasses();
 
 	/** Create error response JSON */
 	FString CreateErrorResponse(const FString& ErrorMessage);
