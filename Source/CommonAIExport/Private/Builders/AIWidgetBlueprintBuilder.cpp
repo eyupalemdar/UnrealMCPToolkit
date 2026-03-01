@@ -171,6 +171,63 @@ bool UAIWidgetBlueprintBuilder::CompileAndSave(
 }
 
 // =============================================================================
+// BLUEPRINT REPARENTING
+// =============================================================================
+
+bool UAIWidgetBlueprintBuilder::ReparentBlueprint(
+	UWidgetBlueprint* WidgetBP,
+	UClass* NewParentClass)
+{
+	if (!WidgetBP)
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReparentBlueprint: WidgetBP is null"));
+		return false;
+	}
+
+	if (!NewParentClass)
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReparentBlueprint: NewParentClass is null"));
+		return false;
+	}
+
+	if (!NewParentClass->IsChildOf(UUserWidget::StaticClass()))
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReparentBlueprint: '%s' is not a UUserWidget subclass"),
+			*NewParentClass->GetName());
+		return false;
+	}
+
+	// Check if already the same parent
+	if (WidgetBP->ParentClass == NewParentClass)
+	{
+		UE_LOG(LogAIWidgetBuilder, Log, TEXT("ReparentBlueprint: '%s' already has parent '%s'"),
+			*WidgetBP->GetName(), *NewParentClass->GetName());
+		return true;
+	}
+
+	FString OldParentName = WidgetBP->ParentClass ? WidgetBP->ParentClass->GetName() : TEXT("None");
+
+	// Perform reparenting (mirrors UBlueprintEditorLibrary::ReparentBlueprint logic)
+	WidgetBP->ParentClass = NewParentClass;
+
+	FBlueprintEditorUtils::RefreshAllNodes(WidgetBP);
+	FBlueprintEditorUtils::MarkBlueprintAsModified(WidgetBP);
+
+	// Compile with delta serialization for safe reinstancing
+	EBlueprintCompileOptions CompileOptions =
+		EBlueprintCompileOptions::SkipSave
+		| EBlueprintCompileOptions::UseDeltaSerializationDuringReinstancing
+		| EBlueprintCompileOptions::SkipNewVariableDefaultsDetection;
+
+	FKismetEditorUtilities::CompileBlueprint(WidgetBP, CompileOptions);
+
+	UE_LOG(LogAIWidgetBuilder, Log, TEXT("ReparentBlueprint: '%s' reparented from '%s' to '%s'"),
+		*WidgetBP->GetName(), *OldParentName, *NewParentClass->GetName());
+
+	return true;
+}
+
+// =============================================================================
 // WIDGET TREE MANIPULATION
 // =============================================================================
 

@@ -187,6 +187,33 @@ def compile_and_save(asset_path: str) -> str:
 
 
 # =============================================================================
+# BLUEPRINT UTILITY
+# =============================================================================
+
+@mcp.tool()
+def reparent_blueprint(
+    asset_path: str,
+    new_parent_class: str
+) -> str:
+    """
+    Change the parent class of a Widget Blueprint.
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint to reparent,
+                   e.g. "/Game/UI/LoadingScreen/W_LoadingScreen_Kale"
+        new_parent_class: Full class path of the new parent class,
+                         e.g. "/Script/LyraGame.LyraLoadingScreenWidget"
+
+    Returns:
+        JSON with old_parent and new_parent on success.
+    """
+    return _format_response(_send_command("reparent_blueprint", {
+        "asset_path": asset_path,
+        "new_parent_class": new_parent_class,
+    }))
+
+
+# =============================================================================
 # WIDGET TREE MANIPULATION
 # =============================================================================
 

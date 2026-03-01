@@ -30,6 +30,9 @@ class FSocket;
  * - get_widget_tree: Get widget tree as JSON
  * - list_widget_classes: List available widget classes
  *
+ * Blueprint Utility commands:
+ * - reparent_blueprint: Change the parent class of a Blueprint
+ *
  * Material Builder commands:
  * - create_material: Create a new Material asset
  * - set_material_property: Set material domain/blend/shading
@@ -105,6 +108,9 @@ private:
 	FString HandleCompileAndSave(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetWidgetTree(TSharedPtr<class FJsonObject> Params);
 	FString HandleListWidgetClasses();
+
+	/** Command handlers — Blueprint Utility */
+	FString HandleReparentBlueprint(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Material Builder */
 	FString HandleCreateMaterial(TSharedPtr<class FJsonObject> Params);

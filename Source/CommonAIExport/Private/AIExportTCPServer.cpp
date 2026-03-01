@@ -413,6 +413,11 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 	{
 		return HandleListWidgetClasses();
 	}
+	// Blueprint Utility commands
+	else if (CommandType == TEXT("reparent_blueprint"))
+	{
+		return HandleReparentBlueprint(Params);
+	}
 	// Material Builder commands
 	else if (CommandType == TEXT("create_material"))
 	{
@@ -1165,6 +1170,78 @@ FString FAIExportTCPServer::HandleSetWidgetProperties(TSharedPtr<FJsonObject> Pa
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Set widget properties timed out"));
+	}
+	return Future.Get();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Blueprint Utility Command Handlers
+
+FString FAIExportTCPServer::HandleReparentBlueprint(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid())
+	{
+		return CreateErrorResponse(TEXT("Missing 'params' object"));
+	}
+
+	FString AssetPath;
+	FString NewParentClassPath;
+
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+	{
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	}
+	if (!Params->TryGetStringField(TEXT("new_parent_class"), NewParentClassPath))
+	{
+		return CreateErrorResponse(TEXT("Missing 'new_parent_class' parameter"));
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, NewParentClassPath, Promise, this]()
+	{
+		// Load the Widget Blueprint
+		UWidgetBlueprint* WBP = UAIWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Widget Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		// Resolve new parent class
+		UClass* NewParentClass = FindObject<UClass>(nullptr, *NewParentClassPath);
+		if (!NewParentClass)
+		{
+			NewParentClass = LoadObject<UClass>(nullptr, *NewParentClassPath);
+		}
+		if (!NewParentClass)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not find parent class: %s"), *NewParentClassPath)));
+			return;
+		}
+
+		FString OldParentName = WBP->ParentClass ? WBP->ParentClass->GetName() : TEXT("None");
+
+		// Perform reparenting
+		bool bSuccess = UAIWidgetBlueprintBuilder::ReparentBlueprint(WBP, NewParentClass);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Failed to reparent blueprint")));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetStringField(TEXT("old_parent"), OldParentName);
+		Data->SetStringField(TEXT("new_parent"), NewParentClass->GetName());
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady())
+	{
+		return CreateErrorResponse(TEXT("Reparent blueprint timed out"));
 	}
 	return Future.Get();
 }

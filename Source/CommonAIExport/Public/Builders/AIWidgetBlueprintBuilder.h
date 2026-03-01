@@ -161,6 +161,20 @@ public:
 		float AlignmentX = 0.f, float AlignmentY = 0.f);
 
 	// =========================================================================
+	// BLUEPRINT REPARENTING
+	// =========================================================================
+
+	/**
+	 * Change the parent class of a Widget Blueprint.
+	 * @param WidgetBP Target Widget Blueprint to reparent
+	 * @param NewParentClass New parent class (must be UUserWidget subclass)
+	 * @return true if reparenting succeeded
+	 */
+	static bool ReparentBlueprint(
+		UWidgetBlueprint* WidgetBP,
+		UClass* NewParentClass);
+
+	// =========================================================================
 	// UTILITY
 	// =========================================================================
 
