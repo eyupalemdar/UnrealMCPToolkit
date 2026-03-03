@@ -896,5 +896,100 @@ def get_material_instance_info(asset_path: str) -> str:
     return _format_response(_send_command("get_material_instance_info", {"asset_path": asset_path}))
 
 
+# =============================================================================
+# ASSET IMPORT
+# =============================================================================
+
+@mcp.tool()
+def import_texture(
+    source_path: str,
+    package_path: str,
+    asset_name: str = "",
+    compression: str = "UserInterface2D",
+    srgb: bool = True,
+    mip_gen: str = "NoMipmaps",
+    lod_group: str = "UI"
+) -> str:
+    """
+    Import a texture file from disk into the Unreal project.
+
+    Args:
+        source_path: Absolute path to the source image file (PNG, TGA, JPG, BMP, EXR)
+        package_path: Content path to import into, e.g. "/Game/UI/Kale/Textures"
+        asset_name: Asset name. If empty, derived from source filename.
+        compression: Compression setting:
+                    "Default" - General purpose
+                    "UserInterface2D" or "UI" - Best for UI textures (crisp, no artifacts)
+                    "NormalMap" - For normal maps
+                    "Masks" - For mask textures (no sRGB)
+                    "HDR" - For HDR textures
+                    "Grayscale" - For grayscale/displacement
+                    "Alpha" - For alpha channels
+        srgb: Enable sRGB color space (True for color textures, False for data textures)
+        mip_gen: Mipmap generation setting:
+                "NoMipmaps" - No mipmaps (best for UI)
+                "FromTextureGroup" - Use texture group default
+                "Sharpen" - Sharpen mipmaps
+                "Blur" - Blur mipmaps
+        lod_group: LOD/Texture group:
+                  "UI" - User Interface textures
+                  "World" - World textures
+                  "Character" - Character textures
+                  "Effects" - Effect textures
+                  "Lightmap" - Lightmaps
+                  "Shadowmap" - Shadowmaps
+
+    Returns:
+        JSON with asset_path, asset_name, width, height, format, and saved status.
+    """
+    params = {
+        "source_path": source_path,
+        "package_path": package_path,
+        "asset_name": asset_name,
+        "compression": compression,
+        "srgb": srgb,
+        "mip_gen": mip_gen,
+        "lod_group": lod_group,
+    }
+    return _format_response(_send_command("import_texture", params))
+
+
+@mcp.tool()
+def import_font(
+    package_path: str,
+    font_name: str,
+    faces: list[dict],
+    hinting: str = "Auto"
+) -> str:
+    """
+    Import font files (TTF/OTF) and create a Composite Font asset.
+
+    Creates individual UFontFace assets for each weight/style, then
+    creates a composite UFont that ties them all together.
+
+    Args:
+        package_path: Content path for font assets, e.g. "/Game/UI/Kale/Fonts/Inter"
+        font_name: Name for the composite font, e.g. "Inter"
+        faces: List of font face entries. Each entry is a dict with:
+              - "source_path": Absolute path to TTF/OTF file
+              - "name": Weight/style name (e.g. "Regular", "Bold", "Medium", "SemiBold")
+              Example: [
+                  {"source_path": "D:/Fonts/Inter-Regular.ttf", "name": "Regular"},
+                  {"source_path": "D:/Fonts/Inter-Bold.ttf", "name": "Bold"}
+              ]
+        hinting: Font hinting mode: "Auto" (default), "AutoLight", "None"
+
+    Returns:
+        JSON with font_asset_path, font_name, face_count, and individual face asset paths.
+    """
+    params = {
+        "package_path": package_path,
+        "font_name": font_name,
+        "faces": faces,
+        "hinting": hinting,
+    }
+    return _format_response(_send_command("import_font", params))
+
+
 if __name__ == "__main__":
     mcp.run()

@@ -49,6 +49,10 @@ class FSocket;
  * - set_instance_parameter: Set scalar/vector/texture parameter
  * - save_material_instance: Save MIC to disk
  * - get_material_instance_info: Get MIC info as JSON
+ *
+ * Asset Import commands:
+ * - import_texture: Import a texture file from disk into Content Browser
+ * - import_font: Import font files (TTF/OTF) and create a Composite Font asset
  */
 class FAIExportTCPServer : public FRunnable
 {
@@ -128,6 +132,10 @@ private:
 	FString HandleSetInstanceParameter(TSharedPtr<class FJsonObject> Params);
 	FString HandleSaveMaterialInstance(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetMaterialInstanceInfo(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — Asset Import */
+	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);
+	FString HandleImportFont(TSharedPtr<class FJsonObject> Params);
 
 	/** Create error response JSON */
 	FString CreateErrorResponse(const FString& ErrorMessage);

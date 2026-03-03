@@ -28,6 +28,14 @@
 #include "Async/Async.h"
 #include "HAL/RunnableThread.h"
 
+#include "Factories/TextureFactory.h"
+#include "Engine/Texture2D.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "UObject/SavePackage.h"
+
+#include "Engine/Font.h"
+#include "Engine/FontFace.h"
+
 // Static instance
 TUniquePtr<FAIExportTCPServer> FAIExportTCPServerManager::Instance;
 
@@ -478,6 +486,15 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 	else if (CommandType == TEXT("get_material_instance_info"))
 	{
 		return HandleGetMaterialInstanceInfo(Params);
+	}
+	// Asset Import commands
+	else if (CommandType == TEXT("import_texture"))
+	{
+		return HandleImportTexture(Params);
+	}
+	else if (CommandType == TEXT("import_font"))
+	{
+		return HandleImportFont(Params);
 	}
 	else
 	{
@@ -1859,5 +1876,361 @@ FString FAIExportTCPServer::HandleGetMaterialInstanceInfo(TSharedPtr<FJsonObject
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get material instance info timed out"));
+	return Future.Get();
+}
+
+// =============================================================================
+// Asset Import Commands
+// =============================================================================
+
+FString FAIExportTCPServer::HandleImportTexture(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString SourcePath, PackagePath, AssetName;
+	FString Compression = TEXT("UserInterface2D");
+	FString MipGen = TEXT("NoMipmaps");
+	FString LODGroup = TEXT("UI");
+	bool bSRGB = true;
+
+	if (!Params->TryGetStringField(TEXT("source_path"), SourcePath))
+		return CreateErrorResponse(TEXT("Missing 'source_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("package_path"), PackagePath))
+		return CreateErrorResponse(TEXT("Missing 'package_path' parameter"));
+
+	Params->TryGetStringField(TEXT("asset_name"), AssetName);
+	Params->TryGetStringField(TEXT("compression"), Compression);
+	Params->TryGetStringField(TEXT("mip_gen"), MipGen);
+	Params->TryGetStringField(TEXT("lod_group"), LODGroup);
+	Params->TryGetBoolField(TEXT("srgb"), bSRGB);
+
+	// Normalize path separators
+	SourcePath.ReplaceInline(TEXT("\\"), TEXT("/"));
+
+	// Verify source file exists
+	if (!FPaths::FileExists(SourcePath))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Source file not found: %s"), *SourcePath));
+	}
+
+	// Derive asset name from filename if not provided
+	if (AssetName.IsEmpty())
+	{
+		AssetName = FPaths::GetBaseFilename(SourcePath);
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [SourcePath, PackagePath, AssetName, Compression, MipGen, LODGroup, bSRGB, Promise, this]()
+	{
+		// Build full package name
+		FString FullPackagePath = PackagePath / AssetName;
+
+		// Create package
+		UPackage* Package = CreatePackage(*FullPackagePath);
+		if (!Package)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to create package: %s"), *FullPackagePath)));
+			return;
+		}
+		Package->FullyLoad();
+
+		// Read file data
+		TArray<uint8> FileData;
+		if (!FFileHelper::LoadFileToArray(FileData, *SourcePath))
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to read file: %s"), *SourcePath)));
+			return;
+		}
+
+		// Create texture factory
+		UTextureFactory* TextureFactory = NewObject<UTextureFactory>();
+		TextureFactory->AddToRoot(); // Prevent GC during import
+		TextureFactory->SuppressImportOverwriteDialog();
+
+		// Import
+		const uint8* DataPtr = FileData.GetData();
+		UObject* ImportedObject = TextureFactory->FactoryCreateBinary(
+			UTexture2D::StaticClass(),
+			Package,
+			*AssetName,
+			RF_Public | RF_Standalone,
+			nullptr,
+			*FPaths::GetExtension(SourcePath),
+			DataPtr,
+			DataPtr + FileData.Num(),
+			GWarn
+		);
+
+		TextureFactory->RemoveFromRoot();
+
+		UTexture2D* Texture = Cast<UTexture2D>(ImportedObject);
+		if (!Texture)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Failed to import texture")));
+			return;
+		}
+
+		// Apply compression settings
+		if (Compression == TEXT("Default"))
+			Texture->CompressionSettings = TC_Default;
+		else if (Compression == TEXT("NormalMap") || Compression == TEXT("Normalmap"))
+			Texture->CompressionSettings = TC_Normalmap;
+		else if (Compression == TEXT("Masks"))
+			Texture->CompressionSettings = TC_Masks;
+		else if (Compression == TEXT("Grayscale") || Compression == TEXT("Displacementmap"))
+			Texture->CompressionSettings = TC_Displacementmap;
+		else if (Compression == TEXT("HDR"))
+			Texture->CompressionSettings = TC_HDR;
+		else if (Compression == TEXT("UserInterface2D") || Compression == TEXT("UI"))
+			Texture->CompressionSettings = TC_EditorIcon;
+		else if (Compression == TEXT("Alpha"))
+			Texture->CompressionSettings = TC_Alpha;
+		else
+			Texture->CompressionSettings = TC_EditorIcon; // Default to UI
+
+		// Apply sRGB
+		Texture->SRGB = bSRGB;
+
+		// Apply MipGen settings
+		if (MipGen == TEXT("NoMipmaps"))
+			Texture->MipGenSettings = TMGS_NoMipmaps;
+		else if (MipGen == TEXT("FromTextureGroup"))
+			Texture->MipGenSettings = TMGS_FromTextureGroup;
+		else if (MipGen == TEXT("Sharpen0"))
+			Texture->MipGenSettings = TMGS_Sharpen0;
+		else if (MipGen == TEXT("Sharpen"))
+			Texture->MipGenSettings = TMGS_Sharpen0;
+		else if (MipGen == TEXT("Blur"))
+			Texture->MipGenSettings = TMGS_Blur1;
+		else
+			Texture->MipGenSettings = TMGS_NoMipmaps;
+
+		// Apply LOD Group
+		if (LODGroup == TEXT("World"))
+			Texture->LODGroup = TEXTUREGROUP_World;
+		else if (LODGroup == TEXT("WorldNormalMap"))
+			Texture->LODGroup = TEXTUREGROUP_WorldNormalMap;
+		else if (LODGroup == TEXT("WorldSpecular"))
+			Texture->LODGroup = TEXTUREGROUP_WorldSpecular;
+		else if (LODGroup == TEXT("Character"))
+			Texture->LODGroup = TEXTUREGROUP_Character;
+		else if (LODGroup == TEXT("CharacterNormalMap"))
+			Texture->LODGroup = TEXTUREGROUP_CharacterNormalMap;
+		else if (LODGroup == TEXT("Effects"))
+			Texture->LODGroup = TEXTUREGROUP_Effects;
+		else if (LODGroup == TEXT("UI"))
+			Texture->LODGroup = TEXTUREGROUP_UI;
+		else if (LODGroup == TEXT("Lightmap"))
+			Texture->LODGroup = TEXTUREGROUP_Lightmap;
+		else if (LODGroup == TEXT("Shadowmap"))
+			Texture->LODGroup = TEXTUREGROUP_Shadowmap;
+		else
+			Texture->LODGroup = TEXTUREGROUP_UI;
+
+		// Apply changes and save
+		Texture->PostEditChange();
+		Texture->UpdateResource();
+		Package->MarkPackageDirty();
+
+		// Save the package
+		FString PackageFilename = FPackageName::LongPackageNameToFilename(FullPackagePath, FPackageName::GetAssetPackageExtension());
+		FSavePackageArgs SaveArgs;
+		SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+		bool bSaved = UPackage::SavePackage(Package, Texture, *PackageFilename, SaveArgs);
+
+		// Notify asset registry
+		FAssetRegistryModule::AssetCreated(Texture);
+
+		// Build response
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), Texture->GetPathName());
+		Data->SetStringField(TEXT("asset_name"), AssetName);
+		Data->SetNumberField(TEXT("width"), Texture->GetSizeX());
+		Data->SetNumberField(TEXT("height"), Texture->GetSizeY());
+		Data->SetStringField(TEXT("format"), UEnum::GetValueAsString(Texture->GetPixelFormat()));
+		Data->SetBoolField(TEXT("saved"), bSaved);
+
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Import texture timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleImportFont(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString PackagePath, FontName;
+	FString Hinting = TEXT("Auto");
+
+	if (!Params->TryGetStringField(TEXT("package_path"), PackagePath))
+		return CreateErrorResponse(TEXT("Missing 'package_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("font_name"), FontName))
+		return CreateErrorResponse(TEXT("Missing 'font_name' parameter"));
+
+	Params->TryGetStringField(TEXT("hinting"), Hinting);
+
+	// Parse faces array
+	const TArray<TSharedPtr<FJsonValue>>* FacesArray = nullptr;
+	if (!Params->TryGetArrayField(TEXT("faces"), FacesArray) || !FacesArray || FacesArray->Num() == 0)
+	{
+		return CreateErrorResponse(TEXT("Missing or empty 'faces' array. Each entry needs 'source_path' and 'name' (e.g. 'Regular', 'Bold')."));
+	}
+
+	// Validate all face entries before processing
+	struct FFaceEntry
+	{
+		FString SourcePath;
+		FString Name;
+	};
+	TArray<FFaceEntry> Faces;
+
+	for (const auto& FaceValue : *FacesArray)
+	{
+		const TSharedPtr<FJsonObject>* FaceObj = nullptr;
+		if (!FaceValue->TryGetObject(FaceObj) || !FaceObj || !(*FaceObj).IsValid())
+		{
+			return CreateErrorResponse(TEXT("Each face entry must be a JSON object with 'source_path' and 'name'"));
+		}
+
+		FFaceEntry Entry;
+		if (!(*FaceObj)->TryGetStringField(TEXT("source_path"), Entry.SourcePath))
+			return CreateErrorResponse(TEXT("Face entry missing 'source_path'"));
+		if (!(*FaceObj)->TryGetStringField(TEXT("name"), Entry.Name))
+			return CreateErrorResponse(TEXT("Face entry missing 'name' (e.g. 'Regular', 'Bold', 'Medium')"));
+
+		Entry.SourcePath.ReplaceInline(TEXT("\\"), TEXT("/"));
+
+		if (!FPaths::FileExists(Entry.SourcePath))
+			return CreateErrorResponse(FString::Printf(TEXT("Font file not found: %s"), *Entry.SourcePath));
+
+		Faces.Add(MoveTemp(Entry));
+	}
+
+	// Resolve hinting enum
+	EFontHinting HintingEnum = EFontHinting::Auto;
+	if (Hinting == TEXT("None"))
+		HintingEnum = EFontHinting::None;
+	else if (Hinting == TEXT("Auto"))
+		HintingEnum = EFontHinting::Auto;
+	else if (Hinting == TEXT("AutoLight"))
+		HintingEnum = EFontHinting::AutoLight;
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [PackagePath, FontName, Faces, HintingEnum, Promise, this]()
+	{
+		TArray<TSharedPtr<FJsonObject>> FaceResults;
+
+		// Step 1: Create UFontFace for each TTF/OTF
+		TArray<UFontFace*> FontFaceAssets;
+		for (const auto& Face : Faces)
+		{
+			FString FaceName = FontName + TEXT("-") + Face.Name;
+			FString FacePackagePath = PackagePath / FaceName;
+
+			UPackage* FacePackage = CreatePackage(*FacePackagePath);
+			if (!FacePackage)
+			{
+				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to create package for font face: %s"), *FaceName)));
+				return;
+			}
+			FacePackage->FullyLoad();
+
+			// Read font file data
+			TArray<uint8> FontData;
+			if (!FFileHelper::LoadFileToArray(FontData, *Face.SourcePath))
+			{
+				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to read font file: %s"), *Face.SourcePath)));
+				return;
+			}
+
+			// Create UFontFace
+			UFontFace* FontFace = NewObject<UFontFace>(FacePackage, *FaceName, RF_Public | RF_Standalone);
+			FontFace->SourceFilename = Face.SourcePath;
+			FontFace->Hinting = HintingEnum;
+			FontFace->LoadingPolicy = EFontLoadingPolicy::Inline;
+
+			// Load font data into the asset
+			FontFace->FontFaceData = MakeShared<FFontFaceData, ESPMode::ThreadSafe>(MoveTemp(FontData));
+
+			FontFace->PostEditChange();
+			FacePackage->MarkPackageDirty();
+
+			// Save FontFace
+			FString FaceFilename = FPackageName::LongPackageNameToFilename(FacePackagePath, FPackageName::GetAssetPackageExtension());
+			FSavePackageArgs SaveArgs;
+			SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+			UPackage::SavePackage(FacePackage, FontFace, *FaceFilename, SaveArgs);
+
+			FAssetRegistryModule::AssetCreated(FontFace);
+			FontFaceAssets.Add(FontFace);
+
+			// Track result
+			TSharedPtr<FJsonObject> FaceResult = MakeShared<FJsonObject>();
+			FaceResult->SetStringField(TEXT("name"), Face.Name);
+			FaceResult->SetStringField(TEXT("asset_path"), FontFace->GetPathName());
+			FaceResults.Add(FaceResult);
+		}
+
+		// Step 2: Create Composite UFont
+		FString CompositePath = PackagePath / FontName;
+		UPackage* FontPackage = CreatePackage(*CompositePath);
+		if (!FontPackage)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Failed to create composite font package")));
+			return;
+		}
+		FontPackage->FullyLoad();
+
+		UFont* CompositeFont = NewObject<UFont>(FontPackage, *FontName, RF_Public | RF_Standalone);
+		CompositeFont->FontCacheType = EFontCacheType::Runtime;
+
+		// Build typeface entries
+		FTypeface& DefaultTypeface = CompositeFont->CompositeFont.DefaultTypeface;
+		DefaultTypeface.Fonts.Empty();
+
+		for (int32 i = 0; i < FontFaceAssets.Num(); ++i)
+		{
+			FTypefaceEntry& Entry = DefaultTypeface.Fonts.AddDefaulted_GetRef();
+			Entry.Name = *Faces[i].Name;
+			Entry.Font = FFontData(FontFaceAssets[i]);
+		}
+
+		CompositeFont->PostEditChange();
+		FontPackage->MarkPackageDirty();
+
+		// Save composite font
+		FString FontFilename = FPackageName::LongPackageNameToFilename(CompositePath, FPackageName::GetAssetPackageExtension());
+		FSavePackageArgs SaveArgs;
+		SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+		bool bSaved = UPackage::SavePackage(FontPackage, CompositeFont, *FontFilename, SaveArgs);
+
+		FAssetRegistryModule::AssetCreated(CompositeFont);
+
+		// Build response
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("font_asset_path"), CompositeFont->GetPathName());
+		Data->SetStringField(TEXT("font_name"), FontName);
+		Data->SetNumberField(TEXT("face_count"), FontFaceAssets.Num());
+		Data->SetBoolField(TEXT("saved"), bSaved);
+
+		TArray<TSharedPtr<FJsonValue>> FaceResultValues;
+		for (const auto& FR : FaceResults)
+		{
+			FaceResultValues.Add(MakeShared<FJsonValueObject>(FR));
+		}
+		Data->SetArrayField(TEXT("faces"), FaceResultValues);
+
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Import font timed out"));
 	return Future.Get();
 }
