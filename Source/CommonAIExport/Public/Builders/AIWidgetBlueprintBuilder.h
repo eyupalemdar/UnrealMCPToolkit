@@ -161,6 +161,76 @@ public:
 		float AlignmentX = 0.f, float AlignmentY = 0.f);
 
 	// =========================================================================
+	// CDO (CLASS DEFAULT OBJECT) PROPERTIES
+	// =========================================================================
+
+	/**
+	 * Set a CDO (Class Default Object) property on a Blueprint.
+	 * Works on the Blueprint's generated class CDO, not widget instances.
+	 * Use for properties like bSelectable, bIsFocusable, ClickMethod, etc.
+	 * @param WidgetBP Target Widget Blueprint
+	 * @param PropertyName Property name (supports dot-notation for structs)
+	 * @param Value String value in ImportText format
+	 * @return true if property was set successfully
+	 */
+	static bool SetCDOProperty(
+		UWidgetBlueprint* WidgetBP,
+		const FString& PropertyName,
+		const FString& Value);
+
+	/**
+	 * Get CDO properties as JSON for inspection.
+	 * Returns own properties (not inherited from engine base classes).
+	 */
+	static TSharedPtr<FJsonObject> GetCDOPropertiesAsJson(UWidgetBlueprint* WidgetBP);
+
+	// =========================================================================
+	// ARRAY PROPERTY SUPPORT
+	// =========================================================================
+
+	/**
+	 * Add an element to an array property on an object and set its sub-property values.
+	 * @param Object Target object (CDO, widget, etc.)
+	 * @param ArrayPropertyName Name of the TArray property
+	 * @param ElementValues Map of sub-property name → ImportText value
+	 * @return Index of the newly added element, or -1 on failure
+	 */
+	static int32 AddArrayElement(
+		UObject* Object,
+		const FString& ArrayPropertyName,
+		const TMap<FString, FString>& ElementValues);
+
+	/**
+	 * Remove an element from an array property by index.
+	 */
+	static bool RemoveArrayElement(
+		UObject* Object,
+		const FString& ArrayPropertyName,
+		int32 Index);
+
+	/**
+	 * Get array property length.
+	 */
+	static int32 GetArrayLength(
+		UObject* Object,
+		const FString& ArrayPropertyName);
+
+	/**
+	 * Set a sub-property on a specific array element.
+	 * @param Object Target object
+	 * @param ArrayPropertyName Array property name
+	 * @param Index Element index
+	 * @param SubPropertyName Sub-property within the element (supports dot-notation)
+	 * @param Value ImportText value
+	 */
+	static bool SetArrayElementProperty(
+		UObject* Object,
+		const FString& ArrayPropertyName,
+		int32 Index,
+		const FString& SubPropertyName,
+		const FString& Value);
+
+	// =========================================================================
 	// BLUEPRINT REPARENTING
 	// =========================================================================
 

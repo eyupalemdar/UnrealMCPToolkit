@@ -991,5 +991,591 @@ def import_font(
     return _format_response(_send_command("import_font", params))
 
 
+# =============================================================================
+# CDO (CLASS DEFAULT OBJECT) PROPERTIES
+# =============================================================================
+
+@mcp.tool()
+def set_cdo_property(
+    asset_path: str,
+    property_name: str,
+    value: str
+) -> str:
+    """
+    Set a Class Default Object property on a Blueprint.
+
+    Works on the Blueprint's generated class CDO, not widget instances in the tree.
+    Use for properties like bSelectable, bIsFocusable, ClickMethod, MinWidth, etc.
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint
+        property_name: CDO property name (supports dot-notation for structs)
+        value: Value in ImportText format
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("set_cdo_property", {
+        "asset_path": asset_path,
+        "property_name": property_name,
+        "value": value,
+    }))
+
+
+@mcp.tool()
+def get_cdo_properties(asset_path: str) -> str:
+    """
+    Get CDO properties of a Blueprint as JSON.
+
+    Returns:
+        JSON with property name -> value pairs.
+    """
+    return _format_response(_send_command("get_cdo_properties", {
+        "asset_path": asset_path,
+    }))
+
+
+# =============================================================================
+# CDO ARRAY PROPERTIES
+# =============================================================================
+
+@mcp.tool()
+def add_cdo_array_element(
+    asset_path: str,
+    array_name: str,
+    element_values: str = "{}"
+) -> str:
+    """
+    Add an element to a CDO array property.
+
+    For struct arrays (e.g. PreregisteredTabInfoArray), pass element_values as
+    a JSON object with sub-property names and their ImportText values.
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint
+        array_name: Name of the TArray property on the CDO
+        element_values: JSON object string of sub-property name -> value pairs.
+                       Example: '{"TabNameID": "Play", "TabText": "NSLOCTEXT(\\"\\", \\"\\", \\"PLAY\\")"}'
+
+    Returns:
+        JSON with the index of the newly added element.
+    """
+    return _format_response(_send_command("add_cdo_array_element", {
+        "asset_path": asset_path,
+        "array_name": array_name,
+        "element_values": element_values,
+    }))
+
+
+@mcp.tool()
+def set_cdo_array_element_property(
+    asset_path: str,
+    array_name: str,
+    index: int,
+    property_name: str,
+    value: str
+) -> str:
+    """
+    Set a sub-property on a specific CDO array element.
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint
+        array_name: Name of the TArray property
+        index: Element index (0-based)
+        property_name: Sub-property name within the element (supports dot-notation)
+        value: Value in ImportText format
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("set_cdo_array_element_property", {
+        "asset_path": asset_path,
+        "array_name": array_name,
+        "index": index,
+        "property_name": property_name,
+        "value": value,
+    }))
+
+
+@mcp.tool()
+def remove_cdo_array_element(
+    asset_path: str,
+    array_name: str,
+    index: int
+) -> str:
+    """
+    Remove an element from a CDO array property by index.
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint
+        array_name: Name of the TArray property
+        index: Element index to remove (0-based)
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("remove_cdo_array_element", {
+        "asset_path": asset_path,
+        "array_name": array_name,
+        "index": index,
+    }))
+
+
+@mcp.tool()
+def get_cdo_array_length(
+    asset_path: str,
+    array_name: str
+) -> str:
+    """
+    Get the length of a CDO array property.
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint
+        array_name: Name of the TArray property
+
+    Returns:
+        JSON with array_name and length.
+    """
+    return _format_response(_send_command("get_cdo_array_length", {
+        "asset_path": asset_path,
+        "array_name": array_name,
+    }))
+
+
+# =============================================================================
+# BLUEPRINT GRAPH MANIPULATION
+# =============================================================================
+
+@mcp.tool()
+def add_event_node(
+    asset_path: str,
+    event_name: str,
+    node_name: str,
+    pos_x: int = 0,
+    pos_y: int = 0
+) -> str:
+    """
+    Add an event override node to the Blueprint's event graph.
+
+    Creates a node that overrides a parent class event (e.g. BP_OnSelected,
+    BP_OnDeselected, BP_OnHovered, ReceiveBeginPlay, HandleTabCreation).
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        event_name: Function name to override (e.g. "BP_OnSelected", "ReceiveBeginPlay")
+        node_name: Logical name for later reference in connect_pins etc.
+        pos_x: X position in graph
+        pos_y: Y position in graph
+
+    Returns:
+        JSON with node_name and event_name on success.
+    """
+    return _format_response(_send_command("add_event_node", {
+        "asset_path": asset_path,
+        "event_name": event_name,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+    }))
+
+
+@mcp.tool()
+def add_custom_event(
+    asset_path: str,
+    event_name: str,
+    node_name: str,
+    pos_x: int = 0,
+    pos_y: int = 0
+) -> str:
+    """
+    Add a Custom Event node to the Blueprint's event graph.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        event_name: Custom event display name
+        node_name: Logical name for later reference
+        pos_x: X position in graph
+        pos_y: Y position in graph
+
+    Returns:
+        JSON with node_name and event_name.
+    """
+    return _format_response(_send_command("add_custom_event", {
+        "asset_path": asset_path,
+        "event_name": event_name,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+    }))
+
+
+@mcp.tool()
+def add_function_call(
+    asset_path: str,
+    function_name: str,
+    node_name: str,
+    target_class: str = "",
+    pos_x: int = 0,
+    pos_y: int = 0
+) -> str:
+    """
+    Add a function call node to the Blueprint's event graph.
+
+    Searches for the function in: target_class (if given), Blueprint parent class
+    hierarchy, and common UMG/CommonUI classes.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        function_name: Function to call (e.g. "SetText", "SetVisibility",
+                       "SetColorAndOpacity", "AddChildToHorizontalBox")
+        node_name: Logical name for later reference
+        target_class: Optional class path to search (e.g. "/Script/UMG.TextBlock")
+        pos_x: X position in graph
+        pos_y: Y position in graph
+
+    Returns:
+        JSON with node_name and function_name.
+    """
+    params = {
+        "asset_path": asset_path,
+        "function_name": function_name,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+    }
+    if target_class:
+        params["target_class"] = target_class
+    return _format_response(_send_command("add_function_call", params))
+
+
+@mcp.tool()
+def add_variable_get_node(
+    asset_path: str,
+    variable_name: str,
+    node_name: str,
+    pos_x: int = 0,
+    pos_y: int = 0
+) -> str:
+    """
+    Add a Variable Get node to the graph.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        variable_name: Blueprint variable name (e.g. "ButtonTextBlock")
+        node_name: Logical name for later reference
+        pos_x: X position in graph
+        pos_y: Y position in graph
+
+    Returns:
+        JSON with node_name and variable_name.
+    """
+    return _format_response(_send_command("add_variable_get_node", {
+        "asset_path": asset_path,
+        "variable_name": variable_name,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+    }))
+
+
+@mcp.tool()
+def add_variable_set_node(
+    asset_path: str,
+    variable_name: str,
+    node_name: str,
+    pos_x: int = 0,
+    pos_y: int = 0
+) -> str:
+    """
+    Add a Variable Set node to the graph.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        variable_name: Blueprint variable name
+        node_name: Logical name for later reference
+        pos_x: X position in graph
+        pos_y: Y position in graph
+
+    Returns:
+        JSON with node_name and variable_name.
+    """
+    return _format_response(_send_command("add_variable_set_node", {
+        "asset_path": asset_path,
+        "variable_name": variable_name,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+    }))
+
+
+@mcp.tool()
+def add_make_struct_node(
+    asset_path: str,
+    struct_name: str,
+    node_name: str,
+    pos_x: int = 0,
+    pos_y: int = 0
+) -> str:
+    """
+    Add a Make Struct node to the graph.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        struct_name: Struct type name (e.g. "LinearColor", "Vector", "SlateFontInfo")
+        node_name: Logical name for later reference
+        pos_x: X position in graph
+        pos_y: Y position in graph
+
+    Returns:
+        JSON with node_name and struct_name.
+    """
+    return _format_response(_send_command("add_make_struct_node", {
+        "asset_path": asset_path,
+        "struct_name": struct_name,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+    }))
+
+
+@mcp.tool()
+def add_branch_node(
+    asset_path: str,
+    node_name: str,
+    pos_x: int = 0,
+    pos_y: int = 0
+) -> str:
+    """
+    Add a Branch (if/else) node to the graph.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        node_name: Logical name for later reference
+        pos_x: X position in graph
+        pos_y: Y position in graph
+
+    Returns:
+        JSON with node_name.
+    """
+    return _format_response(_send_command("add_branch_node", {
+        "asset_path": asset_path,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+    }))
+
+
+@mcp.tool()
+def connect_pins(
+    asset_path: str,
+    from_node: str,
+    from_pin: str,
+    to_node: str,
+    to_pin: str
+) -> str:
+    """
+    Connect an output pin to an input pin between two nodes.
+
+    Uses logical node names (set when creating nodes). Pin names support
+    aliases: "exec"/"execute"/"then" for execution pins, "self"/"target" for self pins.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        from_node: Source node logical name
+        from_pin: Output pin name (e.g. "then", "ReturnValue", "output")
+        to_node: Target node logical name
+        to_pin: Input pin name (e.g. "execute", "self", "InText", "NewVisibility")
+
+    Returns:
+        JSON with connection details.
+    """
+    return _format_response(_send_command("connect_pins", {
+        "asset_path": asset_path,
+        "from_node": from_node,
+        "from_pin": from_pin,
+        "to_node": to_node,
+        "to_pin": to_pin,
+    }))
+
+
+@mcp.tool()
+def set_pin_default(
+    asset_path: str,
+    node_name: str,
+    pin_name: str,
+    default_value: str
+) -> str:
+    """
+    Set a pin's default value (for unconnected input pins).
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        node_name: Target node logical name
+        pin_name: Pin name on the node
+        default_value: Value as string (ImportText format)
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("set_pin_default", {
+        "asset_path": asset_path,
+        "node_name": node_name,
+        "pin_name": pin_name,
+        "default_value": default_value,
+    }))
+
+
+@mcp.tool()
+def remove_graph_node(asset_path: str, node_name: str) -> str:
+    """
+    Remove a node from the Blueprint graph by its logical name.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        node_name: Logical name of the node to remove
+
+    Returns:
+        JSON with removal confirmation.
+    """
+    return _format_response(_send_command("remove_graph_node", {
+        "asset_path": asset_path,
+        "node_name": node_name,
+    }))
+
+
+@mcp.tool()
+def get_graph(asset_path: str, graph_name: str = "EventGraph") -> str:
+    """
+    Get a Blueprint graph as JSON (nodes + connections).
+
+    Returns all nodes with their pins, connections, positions, and AI names.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        graph_name: Graph name (default: "EventGraph")
+
+    Returns:
+        JSON with nodes array, each containing pins and connections.
+    """
+    return _format_response(_send_command("get_graph", {
+        "asset_path": asset_path,
+        "graph_name": graph_name,
+    }))
+
+
+@mcp.tool()
+def list_graphs(asset_path: str) -> str:
+    """
+    List all graphs in a Blueprint.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+
+    Returns:
+        JSON with graphs array of names.
+    """
+    return _format_response(_send_command("list_graphs", {
+        "asset_path": asset_path,
+    }))
+
+
+# =============================================================================
+# BLUEPRINT VARIABLES
+# =============================================================================
+
+@mcp.tool()
+def add_variable(
+    asset_path: str,
+    var_name: str,
+    var_type: str,
+    instance_editable: bool = False,
+    category: str = ""
+) -> str:
+    """
+    Add a member variable to a Blueprint.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        var_name: Variable name
+        var_type: Type string. Supported types:
+                 - Primitives: "bool", "int", "float", "double", "byte"
+                 - Strings: "String", "Name", "Text"
+                 - Structs: "Vector", "Rotator", "Transform", "LinearColor"
+                 - Objects: "/Script/UMG.TextBlock" (class path for object refs)
+        instance_editable: Expose to Details panel in editor (default: False)
+        category: Optional variable category name
+
+    Returns:
+        JSON with var_name and var_type.
+    """
+    params = {
+        "asset_path": asset_path,
+        "var_name": var_name,
+        "var_type": var_type,
+        "instance_editable": instance_editable,
+    }
+    if category:
+        params["category"] = category
+    return _format_response(_send_command("add_variable", params))
+
+
+@mcp.tool()
+def set_variable_default(
+    asset_path: str,
+    var_name: str,
+    default_value: str
+) -> str:
+    """
+    Set a Blueprint variable's default value.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        var_name: Variable name
+        default_value: Default value as string
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("set_variable_default", {
+        "asset_path": asset_path,
+        "var_name": var_name,
+        "default_value": default_value,
+    }))
+
+
+@mcp.tool()
+def remove_variable(asset_path: str, var_name: str) -> str:
+    """
+    Remove a variable from a Blueprint.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        var_name: Variable name to remove
+
+    Returns:
+        JSON with removal confirmation.
+    """
+    return _format_response(_send_command("remove_variable", {
+        "asset_path": asset_path,
+        "var_name": var_name,
+    }))
+
+
+@mcp.tool()
+def get_variables(asset_path: str) -> str:
+    """
+    Get all Blueprint variables as JSON.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+
+    Returns:
+        JSON with variables array containing name, type, default_value, category.
+    """
+    return _format_response(_send_command("get_variables", {
+        "asset_path": asset_path,
+    }))
+
+
 if __name__ == "__main__":
     mcp.run()

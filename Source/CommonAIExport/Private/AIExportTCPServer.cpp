@@ -4,6 +4,8 @@
 #include "AIExportFunctionLibrary.h"
 #include "Builders/AIWidgetBlueprintBuilder.h"
 #include "Builders/AIMaterialBuilder.h"
+#include "Builders/AIBlueprintGraphBuilder.h"
+#include "Kismet2/KismetEditorUtilities.h"
 #include "CommonAIExportModule.h"
 
 #include "Materials/Material.h"
@@ -420,6 +422,102 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 	else if (CommandType == TEXT("list_widget_classes"))
 	{
 		return HandleListWidgetClasses();
+	}
+	// CDO Property commands
+	else if (CommandType == TEXT("set_cdo_property"))
+	{
+		return HandleSetCDOProperty(Params);
+	}
+	else if (CommandType == TEXT("get_cdo_properties"))
+	{
+		return HandleGetCDOProperties(Params);
+	}
+	// CDO Array commands
+	else if (CommandType == TEXT("add_cdo_array_element"))
+	{
+		return HandleAddCDOArrayElement(Params);
+	}
+	else if (CommandType == TEXT("set_cdo_array_element_property"))
+	{
+		return HandleSetCDOArrayElementProperty(Params);
+	}
+	else if (CommandType == TEXT("remove_cdo_array_element"))
+	{
+		return HandleRemoveCDOArrayElement(Params);
+	}
+	else if (CommandType == TEXT("get_cdo_array_length"))
+	{
+		return HandleGetCDOArrayLength(Params);
+	}
+	// Blueprint Graph commands
+	else if (CommandType == TEXT("add_event_node"))
+	{
+		return HandleAddEventNode(Params);
+	}
+	else if (CommandType == TEXT("add_custom_event"))
+	{
+		return HandleAddCustomEvent(Params);
+	}
+	else if (CommandType == TEXT("add_function_call"))
+	{
+		return HandleAddFunctionCallNode(Params);
+	}
+	else if (CommandType == TEXT("add_variable_get_node"))
+	{
+		return HandleAddVariableGetNode(Params);
+	}
+	else if (CommandType == TEXT("add_variable_set_node"))
+	{
+		return HandleAddVariableSetNode(Params);
+	}
+	else if (CommandType == TEXT("add_make_struct_node"))
+	{
+		return HandleAddMakeStructNode(Params);
+	}
+	else if (CommandType == TEXT("add_branch_node"))
+	{
+		return HandleAddBranchNode(Params);
+	}
+	else if (CommandType == TEXT("add_call_parent_function"))
+	{
+		return HandleAddCallParentFunction(Params);
+	}
+	else if (CommandType == TEXT("connect_pins"))
+	{
+		return HandleConnectPins(Params);
+	}
+	else if (CommandType == TEXT("set_pin_default"))
+	{
+		return HandleSetPinDefault(Params);
+	}
+	else if (CommandType == TEXT("remove_graph_node"))
+	{
+		return HandleRemoveGraphNode(Params);
+	}
+	else if (CommandType == TEXT("get_graph"))
+	{
+		return HandleGetGraph(Params);
+	}
+	else if (CommandType == TEXT("list_graphs"))
+	{
+		return HandleListGraphs(Params);
+	}
+	// Blueprint Variable commands
+	else if (CommandType == TEXT("add_variable"))
+	{
+		return HandleAddVariable(Params);
+	}
+	else if (CommandType == TEXT("set_variable_default"))
+	{
+		return HandleSetVariableDefault(Params);
+	}
+	else if (CommandType == TEXT("remove_variable"))
+	{
+		return HandleRemoveVariable(Params);
+	}
+	else if (CommandType == TEXT("get_variables"))
+	{
+		return HandleGetVariables(Params);
 	}
 	// Blueprint Utility commands
 	else if (CommandType == TEXT("reparent_blueprint"))
@@ -2234,3 +2332,888 @@ FString FAIExportTCPServer::HandleImportFont(TSharedPtr<FJsonObject> Params)
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Import font timed out"));
 	return Future.Get();
 }
+
+// =============================================================================
+// CDO PROPERTY HANDLERS
+// =============================================================================
+
+FString FAIExportTCPServer::HandleSetCDOProperty(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, PropertyName, Value;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("property_name"), PropertyName))
+		return CreateErrorResponse(TEXT("Missing 'property_name' parameter"));
+	if (!Params->TryGetStringField(TEXT("value"), Value))
+		return CreateErrorResponse(TEXT("Missing 'value' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, PropertyName, Value, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		bool bSuccess = UAIWidgetBlueprintBuilder::SetCDOProperty(WBP, PropertyName, Value);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to set CDO property '%s'"), *PropertyName)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("property_name"), PropertyName);
+		Data->SetStringField(TEXT("value"), Value);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set CDO property timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleGetCDOProperties(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> PropsJson = UAIWidgetBlueprintBuilder::GetCDOPropertiesAsJson(WBP);
+		Promise->SetValue(CreateSuccessResponse(PropsJson));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get CDO properties timed out"));
+	return Future.Get();
+}
+
+// =============================================================================
+// CDO ARRAY PROPERTY HANDLERS
+// =============================================================================
+
+FString FAIExportTCPServer::HandleAddCDOArrayElement(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, ArrayName, ElementValuesJson;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("array_name"), ArrayName))
+		return CreateErrorResponse(TEXT("Missing 'array_name' parameter"));
+	Params->TryGetStringField(TEXT("element_values"), ElementValuesJson);
+
+	// Parse element_values JSON string into a map
+	TMap<FString, FString> ElementValues;
+	if (!ElementValuesJson.IsEmpty())
+	{
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ElementValuesJson);
+		TSharedPtr<FJsonObject> ValuesObj;
+		if (FJsonSerializer::Deserialize(Reader, ValuesObj) && ValuesObj.IsValid())
+		{
+			for (const auto& Pair : ValuesObj->Values)
+			{
+				FString Val;
+				if (Pair.Value->TryGetString(Val))
+				{
+					ElementValues.Add(Pair.Key, Val);
+				}
+			}
+		}
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, ElementValues, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		// Get CDO
+		UClass* GenClass = WBP->GeneratedClass;
+		if (!GenClass)
+		{
+			FKismetEditorUtilities::CompileBlueprint(WBP);
+			GenClass = WBP->GeneratedClass;
+		}
+		if (!GenClass)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("No GeneratedClass")));
+			return;
+		}
+
+		UObject* CDO = GenClass->GetDefaultObject();
+		if (!CDO)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("No CDO")));
+			return;
+		}
+
+		int32 NewIndex = UAIWidgetBlueprintBuilder::AddArrayElement(CDO, ArrayName, ElementValues);
+		if (NewIndex < 0)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add element to '%s'"), *ArrayName)));
+			return;
+		}
+
+		WBP->MarkPackageDirty();
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetNumberField(TEXT("index"), NewIndex);
+		Data->SetStringField(TEXT("array_name"), ArrayName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add CDO array element timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleSetCDOArrayElementProperty(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, ArrayName, PropertyName, Value;
+	double Index = 0;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("array_name"), ArrayName))
+		return CreateErrorResponse(TEXT("Missing 'array_name' parameter"));
+	if (!Params->TryGetNumberField(TEXT("index"), Index))
+		return CreateErrorResponse(TEXT("Missing 'index' parameter"));
+	if (!Params->TryGetStringField(TEXT("property_name"), PropertyName))
+		return CreateErrorResponse(TEXT("Missing 'property_name' parameter"));
+	if (!Params->TryGetStringField(TEXT("value"), Value))
+		return CreateErrorResponse(TEXT("Missing 'value' parameter"));
+
+	int32 ElementIndex = (int32)Index;
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, ElementIndex, PropertyName, Value, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		UClass* GenClass = WBP->GeneratedClass;
+		if (!GenClass) { FKismetEditorUtilities::CompileBlueprint(WBP); GenClass = WBP->GeneratedClass; }
+		if (!GenClass) { Promise->SetValue(CreateErrorResponse(TEXT("No GeneratedClass"))); return; }
+		UObject* CDO = GenClass->GetDefaultObject();
+		if (!CDO) { Promise->SetValue(CreateErrorResponse(TEXT("No CDO"))); return; }
+
+		bool bSuccess = UAIWidgetBlueprintBuilder::SetArrayElementProperty(CDO, ArrayName, ElementIndex, PropertyName, Value);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to set '%s' on element %d of '%s'"),
+				*PropertyName, ElementIndex, *ArrayName)));
+			return;
+		}
+
+		WBP->MarkPackageDirty();
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("array_name"), ArrayName);
+		Data->SetNumberField(TEXT("index"), ElementIndex);
+		Data->SetStringField(TEXT("property_name"), PropertyName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set CDO array element property timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRemoveCDOArrayElement(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, ArrayName;
+	double Index = 0;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("array_name"), ArrayName))
+		return CreateErrorResponse(TEXT("Missing 'array_name' parameter"));
+	if (!Params->TryGetNumberField(TEXT("index"), Index))
+		return CreateErrorResponse(TEXT("Missing 'index' parameter"));
+
+	int32 ElementIndex = (int32)Index;
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, ElementIndex, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		UClass* GenClass = WBP->GeneratedClass;
+		if (!GenClass) { FKismetEditorUtilities::CompileBlueprint(WBP); GenClass = WBP->GeneratedClass; }
+		if (!GenClass) { Promise->SetValue(CreateErrorResponse(TEXT("No GeneratedClass"))); return; }
+		UObject* CDO = GenClass->GetDefaultObject();
+		if (!CDO) { Promise->SetValue(CreateErrorResponse(TEXT("No CDO"))); return; }
+
+		bool bSuccess = UAIWidgetBlueprintBuilder::RemoveArrayElement(CDO, ArrayName, ElementIndex);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to remove element %d from '%s'"),
+				ElementIndex, *ArrayName)));
+			return;
+		}
+
+		WBP->MarkPackageDirty();
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("array_name"), ArrayName);
+		Data->SetNumberField(TEXT("removed_index"), ElementIndex);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Remove CDO array element timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleGetCDOArrayLength(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, ArrayName;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("array_name"), ArrayName))
+		return CreateErrorResponse(TEXT("Missing 'array_name' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		UClass* GenClass = WBP->GeneratedClass;
+		if (!GenClass) { FKismetEditorUtilities::CompileBlueprint(WBP); GenClass = WBP->GeneratedClass; }
+		if (!GenClass) { Promise->SetValue(CreateErrorResponse(TEXT("No GeneratedClass"))); return; }
+		UObject* CDO = GenClass->GetDefaultObject();
+		if (!CDO) { Promise->SetValue(CreateErrorResponse(TEXT("No CDO"))); return; }
+
+		int32 Length = UAIWidgetBlueprintBuilder::GetArrayLength(CDO, ArrayName);
+		if (Length < 0)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Array '%s' not found"), *ArrayName)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("array_name"), ArrayName);
+		Data->SetNumberField(TEXT("length"), Length);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get CDO array length timed out"));
+	return Future.Get();
+}
+
+// =============================================================================
+// BLUEPRINT GRAPH HANDLERS
+// =============================================================================
+
+// Helper macro for graph node creation handlers (they all follow the same pattern)
+#define GRAPH_NODE_HANDLER_BODY(HandlerName, BuilderCall)                                      \
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));        \
+	FString AssetPath, NodeName;                                                               \
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))                             \
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));                    \
+	if (!Params->TryGetStringField(TEXT("node_name"), NodeName))                               \
+		return CreateErrorResponse(TEXT("Missing 'node_name' parameter"));                     \
+	double PosX = 0, PosY = 0;                                                                \
+	Params->TryGetNumberField(TEXT("pos_x"), PosX);                                            \
+	Params->TryGetNumberField(TEXT("pos_y"), PosY);
+
+FString FAIExportTCPServer::HandleAddEventNode(TSharedPtr<FJsonObject> Params)
+{
+	GRAPH_NODE_HANDLER_BODY(HandleAddEventNode, AddEventNode)
+
+	FString EventName;
+	if (!Params->TryGetStringField(TEXT("event_name"), EventName))
+		return CreateErrorResponse(TEXT("Missing 'event_name' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, EventName, NodeName, PosX, PosY, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		UK2Node* Node = UAIBlueprintGraphBuilder::AddEventNode(BP, EventName, NodeName, (int32)PosX, (int32)PosY);
+		if (!Node) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add event '%s'"), *EventName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("event_name"), EventName);
+		Data->SetStringField(TEXT("node_class"), Node->GetClass()->GetName());
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add event node timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddCustomEvent(TSharedPtr<FJsonObject> Params)
+{
+	GRAPH_NODE_HANDLER_BODY(HandleAddCustomEvent, AddCustomEvent)
+
+	FString EventName;
+	if (!Params->TryGetStringField(TEXT("event_name"), EventName))
+		return CreateErrorResponse(TEXT("Missing 'event_name' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, EventName, NodeName, PosX, PosY, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		UK2Node* Node = UAIBlueprintGraphBuilder::AddCustomEvent(BP, EventName, NodeName, (int32)PosX, (int32)PosY);
+		if (!Node) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add custom event '%s'"), *EventName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("event_name"), EventName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add custom event timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddFunctionCallNode(TSharedPtr<FJsonObject> Params)
+{
+	GRAPH_NODE_HANDLER_BODY(HandleAddFunctionCallNode, AddFunctionCallNode)
+
+	FString FunctionName, TargetClass;
+	if (!Params->TryGetStringField(TEXT("function_name"), FunctionName))
+		return CreateErrorResponse(TEXT("Missing 'function_name' parameter"));
+	Params->TryGetStringField(TEXT("target_class"), TargetClass);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, FunctionName, NodeName, TargetClass, PosX, PosY, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		UK2Node* Node = UAIBlueprintGraphBuilder::AddFunctionCallNode(BP, FunctionName, NodeName, TargetClass, (int32)PosX, (int32)PosY);
+		if (!Node) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add function call '%s'"), *FunctionName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("function_name"), FunctionName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add function call timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddVariableGetNode(TSharedPtr<FJsonObject> Params)
+{
+	GRAPH_NODE_HANDLER_BODY(HandleAddVariableGetNode, AddVariableGetNode)
+
+	FString VariableName;
+	if (!Params->TryGetStringField(TEXT("variable_name"), VariableName))
+		return CreateErrorResponse(TEXT("Missing 'variable_name' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, VariableName, NodeName, PosX, PosY, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		UK2Node* Node = UAIBlueprintGraphBuilder::AddVariableGetNode(BP, VariableName, NodeName, (int32)PosX, (int32)PosY);
+		if (!Node) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add Get '%s'"), *VariableName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("variable_name"), VariableName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add variable get node timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddVariableSetNode(TSharedPtr<FJsonObject> Params)
+{
+	GRAPH_NODE_HANDLER_BODY(HandleAddVariableSetNode, AddVariableSetNode)
+
+	FString VariableName;
+	if (!Params->TryGetStringField(TEXT("variable_name"), VariableName))
+		return CreateErrorResponse(TEXT("Missing 'variable_name' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, VariableName, NodeName, PosX, PosY, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		UK2Node* Node = UAIBlueprintGraphBuilder::AddVariableSetNode(BP, VariableName, NodeName, (int32)PosX, (int32)PosY);
+		if (!Node) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add Set '%s'"), *VariableName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("variable_name"), VariableName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add variable set node timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddMakeStructNode(TSharedPtr<FJsonObject> Params)
+{
+	GRAPH_NODE_HANDLER_BODY(HandleAddMakeStructNode, AddMakeStructNode)
+
+	FString StructName;
+	if (!Params->TryGetStringField(TEXT("struct_name"), StructName))
+		return CreateErrorResponse(TEXT("Missing 'struct_name' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, StructName, NodeName, PosX, PosY, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		UK2Node* Node = UAIBlueprintGraphBuilder::AddMakeStructNode(BP, StructName, NodeName, (int32)PosX, (int32)PosY);
+		if (!Node) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add MakeStruct '%s'"), *StructName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("struct_name"), StructName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add make struct node timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddBranchNode(TSharedPtr<FJsonObject> Params)
+{
+	GRAPH_NODE_HANDLER_BODY(HandleAddBranchNode, AddBranchNode)
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, NodeName, PosX, PosY, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		UK2Node* Node = UAIBlueprintGraphBuilder::AddBranchNode(BP, NodeName, (int32)PosX, (int32)PosY);
+		if (!Node) { Promise->SetValue(CreateErrorResponse(TEXT("Failed to add branch node"))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add branch node timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddCallParentFunction(TSharedPtr<FJsonObject> Params)
+{
+	GRAPH_NODE_HANDLER_BODY(HandleAddCallParentFunction, AddCallParentFunctionNode)
+
+	FString FunctionName;
+	if (!Params->TryGetStringField(TEXT("function_name"), FunctionName))
+		return CreateErrorResponse(TEXT("Missing 'function_name' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, FunctionName, NodeName, PosX, PosY, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		UK2Node* Node = UAIBlueprintGraphBuilder::AddCallParentFunctionNode(BP, FunctionName, NodeName, (int32)PosX, (int32)PosY);
+		if (!Node) { Promise->SetValue(CreateErrorResponse(TEXT("Failed to add call parent function node"))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("function_name"), FunctionName);
+		Data->SetStringField(TEXT("node_class"), TEXT("K2Node_CallParentFunction"));
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add call parent function timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleConnectPins(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, FromNode, FromPin, ToNode, ToPin;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("from_node"), FromNode))
+		return CreateErrorResponse(TEXT("Missing 'from_node' parameter"));
+	if (!Params->TryGetStringField(TEXT("from_pin"), FromPin))
+		return CreateErrorResponse(TEXT("Missing 'from_pin' parameter"));
+	if (!Params->TryGetStringField(TEXT("to_node"), ToNode))
+		return CreateErrorResponse(TEXT("Missing 'to_node' parameter"));
+	if (!Params->TryGetStringField(TEXT("to_pin"), ToPin))
+		return CreateErrorResponse(TEXT("Missing 'to_pin' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, FromNode, FromPin, ToNode, ToPin, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIBlueprintGraphBuilder::ConnectPins(BP, FromNode, FromPin, ToNode, ToPin);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to connect %s.%s -> %s.%s"),
+				*FromNode, *FromPin, *ToNode, *ToPin)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("from_node"), FromNode);
+		Data->SetStringField(TEXT("from_pin"), FromPin);
+		Data->SetStringField(TEXT("to_node"), ToNode);
+		Data->SetStringField(TEXT("to_pin"), ToPin);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Connect pins timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleSetPinDefault(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, NodeName, PinName, DefaultValue;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("node_name"), NodeName))
+		return CreateErrorResponse(TEXT("Missing 'node_name' parameter"));
+	if (!Params->TryGetStringField(TEXT("pin_name"), PinName))
+		return CreateErrorResponse(TEXT("Missing 'pin_name' parameter"));
+	if (!Params->TryGetStringField(TEXT("default_value"), DefaultValue))
+		return CreateErrorResponse(TEXT("Missing 'default_value' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, NodeName, PinName, DefaultValue, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIBlueprintGraphBuilder::SetPinDefaultValue(BP, NodeName, PinName, DefaultValue);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to set pin default %s.%s"),
+				*NodeName, *PinName)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("node_name"), NodeName);
+		Data->SetStringField(TEXT("pin_name"), PinName);
+		Data->SetStringField(TEXT("default_value"), DefaultValue);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set pin default timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRemoveGraphNode(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, NodeName;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("node_name"), NodeName))
+		return CreateErrorResponse(TEXT("Missing 'node_name' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, NodeName, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIBlueprintGraphBuilder::RemoveNode(BP, NodeName);
+		if (!bSuccess) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Node '%s' not found"), *NodeName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("removed"), NodeName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Remove graph node timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleGetGraph(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, GraphName;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	Params->TryGetStringField(TEXT("graph_name"), GraphName);
+	if (GraphName.IsEmpty()) GraphName = TEXT("EventGraph");
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, GraphName, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		TSharedPtr<FJsonObject> GraphJson = UAIBlueprintGraphBuilder::GetGraphAsJson(BP, GraphName);
+		Promise->SetValue(CreateSuccessResponse(GraphJson));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get graph timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleListGraphs(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		TArray<FString> Graphs = UAIBlueprintGraphBuilder::ListGraphs(BP);
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		TArray<TSharedPtr<FJsonValue>> GraphArray;
+		for (const FString& Name : Graphs)
+		{
+			GraphArray.Add(MakeShared<FJsonValueString>(Name));
+		}
+		Data->SetArrayField(TEXT("graphs"), GraphArray);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("List graphs timed out"));
+	return Future.Get();
+}
+
+// =============================================================================
+// BLUEPRINT VARIABLE HANDLERS
+// =============================================================================
+
+FString FAIExportTCPServer::HandleAddVariable(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, VarName, VarType, Category;
+	bool bInstanceEditable = false;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("var_name"), VarName))
+		return CreateErrorResponse(TEXT("Missing 'var_name' parameter"));
+	if (!Params->TryGetStringField(TEXT("var_type"), VarType))
+		return CreateErrorResponse(TEXT("Missing 'var_type' parameter"));
+	Params->TryGetBoolField(TEXT("instance_editable"), bInstanceEditable);
+	Params->TryGetStringField(TEXT("category"), Category);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, VarName, VarType, bInstanceEditable, Category, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIBlueprintGraphBuilder::AddVariable(BP, VarName, VarType, bInstanceEditable, false, Category);
+		if (!bSuccess) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add variable '%s'"), *VarName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("var_name"), VarName);
+		Data->SetStringField(TEXT("var_type"), VarType);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add variable timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleSetVariableDefault(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, VarName, DefaultValue;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("var_name"), VarName))
+		return CreateErrorResponse(TEXT("Missing 'var_name' parameter"));
+	if (!Params->TryGetStringField(TEXT("default_value"), DefaultValue))
+		return CreateErrorResponse(TEXT("Missing 'default_value' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, VarName, DefaultValue, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIBlueprintGraphBuilder::SetVariableDefault(BP, VarName, DefaultValue);
+		if (!bSuccess) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to set default for '%s'"), *VarName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("var_name"), VarName);
+		Data->SetStringField(TEXT("default_value"), DefaultValue);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set variable default timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRemoveVariable(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, VarName;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("var_name"), VarName))
+		return CreateErrorResponse(TEXT("Missing 'var_name' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, VarName, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		bool bSuccess = UAIBlueprintGraphBuilder::RemoveVariable(BP, VarName);
+		if (!bSuccess) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Variable '%s' not found"), *VarName))); return; }
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("removed"), VarName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Remove variable timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleGetVariables(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		UBlueprint* BP = UAIBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
+
+		TSharedPtr<FJsonObject> VarsJson = UAIBlueprintGraphBuilder::GetVariablesAsJson(BP);
+		Promise->SetValue(CreateSuccessResponse(VarsJson));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get variables timed out"));
+	return Future.Get();
+}
+
+#undef GRAPH_NODE_HANDLER_BODY

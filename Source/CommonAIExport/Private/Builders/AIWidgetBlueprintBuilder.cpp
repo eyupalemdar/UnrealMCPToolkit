@@ -852,6 +852,322 @@ bool UAIWidgetBlueprintBuilder::SetPropertyByPath(
 	return false;
 }
 
+// =============================================================================
+// CDO (CLASS DEFAULT OBJECT) PROPERTIES
+// =============================================================================
+
+bool UAIWidgetBlueprintBuilder::SetCDOProperty(
+	UWidgetBlueprint* WidgetBP,
+	const FString& PropertyName,
+	const FString& Value)
+{
+	if (!WidgetBP)
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("SetCDOProperty: WidgetBP is null"));
+		return false;
+	}
+
+	// Ensure GeneratedClass exists
+	UClass* GenClass = WidgetBP->GeneratedClass;
+	if (!GenClass)
+	{
+		FKismetEditorUtilities::CompileBlueprint(WidgetBP);
+		GenClass = WidgetBP->GeneratedClass;
+	}
+	if (!GenClass)
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("SetCDOProperty: No GeneratedClass for %s"), *WidgetBP->GetName());
+		return false;
+	}
+
+	UObject* CDO = GenClass->GetDefaultObject();
+	if (!CDO)
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("SetCDOProperty: No CDO for %s"), *GenClass->GetName());
+		return false;
+	}
+
+	bool bResult = SetPropertyByPath(CDO, PropertyName, Value);
+	if (bResult)
+	{
+		CDO->MarkPackageDirty();
+		WidgetBP->MarkPackageDirty();
+		UE_LOG(LogAIWidgetBuilder, Log, TEXT("SetCDOProperty: Set '%s' = '%s' on %s"),
+			*PropertyName, *Value, *WidgetBP->GetName());
+	}
+	else
+	{
+		UE_LOG(LogAIWidgetBuilder, Warning, TEXT("SetCDOProperty: Failed to set '%s' on %s"),
+			*PropertyName, *WidgetBP->GetName());
+	}
+	return bResult;
+}
+
+TSharedPtr<FJsonObject> UAIWidgetBlueprintBuilder::GetCDOPropertiesAsJson(UWidgetBlueprint* WidgetBP)
+{
+	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+	if (!WidgetBP || !WidgetBP->GeneratedClass)
+	{
+		return Result;
+	}
+
+	UObject* CDO = WidgetBP->GeneratedClass->GetDefaultObject();
+	if (!CDO)
+	{
+		return Result;
+	}
+
+	// Get the parent CDO for comparison (to show only "own" values)
+	UObject* ParentCDO = nullptr;
+	UClass* ParentClass = WidgetBP->GeneratedClass->GetSuperClass();
+	if (ParentClass)
+	{
+		ParentCDO = ParentClass->GetDefaultObject();
+	}
+
+	for (TFieldIterator<FProperty> PropIt(WidgetBP->GeneratedClass); PropIt; ++PropIt)
+	{
+		FProperty* Prop = *PropIt;
+		if (!Prop || Prop->HasAnyPropertyFlags(CPF_Transient | CPF_EditorOnly))
+		{
+			continue;
+		}
+
+		FString ValueStr;
+		void* ValuePtr = Prop->ContainerPtrToValuePtr<void>(CDO);
+		Prop->ExportText_Direct(ValueStr, ValuePtr, nullptr, CDO, PPF_None);
+
+		Result->SetStringField(Prop->GetName(), ValueStr);
+	}
+
+	return Result;
+}
+
+// =============================================================================
+// ARRAY PROPERTY SUPPORT
+// =============================================================================
+
+int32 UAIWidgetBlueprintBuilder::AddArrayElement(
+	UObject* Object,
+	const FString& ArrayPropertyName,
+	const TMap<FString, FString>& ElementValues)
+{
+	if (!Object)
+	{
+		return -1;
+	}
+
+	FArrayProperty* ArrayProp = CastField<FArrayProperty>(
+		Object->GetClass()->FindPropertyByName(FName(*ArrayPropertyName)));
+	if (!ArrayProp)
+	{
+		UE_LOG(LogAIWidgetBuilder, Warning, TEXT("AddArrayElement: Array property '%s' not found on %s"),
+			*ArrayPropertyName, *Object->GetClass()->GetName());
+		return -1;
+	}
+
+	FScriptArrayHelper ArrayHelper(ArrayProp, ArrayProp->ContainerPtrToValuePtr<void>(Object));
+	int32 NewIndex = ArrayHelper.AddValue();
+
+	// If inner is a struct, set sub-properties
+	FStructProperty* InnerStructProp = CastField<FStructProperty>(ArrayProp->Inner);
+	if (InnerStructProp && ElementValues.Num() > 0)
+	{
+		void* ElemPtr = ArrayHelper.GetRawPtr(NewIndex);
+		UScriptStruct* Struct = InnerStructProp->Struct;
+
+		for (const auto& Pair : ElementValues)
+		{
+			// Support dot-notation for nested struct properties
+			TArray<FString> SubParts;
+			Pair.Key.ParseIntoArray(SubParts, TEXT("."));
+
+			UStruct* CurrentStruct = Struct;
+			void* CurrentContainer = ElemPtr;
+
+			for (int32 i = 0; i < SubParts.Num(); ++i)
+			{
+				FProperty* SubProp = CurrentStruct->FindPropertyByName(FName(*SubParts[i]));
+				if (!SubProp)
+				{
+					UE_LOG(LogAIWidgetBuilder, Warning, TEXT("AddArrayElement: Sub-property '%s' not found in %s"),
+						*SubParts[i], *CurrentStruct->GetName());
+					break;
+				}
+
+				if (i == SubParts.Num() - 1)
+				{
+					// Leaf — set value
+					void* SubPtr = SubProp->ContainerPtrToValuePtr<void>(CurrentContainer);
+					SubProp->ImportText_Direct(*Pair.Value, SubPtr, Object, PPF_None);
+				}
+				else
+				{
+					// Navigate into sub-struct
+					FStructProperty* SubStructProp = CastField<FStructProperty>(SubProp);
+					if (SubStructProp)
+					{
+						CurrentContainer = SubStructProp->ContainerPtrToValuePtr<void>(CurrentContainer);
+						CurrentStruct = SubStructProp->Struct;
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+		}
+	}
+	else if (!InnerStructProp && ElementValues.Num() > 0)
+	{
+		// Simple type array — use the first value
+		void* ElemPtr2 = ArrayHelper.GetRawPtr(NewIndex);
+		for (const auto& Pair : ElementValues)
+		{
+			ArrayProp->Inner->ImportText_Direct(*Pair.Value, ElemPtr2, Object, PPF_None);
+			break; // Only one value for simple types
+		}
+	}
+
+	Object->MarkPackageDirty();
+	UE_LOG(LogAIWidgetBuilder, Log, TEXT("AddArrayElement: Added element at index %d to '%s'"),
+		NewIndex, *ArrayPropertyName);
+	return NewIndex;
+}
+
+bool UAIWidgetBlueprintBuilder::RemoveArrayElement(
+	UObject* Object,
+	const FString& ArrayPropertyName,
+	int32 Index)
+{
+	if (!Object)
+	{
+		return false;
+	}
+
+	FArrayProperty* ArrayProp = CastField<FArrayProperty>(
+		Object->GetClass()->FindPropertyByName(FName(*ArrayPropertyName)));
+	if (!ArrayProp)
+	{
+		return false;
+	}
+
+	FScriptArrayHelper ArrayHelper(ArrayProp, ArrayProp->ContainerPtrToValuePtr<void>(Object));
+	if (Index < 0 || Index >= ArrayHelper.Num())
+	{
+		return false;
+	}
+
+	ArrayHelper.RemoveValues(Index, 1);
+	Object->MarkPackageDirty();
+	return true;
+}
+
+int32 UAIWidgetBlueprintBuilder::GetArrayLength(
+	UObject* Object,
+	const FString& ArrayPropertyName)
+{
+	if (!Object)
+	{
+		return -1;
+	}
+
+	FArrayProperty* ArrayProp = CastField<FArrayProperty>(
+		Object->GetClass()->FindPropertyByName(FName(*ArrayPropertyName)));
+	if (!ArrayProp)
+	{
+		return -1;
+	}
+
+	FScriptArrayHelper ArrayHelper(ArrayProp, ArrayProp->ContainerPtrToValuePtr<void>(Object));
+	return ArrayHelper.Num();
+}
+
+bool UAIWidgetBlueprintBuilder::SetArrayElementProperty(
+	UObject* Object,
+	const FString& ArrayPropertyName,
+	int32 Index,
+	const FString& SubPropertyName,
+	const FString& Value)
+{
+	if (!Object)
+	{
+		return false;
+	}
+
+	FArrayProperty* ArrayProp = CastField<FArrayProperty>(
+		Object->GetClass()->FindPropertyByName(FName(*ArrayPropertyName)));
+	if (!ArrayProp)
+	{
+		UE_LOG(LogAIWidgetBuilder, Warning, TEXT("SetArrayElementProperty: Array '%s' not found"), *ArrayPropertyName);
+		return false;
+	}
+
+	FScriptArrayHelper ArrayHelper(ArrayProp, ArrayProp->ContainerPtrToValuePtr<void>(Object));
+	if (Index < 0 || Index >= ArrayHelper.Num())
+	{
+		UE_LOG(LogAIWidgetBuilder, Warning, TEXT("SetArrayElementProperty: Index %d out of range (array has %d elements)"),
+			Index, ArrayHelper.Num());
+		return false;
+	}
+
+	FStructProperty* InnerStructProp = CastField<FStructProperty>(ArrayProp->Inner);
+	if (!InnerStructProp)
+	{
+		// Simple type — set directly
+		void* ElemPtr = ArrayHelper.GetRawPtr(Index);
+		const TCHAR* ValueCStr = *Value;
+		return ArrayProp->Inner->ImportText_Direct(ValueCStr, ElemPtr, Object, PPF_None) != nullptr;
+	}
+
+	// Struct element — navigate with dot-notation
+	void* ElemPtr = ArrayHelper.GetRawPtr(Index);
+	TArray<FString> SubParts;
+	SubPropertyName.ParseIntoArray(SubParts, TEXT("."));
+
+	UStruct* CurrentStruct = InnerStructProp->Struct;
+	void* CurrentContainer = ElemPtr;
+
+	for (int32 i = 0; i < SubParts.Num(); ++i)
+	{
+		FProperty* SubProp = CurrentStruct->FindPropertyByName(FName(*SubParts[i]));
+		if (!SubProp)
+		{
+			UE_LOG(LogAIWidgetBuilder, Warning, TEXT("SetArrayElementProperty: Property '%s' not found in %s"),
+				*SubParts[i], *CurrentStruct->GetName());
+			return false;
+		}
+
+		if (i == SubParts.Num() - 1)
+		{
+			void* SubPtr = SubProp->ContainerPtrToValuePtr<void>(CurrentContainer);
+			const TCHAR* ValueCStr = *Value;
+			bool bResult = SubProp->ImportText_Direct(ValueCStr, SubPtr, Object, PPF_None) != nullptr;
+			if (bResult)
+			{
+				Object->MarkPackageDirty();
+			}
+			return bResult;
+		}
+		else
+		{
+			FStructProperty* SubStructProp = CastField<FStructProperty>(SubProp);
+			if (!SubStructProp)
+			{
+				return false;
+			}
+			CurrentContainer = SubStructProp->ContainerPtrToValuePtr<void>(CurrentContainer);
+			CurrentStruct = SubStructProp->Struct;
+		}
+	}
+
+	return false;
+}
+
+// =============================================================================
+// PRIVATE UTILITIES
+// =============================================================================
+
 void UAIWidgetBlueprintBuilder::MarkModified(UWidgetBlueprint* WidgetBP)
 {
 	if (WidgetBP)

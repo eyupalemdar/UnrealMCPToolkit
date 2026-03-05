@@ -30,6 +30,36 @@ class FSocket;
  * - get_widget_tree: Get widget tree as JSON
  * - list_widget_classes: List available widget classes
  *
+ * CDO Property commands:
+ * - set_cdo_property: Set a Class Default Object property
+ * - get_cdo_properties: Get CDO properties as JSON
+ *
+ * CDO Array commands:
+ * - add_cdo_array_element: Add element to CDO array property
+ * - set_cdo_array_element_property: Set sub-property on array element
+ * - remove_cdo_array_element: Remove element from CDO array
+ * - get_cdo_array_length: Get CDO array length
+ *
+ * Blueprint Graph commands:
+ * - add_event_node: Add event override node to graph
+ * - add_custom_event: Add custom event node
+ * - add_function_call: Add function call node
+ * - add_variable_get_node: Add variable Get node
+ * - add_variable_set_node: Add variable Set node
+ * - add_make_struct_node: Add Make Struct node
+ * - add_branch_node: Add Branch (if) node
+ * - connect_pins: Connect pins between nodes
+ * - set_pin_default: Set pin default value
+ * - remove_graph_node: Remove a node from the graph
+ * - get_graph: Get graph as JSON
+ * - list_graphs: List all graphs
+ *
+ * Blueprint Variable commands:
+ * - add_variable: Add a member variable
+ * - set_variable_default: Set variable default value
+ * - remove_variable: Remove a variable
+ * - get_variables: Get all variables as JSON
+ *
  * Blueprint Utility commands:
  * - reparent_blueprint: Change the parent class of a Blueprint
  *
@@ -112,6 +142,37 @@ private:
 	FString HandleCompileAndSave(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetWidgetTree(TSharedPtr<class FJsonObject> Params);
 	FString HandleListWidgetClasses();
+
+	/** Command handlers — CDO Properties */
+	FString HandleSetCDOProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetCDOProperties(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — CDO Array Properties */
+	FString HandleAddCDOArrayElement(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetCDOArrayElementProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleRemoveCDOArrayElement(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetCDOArrayLength(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — Blueprint Graph */
+	FString HandleAddEventNode(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddCustomEvent(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddFunctionCallNode(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddVariableGetNode(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddVariableSetNode(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddMakeStructNode(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddBranchNode(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddCallParentFunction(TSharedPtr<class FJsonObject> Params);
+	FString HandleConnectPins(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetPinDefault(TSharedPtr<class FJsonObject> Params);
+	FString HandleRemoveGraphNode(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetGraph(TSharedPtr<class FJsonObject> Params);
+	FString HandleListGraphs(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — Blueprint Variables */
+	FString HandleAddVariable(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetVariableDefault(TSharedPtr<class FJsonObject> Params);
+	FString HandleRemoveVariable(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetVariables(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Blueprint Utility */
 	FString HandleReparentBlueprint(TSharedPtr<class FJsonObject> Params);
