@@ -458,6 +458,7 @@ UK2Node* UAIBlueprintGraphBuilder::AddEventNode(
 	EventNode->bCommentBubbleVisible = false;
 
 	EventGraph->AddNode(EventNode, false, false);
+	EventNode->CreateNewGuid();
 	EventNode->AllocateDefaultPins();
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
@@ -494,6 +495,7 @@ UK2Node* UAIBlueprintGraphBuilder::AddCustomEvent(
 	CustomEvent->bCommentBubbleVisible = false;
 
 	EventGraph->AddNode(CustomEvent, false, false);
+	CustomEvent->CreateNewGuid();
 	CustomEvent->AllocateDefaultPins();
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
@@ -538,6 +540,7 @@ UK2Node* UAIBlueprintGraphBuilder::AddFunctionCallNode(
 	CallNode->bCommentBubbleVisible = false;
 
 	EventGraph->AddNode(CallNode, false, false);
+	CallNode->CreateNewGuid();
 	CallNode->AllocateDefaultPins();
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
@@ -574,6 +577,7 @@ UK2Node* UAIBlueprintGraphBuilder::AddVariableGetNode(
 	GetNode->bCommentBubbleVisible = false;
 
 	EventGraph->AddNode(GetNode, false, false);
+	GetNode->CreateNewGuid();
 	GetNode->AllocateDefaultPins();
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
@@ -610,6 +614,7 @@ UK2Node* UAIBlueprintGraphBuilder::AddVariableSetNode(
 	SetNode->bCommentBubbleVisible = false;
 
 	EventGraph->AddNode(SetNode, false, false);
+	SetNode->CreateNewGuid();
 	SetNode->AllocateDefaultPins();
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
@@ -655,6 +660,7 @@ UK2Node* UAIBlueprintGraphBuilder::AddMakeStructNode(
 	MakeNode->bCommentBubbleVisible = false;
 
 	EventGraph->AddNode(MakeNode, false, false);
+	MakeNode->CreateNewGuid();
 	MakeNode->AllocateDefaultPins();
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
@@ -689,6 +695,7 @@ UK2Node* UAIBlueprintGraphBuilder::AddBranchNode(
 	BranchNode->bCommentBubbleVisible = false;
 
 	EventGraph->AddNode(BranchNode, false, false);
+	BranchNode->CreateNewGuid();
 	BranchNode->AllocateDefaultPins();
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
@@ -737,6 +744,7 @@ UK2Node* UAIBlueprintGraphBuilder::AddCallParentFunctionNode(
 	ParentCallNode->bCommentBubbleVisible = false;
 
 	EventGraph->AddNode(ParentCallNode, false, false);
+	ParentCallNode->CreateNewGuid();
 	ParentCallNode->AllocateDefaultPins();
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);

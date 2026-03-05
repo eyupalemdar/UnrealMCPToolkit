@@ -1,120 +1,78 @@
-# CommonAIExport - AI Quick Start
+# CommonAIExport — AI Quick Start
 
-## THIS IS NOT MCP
+## Two Ways to Use
 
-**CommonAIExport is a TCP-based system, NOT an MCP server.**
+### 1. MCP Tools (Recommended for Claude Code)
 
-You cannot use MCP tools to interact with this system. You must connect via TCP socket.
+CommonAIExport includes a **Python MCP server** that wraps the TCP protocol.
+When configured in Claude Code's MCP settings, 55 tools become available with `mcp__widget-builder__` prefix.
 
----
+**MCP Client**: `Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py`
 
-## How It Works
+For full tool reference: **[CLAUDE_REFERENCE.md](CLAUDE_REFERENCE.md)**
 
-1. **Unreal Editor must be running** - The TCP server runs inside the Editor
-2. **Read port from file**: `{ProjectDir}/Intermediate/AIExport_port.txt`
-3. **Connect via TCP socket** to `127.0.0.1` on that port
-4. **Send JSON commands**, receive JSON responses
+### 2. Direct TCP (For scripts, other AI tools)
 
----
+Raw TCP JSON protocol on `127.0.0.1` — port from `{ProjectDir}/Intermediate/AIExport_port.txt`.
 
-## Critical: Path Mirroring
-
-When exporting assets, the output directory **MUST mirror** the asset's Content folder structure:
-
-| Asset Path | Output Directory |
-|------------|------------------|
-| `/Game/UI/W_Menu` | `Dev/AIExports/Game/UI/` |
-| `/Game/Blueprints/BP_Actor` | `Dev/AIExports/Game/Blueprints/` |
-| `/Game/Input/IA_Jump` | `Dev/AIExports/Game/Input/` |
-
-**Python helper function:**
-
-```python
-def get_output_path(asset_path, project_dir):
-    """Convert asset path to mirrored output directory."""
-    # "/Game/UI/W_Menu" -> "Game/UI"
-    relative = asset_path.lstrip("/").rsplit("/", 1)[0]
-    return f"{project_dir}/Dev/AIExports/{relative}/"
+```json
+{"type": "command_name", "params": {"key": "value"}}
 ```
 
 ---
 
-## Quick Commands
+## Prerequisites
+
+1. **Unreal Editor must be running** — TCP server runs inside the Editor
+2. **Port file exists**: `{ProjectDir}/Intermediate/AIExport_port.txt`
+
+---
+
+## Quick Test
 
 ```bash
-cd {ProjectDir}
+# Via MCP
+ping  # Returns "pong"
 
-# 1. Check connection
+# Via TCP (Python)
 python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py ping
-
-# 2. Export any asset (Blueprint, Widget, DataAsset, etc.)
-python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py export_blueprint '/Game/UI/W_Menu'
-
-# 3. List supported types
-python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py list_types
 ```
 
 ---
 
-## Common Mistakes
+## What Can You Do?
 
-| Mistake | Solution |
-|---------|----------|
-| Using MCP tools | This is TCP, not MCP. Use TCP socket or Python client |
-| Editor not running | Start Unreal Editor first, then connect |
-| Wrong output path | Must mirror `/Game/...` structure (see table above) |
-| Git Bash path mangling | Use PowerShell: `powershell -Command "python script.py '/Game/...'"` |
-| Port connection refused | Check `Intermediate/AIExport_port.txt` exists and Editor is running |
+| Category | Examples |
+|----------|---------|
+| **Create Widgets** | Create WBP, add widgets, set properties, build BP graph |
+| **Modify CDO** | Set class defaults, manipulate array properties (e.g. tab lists) |
+| **Build BP Logic** | Add events, function calls, connect pins, set defaults |
+| **Create Materials** | Materials, material instances, expression graphs |
+| **Import Assets** | Textures, fonts from disk |
+| **Export Assets** | Widget BP, Blueprint, AnimBP, DataAsset, Material, World, Audio, Texture |
 
 ---
 
 ## Reading Exported Files
 
-Each export produces 3 files: `_simplified.txt`, `_stripped.txt`, `_raw.txt`.
+Each export produces 3 files:
 
-1. **Always read `_simplified.txt` first** — AI-readable format with clean structure, enough for most tasks
-2. **Read `_stripped.txt` when simplified isn't enough** — non-default values in UE serialization format, has full pin types, transition conditions, AnimGraph node details. Read specific sections with offset/limit, not the whole file
-3. **Don't read `_raw.txt`** — includes all default values, extremely verbose, only useful for debugging the export pipeline
+1. **`_simplified.txt`** — Read this first. AI-friendly, clean structure
+2. **`_stripped.txt`** — Non-default values in UE format. For exact pin types, transitions
+3. **`_raw.txt`** — ALL values. Debugging only, don't read
+
+Output: `Dev/AIExports/` mirroring Content folder structure.
 
 ---
 
-## TCP Protocol
+## Critical Path Formats
 
-**Request** (minimal — `output_directory` is optional, omitting it auto-mirrors):
-```json
-{
-  "type": "export_blueprint",
-  "params": {
-    "asset_path": "/Game/UI/W_Menu",
-    "both_formats": true
-  }
-}
 ```
-
-**Request** (explicit override):
-```json
-{
-  "type": "export_blueprint",
-  "params": {
-    "asset_path": "/Game/UI/W_Menu",
-    "output_directory": "D:/Project/Dev/AIExports/Game/UI/",
-    "both_formats": true
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "asset_name": "W_Menu",
-    "asset_type": "WidgetBlueprint",
-    "simplified_file": "D:/Project/Dev/AIExports/Game/UI/W_Menu_simplified.txt"
-  }
-}
+Asset path:       /Game/UI/Kale/Components/W_KaleTabButton
+C++ class:        /Script/LyraGame.LyraActivatableWidget
+Generated class:  WidgetBlueprintGeneratedClass'/Game/UI/Path/W_Widget.W_Widget_C'
 ```
 
 ---
 
-For detailed documentation, see [README.md](README.md).
+For comprehensive documentation: **[CLAUDE_REFERENCE.md](CLAUDE_REFERENCE.md)** | **[README.md](README.md)**
