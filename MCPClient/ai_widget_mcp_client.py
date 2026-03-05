@@ -14,7 +14,7 @@ Usage:
         "mcpServers": {
             "widget-builder": {
                 "command": "python",
-                "args": ["D:/Steamworks/Lyra/Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py"]
+                "args": ["<ProjectDir>/Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py"]
             }
         }
     }
@@ -57,7 +57,11 @@ Material Instance workflow:
 
 DEFAULT_PORT = 55560
 TIMEOUT = 60
-PROJECT_DIR = os.environ.get("UE_PROJECT_DIR", "D:/Steamworks/Lyra")
+
+# Derive project dir from script location: <ProjectDir>/Plugins/CommonAIExport/MCPClient/this_script.py
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_DEFAULT_PROJECT_DIR = str(_SCRIPT_DIR.parent.parent.parent)
+PROJECT_DIR = os.environ.get("UE_PROJECT_DIR", _DEFAULT_PROJECT_DIR)
 
 
 def _find_port() -> int:
@@ -974,8 +978,8 @@ def import_font(
               - "source_path": Absolute path to TTF/OTF file
               - "name": Weight/style name (e.g. "Regular", "Bold", "Medium", "SemiBold")
               Example: [
-                  {"source_path": "D:/Fonts/Inter-Regular.ttf", "name": "Regular"},
-                  {"source_path": "D:/Fonts/Inter-Bold.ttf", "name": "Bold"}
+                  {"source_path": "/path/to/Inter-Regular.ttf", "name": "Regular"},
+                  {"source_path": "/path/to/Inter-Bold.ttf", "name": "Bold"}
               ]
         hinting: Font hinting mode: "Auto" (default), "AutoLight", "None"
 

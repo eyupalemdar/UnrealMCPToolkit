@@ -45,9 +45,12 @@ PROJECT_ROOT = SCRIPT_DIR.parent.parent.parent.parent  # Up from Resources/Scrip
 EXPORT_DIR = PROJECT_ROOT / "Dev" / "AIExports"
 
 # UE paths (for future Commandlet integration)
-UE_ENGINE_PATH = Path("D:/EpicGames/UE_5.5/Engine/Binaries/Win64")
+# Override via UE_ENGINE_DIR env var if needed
+UE_ENGINE_PATH = Path(os.environ.get("UE_ENGINE_DIR", ""))
 UE_EDITOR_CMD = UE_ENGINE_PATH / "UnrealEditor-Cmd.exe"
-PROJECT_FILE = PROJECT_ROOT / "ProjectOkey.uproject"
+# Find .uproject file in project root
+_uproject_files = list(PROJECT_ROOT.glob("*.uproject"))
+PROJECT_FILE = _uproject_files[0] if _uproject_files else PROJECT_ROOT / "Project.uproject"
 
 
 def ensure_export_dir():
