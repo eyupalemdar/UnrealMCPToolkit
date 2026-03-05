@@ -58,8 +58,8 @@ DECLARE_DELEGATE_ThreeParams(FOnAIExportProgress, int32 /*Current*/, int32 /*Tot
  *
  * Usage:
  *   FAIExportResult Result = UAIExportFunctionLibrary::ExportAssetByPath(
- *       "/Game/Maps/L_StandardOkey",
- *       "D:/Exports",
+ *       "/Game/Maps/L_MyMap",
+ *       "/path/to/exports",
  *       true  // both raw and simplified
  *   );
  */
