@@ -61,6 +61,7 @@ class FSocket;
  * - get_variables: Get all variables as JSON
  *
  * Blueprint Utility commands:
+ * - create_blueprint: Create a new Blueprint asset with any parent class
  * - reparent_blueprint: Change the parent class of a Blueprint
  *
  * Material Builder commands:
@@ -193,6 +194,7 @@ private:
 	FString HandleGetVariables(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Blueprint Utility */
+	FString HandleCreateBlueprint(TSharedPtr<class FJsonObject> Params);
 	FString HandleReparentBlueprint(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Material Builder */

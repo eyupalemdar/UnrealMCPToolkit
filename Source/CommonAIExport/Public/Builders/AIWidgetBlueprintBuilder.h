@@ -168,13 +168,13 @@ public:
 	 * Set a CDO (Class Default Object) property on a Blueprint.
 	 * Works on the Blueprint's generated class CDO, not widget instances.
 	 * Use for properties like bSelectable, bIsFocusable, ClickMethod, etc.
-	 * @param WidgetBP Target Widget Blueprint
+	 * @param Blueprint Target Blueprint (Widget Blueprint or regular Blueprint)
 	 * @param PropertyName Property name (supports dot-notation for structs)
 	 * @param Value String value in ImportText format
 	 * @return true if property was set successfully
 	 */
 	static bool SetCDOProperty(
-		UWidgetBlueprint* WidgetBP,
+		UBlueprint* Blueprint,
 		const FString& PropertyName,
 		const FString& Value);
 
@@ -182,7 +182,7 @@ public:
 	 * Get CDO properties as JSON for inspection.
 	 * Returns own properties (not inherited from engine base classes).
 	 */
-	static TSharedPtr<FJsonObject> GetCDOPropertiesAsJson(UWidgetBlueprint* WidgetBP);
+	static TSharedPtr<FJsonObject> GetCDOPropertiesAsJson(UBlueprint* Blueprint);
 
 	// =========================================================================
 	// ARRAY PROPERTY SUPPORT
@@ -257,6 +257,9 @@ public:
 
 	/** Load a Widget Blueprint by asset path. */
 	static UWidgetBlueprint* LoadWidgetBlueprint(const FString& AssetPath);
+
+	/** Load any Blueprint (Widget or regular) by asset path. */
+	static UBlueprint* LoadBlueprint(const FString& AssetPath);
 
 	/** Get the widget tree as a JSON object for verification. */
 	static TSharedPtr<FJsonObject> GetWidgetTreeAsJson(UWidgetBlueprint* WidgetBP);

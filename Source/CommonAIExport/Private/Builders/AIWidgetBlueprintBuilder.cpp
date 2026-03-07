@@ -702,6 +702,26 @@ UWidgetBlueprint* UAIWidgetBlueprintBuilder::LoadWidgetBlueprint(const FString& 
 	return WBP;
 }
 
+UBlueprint* UAIWidgetBlueprintBuilder::LoadBlueprint(const FString& AssetPath)
+{
+	UObject* Asset = LoadObject<UObject>(nullptr, *AssetPath);
+	if (!Asset)
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("LoadBlueprint: Asset not found at '%s'"), *AssetPath);
+		return nullptr;
+	}
+
+	UBlueprint* BP = Cast<UBlueprint>(Asset);
+	if (!BP)
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("LoadBlueprint: '%s' is not a Blueprint (class: %s)"),
+			*AssetPath, *Asset->GetClass()->GetName());
+		return nullptr;
+	}
+
+	return BP;
+}
+
 TSharedPtr<FJsonObject> UAIWidgetBlueprintBuilder::GetWidgetTreeAsJson(UWidgetBlueprint* WidgetBP)
 {
 	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
@@ -927,26 +947,26 @@ bool UAIWidgetBlueprintBuilder::SetPropertyByPath(
 // =============================================================================
 
 bool UAIWidgetBlueprintBuilder::SetCDOProperty(
-	UWidgetBlueprint* WidgetBP,
+	UBlueprint* Blueprint,
 	const FString& PropertyName,
 	const FString& Value)
 {
-	if (!WidgetBP)
+	if (!Blueprint)
 	{
-		UE_LOG(LogAIWidgetBuilder, Error, TEXT("SetCDOProperty: WidgetBP is null"));
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("SetCDOProperty: Blueprint is null"));
 		return false;
 	}
 
 	// Ensure GeneratedClass exists
-	UClass* GenClass = WidgetBP->GeneratedClass;
+	UClass* GenClass = Blueprint->GeneratedClass;
 	if (!GenClass)
 	{
-		FKismetEditorUtilities::CompileBlueprint(WidgetBP);
-		GenClass = WidgetBP->GeneratedClass;
+		FKismetEditorUtilities::CompileBlueprint(Blueprint);
+		GenClass = Blueprint->GeneratedClass;
 	}
 	if (!GenClass)
 	{
-		UE_LOG(LogAIWidgetBuilder, Error, TEXT("SetCDOProperty: No GeneratedClass for %s"), *WidgetBP->GetName());
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("SetCDOProperty: No GeneratedClass for %s"), *Blueprint->GetName());
 		return false;
 	}
 
@@ -963,27 +983,27 @@ bool UAIWidgetBlueprintBuilder::SetCDOProperty(
 	if (bResult)
 	{
 		CDO->MarkPackageDirty();
-		WidgetBP->MarkPackageDirty();
+		Blueprint->MarkPackageDirty();
 		UE_LOG(LogAIWidgetBuilder, Log, TEXT("SetCDOProperty: Set '%s' = '%s' on %s"),
-			*PropertyName, *Value, *WidgetBP->GetName());
+			*PropertyName, *Value, *Blueprint->GetName());
 	}
 	else
 	{
 		UE_LOG(LogAIWidgetBuilder, Warning, TEXT("SetCDOProperty: Failed to set '%s' on %s"),
-			*PropertyName, *WidgetBP->GetName());
+			*PropertyName, *Blueprint->GetName());
 	}
 	return bResult;
 }
 
-TSharedPtr<FJsonObject> UAIWidgetBlueprintBuilder::GetCDOPropertiesAsJson(UWidgetBlueprint* WidgetBP)
+TSharedPtr<FJsonObject> UAIWidgetBlueprintBuilder::GetCDOPropertiesAsJson(UBlueprint* Blueprint)
 {
 	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
-	if (!WidgetBP || !WidgetBP->GeneratedClass)
+	if (!Blueprint || !Blueprint->GeneratedClass)
 	{
 		return Result;
 	}
 
-	UObject* CDO = WidgetBP->GeneratedClass->GetDefaultObject();
+	UObject* CDO = Blueprint->GeneratedClass->GetDefaultObject();
 	if (!CDO)
 	{
 		return Result;
@@ -991,13 +1011,13 @@ TSharedPtr<FJsonObject> UAIWidgetBlueprintBuilder::GetCDOPropertiesAsJson(UWidge
 
 	// Get the parent CDO for comparison (to show only "own" values)
 	UObject* ParentCDO = nullptr;
-	UClass* ParentClass = WidgetBP->GeneratedClass->GetSuperClass();
+	UClass* ParentClass = Blueprint->GeneratedClass->GetSuperClass();
 	if (ParentClass)
 	{
 		ParentCDO = ParentClass->GetDefaultObject();
 	}
 
-	for (TFieldIterator<FProperty> PropIt(WidgetBP->GeneratedClass); PropIt; ++PropIt)
+	for (TFieldIterator<FProperty> PropIt(Blueprint->GeneratedClass); PropIt; ++PropIt)
 	{
 		FProperty* Prop = *PropIt;
 		if (!Prop || Prop->HasAnyPropertyFlags(CPF_Transient | CPF_EditorOnly))
