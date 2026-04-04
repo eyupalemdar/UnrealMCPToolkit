@@ -61,6 +61,7 @@ class FSocket;
  * - get_variables: Get all variables as JSON
  *
  * Blueprint Utility commands:
+ * - create_blueprint: Create a new Blueprint asset with any parent class
  * - reparent_blueprint: Change the parent class of a Blueprint
  *
  * Material Builder commands:
@@ -97,6 +98,12 @@ class FSocket;
  * AnimBlueprint Builder commands:
  * - create_anim_blueprint: Create AnimBlueprint with skeleton
  * - get_anim_blueprint_info: Get AnimBP info as JSON
+ *
+ * Widget Animation commands:
+ * - create_widget_animation: Create a new animation on a Widget Blueprint
+ * - bind_animation_widget: Bind a widget to an animation
+ * - add_animation_track: Add a property track (float, color, transform2d)
+ * - add_animation_keyframe: Add a keyframe to a track
  *
  * Asset Import commands:
  * - import_texture: Import a texture file from disk into Content Browser
@@ -170,6 +177,7 @@ private:
 	FString HandleSetCDOArrayElementProperty(TSharedPtr<class FJsonObject> Params);
 	FString HandleRemoveCDOArrayElement(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetCDOArrayLength(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetCDOArrayElementProperties(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Blueprint Graph */
 	FString HandleAddEventNode(TSharedPtr<class FJsonObject> Params);
@@ -193,6 +201,7 @@ private:
 	FString HandleGetVariables(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Blueprint Utility */
+	FString HandleCreateBlueprint(TSharedPtr<class FJsonObject> Params);
 	FString HandleReparentBlueprint(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Material Builder */
@@ -229,6 +238,12 @@ private:
 	/** Command handlers — AnimBlueprint Builder */
 	FString HandleCreateAnimBlueprint(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetAnimBlueprintInfo(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — Widget Animation */
+	FString HandleCreateWidgetAnimation(TSharedPtr<class FJsonObject> Params);
+	FString HandleBindAnimationWidget(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddAnimationTrack(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddAnimationKeyframe(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Asset Import */
 	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);

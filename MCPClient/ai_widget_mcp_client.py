@@ -72,6 +72,13 @@ AnimBlueprint workflow:
 2. Use Blueprint Graph tools (add_event_node, etc.) for EventGraph
 3. compile_and_save - Compile and save
 4. get_anim_blueprint_info - Inspect result
+
+Widget Animation workflow:
+1. create_widget_animation - Create animation on a Widget Blueprint
+2. bind_animation_widget - Bind widgets to the animation
+3. add_animation_track - Add property tracks (float, color, transform2d)
+4. add_animation_keyframe - Add keyframes with values and interpolation
+5. compile_and_save - Compile and save to persist animations
 """)
 
 DEFAULT_PORT = 55560
@@ -212,6 +219,36 @@ def compile_and_save(asset_path: str) -> str:
 # =============================================================================
 # BLUEPRINT UTILITY
 # =============================================================================
+
+@mcp.tool()
+def create_blueprint(
+    package_path: str,
+    asset_name: str,
+    parent_class: str
+) -> str:
+    """
+    Create a new Blueprint asset with any parent class (not just widgets).
+
+    Use this to create non-widget Blueprints such as:
+    - ButtonStyle DataAssets (parent: /Script/CommonUI.CommonButtonStyle)
+    - TextStyle DataAssets (parent: /Script/CommonUI.CommonTextStyle)
+    - Any other Blueprint type
+
+    Args:
+        package_path: Content path, e.g. "/Game/UI/Foundation/Buttons"
+        asset_name: Asset name, e.g. "ButtonStyle-Kale-Primary"
+        parent_class: Full class path of the parent class (REQUIRED).
+                     e.g. "/Script/CommonUI.CommonButtonStyle"
+
+    Returns:
+        JSON with asset_path, asset_name, parent_class, and saved status.
+    """
+    return _format_response(_send_command("create_blueprint", {
+        "package_path": package_path,
+        "asset_name": asset_name,
+        "parent_class": parent_class,
+    }))
+
 
 @mcp.tool()
 def reparent_blueprint(
@@ -1175,6 +1212,34 @@ def get_cdo_array_length(
     }))
 
 
+@mcp.tool()
+def get_cdo_array_element_properties(
+    asset_path: str,
+    array_name: str,
+    index: int
+) -> str:
+    """
+    Get properties of a specific CDO array element as JSON.
+
+    For instanced subobject arrays (e.g. Actions on ExperienceDefinition),
+    returns the subobject's class, name, and all non-default properties.
+    For struct arrays, returns the struct's field values.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        array_name: Name of the TArray property
+        index: Element index (0-based)
+
+    Returns:
+        JSON with element properties. For object arrays includes _class and _name.
+    """
+    return _format_response(_send_command("get_cdo_array_element_properties", {
+        "asset_path": asset_path,
+        "array_name": array_name,
+        "index": index,
+    }))
+
+
 # =============================================================================
 # BLUEPRINT GRAPH MANIPULATION
 # =============================================================================
@@ -1392,6 +1457,38 @@ def add_branch_node(
     """
     return _format_response(_send_command("add_branch_node", {
         "asset_path": asset_path,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+    }))
+
+
+@mcp.tool()
+def add_call_parent_function(
+    asset_path: str,
+    function_name: str,
+    node_name: str,
+    pos_x: int = 0,
+    pos_y: int = 0
+) -> str:
+    """
+    Add a Call Parent Function node to the graph.
+
+    Calls the parent class implementation of a function (Super::FunctionName).
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        function_name: Name of the parent function to call
+        node_name: Logical name for later reference
+        pos_x: X position in graph
+        pos_y: Y position in graph
+
+    Returns:
+        JSON with node_name, function_name, and node_class.
+    """
+    return _format_response(_send_command("add_call_parent_function", {
+        "asset_path": asset_path,
+        "function_name": function_name,
         "node_name": node_name,
         "pos_x": pos_x,
         "pos_y": pos_y,
@@ -1828,6 +1925,148 @@ def get_anim_blueprint_info(asset_path: str) -> str:
     return _format_response(_send_command("get_anim_blueprint_info", {
         "asset_path": asset_path,
     }))
+
+
+# =============================================================================
+# WIDGET ANIMATIONS
+# =============================================================================
+
+@mcp.tool()
+def create_widget_animation(
+    asset_path: str,
+    animation_name: str,
+    length_seconds: float = 1.0
+) -> str:
+    """
+    Create a new widget animation on a Widget Blueprint.
+
+    Creates a UWidgetAnimation with a UMovieScene. After creation, bind widgets
+    to the animation, add tracks, and add keyframes.
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint, e.g. "/Game/UI/Kale/Tabs/W_Kale_NavTab"
+        animation_name: Name for the animation (e.g. "Selected", "Hovered", "FadeIn")
+        length_seconds: Animation duration in seconds (default 1.0)
+
+    Returns:
+        JSON with animation_name, length_seconds, and asset_path.
+    """
+    params = {
+        "asset_path": asset_path,
+        "animation_name": animation_name,
+    }
+    if length_seconds != 1.0:
+        params["length_seconds"] = length_seconds
+    return _format_response(_send_command("create_widget_animation", params))
+
+
+@mcp.tool()
+def bind_animation_widget(
+    asset_path: str,
+    animation_name: str,
+    widget_name: str
+) -> str:
+    """
+    Bind a widget to an animation.
+
+    Creates a MovieScene possessable and FWidgetAnimationBinding entry.
+    Must be called BEFORE adding tracks or keyframes for that widget.
+    The widget must exist in the Widget Blueprint's widget tree.
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint
+        animation_name: Name of the animation (must already exist)
+        widget_name: Name of the widget to bind (must exist in widget tree)
+
+    Returns:
+        JSON with animation_name, widget_name, and asset_path.
+    """
+    return _format_response(_send_command("bind_animation_widget", {
+        "asset_path": asset_path,
+        "animation_name": animation_name,
+        "widget_name": widget_name,
+    }))
+
+
+@mcp.tool()
+def add_animation_track(
+    asset_path: str,
+    animation_name: str,
+    widget_name: str,
+    property_type: str,
+    property_path: str
+) -> str:
+    """
+    Add a property track to an animation for a bound widget.
+
+    The widget must be bound to the animation first (via bind_animation_widget).
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint
+        animation_name: Name of the animation
+        widget_name: Name of the bound widget
+        property_type: Track type - one of:
+                      "float" - for float properties (RenderOpacity, etc.)
+                      "color" - for FLinearColor properties (ColorAndOpacity, BrushColor, TintColor)
+                      "transform2d" - for FWidgetTransform (RenderTransform)
+        property_path: UE property path, e.g.:
+                      "RenderOpacity" - widget opacity
+                      "ColorAndOpacity" - widget color
+                      "RenderTransform" - widget transform
+
+    Returns:
+        JSON with animation_name, widget_name, property_type, property_path.
+    """
+    return _format_response(_send_command("add_animation_track", {
+        "asset_path": asset_path,
+        "animation_name": animation_name,
+        "widget_name": widget_name,
+        "property_type": property_type,
+        "property_path": property_path,
+    }))
+
+
+@mcp.tool()
+def add_animation_keyframe(
+    asset_path: str,
+    animation_name: str,
+    widget_name: str,
+    property_path: str,
+    time: float,
+    value: str,
+    interpolation: str = "Cubic"
+) -> str:
+    """
+    Add a keyframe to an animation track.
+
+    The track must already exist (via add_animation_track).
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint
+        animation_name: Name of the animation
+        widget_name: Name of the bound widget
+        property_path: Property path that identifies the track (e.g. "RenderOpacity")
+        time: Keyframe time in seconds (e.g. 0.0 for start, 0.5 for middle)
+        value: Keyframe value, format depends on track type:
+              float: "0.5" or "1.0"
+              color: "(R=1.0,G=0.5,B=0.0,A=1.0)"
+              transform2d: "0,0,1,1,0,0,0" (TransX,TransY,ScaleX,ScaleY,ShearX,ShearY,Angle)
+        interpolation: Interpolation mode: "Linear", "Cubic" (default), "Constant"
+
+    Returns:
+        JSON with keyframe details.
+    """
+    params = {
+        "asset_path": asset_path,
+        "animation_name": animation_name,
+        "widget_name": widget_name,
+        "property_path": property_path,
+        "time": time,
+        "value": value,
+    }
+    if interpolation != "Cubic":
+        params["interpolation"] = interpolation
+    return _format_response(_send_command("add_animation_keyframe", params))
 
 
 if __name__ == "__main__":
