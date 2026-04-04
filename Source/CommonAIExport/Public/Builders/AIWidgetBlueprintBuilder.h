@@ -198,7 +198,8 @@ public:
 	static int32 AddArrayElement(
 		UObject* Object,
 		const FString& ArrayPropertyName,
-		const TMap<FString, FString>& ElementValues);
+		const TMap<FString, FString>& ElementValues,
+		const FString& ClassName);
 
 	/**
 	 * Remove an element from an array property by index.

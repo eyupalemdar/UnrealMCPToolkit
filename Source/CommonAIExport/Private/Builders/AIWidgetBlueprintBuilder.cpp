@@ -23,6 +23,9 @@
 
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
+#include "ScopedTransaction.h"
+
+#define LOCTEXT_NAMESPACE "AIWidgetBlueprintBuilder"
 
 DEFINE_LOG_CATEGORY_STATIC(LogAIWidgetBuilder, Log, All);
 
@@ -119,6 +122,51 @@ bool UAIWidgetBlueprintBuilder::CompileAndSave(
 		return false;
 	}
 
+	// Pre-compile: Sync GUID map with actual variable widgets to prevent Ensure failures
+	// from previously corrupted WBPs (before the AddWidget/RemoveWidget fix)
+	{
+		TSet<FName> CurrentVariableNames;
+		WidgetBP->ForEachSourceWidget([&CurrentVariableNames](UWidget* Widget)
+		{
+			if (Widget->bIsVariable)
+			{
+				CurrentVariableNames.Add(Widget->GetFName());
+			}
+		});
+
+		// Remove stale GUID entries (widget deleted or no longer a variable but GUID remains)
+		TArray<FName> StaleNames;
+		for (const auto& Pair : WidgetBP->WidgetVariableNameToGuidMap)
+		{
+			if (!CurrentVariableNames.Contains(Pair.Key))
+			{
+				StaleNames.Add(Pair.Key);
+			}
+		}
+		for (const FName& Name : StaleNames)
+		{
+			UE_LOG(LogAIWidgetBuilder, Log, TEXT("CompileAndSave: Removing stale GUID for '%s'"), *Name.ToString());
+			WidgetBP->WidgetVariableNameToGuidMap.Remove(Name);
+		}
+
+		// Add missing GUID entries (variable widget exists but no GUID)
+		bool bAddedAny = false;
+		for (const FName& Name : CurrentVariableNames)
+		{
+			if (!WidgetBP->WidgetVariableNameToGuidMap.Contains(Name))
+			{
+				UE_LOG(LogAIWidgetBuilder, Log, TEXT("CompileAndSave: Adding missing GUID for '%s'"), *Name.ToString());
+				WidgetBP->WidgetVariableNameToGuidMap.Add(Name, FGuid::NewGuid());
+				bAddedAny = true;
+			}
+		}
+
+		if (StaleNames.Num() > 0 || bAddedAny)
+		{
+			WidgetBP->Modify();
+		}
+	}
+
 	// Compile
 	FKismetEditorUtilities::CompileBlueprint(WidgetBP, EBlueprintCompileOptions::None);
 
@@ -205,6 +253,8 @@ bool UAIWidgetBlueprintBuilder::ReparentBlueprint(
 		return true;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIReparentBlueprint", "AI: Reparent Blueprint"));
+
 	FString OldParentName = WidgetBP->ParentClass ? WidgetBP->ParentClass->GetName() : TEXT("None");
 
 	// Perform reparenting (mirrors UBlueprintEditorLibrary::ReparentBlueprint logic)
@@ -251,6 +301,8 @@ UWidget* UAIWidgetBlueprintBuilder::AddWidget(
 		return nullptr;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIAddWidget", "AI: Add Widget"));
+
 	// Construct the widget
 	UWidget* NewWidget = WidgetBP->WidgetTree->ConstructWidget<UWidget>(
 		TSubclassOf<UWidget>(WidgetClass),
@@ -264,6 +316,9 @@ UWidget* UAIWidgetBlueprintBuilder::AddWidget(
 
 	// Mark as variable so it's accessible in Blueprint graphs
 	NewWidget->bIsVariable = true;
+
+	// Register GUID for this variable to prevent Ensure failures in ValidateAndFixUpVariableGuids
+	WidgetBP->OnVariableAdded(NewWidget->GetFName());
 
 	// Add to parent or set as root
 	if (ParentWidgetName.IsEmpty())
@@ -321,6 +376,8 @@ bool UAIWidgetBlueprintBuilder::RemoveWidget(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIRemoveWidget", "AI: Remove Widget"));
+
 	// If it's the root, clear root
 	if (Widget == WidgetBP->WidgetTree->RootWidget)
 	{
@@ -335,6 +392,9 @@ bool UAIWidgetBlueprintBuilder::RemoveWidget(
 			Parent->RemoveChild(Widget);
 		}
 	}
+
+	// Clean up GUID entry before removing widget to prevent stale GUID Ensure failures
+	WidgetBP->OnVariableRemoved(Widget->GetFName());
 
 	WidgetBP->WidgetTree->RemoveWidget(Widget);
 	MarkModified(WidgetBP);
@@ -360,6 +420,8 @@ bool UAIWidgetBlueprintBuilder::MoveWidget(
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("MoveWidget: Widget '%s' not found"), *WidgetName);
 		return false;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIMoveWidget", "AI: Move Widget"));
 
 	// Remove from current parent
 	if (Widget == WidgetBP->WidgetTree->RootWidget)
@@ -417,6 +479,8 @@ bool UAIWidgetBlueprintBuilder::SetWidgetProperty(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AISetWidgetProperty", "AI: Set Widget Property"));
+
 	bool bSuccess = SetPropertyByPath(Widget, PropertyName, Value);
 	if (bSuccess)
 	{
@@ -456,6 +520,8 @@ bool UAIWidgetBlueprintBuilder::SetSlotProperty(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AISetSlotProperty", "AI: Set Slot Property"));
+
 	bool bSuccess = SetPropertyByPath(Widget->Slot, PropertyName, Value);
 	if (bSuccess)
 	{
@@ -487,6 +553,8 @@ int32 UAIWidgetBlueprintBuilder::SetWidgetProperties(
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("SetWidgetProperties: Widget '%s' not found"), *WidgetName);
 		return 0;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AISetWidgetProperties", "AI: Set Widget Properties"));
 
 	int32 SuccessCount = 0;
 	for (const auto& Pair : Properties)
@@ -538,6 +606,8 @@ bool UAIWidgetBlueprintBuilder::SetCanvasSlotLayout(
 			*WidgetName, *Widget->Slot->GetClass()->GetName());
 		return false;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AISetCanvasSlotLayout", "AI: Set Canvas Slot Layout"));
 
 	// Set anchors
 	FAnchors Anchors;
@@ -887,6 +957,8 @@ bool UAIWidgetBlueprintBuilder::SetCDOProperty(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AISetCDOProperty", "AI: Set CDO Property"));
+
 	bool bResult = SetPropertyByPath(CDO, PropertyName, Value);
 	if (bResult)
 	{
@@ -950,7 +1022,8 @@ TSharedPtr<FJsonObject> UAIWidgetBlueprintBuilder::GetCDOPropertiesAsJson(UWidge
 int32 UAIWidgetBlueprintBuilder::AddArrayElement(
 	UObject* Object,
 	const FString& ArrayPropertyName,
-	const TMap<FString, FString>& ElementValues)
+	const TMap<FString, FString>& ElementValues,
+	const FString& ClassName)
 {
 	if (!Object)
 	{
@@ -965,6 +1038,8 @@ int32 UAIWidgetBlueprintBuilder::AddArrayElement(
 			*ArrayPropertyName, *Object->GetClass()->GetName());
 		return -1;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIAddArrayElement", "AI: Add Array Element"));
 
 	FScriptArrayHelper ArrayHelper(ArrayProp, ArrayProp->ContainerPtrToValuePtr<void>(Object));
 	int32 NewIndex = ArrayHelper.AddValue();
@@ -1018,6 +1093,48 @@ int32 UAIWidgetBlueprintBuilder::AddArrayElement(
 			}
 		}
 	}
+	else if (FObjectProperty* InnerObjProp = CastField<FObjectProperty>(ArrayProp->Inner))
+	{
+		// Instanced UObject array (e.g. TArray<TObjectPtr<UGameFeatureAction>> with UPROPERTY(Instanced))
+		if (ClassName.IsEmpty())
+		{
+			UE_LOG(LogAIWidgetBuilder, Warning, TEXT("AddArrayElement: Object array '%s' requires class_name parameter"),
+				*ArrayPropertyName);
+			ArrayHelper.RemoveValues(NewIndex, 1);
+			return -1;
+		}
+
+		UClass* ObjClass = FindObject<UClass>(nullptr, *ClassName);
+		if (!ObjClass)
+		{
+			ObjClass = LoadObject<UClass>(nullptr, *ClassName);
+		}
+		if (!ObjClass)
+		{
+			UE_LOG(LogAIWidgetBuilder, Warning, TEXT("AddArrayElement: Could not find class '%s'"), *ClassName);
+			ArrayHelper.RemoveValues(NewIndex, 1);
+			return -1;
+		}
+
+		UObject* NewObj = NewObject<UObject>(Object, ObjClass, NAME_None, RF_Public | RF_Transactional);
+		InnerObjProp->SetObjectPropertyValue(ArrayHelper.GetRawPtr(NewIndex), NewObj);
+
+		// Set sub-properties on the newly created object
+		for (const auto& Pair : ElementValues)
+		{
+			FProperty* SubProp = NewObj->GetClass()->FindPropertyByName(FName(*Pair.Key));
+			if (SubProp)
+			{
+				void* SubPtr = SubProp->ContainerPtrToValuePtr<void>(NewObj);
+				SubProp->ImportText_Direct(*Pair.Value, SubPtr, NewObj, PPF_None);
+			}
+			else
+			{
+				UE_LOG(LogAIWidgetBuilder, Warning, TEXT("AddArrayElement: Sub-property '%s' not found on %s"),
+					*Pair.Key, *ObjClass->GetName());
+			}
+		}
+	}
 	else if (!InnerStructProp && ElementValues.Num() > 0)
 	{
 		// Simple type array — use the first value
@@ -1057,6 +1174,8 @@ bool UAIWidgetBlueprintBuilder::RemoveArrayElement(
 	{
 		return false;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIRemoveArrayElement", "AI: Remove Array Element"));
 
 	ArrayHelper.RemoveValues(Index, 1);
 	Object->MarkPackageDirty();
@@ -1109,6 +1228,37 @@ bool UAIWidgetBlueprintBuilder::SetArrayElementProperty(
 		UE_LOG(LogAIWidgetBuilder, Warning, TEXT("SetArrayElementProperty: Index %d out of range (array has %d elements)"),
 			Index, ArrayHelper.Num());
 		return false;
+	}
+
+	FScopedTransaction Transaction(LOCTEXT("AISetArrayElementProperty", "AI: Set Array Element Property"));
+
+	// Instanced UObject array element — navigate into the inner object
+	if (FObjectProperty* InnerObjProp = CastField<FObjectProperty>(ArrayProp->Inner))
+	{
+		UObject* InnerObj = InnerObjProp->GetObjectPropertyValue(ArrayHelper.GetRawPtr(Index));
+		if (!InnerObj)
+		{
+			UE_LOG(LogAIWidgetBuilder, Warning, TEXT("SetArrayElementProperty: Element %d of '%s' is null"),
+				Index, *ArrayPropertyName);
+			return false;
+		}
+
+		FProperty* SubProp = InnerObj->GetClass()->FindPropertyByName(FName(*SubPropertyName));
+		if (!SubProp)
+		{
+			UE_LOG(LogAIWidgetBuilder, Warning, TEXT("SetArrayElementProperty: Property '%s' not found on %s"),
+				*SubPropertyName, *InnerObj->GetClass()->GetName());
+			return false;
+		}
+
+		void* SubPtr = SubProp->ContainerPtrToValuePtr<void>(InnerObj);
+		const TCHAR* ValueCStr = *Value;
+		bool bResult = SubProp->ImportText_Direct(ValueCStr, SubPtr, InnerObj, PPF_None) != nullptr;
+		if (bResult)
+		{
+			Object->MarkPackageDirty();
+		}
+		return bResult;
 	}
 
 	FStructProperty* InnerStructProp = CastField<FStructProperty>(ArrayProp->Inner);
@@ -1172,7 +1322,11 @@ void UAIWidgetBlueprintBuilder::MarkModified(UWidgetBlueprint* WidgetBP)
 {
 	if (WidgetBP)
 	{
-		FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(WidgetBP);
+		// Use non-structural mark to avoid triggering immediate recompilation.
+		// Structural compile happens in CompileAndSave() after all edits are done.
+		// MarkBlueprintAsStructurallyModified triggers full recompile which can crash
+		// when BindWidget variables don't yet have matching widgets in the tree.
+		FBlueprintEditorUtils::MarkBlueprintAsModified(WidgetBP);
 	}
 }
 
@@ -1239,3 +1393,5 @@ TSharedPtr<FJsonObject> UAIWidgetBlueprintBuilder::WidgetToJson(UWidget* Widget)
 
 	return Obj;
 }
+
+#undef LOCTEXT_NAMESPACE

@@ -24,6 +24,9 @@
 
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
+#include "ScopedTransaction.h"
+
+#define LOCTEXT_NAMESPACE "AIBlueprintGraphBuilder"
 
 DEFINE_LOG_CATEGORY_STATIC(LogAIGraphBuilder, Log, All);
 
@@ -419,6 +422,8 @@ UK2Node* UAIBlueprintGraphBuilder::AddEventNode(
 		return nullptr;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIAddEventNode", "AI: Add Event Node"));
+
 	FString AIComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
 	// Check if this event override already exists
@@ -485,6 +490,8 @@ UK2Node* UAIBlueprintGraphBuilder::AddCustomEvent(
 		return nullptr;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIAddCustomEvent", "AI: Add Custom Event"));
+
 	FString AIComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
 	UK2Node_CustomEvent* CustomEvent = NewObject<UK2Node_CustomEvent>(EventGraph);
@@ -530,6 +537,8 @@ UK2Node* UAIBlueprintGraphBuilder::AddFunctionCallNode(
 		return nullptr;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIAddFunctionCallNode", "AI: Add Function Call Node"));
+
 	FString AIComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
 	UK2Node_CallFunction* CallNode = NewObject<UK2Node_CallFunction>(EventGraph);
@@ -567,6 +576,8 @@ UK2Node* UAIBlueprintGraphBuilder::AddVariableGetNode(
 		return nullptr;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIAddVariableGetNode", "AI: Add Variable Get Node"));
+
 	FString AIComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
 	UK2Node_VariableGet* GetNode = NewObject<UK2Node_VariableGet>(EventGraph);
@@ -603,6 +614,8 @@ UK2Node* UAIBlueprintGraphBuilder::AddVariableSetNode(
 	{
 		return nullptr;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIAddVariableSetNode", "AI: Add Variable Set Node"));
 
 	FString AIComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
@@ -650,6 +663,8 @@ UK2Node* UAIBlueprintGraphBuilder::AddMakeStructNode(
 		return nullptr;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIAddMakeStructNode", "AI: Add Make Struct Node"));
+
 	FString AIComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
 	UK2Node_MakeStruct* MakeNode = NewObject<UK2Node_MakeStruct>(EventGraph);
@@ -685,6 +700,8 @@ UK2Node* UAIBlueprintGraphBuilder::AddBranchNode(
 	{
 		return nullptr;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIAddBranchNode", "AI: Add Branch Node"));
 
 	FString AIComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
@@ -733,6 +750,8 @@ UK2Node* UAIBlueprintGraphBuilder::AddCallParentFunctionNode(
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("AddCallParentFunctionNode: Function '%s' not found in parent class"), *FunctionName);
 		return nullptr;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIAddCallParentFunctionNode", "AI: Add Call Parent Function Node"));
 
 	FString AIComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
@@ -800,6 +819,8 @@ bool UAIBlueprintGraphBuilder::ConnectPins(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIConnectPins", "AI: Connect Pins"));
+
 	const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
 	bool bConnected = Schema->TryCreateConnection(FromPin, ToPin);
 
@@ -843,6 +864,8 @@ bool UAIBlueprintGraphBuilder::SetPinDefaultValue(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AISetPinDefaultValue", "AI: Set Pin Default Value"));
+
 	const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
 	Schema->TrySetDefaultValue(*Pin, DefaultValue);
 
@@ -870,6 +893,8 @@ bool UAIBlueprintGraphBuilder::RemoveNode(
 		UE_LOG(LogAIGraphBuilder, Warning, TEXT("RemoveNode: Node '%s' not found"), *NodeName);
 		return false;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIRemoveNode", "AI: Remove Node"));
 
 	FBlueprintEditorUtils::RemoveNode(Blueprint, Node);
 	UE_LOG(LogAIGraphBuilder, Log, TEXT("RemoveNode: Removed '%s'"), *NodeName);
@@ -1029,6 +1054,8 @@ bool UAIBlueprintGraphBuilder::AddVariable(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIAddVariable", "AI: Add Variable"));
+
 	bool bResult = FBlueprintEditorUtils::AddMemberVariable(Blueprint, VarFName, PinType);
 	if (!bResult)
 	{
@@ -1073,6 +1100,8 @@ bool UAIBlueprintGraphBuilder::SetVariableDefault(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AISetVariableDefault", "AI: Set Variable Default"));
+
 	Blueprint->NewVariables[VarIndex].DefaultValue = DefaultValue;
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 
@@ -1096,6 +1125,8 @@ bool UAIBlueprintGraphBuilder::RemoveVariable(
 		UE_LOG(LogAIGraphBuilder, Warning, TEXT("RemoveVariable: Variable '%s' not found"), *VarName);
 		return false;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIRemoveVariable", "AI: Remove Variable"));
 
 	FBlueprintEditorUtils::RemoveMemberVariable(Blueprint, FName(*VarName));
 	UE_LOG(LogAIGraphBuilder, Log, TEXT("RemoveVariable: Removed '%s'"), *VarName);
@@ -1138,3 +1169,5 @@ TSharedPtr<FJsonObject> UAIBlueprintGraphBuilder::GetVariablesAsJson(UBlueprint*
 	Result->SetArrayField(TEXT("variables"), VarsArray);
 	return Result;
 }
+
+#undef LOCTEXT_NAMESPACE

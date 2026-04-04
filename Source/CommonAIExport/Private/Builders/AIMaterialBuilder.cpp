@@ -28,6 +28,11 @@
 // Compile
 #include "MaterialShared.h"
 
+// Undo/Redo
+#include "ScopedTransaction.h"
+
+#define LOCTEXT_NAMESPACE "AIMaterialBuilder"
+
 DEFINE_LOG_CATEGORY_STATIC(LogAIMaterialBuilder, Log, All);
 
 // =============================================================================
@@ -119,6 +124,9 @@ bool UAIMaterialBuilder::SetMaterialProperty(
 	const FString& Value)
 {
 	if (!Material) return false;
+
+	FScopedTransaction Transaction(LOCTEXT("AISetMaterialProp", "AI: Set Material Property"));
+
 	bool bSuccess = SetPropertyByPath(Material, PropertyName, Value);
 	if (bSuccess)
 	{
@@ -200,6 +208,8 @@ UMaterialExpression* UAIMaterialBuilder::AddExpression(
 		return nullptr;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIAddExpression", "AI: Add Material Expression"));
+
 	UMaterialExpression* Expr = UMaterialEditingLibrary::CreateMaterialExpression(
 		Material, ExprClass, PosX, PosY);
 
@@ -243,6 +253,8 @@ bool UAIMaterialBuilder::SetExpressionProperty(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AISetExpressionProp", "AI: Set Expression Property"));
+
 	bool bSuccess = SetPropertyByPath(Expr, PropertyName, Value);
 	if (bSuccess)
 	{
@@ -279,6 +291,8 @@ bool UAIMaterialBuilder::ConnectExpressions(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIConnectExpressions", "AI: Connect Material Expressions"));
+
 	UMaterialEditingLibrary::ConnectMaterialExpressions(
 		FromExpr, FromOutput, ToExpr, ToInput);
 
@@ -311,6 +325,8 @@ bool UAIMaterialBuilder::ConnectToMaterialProperty(
 		return false;
 	}
 
+	FScopedTransaction Transaction(LOCTEXT("AIConnectToMaterialProp", "AI: Connect To Material Property"));
+
 	bool bResult = UMaterialEditingLibrary::ConnectMaterialProperty(FromExpr, FromOutput, Prop);
 
 	Material->MarkPackageDirty();
@@ -329,6 +345,8 @@ bool UAIMaterialBuilder::DisconnectInput(
 
 	UMaterialExpression* Expr = FindExpressionByName(Material, NodeName);
 	if (!Expr) return false;
+
+	FScopedTransaction Transaction(LOCTEXT("AIDisconnectInput", "AI: Disconnect Material Input"));
 
 	for (FExpressionInputIterator It{Expr}; It; ++It)
 	{
@@ -359,6 +377,8 @@ bool UAIMaterialBuilder::RemoveExpression(
 		UE_LOG(LogAIMaterialBuilder, Error, TEXT("RemoveExpression: Node '%s' not found"), *NodeName);
 		return false;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIRemoveExpression", "AI: Remove Material Expression"));
 
 	UMaterialEditingLibrary::DeleteMaterialExpression(Material, Expr);
 	Material->MarkPackageDirty();
@@ -430,6 +450,8 @@ bool UAIMaterialBuilder::SetInstanceParameter(
 	const FString& Value)
 {
 	if (!MIC) return false;
+
+	FScopedTransaction Transaction(LOCTEXT("AISetInstanceParam", "AI: Set Instance Parameter"));
 
 	FMaterialParameterInfo ParamInfo{FName(*ParamName)};
 
@@ -990,3 +1012,5 @@ bool UAIMaterialBuilder::SaveAsset(UObject* Asset)
 	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
 	return UPackage::SavePackage(Package, Asset, *PackagePath, SaveArgs);
 }
+
+#undef LOCTEXT_NAMESPACE
