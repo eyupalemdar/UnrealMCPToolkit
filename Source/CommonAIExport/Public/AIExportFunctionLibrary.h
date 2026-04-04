@@ -166,6 +166,14 @@ public:
 	 */
 	static FString GetSimplifierScriptPath();
 
+	/**
+	 * Export asset content as string using the modular exporter registry.
+	 * @param Asset The asset to export
+	 * @param bFilterDefaults If true, skip properties that match the archetype defaults
+	 * @return Exported text content
+	 */
+	static FString ExportAssetContent(UObject* Asset, bool bFilterDefaults);
+
 private:
 	/**
 	 * Write content to file
@@ -181,9 +189,4 @@ private:
 	 * Get a human-readable asset type name
 	 */
 	static FString GetAssetTypeName(UObject* Asset);
-
-	/**
-	 * Internal export using registry
-	 */
-	static FString ExportAssetContent(UObject* Asset, bool bFilterDefaults);
 };

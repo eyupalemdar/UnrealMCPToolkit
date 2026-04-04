@@ -27,9 +27,12 @@ void FCommonAIExportModule::ShutdownModule()
 	// Stop TCP server
 	FAIExportTCPServerManager::Stop();
 
-	// Unregister context menu
-	UToolMenus::UnRegisterStartupCallback(this);
-	FAIExportContextMenu::Unregister();
+	// Unregister context menu (guard against UObject system already torn down)
+	if (UObjectInitialized())
+	{
+		UToolMenus::UnRegisterStartupCallback(this);
+		FAIExportContextMenu::Unregister();
+	}
 
 	UE_LOG(LogAIExport, Log, TEXT("CommonAIExport module shutdown"));
 }

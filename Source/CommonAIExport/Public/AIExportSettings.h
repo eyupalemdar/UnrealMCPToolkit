@@ -58,6 +58,14 @@ public:
 	FString PythonPath = TEXT("python");
 
 	/**
+	 * Maximum length for exported property values.
+	 * Values exceeding this limit will be truncated with "...(truncated)" suffix.
+	 * Increase for complex DataAssets or GameplayTag containers.
+	 */
+	UPROPERTY(config, EditAnywhere, Category = "Export", meta = (ClampMin = "100", ClampMax = "50000"))
+	int32 MaxPropertyValueLength = 2000;
+
+	/**
 	 * Also copy the exported content to clipboard (in addition to saving file).
 	 */
 	UPROPERTY(config, EditAnywhere, Category = "Export")

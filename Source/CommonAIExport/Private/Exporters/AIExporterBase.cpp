@@ -1,6 +1,7 @@
 // Copyright (c) 2025 Alemdar Labs Ltd. All Rights Reserved.
 
 #include "Exporters/AIExporterBase.h"
+#include "AIExportSettings.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
@@ -124,10 +125,11 @@ FString UAIExporterBase::FormatPropertyValue(FProperty* Property, const void* Va
 	FString ValueStr;
 	Property->ExportTextItem_Direct(ValueStr, ValuePtr, nullptr, Object, PPF_None);
 
-	// Truncate very long values
-	if (ValueStr.Len() > 500)
+	// Truncate very long values (limit configurable via Project Settings)
+	const int32 MaxLen = UAIExportSettings::Get()->MaxPropertyValueLength;
+	if (ValueStr.Len() > MaxLen)
 	{
-		ValueStr = ValueStr.Left(500) + TEXT("...(truncated)");
+		ValueStr = ValueStr.Left(MaxLen) + TEXT("...(truncated)");
 	}
 
 	return ValueStr;
