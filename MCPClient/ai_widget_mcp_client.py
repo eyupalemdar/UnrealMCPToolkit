@@ -53,6 +53,25 @@ Material Instance workflow:
 1. create_material_instance - Create MIC with parent
 2. set_instance_parameter - Set scalar/vector/texture parameters
 3. save_material_instance - Save to disk
+
+Generic Asset Factory workflow:
+1. create_asset - Create InputAction, InputMappingContext, Sound*, PhysicalMaterial
+2. set_asset_property - Set properties via reflection (ImportText format)
+3. save_asset - Save to disk
+4. get_asset_properties - Inspect properties
+
+Input Mapping Context workflow:
+1. create_asset (asset_type="InputMappingContext") - Create IMC
+2. add_input_mapping - Add key bindings with triggers/modifiers
+3. remove_input_mapping - Remove bindings by index
+4. get_input_mappings - Inspect current bindings
+5. save_asset - Save to disk
+
+AnimBlueprint workflow:
+1. create_anim_blueprint - Create with skeleton and parent class
+2. Use Blueprint Graph tools (add_event_node, etc.) for EventGraph
+3. compile_and_save - Compile and save
+4. get_anim_blueprint_info - Inspect result
 """)
 
 DEFAULT_PORT = 55560
@@ -1047,7 +1066,8 @@ def get_cdo_properties(asset_path: str) -> str:
 def add_cdo_array_element(
     asset_path: str,
     array_name: str,
-    element_values: str = "{}"
+    element_values: str = "{}",
+    class_name: str = ""
 ) -> str:
     """
     Add an element to a CDO array property.
@@ -1055,11 +1075,19 @@ def add_cdo_array_element(
     For struct arrays (e.g. PreregisteredTabInfoArray), pass element_values as
     a JSON object with sub-property names and their ImportText values.
 
+    For instanced UObject arrays (e.g. TArray<TObjectPtr<UGameFeatureAction>> with
+    UPROPERTY(Instanced)), pass class_name with the full class path to instantiate.
+
+    Works with Widget Blueprints, Blueprint data assets (BPTYPE_Const), and
+    plain data assets.
+
     Args:
-        asset_path: Asset path of the Widget Blueprint
+        asset_path: Asset path of the Blueprint or data asset
         array_name: Name of the TArray property on the CDO
         element_values: JSON object string of sub-property name -> value pairs.
                        Example: '{"TabNameID": "Play", "TabText": "NSLOCTEXT(\\"\\", \\"\\", \\"PLAY\\")"}'
+        class_name: Full class path for instanced UObject arrays (e.g. "/Script/OkeyGame.OkeyAction_ConfigureGameInstance").
+                   Leave empty for struct/simple type arrays.
 
     Returns:
         JSON with the index of the newly added element.
@@ -1068,6 +1096,7 @@ def add_cdo_array_element(
         "asset_path": asset_path,
         "array_name": array_name,
         "element_values": element_values,
+        "class_name": class_name,
     }))
 
 
@@ -1577,6 +1606,226 @@ def get_variables(asset_path: str) -> str:
         JSON with variables array containing name, type, default_value, category.
     """
     return _format_response(_send_command("get_variables", {
+        "asset_path": asset_path,
+    }))
+
+
+# =============================================================================
+# GENERIC ASSET FACTORY
+# =============================================================================
+
+@mcp.tool()
+def create_asset(
+    package_path: str,
+    asset_name: str,
+    asset_type: str,
+    properties: dict | None = None
+) -> str:
+    """
+    Create a new asset of the given type.
+
+    Args:
+        package_path: Content path, e.g. "/Game/Input"
+        asset_name: Asset name, e.g. "IA_Jump"
+        asset_type: One of: InputAction, InputMappingContext,
+                   SoundClass, SoundSubmix, SoundConcurrency, SoundAttenuation,
+                   SoundControlBus, SoundControlBusMix, SoundModulationPatch,
+                   PhysicalMaterial
+        properties: Optional dict of initial property values (ImportText format)
+
+    Returns:
+        JSON with asset_path, asset_name, asset_type, class.
+    """
+    params = {
+        "package_path": package_path,
+        "asset_name": asset_name,
+        "asset_type": asset_type,
+    }
+    if properties:
+        params["properties"] = properties
+    return _format_response(_send_command("create_asset", params))
+
+
+@mcp.tool()
+def set_asset_property(
+    asset_path: str,
+    property_path: str,
+    value: str
+) -> str:
+    """
+    Set a property on any loaded asset using reflection.
+
+    Args:
+        asset_path: Asset path, e.g. "/Game/Input/IA_Jump"
+        property_path: Property path with dot/bracket notation,
+                      e.g. "ValueType", "Triggers[0].ActuationThreshold"
+        value: Value in UE ImportText format
+
+    Returns:
+        JSON with success status.
+    """
+    return _format_response(_send_command("set_asset_property", {
+        "asset_path": asset_path,
+        "property_path": property_path,
+        "value": value,
+    }))
+
+
+@mcp.tool()
+def get_asset_properties(asset_path: str) -> str:
+    """
+    Get all properties of any loaded asset as JSON.
+
+    Args:
+        asset_path: Asset path, e.g. "/Game/Input/IA_Jump"
+
+    Returns:
+        JSON with asset_path, class, and properties object.
+    """
+    return _format_response(_send_command("get_asset_properties", {
+        "asset_path": asset_path,
+    }))
+
+
+@mcp.tool()
+def save_asset(asset_path: str) -> str:
+    """
+    Save any loaded asset to disk.
+
+    Args:
+        asset_path: Asset path, e.g. "/Game/Input/IA_Jump"
+
+    Returns:
+        JSON with saved status.
+    """
+    return _format_response(_send_command("save_asset", {
+        "asset_path": asset_path,
+    }))
+
+
+# =============================================================================
+# INPUT MAPPING CONTEXT
+# =============================================================================
+
+@mcp.tool()
+def add_input_mapping(
+    asset_path: str,
+    input_action_path: str,
+    key: str,
+    triggers: list[str] | None = None,
+    modifiers: list[str] | None = None
+) -> str:
+    """
+    Add a key mapping to an InputMappingContext.
+
+    Args:
+        asset_path: Path to InputMappingContext, e.g. "/Game/Input/IMC_Default"
+        input_action_path: Path to InputAction, e.g. "/Game/Input/IA_Jump"
+        key: FKey name, e.g. "SpaceBar", "Gamepad_FaceButton_Bottom",
+             "LeftMouseButton", "W", "Gamepad_LeftStick_Up"
+        triggers: Optional trigger class short names, e.g. ["Pressed", "Hold"]
+                 Available: Pressed, Released, Down, Hold, HoldAndRelease,
+                           Tap, Pulse, ChordAction, ChordBlocker, Combo
+        modifiers: Optional modifier class short names, e.g. ["Negate", "SwizzleAxis"]
+                  Available: Negate, DeadZone, Scalar, ScaleByDeltaTime,
+                            FOVScaling, ResponseCurve, Smooth, SwizzleAxis, ToWorldSpace
+
+    Returns:
+        JSON with success status, action and key.
+    """
+    params = {
+        "asset_path": asset_path,
+        "input_action_path": input_action_path,
+        "key": key,
+    }
+    if triggers:
+        params["triggers"] = triggers
+    if modifiers:
+        params["modifiers"] = modifiers
+    return _format_response(_send_command("add_input_mapping", params))
+
+
+@mcp.tool()
+def remove_input_mapping(
+    asset_path: str,
+    mapping_index: int
+) -> str:
+    """
+    Remove a key mapping from an InputMappingContext by index.
+
+    Args:
+        asset_path: Path to InputMappingContext
+        mapping_index: Index of the mapping to remove (0-based)
+
+    Returns:
+        JSON with removal confirmation.
+    """
+    return _format_response(_send_command("remove_input_mapping", {
+        "asset_path": asset_path,
+        "mapping_index": mapping_index,
+    }))
+
+
+@mcp.tool()
+def get_input_mappings(asset_path: str) -> str:
+    """
+    Get all key mappings from an InputMappingContext as JSON.
+
+    Args:
+        asset_path: Path to InputMappingContext
+
+    Returns:
+        JSON with mappings array containing index, action, key, triggers, modifiers.
+    """
+    return _format_response(_send_command("get_input_mappings", {
+        "asset_path": asset_path,
+    }))
+
+
+# =============================================================================
+# ANIM BLUEPRINT BUILDER
+# =============================================================================
+
+@mcp.tool()
+def create_anim_blueprint(
+    package_path: str,
+    asset_name: str,
+    skeleton_path: str,
+    parent_class: str = "AnimInstance"
+) -> str:
+    """
+    Create a new AnimBlueprint asset.
+
+    Args:
+        package_path: Content path, e.g. "/Game/Characters/Animations"
+        asset_name: Asset name, e.g. "ABP_Character"
+        skeleton_path: Path to USkeleton, e.g. "/Game/Characters/SK_Mannequin"
+        parent_class: Optional parent class. Defaults to "AnimInstance".
+                     Can also be a full class path.
+
+    Returns:
+        JSON with asset_path, asset_name, skeleton, parent_class.
+    """
+    return _format_response(_send_command("create_anim_blueprint", {
+        "package_path": package_path,
+        "asset_name": asset_name,
+        "skeleton_path": skeleton_path,
+        "parent_class": parent_class,
+    }))
+
+
+@mcp.tool()
+def get_anim_blueprint_info(asset_path: str) -> str:
+    """
+    Get AnimBlueprint info as JSON (skeleton, parent class, graphs, variables).
+
+    Args:
+        asset_path: Path to AnimBlueprint, e.g. "/Game/Characters/ABP_Character"
+
+    Returns:
+        JSON with asset info including skeleton, parent_class, status, graphs, variables.
+    """
+    return _format_response(_send_command("get_anim_blueprint_info", {
         "asset_path": asset_path,
     }))
 

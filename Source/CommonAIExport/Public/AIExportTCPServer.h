@@ -80,6 +80,24 @@ class FSocket;
  * - save_material_instance: Save MIC to disk
  * - get_material_instance_info: Get MIC info as JSON
  *
+ * Data Asset commands:
+ * - save_data_asset: Save a Data Asset to disk (no compile)
+ *
+ * Generic Asset Factory commands:
+ * - create_asset: Create InputAction, InputMappingContext, Sound*, PhysicalMaterial
+ * - set_asset_property: Set property on any loaded asset (reflection-based)
+ * - get_asset_properties: Get all properties of any loaded asset as JSON
+ * - save_asset: Save any loaded asset to disk
+ *
+ * Input Mapping Context commands:
+ * - add_input_mapping: Add a key mapping to InputMappingContext
+ * - remove_input_mapping: Remove a mapping by index
+ * - get_input_mappings: Get all mappings as JSON
+ *
+ * AnimBlueprint Builder commands:
+ * - create_anim_blueprint: Create AnimBlueprint with skeleton
+ * - get_anim_blueprint_info: Get AnimBP info as JSON
+ *
  * Asset Import commands:
  * - import_texture: Import a texture file from disk into Content Browser
  * - import_font: Import font files (TTF/OTF) and create a Composite Font asset
@@ -193,6 +211,24 @@ private:
 	FString HandleSetInstanceParameter(TSharedPtr<class FJsonObject> Params);
 	FString HandleSaveMaterialInstance(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetMaterialInstanceInfo(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — Data Asset */
+	FString HandleSaveDataAsset(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — Generic Asset Factory */
+	FString HandleCreateAsset(TSharedPtr<class FJsonObject> Params);
+	FString HandleSetAssetProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetAssetProperties(TSharedPtr<class FJsonObject> Params);
+	FString HandleSaveAsset(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — Input Mapping Context */
+	FString HandleAddInputMapping(TSharedPtr<class FJsonObject> Params);
+	FString HandleRemoveInputMapping(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetInputMappings(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — AnimBlueprint Builder */
+	FString HandleCreateAnimBlueprint(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetAnimBlueprintInfo(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Asset Import */
 	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);
