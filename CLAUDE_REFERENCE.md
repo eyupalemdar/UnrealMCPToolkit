@@ -1,7 +1,7 @@
 # CommonAIExport — Claude Reference Guide
 
 > **Read this file to understand ALL plugin capabilities in one place.**
-> 55 MCP tools across 9 categories. UE 5.7, TCP port auto-discovery.
+> 59 MCP tools across 10 categories. UE 5.7, TCP port auto-discovery.
 
 ## Architecture
 
@@ -26,6 +26,7 @@ Claude Code ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE E
 | Tool | Purpose |
 |------|---------|
 | `create_widget_blueprint(package_path, asset_name, parent_class?)` | Create new WBP. parent_class e.g. `/Script/CommonUI.CommonUserWidget` |
+| `create_blueprint(package_path, asset_name, parent_class)` | Create any BP type (ButtonStyle, TextStyle, DataAsset, etc.) |
 | `compile_and_save(asset_path)` | Compile + save to disk. **Always call after modifications.** |
 | `reparent_blueprint(asset_path, new_parent_class)` | Change parent class. e.g. `/Script/LyraGame.LyraActivatableWidget` |
 | `get_widget_tree(asset_path)` | Get full widget hierarchy as JSON |
@@ -39,6 +40,14 @@ Claude Code ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE E
 create_widget_blueprint("/Game/UI/Kale/Screens", "W_KalePlayContent", "/Script/CommonUI.CommonUserWidget")
 add_widget("/Game/UI/Kale/Screens/W_KalePlayContent", "VerticalBox", "VBox_Root", "")
 compile_and_save("/Game/UI/Kale/Screens/W_KalePlayContent")
+```
+
+### Example: Create ButtonStyle DataAsset
+```
+create_blueprint("/Game/UI/Foundation/Buttons", "ButtonStyle-Kale-Primary", "/Script/CommonUI.CommonButtonStyle")
+set_cdo_property("/Game/UI/Foundation/Buttons/ButtonStyle-Kale-Primary", "NormalBase",
+    "(TintColor=(SpecifiedColor=(R=1.0,G=1.0,B=1.0,A=1.0)),DrawAs=Box,ImageSize=(X=16.0,Y=16.0),Margin=(Left=0.5,Top=0.5,Right=0.5,Bottom=0.5),ResourceObject=\"/Script/Engine.MaterialInstanceConstant'/Game/UI/Menu/Art/MI_UI_MenuButton_Base.MI_UI_MenuButton_Base'\")")
+compile_and_save("/Game/UI/Foundation/Buttons/ButtonStyle-Kale-Primary")
 ```
 
 ---
@@ -170,6 +179,7 @@ set_cdo_array_element_property(
 | `add_variable_set_node(asset_path, var_name, node_name, pos_x?, pos_y?)` | Add Set node for variable |
 | `add_make_struct_node(asset_path, struct_type, node_name, pos_x?, pos_y?)` | Add Make Struct node |
 | `add_branch_node(asset_path, node_name, pos_x?, pos_y?)` | Add Branch (if) node |
+| `add_call_parent_function(asset_path, function_name, node_name, pos_x?, pos_y?)` | Add Super::Function call node |
 | `connect_pins(asset_path, source_node, source_pin, target_node, target_pin)` | Connect two pins |
 | `set_pin_default(asset_path, node_name, pin_name, value)` | Set pin default value |
 | `remove_graph_node(asset_path, node_name)` | Remove a graph node |
@@ -396,7 +406,57 @@ Exports go to `Dev/AIExports/` mirroring the Content folder structure:
 ### Fix CDO array entry
 1. `get_cdo_array_length` → 2. `set_cdo_array_element_property` → 3. `compile_and_save`
 
+### Create Widget Animation
+1. `create_widget_animation` → 2. `bind_animation_widget` (for each widget) → 3. `add_animation_track` (for each property) → 4. `add_animation_keyframe` (for each keyframe) → 5. `compile_and_save`
+
 ---
 
-*Version: 5.0.0 — Last Updated: 2026-03-05*
-*55 MCP tools, covering Widget Builder, Material Builder, BP Graph, CDO, Array, Import, Export*
+## 10. Widget Animations
+
+| Tool | Purpose |
+|------|---------|
+| `create_widget_animation(asset_path, animation_name, length_seconds?)` | Create UWidgetAnimation on a WBP. Default 1.0s. |
+| `bind_animation_widget(asset_path, animation_name, widget_name)` | Bind a widget to an animation (creates possessable + binding). |
+| `add_animation_track(asset_path, animation_name, widget_name, property_type, property_path)` | Add a property track. Types: `float`, `color`, `transform2d`. |
+| `add_animation_keyframe(asset_path, animation_name, widget_name, property_path, time, value, interpolation?)` | Add keyframe. Interpolation: `Linear`, `Cubic` (default), `Constant`. |
+
+### Track Types
+
+| Type | UE Track | Value Format | Common Properties |
+|------|----------|-------------|-------------------|
+| `float` | `UMovieSceneFloatTrack` | `"0.5"` | `RenderOpacity` |
+| `color` | `UMovieSceneColorTrack` | `"(R=1.0,G=0.5,B=0.0,A=1.0)"` | `ColorAndOpacity`, `BrushColor`, `TintColor` |
+| `transform2d` | `UMovieScene2DTransformTrack` | `"0,0,1,1,0,0,0"` (TX,TY,SX,SY,ShX,ShY,Angle) | `RenderTransform` |
+
+### Example: Fade-in Animation
+```
+create_widget_animation("/Game/UI/W_MyWidget", "FadeIn", 0.5)
+bind_animation_widget("/Game/UI/W_MyWidget", "FadeIn", "ContentBox")
+add_animation_track("/Game/UI/W_MyWidget", "FadeIn", "ContentBox", "float", "RenderOpacity")
+add_animation_keyframe("/Game/UI/W_MyWidget", "FadeIn", "ContentBox", "RenderOpacity", 0.0, "0.0", "Cubic")
+add_animation_keyframe("/Game/UI/W_MyWidget", "FadeIn", "ContentBox", "RenderOpacity", 0.5, "1.0", "Cubic")
+compile_and_save("/Game/UI/W_MyWidget")
+```
+
+### Example: Color Pulse Animation
+```
+create_widget_animation("/Game/UI/W_MyWidget", "Pulse", 1.0)
+bind_animation_widget("/Game/UI/W_MyWidget", "Pulse", "Indicator")
+add_animation_track("/Game/UI/W_MyWidget", "Pulse", "Indicator", "color", "ColorAndOpacity")
+add_animation_keyframe("/Game/UI/W_MyWidget", "Pulse", "Indicator", "ColorAndOpacity", 0.0, "(R=1.0,G=1.0,B=1.0,A=1.0)")
+add_animation_keyframe("/Game/UI/W_MyWidget", "Pulse", "Indicator", "ColorAndOpacity", 0.5, "(R=0.916,G=0.389,B=0.013,A=1.0)")
+add_animation_keyframe("/Game/UI/W_MyWidget", "Pulse", "Indicator", "ColorAndOpacity", 1.0, "(R=1.0,G=1.0,B=1.0,A=1.0)")
+compile_and_save("/Game/UI/W_MyWidget")
+```
+
+### Gotchas
+- **Bind before track**: Widget must be bound (`bind_animation_widget`) before adding tracks
+- **Track before keyframe**: Track must exist (`add_animation_track`) before adding keyframes
+- **Compile to persist**: Call `compile_and_save` after all animation changes
+- **Property path**: Must match the UE property name exactly (case-sensitive)
+- **Color format**: Use UE FLinearColor ImportText format: `(R=0.5,G=0.5,B=0.5,A=1.0)`
+
+---
+
+*Version: 6.0.0 — Last Updated: 2026-03-08*
+*59 MCP tools, covering Widget Builder, Material Builder, BP Graph, CDO, Array, Widget Animation, Import, Export*

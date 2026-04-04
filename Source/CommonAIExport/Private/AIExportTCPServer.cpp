@@ -5,6 +5,8 @@
 #include "Builders/AIWidgetBlueprintBuilder.h"
 #include "Builders/AIMaterialBuilder.h"
 #include "Builders/AIBlueprintGraphBuilder.h"
+#include "Builders/AIWidgetAnimationBuilder.h"
+#include "Animation/WidgetAnimation.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "CommonAIExportModule.h"
 
@@ -450,6 +452,10 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 	{
 		return HandleGetCDOArrayLength(Params);
 	}
+	else if (CommandType == TEXT("get_cdo_array_element_properties"))
+	{
+		return HandleGetCDOArrayElementProperties(Params);
+	}
 	// Blueprint Graph commands
 	else if (CommandType == TEXT("add_event_node"))
 	{
@@ -589,6 +595,23 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 	else if (CommandType == TEXT("get_material_instance_info"))
 	{
 		return HandleGetMaterialInstanceInfo(Params);
+	}
+	// Widget Animation commands
+	else if (CommandType == TEXT("create_widget_animation"))
+	{
+		return HandleCreateWidgetAnimation(Params);
+	}
+	else if (CommandType == TEXT("bind_animation_widget"))
+	{
+		return HandleBindAnimationWidget(Params);
+	}
+	else if (CommandType == TEXT("add_animation_track"))
+	{
+		return HandleAddAnimationTrack(Params);
+	}
+	else if (CommandType == TEXT("add_animation_keyframe"))
+	{
+		return HandleAddAnimationKeyframe(Params);
 	}
 	// Asset Import commands
 	else if (CommandType == TEXT("import_texture"))
@@ -2111,6 +2134,282 @@ FString FAIExportTCPServer::HandleGetMaterialInstanceInfo(TSharedPtr<FJsonObject
 }
 
 // =============================================================================
+// Widget Animation Commands
+// =============================================================================
+
+FString FAIExportTCPServer::HandleCreateWidgetAnimation(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid())
+	{
+		return CreateErrorResponse(TEXT("Missing 'params' object"));
+	}
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+	{
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	}
+
+	FString AnimationName;
+	if (!Params->TryGetStringField(TEXT("animation_name"), AnimationName))
+	{
+		return CreateErrorResponse(TEXT("Missing 'animation_name' parameter"));
+	}
+
+	double LengthSeconds = 1.0;
+	Params->TryGetNumberField(TEXT("length_seconds"), LengthSeconds);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, AnimationName, LengthSeconds, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetAnimationBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Widget Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		UWidgetAnimation* Anim = UAIWidgetAnimationBuilder::CreateAnimation(WBP, AnimationName, static_cast<float>(LengthSeconds));
+		if (!Anim)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to create animation '%s'"), *AnimationName)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("animation_name"), Anim->GetName());
+		Data->SetNumberField(TEXT("length_seconds"), LengthSeconds);
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady())
+	{
+		return CreateErrorResponse(TEXT("create_widget_animation timed out"));
+	}
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleBindAnimationWidget(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid())
+	{
+		return CreateErrorResponse(TEXT("Missing 'params' object"));
+	}
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+	{
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	}
+
+	FString AnimationName;
+	if (!Params->TryGetStringField(TEXT("animation_name"), AnimationName))
+	{
+		return CreateErrorResponse(TEXT("Missing 'animation_name' parameter"));
+	}
+
+	FString WidgetName;
+	if (!Params->TryGetStringField(TEXT("widget_name"), WidgetName))
+	{
+		return CreateErrorResponse(TEXT("Missing 'widget_name' parameter"));
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, AnimationName, WidgetName, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetAnimationBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Widget Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		bool bSuccess = UAIWidgetAnimationBuilder::BindWidget(WBP, AnimationName, WidgetName);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to bind widget '%s' to animation '%s'"), *WidgetName, *AnimationName)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("animation_name"), AnimationName);
+		Data->SetStringField(TEXT("widget_name"), WidgetName);
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady())
+	{
+		return CreateErrorResponse(TEXT("bind_animation_widget timed out"));
+	}
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddAnimationTrack(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid())
+	{
+		return CreateErrorResponse(TEXT("Missing 'params' object"));
+	}
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+	{
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	}
+
+	FString AnimationName;
+	if (!Params->TryGetStringField(TEXT("animation_name"), AnimationName))
+	{
+		return CreateErrorResponse(TEXT("Missing 'animation_name' parameter"));
+	}
+
+	FString WidgetName;
+	if (!Params->TryGetStringField(TEXT("widget_name"), WidgetName))
+	{
+		return CreateErrorResponse(TEXT("Missing 'widget_name' parameter"));
+	}
+
+	FString PropertyType;
+	if (!Params->TryGetStringField(TEXT("property_type"), PropertyType))
+	{
+		return CreateErrorResponse(TEXT("Missing 'property_type' parameter. Use 'float', 'color', or 'transform2d'"));
+	}
+
+	FString PropertyPath;
+	if (!Params->TryGetStringField(TEXT("property_path"), PropertyPath))
+	{
+		return CreateErrorResponse(TEXT("Missing 'property_path' parameter (e.g. 'RenderOpacity', 'ColorAndOpacity')"));
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, AnimationName, WidgetName, PropertyType, PropertyPath, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetAnimationBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Widget Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		bool bSuccess = UAIWidgetAnimationBuilder::AddTrack(WBP, AnimationName, WidgetName, PropertyType, PropertyPath);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add %s track for '%s' on widget '%s'"), *PropertyType, *PropertyPath, *WidgetName)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("animation_name"), AnimationName);
+		Data->SetStringField(TEXT("widget_name"), WidgetName);
+		Data->SetStringField(TEXT("property_type"), PropertyType);
+		Data->SetStringField(TEXT("property_path"), PropertyPath);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady())
+	{
+		return CreateErrorResponse(TEXT("add_animation_track timed out"));
+	}
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAddAnimationKeyframe(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid())
+	{
+		return CreateErrorResponse(TEXT("Missing 'params' object"));
+	}
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+	{
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	}
+
+	FString AnimationName;
+	if (!Params->TryGetStringField(TEXT("animation_name"), AnimationName))
+	{
+		return CreateErrorResponse(TEXT("Missing 'animation_name' parameter"));
+	}
+
+	FString WidgetName;
+	if (!Params->TryGetStringField(TEXT("widget_name"), WidgetName))
+	{
+		return CreateErrorResponse(TEXT("Missing 'widget_name' parameter"));
+	}
+
+	FString PropertyPath;
+	if (!Params->TryGetStringField(TEXT("property_path"), PropertyPath))
+	{
+		return CreateErrorResponse(TEXT("Missing 'property_path' parameter"));
+	}
+
+	double TimeSeconds = 0.0;
+	if (!Params->TryGetNumberField(TEXT("time"), TimeSeconds))
+	{
+		return CreateErrorResponse(TEXT("Missing 'time' parameter (seconds)"));
+	}
+
+	FString Value;
+	if (!Params->TryGetStringField(TEXT("value"), Value))
+	{
+		return CreateErrorResponse(TEXT("Missing 'value' parameter"));
+	}
+
+	FString Interpolation = TEXT("Cubic");
+	Params->TryGetStringField(TEXT("interpolation"), Interpolation);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, AnimationName, WidgetName, PropertyPath, TimeSeconds, Value, Interpolation, Promise, this]()
+	{
+		UWidgetBlueprint* WBP = UAIWidgetAnimationBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Widget Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		bool bSuccess = UAIWidgetAnimationBuilder::AddKeyframe(WBP, AnimationName, WidgetName, PropertyPath,
+			static_cast<float>(TimeSeconds), Value, Interpolation);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add keyframe at %.3fs for '%s' on '%s'"),
+				TimeSeconds, *PropertyPath, *WidgetName)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("animation_name"), AnimationName);
+		Data->SetStringField(TEXT("widget_name"), WidgetName);
+		Data->SetStringField(TEXT("property_path"), PropertyPath);
+		Data->SetNumberField(TEXT("time"), TimeSeconds);
+		Data->SetStringField(TEXT("value"), Value);
+		Data->SetStringField(TEXT("interpolation"), Interpolation);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady())
+	{
+		return CreateErrorResponse(TEXT("add_animation_keyframe timed out"));
+	}
+	return Future.Get();
+}
+
+// =============================================================================
 // Asset Import Commands
 // =============================================================================
 
@@ -2549,12 +2848,13 @@ FString FAIExportTCPServer::HandleAddCDOArrayElement(TSharedPtr<FJsonObject> Par
 {
 	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
 
-	FString AssetPath, ArrayName, ElementValuesJson;
+	FString AssetPath, ArrayName, ElementValuesJson, ClassName;
 	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
 		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
 	if (!Params->TryGetStringField(TEXT("array_name"), ArrayName))
 		return CreateErrorResponse(TEXT("Missing 'array_name' parameter"));
 	Params->TryGetStringField(TEXT("element_values"), ElementValuesJson);
+	Params->TryGetStringField(TEXT("class_name"), ClassName);
 
 	// Parse element_values JSON string into a map
 	TMap<FString, FString> ElementValues;
@@ -2578,7 +2878,7 @@ FString FAIExportTCPServer::HandleAddCDOArrayElement(TSharedPtr<FJsonObject> Par
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, ElementValues, Promise, this]()
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, ElementValues, ClassName, Promise, this]()
 	{
 		UBlueprint* BP = UAIWidgetBlueprintBuilder::LoadBlueprint(AssetPath);
 		if (!BP)
@@ -2607,7 +2907,7 @@ FString FAIExportTCPServer::HandleAddCDOArrayElement(TSharedPtr<FJsonObject> Par
 			return;
 		}
 
-		int32 NewIndex = UAIWidgetBlueprintBuilder::AddArrayElement(CDO, ArrayName, ElementValues);
+		int32 NewIndex = UAIWidgetBlueprintBuilder::AddArrayElement(CDO, ArrayName, ElementValues, ClassName);
 		if (NewIndex < 0)
 		{
 			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add element to '%s'"), *ArrayName)));
@@ -2783,6 +3083,55 @@ FString FAIExportTCPServer::HandleGetCDOArrayLength(TSharedPtr<FJsonObject> Para
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get CDO array length timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleGetCDOArrayElementProperties(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath, ArrayName;
+	double Index = 0;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("array_name"), ArrayName))
+		return CreateErrorResponse(TEXT("Missing 'array_name' parameter"));
+	if (!Params->TryGetNumberField(TEXT("index"), Index))
+		return CreateErrorResponse(TEXT("Missing 'index' parameter"));
+
+	int32 ElementIndex = (int32)Index;
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, ElementIndex, Promise, this]()
+	{
+		UBlueprint* BP = UAIWidgetBlueprintBuilder::LoadBlueprint(AssetPath);
+		if (!BP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		UClass* GenClass = BP->GeneratedClass;
+		if (!GenClass) { FKismetEditorUtilities::CompileBlueprint(BP); GenClass = BP->GeneratedClass; }
+		if (!GenClass) { Promise->SetValue(CreateErrorResponse(TEXT("No GeneratedClass"))); return; }
+		UObject* CDO = GenClass->GetDefaultObject();
+		if (!CDO) { Promise->SetValue(CreateErrorResponse(TEXT("No CDO"))); return; }
+
+		TSharedPtr<FJsonObject> Props = UAIWidgetBlueprintBuilder::GetArrayElementProperties(CDO, ArrayName, ElementIndex);
+		if (!Props.IsValid() || Props->Values.Num() == 0)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not get properties for element %d of '%s'"),
+				ElementIndex, *ArrayName)));
+			return;
+		}
+
+		Promise->SetValue(CreateSuccessResponse(Props));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get CDO array element properties timed out"));
 	return Future.Get();
 }
 

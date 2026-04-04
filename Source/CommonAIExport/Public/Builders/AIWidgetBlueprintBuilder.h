@@ -231,6 +231,16 @@ public:
 		const FString& SubPropertyName,
 		const FString& Value);
 
+	/**
+	 * Get properties of a specific array element as JSON.
+	 * For object arrays (instanced subobjects), returns the object's properties.
+	 * For struct arrays, returns the struct's properties.
+	 */
+	static TSharedPtr<FJsonObject> GetArrayElementProperties(
+		UObject* Object,
+		const FString& ArrayPropertyName,
+		int32 Index);
+
 	// =========================================================================
 	// BLUEPRINT REPARENTING
 	// =========================================================================

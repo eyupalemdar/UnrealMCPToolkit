@@ -356,6 +356,13 @@ UWidget* UAIWidgetBlueprintBuilder::AddWidget(
 			*NewWidget->GetName(), *WidgetClassName, *ParentWidgetName);
 	}
 
+	// Register GUID for variable widgets so the compiler doesn't complain
+	if (NewWidget->bIsVariable)
+	{
+		FGuid NewGuid = FGuid::NewGuid();
+		WidgetBP->WidgetVariableNameToGuidMap.Add(NewWidget->GetFName(), NewGuid);
+	}
+
 	MarkModified(WidgetBP);
 	return NewWidget;
 }
@@ -1332,6 +1339,91 @@ bool UAIWidgetBlueprintBuilder::SetArrayElementProperty(
 	}
 
 	return false;
+}
+
+TSharedPtr<FJsonObject> UAIWidgetBlueprintBuilder::GetArrayElementProperties(
+	UObject* Object,
+	const FString& ArrayPropertyName,
+	int32 Index)
+{
+	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+	if (!Object)
+	{
+		return Result;
+	}
+
+	FArrayProperty* ArrayProp = CastField<FArrayProperty>(
+		Object->GetClass()->FindPropertyByName(FName(*ArrayPropertyName)));
+	if (!ArrayProp)
+	{
+		return Result;
+	}
+
+	FScriptArrayHelper ArrayHelper(ArrayProp, ArrayProp->ContainerPtrToValuePtr<void>(Object));
+	if (Index < 0 || Index >= ArrayHelper.Num())
+	{
+		return Result;
+	}
+
+	FObjectProperty* InnerObjectProp = CastField<FObjectProperty>(ArrayProp->Inner);
+	if (InnerObjectProp)
+	{
+		// Object array — get UObject* and export its properties
+		void* ElemPtr = ArrayHelper.GetRawPtr(Index);
+		UObject* SubObject = InnerObjectProp->GetObjectPropertyValue(ElemPtr);
+		if (!SubObject)
+		{
+			Result->SetStringField(TEXT("_null"), TEXT("true"));
+			return Result;
+		}
+
+		Result->SetStringField(TEXT("_class"), SubObject->GetClass()->GetPathName());
+		Result->SetStringField(TEXT("_name"), SubObject->GetName());
+
+		UObject* ClassDefault = SubObject->GetClass()->GetDefaultObject();
+		for (TFieldIterator<FProperty> PropIt(SubObject->GetClass()); PropIt; ++PropIt)
+		{
+			FProperty* Prop = *PropIt;
+			if (Prop->HasAnyPropertyFlags(CPF_Transient | CPF_DuplicateTransient))
+			{
+				continue;
+			}
+
+			FString ValueStr;
+			Prop->ExportText_Direct(ValueStr, Prop->ContainerPtrToValuePtr<void>(SubObject),
+				ClassDefault ? Prop->ContainerPtrToValuePtr<void>(ClassDefault) : nullptr,
+				SubObject, PPF_None);
+			if (!ValueStr.IsEmpty())
+			{
+				Result->SetStringField(Prop->GetName(), ValueStr);
+			}
+		}
+		return Result;
+	}
+
+	FStructProperty* InnerStructProp = CastField<FStructProperty>(ArrayProp->Inner);
+	if (InnerStructProp)
+	{
+		void* ElemPtr = ArrayHelper.GetRawPtr(Index);
+		UScriptStruct* Struct = InnerStructProp->Struct;
+
+		for (TFieldIterator<FProperty> PropIt(Struct); PropIt; ++PropIt)
+		{
+			FProperty* Prop = *PropIt;
+			FString ValueStr;
+			void* PropPtr = Prop->ContainerPtrToValuePtr<void>(ElemPtr);
+			Prop->ExportText_Direct(ValueStr, PropPtr, nullptr, nullptr, PPF_None);
+			Result->SetStringField(Prop->GetName(), ValueStr);
+		}
+		return Result;
+	}
+
+	// Simple type
+	void* ElemPtr = ArrayHelper.GetRawPtr(Index);
+	FString ValueStr;
+	ArrayProp->Inner->ExportText_Direct(ValueStr, ElemPtr, nullptr, nullptr, PPF_None);
+	Result->SetStringField(TEXT("value"), ValueStr);
+	return Result;
 }
 
 // =============================================================================
