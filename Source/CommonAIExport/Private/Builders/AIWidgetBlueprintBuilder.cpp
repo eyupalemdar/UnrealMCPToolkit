@@ -3,6 +3,7 @@
 #include "Builders/AIWidgetBlueprintBuilder.h"
 
 #include "WidgetBlueprint.h"
+#include "Animation/WidgetAnimation.h"
 #include "Blueprint/WidgetTree.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "Blueprint/UserWidget.h"
@@ -99,7 +100,9 @@ UWidgetBlueprint* UAIWidgetBlueprintBuilder::CreateWidgetBlueprint(
 	{
 		UWidget* RootCanvas = WidgetBP->WidgetTree->ConstructWidget<UCanvasPanel>(
 			UCanvasPanel::StaticClass(), FName(TEXT("RootCanvas")));
+		RootCanvas->bIsVariable = true;
 		WidgetBP->WidgetTree->RootWidget = RootCanvas;
+		WidgetBP->OnVariableAdded(RootCanvas->GetFName());
 	}
 
 	// Notify asset registry
@@ -122,23 +125,30 @@ bool UAIWidgetBlueprintBuilder::CompileAndSave(
 		return false;
 	}
 
-	// Pre-compile: Sync GUID map with actual variable widgets to prevent Ensure failures
-	// from previously corrupted WBPs (before the AddWidget/RemoveWidget fix)
+	// Pre-compile: Sync GUID map with ALL source widgets AND animations to prevent Ensure failures.
+	// UE compiler (ValidateAndFixUpVariableGuids) expects EVERY widget AND animation
+	// to have a GUID entry in WidgetVariableNameToGuidMap.
 	{
-		TSet<FName> CurrentVariableNames;
-		WidgetBP->ForEachSourceWidget([&CurrentVariableNames](UWidget* Widget)
+		TSet<FName> CurrentWidgetNames;
+		WidgetBP->ForEachSourceWidget([&CurrentWidgetNames](UWidget* Widget)
 		{
-			if (Widget->bIsVariable)
-			{
-				CurrentVariableNames.Add(Widget->GetFName());
-			}
+			CurrentWidgetNames.Add(Widget->GetFName());
 		});
 
-		// Remove stale GUID entries (widget deleted or no longer a variable but GUID remains)
+		// Also include animations — compiler checks these at line 805
+		for (UWidgetAnimation* Animation : WidgetBP->Animations)
+		{
+			if (Animation)
+			{
+				CurrentWidgetNames.Add(Animation->GetFName());
+			}
+		}
+
+		// Remove stale GUID entries (widget no longer exists in WidgetTree outer)
 		TArray<FName> StaleNames;
 		for (const auto& Pair : WidgetBP->WidgetVariableNameToGuidMap)
 		{
-			if (!CurrentVariableNames.Contains(Pair.Key))
+			if (!CurrentWidgetNames.Contains(Pair.Key))
 			{
 				StaleNames.Add(Pair.Key);
 			}
@@ -149,9 +159,9 @@ bool UAIWidgetBlueprintBuilder::CompileAndSave(
 			WidgetBP->WidgetVariableNameToGuidMap.Remove(Name);
 		}
 
-		// Add missing GUID entries (variable widget exists but no GUID)
+		// Add missing GUID entries (widget exists in outer but has no GUID)
 		bool bAddedAny = false;
-		for (const FName& Name : CurrentVariableNames)
+		for (const FName& Name : CurrentWidgetNames)
 		{
 			if (!WidgetBP->WidgetVariableNameToGuidMap.Contains(Name))
 			{
@@ -323,6 +333,26 @@ UWidget* UAIWidgetBlueprintBuilder::AddWidget(
 	// Add to parent or set as root
 	if (ParentWidgetName.IsEmpty())
 	{
+		// Clean up existing root if being replaced
+		UWidget* OldRoot = WidgetBP->WidgetTree->RootWidget;
+		if (OldRoot && OldRoot != NewWidget)
+		{
+			// Recursively clean descendants of old root
+			if (UPanelWidget* OldPanel = Cast<UPanelWidget>(OldRoot))
+			{
+				TArray<UWidget*> OldDescendants;
+				CollectAllDescendants(OldPanel, OldDescendants);
+				for (UWidget* Desc : OldDescendants)
+				{
+					WidgetBP->OnVariableRemoved(Desc->GetFName());
+					Desc->Rename(nullptr, GetTransientPackage());
+				}
+			}
+			WidgetBP->OnVariableRemoved(OldRoot->GetFName());
+			OldRoot->Rename(nullptr, GetTransientPackage());
+			UE_LOG(LogAIWidgetBuilder, Log, TEXT("AddWidget: Cleaned up old root '%s'"), *OldRoot->GetName());
+		}
+
 		// Set as root widget
 		WidgetBP->WidgetTree->RootWidget = NewWidget;
 		UE_LOG(LogAIWidgetBuilder, Log, TEXT("AddWidget: Set '%s' (%s) as root"),
@@ -378,14 +408,29 @@ bool UAIWidgetBlueprintBuilder::RemoveWidget(
 
 	FScopedTransaction Transaction(LOCTEXT("AIRemoveWidget", "AI: Remove Widget"));
 
-	// If it's the root, clear root
+	// Collect ALL descendant widgets before modifying the tree.
+	// UWidgetTree::RemoveWidget only detaches from parent — child UObjects remain
+	// in the WidgetTree outer and cause GUID Ensure failures if not cleaned up.
+	TArray<UWidget*> AllDescendants;
+	if (UPanelWidget* Panel = Cast<UPanelWidget>(Widget))
+	{
+		CollectAllDescendants(Panel, AllDescendants);
+	}
+
+	// Clean GUIDs and rename descendants to transient FIRST (before tree modification)
+	for (UWidget* Descendant : AllDescendants)
+	{
+		WidgetBP->OnVariableRemoved(Descendant->GetFName());
+		Descendant->Rename(nullptr, GetTransientPackage());
+	}
+
+	// Remove from parent
 	if (Widget == WidgetBP->WidgetTree->RootWidget)
 	{
 		WidgetBP->WidgetTree->RootWidget = nullptr;
 	}
 	else if (Widget->Slot)
 	{
-		// Remove from parent panel
 		UPanelWidget* Parent = Widget->Slot->Parent;
 		if (Parent)
 		{
@@ -393,10 +438,15 @@ bool UAIWidgetBlueprintBuilder::RemoveWidget(
 		}
 	}
 
-	// Clean up GUID entry before removing widget to prevent stale GUID Ensure failures
+	// Clean up THIS widget's GUID
 	WidgetBP->OnVariableRemoved(Widget->GetFName());
 
+	// Remove from widget tree internal tracking
 	WidgetBP->WidgetTree->RemoveWidget(Widget);
+
+	// Rename to transient to ensure it's no longer in WidgetTree outer
+	Widget->Rename(nullptr, GetTransientPackage());
+
 	MarkModified(WidgetBP);
 
 	UE_LOG(LogAIWidgetBuilder, Log, TEXT("RemoveWidget: Removed '%s'"), *WidgetName);
@@ -484,6 +534,24 @@ bool UAIWidgetBlueprintBuilder::SetWidgetProperty(
 	bool bSuccess = SetPropertyByPath(Widget, PropertyName, Value);
 	if (bSuccess)
 	{
+		// Slate bridge: reflection-based ImportText updates the UObject property,
+		// but SBorder/SImage/etc. only receive the change via PostEditChangeProperty
+		// (triggers each widget's SynchronizeProperties override). Required for
+		// brush/color changes to render in capture_widget_preview.
+		FString RootPropertyName = PropertyName;
+		int32 DotIdx;
+		if (PropertyName.FindChar(TEXT('.'), DotIdx))
+		{
+			RootPropertyName = PropertyName.Left(DotIdx);
+		}
+		if (FProperty* RootProp = Widget->GetClass()->FindPropertyByName(*RootPropertyName))
+		{
+			FPropertyChangedEvent PropertyEvent(RootProp, EPropertyChangeType::ValueSet);
+			Widget->PostEditChangeProperty(PropertyEvent);
+		}
+		// Safety net when PostEditChangeProperty is suppressed by a property-specific guard.
+		Widget->SynchronizeProperties();
+
 		MarkModified(WidgetBP);
 	}
 	else
@@ -571,6 +639,11 @@ int32 UAIWidgetBlueprintBuilder::SetWidgetProperties(
 
 	if (SuccessCount > 0)
 	{
+		// Single Slate sync pass for bulk set — cheaper than per-property
+		// PostEditChangeProperty. Critical for UBorder.Background and similar
+		// brush/color properties to reach the Slate layer.
+		Widget->SynchronizeProperties();
+
 		MarkModified(WidgetBP);
 	}
 
@@ -1317,6 +1390,27 @@ bool UAIWidgetBlueprintBuilder::SetArrayElementProperty(
 // =============================================================================
 // PRIVATE UTILITIES
 // =============================================================================
+
+void UAIWidgetBlueprintBuilder::CollectAllDescendants(UPanelWidget* Parent, TArray<UWidget*>& OutDescendants)
+{
+	if (!Parent)
+	{
+		return;
+	}
+
+	for (int32 i = 0; i < Parent->GetChildrenCount(); ++i)
+	{
+		UWidget* Child = Parent->GetChildAt(i);
+		if (Child)
+		{
+			OutDescendants.Add(Child);
+			if (UPanelWidget* ChildPanel = Cast<UPanelWidget>(Child))
+			{
+				CollectAllDescendants(ChildPanel, OutDescendants);
+			}
+		}
+	}
+}
 
 void UAIWidgetBlueprintBuilder::MarkModified(UWidgetBlueprint* WidgetBP)
 {
