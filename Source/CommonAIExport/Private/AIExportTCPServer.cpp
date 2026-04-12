@@ -40,10 +40,37 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/SavePackage.h"
 
+// Asset rename (HandleRenameAsset)
+#include "AssetToolsModule.h"
+#include "IAssetTools.h"
+
 #include "Engine/Font.h"
 #include "Engine/FontFace.h"
 #include "InputMappingContext.h"
 #include "Animation/AnimBlueprint.h"
+
+// Widget Preview Capture includes (for HandleCaptureWidgetPreview)
+#include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/Image.h"
+#include "Components/Border.h"
+#include "Slate/WidgetRenderer.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Engine/Texture2D.h"
+#include "ContentStreaming.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
+#include "Modules/ModuleManager.h"
+#include "Editor.h"
+#include "RenderingThread.h"
+#include "Engine/Engine.h"
+#include "Misc/Base64.h"
+
+// Asset Lifecycle includes (for HandleReloadAsset)
+#include "Subsystems/AssetEditorSubsystem.h"
+#include "PackageTools.h"
+#include "UObject/Package.h"
+#include "Misc/PackageName.h"
 
 // Static instance
 TUniquePtr<FAIExportTCPServer> FAIExportTCPServerManager::Instance;
@@ -614,6 +641,10 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 	{
 		return HandleSaveAsset(Params);
 	}
+	else if (CommandType == TEXT("rename_asset"))
+	{
+		return HandleRenameAsset(Params);
+	}
 	// Input Mapping Context commands
 	else if (CommandType == TEXT("add_input_mapping"))
 	{
@@ -644,6 +675,16 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 	else if (CommandType == TEXT("import_font"))
 	{
 		return HandleImportFont(Params);
+	}
+	// Widget Preview Capture commands (for IFTP verify loop)
+	else if (CommandType == TEXT("capture_widget_preview"))
+	{
+		return HandleCaptureWidgetPreview(Params);
+	}
+	// Asset Lifecycle commands
+	else if (CommandType == TEXT("reload_asset"))
+	{
+		return HandleReloadAsset(Params);
 	}
 	else
 	{
@@ -2483,7 +2524,32 @@ FString FAIExportTCPServer::HandleSetCDOProperty(TSharedPtr<FJsonObject> Params)
 		}
 		else
 		{
-			bool bSuccess = UAIDataAssetBuilder::SetProperty(Asset, PropertyName, Value);
+			// Non-WBP path: if Asset is a Blueprint (e.g. CommonButtonStyle subclass),
+			// redirect writes to its generated class CDO so we can set parent-class
+			// properties like NormalBase / NormalHovered (not present on the BP itself).
+			UObject* TargetForSet = Asset;
+			if (UBlueprint* BP = Cast<UBlueprint>(Asset))
+			{
+				UClass* GenClass = BP->GeneratedClass;
+				if (!GenClass)
+				{
+					FKismetEditorUtilities::CompileBlueprint(BP);
+					GenClass = BP->GeneratedClass;
+				}
+				if (!GenClass)
+				{
+					Promise->SetValue(CreateErrorResponse(TEXT("Blueprint has no GeneratedClass")));
+					return;
+				}
+				TargetForSet = GenClass->GetDefaultObject();
+				if (!TargetForSet)
+				{
+					Promise->SetValue(CreateErrorResponse(TEXT("Blueprint generated class has no CDO")));
+					return;
+				}
+			}
+
+			bool bSuccess = UAIDataAssetBuilder::SetProperty(TargetForSet, PropertyName, Value);
 			if (!bSuccess)
 			{
 				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to set property '%s'"), *PropertyName)));
@@ -2532,7 +2598,23 @@ FString FAIExportTCPServer::HandleGetCDOProperties(TSharedPtr<FJsonObject> Param
 		}
 		else
 		{
-			TSharedPtr<FJsonObject> PropsJson = UAIDataAssetBuilder::GetPropertiesAsJson(Asset);
+			// Non-WBP path: if Asset is a Blueprint, read properties from its CDO so
+			// inherited fields (e.g. CommonButtonStyle::NormalBase) are visible.
+			UObject* TargetForRead = Asset;
+			if (UBlueprint* BP = Cast<UBlueprint>(Asset))
+			{
+				UClass* GenClass = BP->GeneratedClass;
+				if (!GenClass)
+				{
+					FKismetEditorUtilities::CompileBlueprint(BP);
+					GenClass = BP->GeneratedClass;
+				}
+				if (GenClass && GenClass->GetDefaultObject())
+				{
+					TargetForRead = GenClass->GetDefaultObject();
+				}
+			}
+			TSharedPtr<FJsonObject> PropsJson = UAIDataAssetBuilder::GetPropertiesAsJson(TargetForRead);
 			Promise->SetValue(CreateSuccessResponse(PropsJson));
 		}
 	});
@@ -3578,6 +3660,90 @@ FString FAIExportTCPServer::HandleSaveAsset(TSharedPtr<FJsonObject> Params)
 	return Future.Get();
 }
 
+FString FAIExportTCPServer::HandleRenameAsset(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	// Either or both may be provided. Empty = keep current value.
+	FString NewPackagePath, NewAssetName;
+	Params->TryGetStringField(TEXT("new_package_path"), NewPackagePath);
+	Params->TryGetStringField(TEXT("new_asset_name"), NewAssetName);
+
+	if (NewPackagePath.IsEmpty() && NewAssetName.IsEmpty())
+	{
+		return CreateErrorResponse(TEXT("At least one of 'new_package_path' or 'new_asset_name' must be provided"));
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, NewPackagePath, NewAssetName, Promise, this]()
+	{
+		UObject* Asset = UAIDataAssetBuilder::LoadAssetObject(AssetPath);
+		if (!Asset)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Asset not found: %s"), *AssetPath)));
+			return;
+		}
+
+		// For Blueprint assets, the FAssetRenameData target should be the BP itself, not its generated class.
+		// LoadAssetObject typically returns the BP UObject, which is what we want.
+
+		const UPackage* Package = Asset->GetOutermost();
+		if (!Package)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Asset has no outer package")));
+			return;
+		}
+
+		const FString CurrentPackageName = Package->GetName();
+		const FString CurrentPackagePath = FPackageName::GetLongPackagePath(CurrentPackageName);
+		const FString CurrentAssetName = Asset->GetName();
+
+		const FString FinalPackagePath = NewPackagePath.IsEmpty() ? CurrentPackagePath : NewPackagePath;
+		const FString FinalAssetName = NewAssetName.IsEmpty() ? CurrentAssetName : NewAssetName;
+
+		if (FinalPackagePath == CurrentPackagePath && FinalAssetName == CurrentAssetName)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("New path equals current path; nothing to rename")));
+			return;
+		}
+
+		TArray<FAssetRenameData> AssetsToRename;
+		AssetsToRename.Add(FAssetRenameData(Asset, FinalPackagePath, FinalAssetName));
+
+		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
+		IAssetTools& AssetTools = AssetToolsModule.Get();
+		bool RenameResult = AssetTools.RenameAssets(AssetsToRename);
+
+		if (!RenameResult)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("RenameAssets failed (result=%d) for %s -> %s/%s"),
+				RenameResult, *AssetPath, *FinalPackagePath, *FinalAssetName)));
+			return;
+		}
+
+		const FString NewAssetPath = FinalPackagePath / FinalAssetName;
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("renamed"), true);
+		Data->SetStringField(TEXT("old_path"), AssetPath);
+		Data->SetStringField(TEXT("new_path"), NewAssetPath);
+		Data->SetStringField(TEXT("new_package_path"), FinalPackagePath);
+		Data->SetStringField(TEXT("new_asset_name"), FinalAssetName);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Rename asset timed out"));
+	return Future.Get();
+}
+
 // =============================================================================
 // Input Mapping Context Command Handlers
 // =============================================================================
@@ -3767,6 +3933,452 @@ FString FAIExportTCPServer::HandleGetAnimBlueprintInfo(TSharedPtr<FJsonObject> P
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get AnimBlueprint info timed out"));
+	return Future.Get();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Widget Preview Capture — IFTP verify loop
+
+FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	// Parse primitive parameters (use double then clamp/cast)
+	int32 Width = 1920;
+	int32 Height = 1080;
+	int32 WarmupFrames = 3;
+	float DPIScale = 1.0f;
+	bool bTransparentBG = false;
+	bool bReturnBase64 = false;
+	FString OutputPath;
+
+	{
+		double DVal = 0.0;
+		if (Params->TryGetNumberField(TEXT("width"), DVal))         Width = FMath::Clamp((int32)DVal, 16, 8192);
+		if (Params->TryGetNumberField(TEXT("height"), DVal))        Height = FMath::Clamp((int32)DVal, 16, 8192);
+		if (Params->TryGetNumberField(TEXT("warmup_frames"), DVal)) WarmupFrames = FMath::Clamp((int32)DVal, 1, 10);
+		if (Params->TryGetNumberField(TEXT("dpi_scale"), DVal))     DPIScale = FMath::Clamp((float)DVal, 0.1f, 8.0f);
+	}
+	Params->TryGetBoolField(TEXT("transparent_bg"), bTransparentBG);
+	Params->TryGetBoolField(TEXT("return_base64"), bReturnBase64);
+	Params->TryGetStringField(TEXT("output_path"), OutputPath);
+
+	// Parse optional ratios array (multi-ratio mode)
+	// Each entry: { "width": 2560, "height": 1080, "label": "21x9" }
+	struct FRatioEntry
+	{
+		int32 Width;
+		int32 Height;
+		FString Label;
+	};
+	TArray<FRatioEntry> Ratios;
+	const TArray<TSharedPtr<FJsonValue>>* RatiosArray = nullptr;
+	if (Params->TryGetArrayField(TEXT("ratios"), RatiosArray) && RatiosArray)
+	{
+		for (const TSharedPtr<FJsonValue>& Entry : *RatiosArray)
+		{
+			const TSharedPtr<FJsonObject>* RatioObj = nullptr;
+			if (!Entry->TryGetObject(RatioObj) || !RatioObj->IsValid()) continue;
+			FRatioEntry R;
+			double RW = 1920.0, RH = 1080.0;
+			(*RatioObj)->TryGetNumberField(TEXT("width"), RW);
+			(*RatioObj)->TryGetNumberField(TEXT("height"), RH);
+			R.Width = FMath::Clamp((int32)RW, 16, 8192);
+			R.Height = FMath::Clamp((int32)RH, 16, 8192);
+			(*RatioObj)->TryGetStringField(TEXT("label"), R.Label);
+			Ratios.Add(R);
+		}
+	}
+
+	if (Ratios.Num() == 0)
+	{
+		FRatioEntry R;
+		R.Width = Width;
+		R.Height = Height;
+		Ratios.Add(R);
+	}
+
+	// Output directory
+	FString DefaultOutputDir = FPaths::ProjectIntermediateDir() / TEXT("WidgetCaptures");
+	FString OutputDir = OutputPath.IsEmpty() ? DefaultOutputDir : FPaths::GetPath(OutputPath);
+	IFileManager::Get().MakeDirectory(*OutputDir, /*Tree=*/true);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Ratios, WarmupFrames, DPIScale, bTransparentBG, bReturnBase64, OutputPath, OutputDir, Promise, this]()
+	{
+		// 1) Load Widget Blueprint
+		UWidgetBlueprint* WidgetBP = LoadObject<UWidgetBlueprint>(nullptr, *AssetPath);
+		if (!WidgetBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Widget Blueprint not found: %s"), *AssetPath)));
+			return;
+		}
+
+		UClass* WidgetClass = WidgetBP->GeneratedClass;
+		if (!WidgetClass || !WidgetClass->IsChildOf(UUserWidget::StaticClass()))
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Invalid WidgetBlueprint GeneratedClass")));
+			return;
+		}
+
+		// 2) Get editor world for widget context
+		UWorld* World = nullptr;
+		if (GEditor)
+		{
+			World = GEditor->GetEditorWorldContext().World();
+		}
+		if (!World)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("No valid editor world for widget instantiation")));
+			return;
+		}
+
+		// 3) Create widget instance
+		UUserWidget* UserWidget = CreateWidget<UUserWidget>(World, WidgetClass);
+		if (!UserWidget)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Failed to instantiate UserWidget")));
+			return;
+		}
+		UserWidget->AddToRoot();  // Prevent GC during rendering
+
+		// 4) Take Slate widget — triggers outer widget's Initialize + PreConstruct.
+		TSharedRef<SWidget> SlateWidget = UserWidget->TakeWidget();
+
+		// 4a) Force-initialize all nested UUserWidget components, then preload textures.
+		//     Nested UUserWidgets in the WidgetTree are NOT auto-initialized by the outer
+		//     widget's TakeWidget() — they init lazily when first painted. That means their
+		//     BP PreConstruct (which calls SetBrushFromTexture(NavIcon) etc.) has not yet run,
+		//     so Brush.ResourceObject is null when we try to force-stream textures.
+		//     Fix: explicitly Initialize() each nested UserWidget first, then walk again to
+		//     collect the now-populated brush textures and force their mip residency.
+		FlushAsyncLoading();
+		int32 InitCount = 0;
+		int32 TexCount = 0;
+		{
+			// Pass 1: force Initialize() on all nested UUserWidget instances (recursive)
+			TFunction<void(UWidgetTree*)> InitTree;
+			InitTree = [&InitTree, &InitCount](UWidgetTree* Tree)
+			{
+				if (!Tree) return;
+				Tree->ForEachWidget([&InitTree, &InitCount](UWidget* W)
+				{
+					if (UUserWidget* NestedUW = Cast<UUserWidget>(W))
+					{
+						if (!NestedUW->IsConstructed())
+						{
+							NestedUW->Initialize();  // runs BP PreConstruct on this nested instance
+							++InitCount;
+						}
+						InitTree(NestedUW->WidgetTree);
+					}
+				});
+			};
+			InitTree(UserWidget->WidgetTree);
+
+			// Pass 2: collect + stream all brush textures (recursive), then SynchronizeProperties
+			//         to push the updated brush into the already-built SImage slate widget.
+			//         PreConstruct's SetBrushFromTexture() only pushes to Slate if MyImage.IsValid()
+			//         at call time. When PreConstruct runs during nested Initialize(), MyImage is
+			//         usually null (slate widget not yet built), so the brush sits in the UImage
+			//         struct but is never copied to the SImage. A manual SynchronizeProperties()
+			//         after the slate tree is built (i.e. after TakeWidget) does exactly that copy.
+			TFunction<void(UWidgetTree*)> PreloadTree;
+			PreloadTree = [&PreloadTree, &TexCount](UWidgetTree* Tree)
+			{
+				if (!Tree) return;
+				Tree->ForEachWidget([&PreloadTree, &TexCount](UWidget* W)
+				{
+					if (UImage* Img = Cast<UImage>(W))
+					{
+						if (UTexture2D* Tex = Cast<UTexture2D>(Img->Brush.GetResourceObject()))
+						{
+							Tex->SetForceMipLevelsToBeResident(30.0f, true);
+							Tex->WaitForStreaming();
+							++TexCount;
+						}
+						// Force slate to pick up the current Brush struct (which PreConstruct
+						// may have just updated via SetBrushFromTexture on an image whose
+						// MyImage wasn't constructed yet).
+						Img->SynchronizeProperties();
+					}
+					else if (UBorder* Brd = Cast<UBorder>(W))
+					{
+						// Same bridging issue as UImage: SBorder built before CDO Background
+						// was pushed via reflection ImportText. Force a resync so
+						// set_widget_property changes land on the Slate side.
+						if (UTexture2D* Tex = Cast<UTexture2D>(Brd->Background.GetResourceObject()))
+						{
+							Tex->SetForceMipLevelsToBeResident(30.0f, true);
+							Tex->WaitForStreaming();
+							++TexCount;
+						}
+						Brd->SynchronizeProperties();
+					}
+					else if (UUserWidget* NestedUW = Cast<UUserWidget>(W))
+					{
+						PreloadTree(NestedUW->WidgetTree);
+					}
+				});
+			};
+			PreloadTree(UserWidget->WidgetTree);
+		}
+		// Final global streaming flush — catches anything ForceMipLevelsToBeResident missed.
+		IStreamingManager::Get().StreamAllResources(0.0f);
+		UE_LOG(LogAIExport, Log, TEXT("CaptureWidgetPreview: initialized %d nested widgets, streamed %d textures"), InitCount, TexCount);
+
+		// 5) Get ImageWrapper module
+		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
+
+		// 6) Derive base filename
+		FString AssetBaseName = FPaths::GetBaseFilename(AssetPath);
+
+		// 7) Widget renderer (gamma correction on for sRGB output)
+		TSharedPtr<FWidgetRenderer> Renderer = MakeShared<FWidgetRenderer>(/*bUseGammaCorrection=*/true);
+
+		TArray<TSharedPtr<FJsonValue>> PngResults;
+		bool bAllSucceeded = true;
+		FString LastError;
+
+		for (const FRatioEntry& Ratio : Ratios)
+		{
+			const int32 RW = Ratio.Width;
+			const int32 RH = Ratio.Height;
+
+			// Create render target — RTF_RGBA8 (raw UNORM) + TargetGamma=0 (use DisplayGamma default).
+			// FWidgetRenderer(bUseGammaCorrection=true) already applies linear→sRGB in shader
+			// using RT->GetDisplayGamma(). Setting TargetGamma=2.2 + sRGB format causes double
+			// gamma (values look washed out). Setting TargetGamma=0 lets it fall through to
+			// Engine->DisplayGamma (2.2) applied exactly once. Matches editor viewport.
+			UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>();
+			RT->ClearColor = bTransparentBG ? FLinearColor::Transparent : FLinearColor::Black;
+			RT->TargetGamma = 0.0f;
+			RT->RenderTargetFormat = RTF_RGBA8;
+			RT->InitAutoFormat(RW, RH);
+			RT->UpdateResourceImmediate(true);
+			RT->AddToRoot();
+
+			// Warmup + final render passes (absorb texture streaming delay)
+			const FVector2D DrawSize(RW, RH);
+			for (int32 i = 0; i < WarmupFrames; ++i)
+			{
+				Renderer->DrawWidget(RT, SlateWidget, DrawSize, 0.016f, false);
+			}
+
+			// Flush GPU work before reading pixels
+			FlushRenderingCommands();
+
+			// Read pixels
+			TArray<FColor> Bitmap;
+			FRenderTarget* RenderTargetResource = RT->GameThread_GetRenderTargetResource();
+			if (!RenderTargetResource || !RenderTargetResource->ReadPixels(Bitmap))
+			{
+				bAllSucceeded = false;
+				LastError = FString::Printf(TEXT("Failed to read pixels for %dx%d"), RW, RH);
+				RT->RemoveFromRoot();
+				continue;
+			}
+
+			// Encode PNG
+			TSharedPtr<IImageWrapper> PNGWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
+			if (!PNGWrapper.IsValid() ||
+				!PNGWrapper->SetRaw(Bitmap.GetData(),
+									Bitmap.Num() * sizeof(FColor),
+									RW, RH,
+									ERGBFormat::BGRA, 8))
+			{
+				bAllSucceeded = false;
+				LastError = FString::Printf(TEXT("Failed to encode PNG for %dx%d"), RW, RH);
+				RT->RemoveFromRoot();
+				continue;
+			}
+
+			const TArray64<uint8>& CompressedPng = PNGWrapper->GetCompressed(100);
+
+			// Flatten into TArray<uint8> for FFileHelper + FBase64 compatibility
+			TArray<uint8> FlatPng;
+			FlatPng.SetNumUninitialized((int32)CompressedPng.Num());
+			FMemory::Memcpy(FlatPng.GetData(), CompressedPng.GetData(), CompressedPng.Num());
+
+			// Derive output file path
+			FString OutPath;
+			if (Ratios.Num() == 1 && !OutputPath.IsEmpty())
+			{
+				OutPath = OutputPath;
+			}
+			else
+			{
+				FString Suffix = Ratio.Label.IsEmpty()
+					? FString::Printf(TEXT("_%dx%d"), RW, RH)
+					: FString::Printf(TEXT("_%s"), *Ratio.Label);
+				Suffix.ReplaceInline(TEXT(":"), TEXT(""));
+				Suffix.ReplaceInline(TEXT("/"), TEXT("_"));
+				Suffix.ReplaceInline(TEXT("\\"), TEXT("_"));
+				OutPath = OutputDir / (AssetBaseName + Suffix + TEXT(".png"));
+			}
+
+			// Save to disk
+			if (!FFileHelper::SaveArrayToFile(FlatPng, *OutPath))
+			{
+				bAllSucceeded = false;
+				LastError = FString::Printf(TEXT("Failed to write PNG: %s"), *OutPath);
+				RT->RemoveFromRoot();
+				continue;
+			}
+
+			// Build JSON entry
+			TSharedPtr<FJsonObject> Entry = MakeShared<FJsonObject>();
+			Entry->SetStringField(TEXT("png_path"), OutPath);
+			Entry->SetNumberField(TEXT("width"), RW);
+			Entry->SetNumberField(TEXT("height"), RH);
+			Entry->SetNumberField(TEXT("size_bytes"), FlatPng.Num());
+			if (!Ratio.Label.IsEmpty())
+			{
+				Entry->SetStringField(TEXT("label"), Ratio.Label);
+			}
+			if (bReturnBase64)
+			{
+				FString B64 = FBase64::Encode(FlatPng);
+				Entry->SetStringField(TEXT("png_base64"), B64);
+			}
+			PngResults.Add(MakeShared<FJsonValueObject>(Entry));
+
+			// Cleanup RT
+			RT->RemoveFromRoot();
+		}
+
+		// Cleanup widget
+		UserWidget->ReleaseSlateResources(true);
+		UserWidget->RemoveFromRoot();
+
+		if (PngResults.Num() == 0)
+		{
+			Promise->SetValue(CreateErrorResponse(LastError.IsEmpty() ? TEXT("No previews produced") : LastError));
+			return;
+		}
+
+		// Build response
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetArrayField(TEXT("pngs"), PngResults);
+		Data->SetNumberField(TEXT("count"), PngResults.Num());
+		if (!bAllSucceeded)
+		{
+			Data->SetStringField(TEXT("partial_error"), LastError);
+		}
+
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Widget preview capture timed out"));
+	return Future.Get();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Asset Lifecycle — Reload asset (fixes cached editor tab after compile_and_save)
+
+FString FAIExportTCPServer::HandleReloadAsset(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	bool bReopenAfter = true;
+	Params->TryGetBoolField(TEXT("reopen_after"), bReopenAfter);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, bReopenAfter, Promise, this]()
+	{
+		// 1) Silent existence check BEFORE LoadObject (avoids UE log spam on bad paths)
+		//    Extract package path from asset path (strip .ObjectName suffix if present)
+		FString PackagePath = AssetPath;
+		int32 DotIdx;
+		if (PackagePath.FindChar('.', DotIdx))
+		{
+			PackagePath = PackagePath.Left(DotIdx);
+		}
+		if (!FPackageName::DoesPackageExist(PackagePath))
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Package does not exist on disk: %s"), *PackagePath)));
+			return;
+		}
+
+		// 2) Load the asset (safe now — package verified to exist)
+		UObject* Asset = LoadObject<UObject>(nullptr, *AssetPath);
+		if (!Asset)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Asset not found: %s"), *AssetPath)));
+			return;
+		}
+
+		UPackage* Package = Asset->GetOutermost();
+		if (!Package)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Asset has no outer package")));
+			return;
+		}
+
+		// 2) Check if asset editor is currently open, remember state
+		bool bWasOpen = false;
+		UAssetEditorSubsystem* EditorSubsystem = nullptr;
+		if (GEditor)
+		{
+			EditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+			if (EditorSubsystem)
+			{
+				// FindEditorsForAsset returns nullptr if not open
+				bWasOpen = EditorSubsystem->FindEditorForAsset(Asset, /*bFocusIfOpen=*/false) != nullptr;
+
+				// Close all editors for this asset (clears cached widget instance)
+				if (bWasOpen)
+				{
+					EditorSubsystem->CloseAllEditorsForAsset(Asset);
+				}
+			}
+		}
+
+		// 3) Hard reload the package (reloads from disk, discards in-memory cache)
+		TArray<UPackage*> PackagesToReload;
+		PackagesToReload.Add(Package);
+
+		FText ErrorMsg;
+		bool bReloaded = UPackageTools::ReloadPackages(PackagesToReload, ErrorMsg, EReloadPackagesInteractionMode::AssumePositive);
+
+		// 4) Reopen editor if it was previously open and reopen_after flag is true
+		bool bReopened = false;
+		if (bReopenAfter && bWasOpen && EditorSubsystem)
+		{
+			// Load fresh reference after reload
+			UObject* FreshAsset = LoadObject<UObject>(nullptr, *AssetPath);
+			if (FreshAsset)
+			{
+				bReopened = EditorSubsystem->OpenEditorForAsset(FreshAsset);
+			}
+		}
+
+		// 5) Build response
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetBoolField(TEXT("was_open"), bWasOpen);
+		Data->SetBoolField(TEXT("reloaded"), bReloaded);
+		Data->SetBoolField(TEXT("reopened"), bReopened);
+
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Reload asset timed out"));
 	return Future.Get();
 }
 

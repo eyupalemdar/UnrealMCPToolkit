@@ -1703,6 +1703,43 @@ def save_asset(asset_path: str) -> str:
     }))
 
 
+@mcp.tool()
+def rename_asset(
+    asset_path: str,
+    new_package_path: str = "",
+    new_asset_name: str = ""
+) -> str:
+    """
+    Rename and/or move an asset. Uses UE AssetTools::RenameAssets which automatically
+    creates a redirector and fixes references in dependent assets.
+
+    At least one of new_package_path or new_asset_name must be provided.
+    Empty values mean "keep current".
+
+    Args:
+        asset_path: Current asset path, e.g. "/Game/UI/Foundation/Buttons/W_CircleBtn"
+        new_package_path: New package folder path (optional), e.g. "/Game/UI/Foundation/Buttons"
+                         If empty, keeps current folder.
+        new_asset_name: New asset name (optional), e.g. "W_IconCircleButton"
+                       If empty, keeps current name.
+
+    Returns:
+        JSON with renamed status, old_path, new_path, new_package_path, new_asset_name.
+
+    Notes:
+        - A redirector is created at the old path so existing references continue to work.
+        - Dependent assets are auto-updated by AssetTools (no manual reference fixup needed).
+        - Operation runs on Game Thread; up to 120s timeout.
+        - For Blueprint/Widget Blueprint assets, pass the BP path (not the _C generated class).
+    """
+    params = {"asset_path": asset_path}
+    if new_package_path:
+        params["new_package_path"] = new_package_path
+    if new_asset_name:
+        params["new_asset_name"] = new_asset_name
+    return _format_response(_send_command("rename_asset", params))
+
+
 # =============================================================================
 # INPUT MAPPING CONTEXT
 # =============================================================================
@@ -1827,6 +1864,111 @@ def get_anim_blueprint_info(asset_path: str) -> str:
     """
     return _format_response(_send_command("get_anim_blueprint_info", {
         "asset_path": asset_path,
+    }))
+
+
+# =============================================================================
+# WIDGET PREVIEW CAPTURE (IFTP verify loop — multi-ratio fidelity testing)
+# =============================================================================
+
+@mcp.tool()
+def capture_widget_preview(
+    asset_path: str,
+    width: int = 1920,
+    height: int = 1080,
+    output_path: str = "",
+    warmup_frames: int = 3,
+    transparent_bg: bool = False,
+    return_base64: bool = False,
+    dpi_scale: float = 1.0,
+    ratios: list[dict] | None = None,
+) -> str:
+    """
+    Render a Widget Blueprint to PNG file(s) at one or more resolutions.
+
+    Primary use case: IFTP verify loop — compare UE rendering with the Pencil source
+    across multiple screen ratios (16:9, 21:9, 9:16, 4:3). Claude Code can read the
+    resulting PNG via the Read tool and visually compare with Pencil get_screenshot.
+
+    Args:
+        asset_path: Widget Blueprint asset path, e.g. "/Game/UI/Menu/W_Splash"
+        width: Single-shot width (used only when `ratios` is empty). Default 1920.
+        height: Single-shot height. Default 1080.
+        output_path: Explicit output PNG path (single-shot mode only).
+                    If empty, PNG is written to
+                    <ProjectIntermediate>/WidgetCaptures/<asset><suffix>.png
+        warmup_frames: Number of render passes before capture (absorbs texture
+                      streaming delay). Default 3, range 1-10.
+        transparent_bg: If True, clear color is transparent (useful for UI overlays
+                       where a background image isn't baked in). Default False (black).
+        return_base64: If True, each PNG entry also includes a base64 "png_base64"
+                      field. Normally False — prefer reading the file directly.
+        dpi_scale: DPI scale passed to widget renderer. Default 1.0.
+        ratios: Optional list of multi-ratio capture entries. Each entry is a dict:
+                {"width": int, "height": int, "label": str (optional)}
+                Example: [
+                    {"width": 1920, "height": 1080, "label": "16x9"},
+                    {"width": 2560, "height": 1080, "label": "21x9"},
+                    {"width": 1080, "height": 1920, "label": "9x16"},
+                    {"width": 1440, "height": 1080, "label": "4x3"},
+                ]
+                When provided, `width`/`height`/`output_path` are ignored and one
+                PNG is written per ratio, with the label baked into the filename.
+
+    Returns:
+        JSON with `pngs` array. Each entry: `{png_path, width, height, size_bytes,
+        label?, png_base64?}`. Also `count` and `asset_path`.
+        After the call, read a png_path with the Read tool to visually inspect it.
+    """
+    params = {
+        "asset_path": asset_path,
+        "width": width,
+        "height": height,
+        "warmup_frames": warmup_frames,
+        "transparent_bg": transparent_bg,
+        "return_base64": return_base64,
+        "dpi_scale": dpi_scale,
+    }
+    if output_path:
+        params["output_path"] = output_path
+    if ratios:
+        params["ratios"] = ratios
+    return _format_response(_send_command("capture_widget_preview", params))
+
+
+# =============================================================================
+# ASSET LIFECYCLE
+# =============================================================================
+
+@mcp.tool()
+def reload_asset(
+    asset_path: str,
+    reopen_after: bool = True,
+) -> str:
+    """
+    Reload an asset from disk, clearing any cached editor tab state.
+
+    Use this after `compile_and_save` when the user has the asset open in an
+    editor tab. The editor keeps a cached widget instance that does not auto-
+    refresh after backend modifications, so the user sees the old version even
+    though the on-disk asset is up to date. This tool closes the editor,
+    hard-reloads the package, and (optionally) reopens the editor.
+
+    `capture_widget_preview` renders directly from disk, so it does NOT need
+    reload — only the user-facing editor tab needs this.
+
+    Args:
+        asset_path: Content path of the asset, e.g. "/Game/UI/Menu/W_MainMenu_HF03d"
+        reopen_after: If True (default), reopen the editor tab after reload if
+                      it was previously open.
+
+    Returns:
+        JSON with `was_open` (was it open before reload), `reloaded` (did the
+        hard reload succeed), and `reopened` (was it reopened after).
+    """
+    return _format_response(_send_command("reload_asset", {
+        "asset_path": asset_path,
+        "reopen_after": reopen_after,
     }))
 
 

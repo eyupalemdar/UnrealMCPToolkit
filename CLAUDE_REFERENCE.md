@@ -1,7 +1,7 @@
 # CommonAIExport — Claude Reference Guide
 
 > **Read this file to understand ALL plugin capabilities in one place.**
-> 55 MCP tools across 9 categories. UE 5.7, TCP port auto-discovery.
+> 57 MCP tools across 11 categories. UE 5.7, TCP port auto-discovery.
 
 ## Architecture
 
@@ -301,6 +301,99 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 | `import_texture(source_path, destination_path, asset_name, compression?)` | Import texture from disk |
 | `import_font(font_paths_json, destination_path, asset_name, default_size?)` | Import TTF/OTF → Composite Font |
 
+---
+
+## 10. Widget Preview Capture (IFTP verify loop)
+
+Renders a Widget Blueprint to a PNG file (or files, one per ratio) so Claude can
+visually compare UE output with the Pencil source across multiple screen ratios.
+
+| Tool | Purpose |
+|------|---------|
+| `capture_widget_preview(asset_path, width?, height?, output_path?, warmup_frames?, transparent_bg?, return_base64?, dpi_scale?, ratios?)` | Render WBP to PNG at one or more resolutions |
+
+### Single-shot example
+```python
+capture_widget_preview(
+    asset_path="/Game/UI/Menu/W_Splash_IFTP_Test",
+    width=1920, height=1080
+)
+# → {"pngs": [{"png_path": "<Project>/Intermediate/WidgetCaptures/W_Splash_IFTP_Test_1920x1080.png", "width": 1920, "height": 1080, "size_bytes": 42817}], "count": 1}
+```
+
+### Multi-ratio example (IFTP runbook adım 14)
+```python
+capture_widget_preview(
+    asset_path="/Game/UI/Menu/W_Splash_IFTP_Test",
+    ratios=[
+        {"width": 1920, "height": 1080, "label": "16x9"},
+        {"width": 2560, "height": 1080, "label": "21x9"},
+        {"width": 1080, "height": 1920, "label": "9x16"},
+        {"width": 1440, "height": 1080, "label": "4x3"},
+    ]
+)
+# → 4 PNG files written, one per ratio. Each includes label suffix in filename.
+```
+
+### Claude workflow
+1. `capture_widget_preview(...)` returns JSON with `png_path` entries.
+2. Use the `Read` tool on each `png_path` — Claude reads PNG as an image (multimodal).
+3. Compare visually with the Pencil reference (from `mcp__pencil__get_screenshot`).
+4. Write findings to `.claude/docs/ui-fidelity-log.md`.
+
+### Technical details
+- Uses `FWidgetRenderer` + `UTextureRenderTarget2D` → `IImageWrapper` (PNG).
+- Game-thread safe: asset load + widget instantiation run via `AsyncTask(GameThread)`.
+- Warmup frames (default 3) absorb texture streaming delay.
+- Widget instance is rooted during render, cleaned up afterwards (no GC leak).
+- Default output directory: `<ProjectDir>/Intermediate/WidgetCaptures/`
+- Label characters `/\\:` are sanitized to `_` / empty in the filename.
+- Timeout: 120 seconds total (game thread work).
+
+### Gotchas
+- Widget must have a **valid GeneratedClass** (i.e. compile must have succeeded at least once). Use `compile_and_save` first if the WBP is freshly created.
+- Retainer boxes and 3D widgets may not render correctly in the first warmup frame — increase `warmup_frames` to 5+ if you see missing content.
+- ScaleBox's `ScaleToFit` behavior requires a valid child hierarchy — empty widgets render as black (Mode 1 letterbox without content).
+- `transparent_bg=true` requires the WBP to have no fullscreen background color; otherwise the background is baked into the PNG regardless.
+
+---
+
+## 11. Asset Lifecycle
+
+| Tool | Purpose |
+|------|---------|
+| `reload_asset(asset_path, reopen_after?)` | Close asset editor, hard reload package, reopen editor |
+
+### Why this exists
+
+After `compile_and_save`, the on-disk asset is updated but any open editor tab keeps a **cached widget instance** showing the old version. The user sees stale output even though `capture_widget_preview` (which reads from disk) shows the fix. Manually the user must do **Asset Actions → Reload** in Content Browser. This tool automates that step.
+
+### Example
+
+```python
+# After compile_and_save:
+compile_and_save("/Game/UI/Menu/W_MainMenu_HF03d")
+
+# Clear any stale editor tab so the user sees the updated widget:
+reload_asset("/Game/UI/Menu/W_MainMenu_HF03d")
+# → {"was_open": true, "reloaded": true, "reopened": true}
+```
+
+### Technical details
+
+- Uses `UAssetEditorSubsystem::CloseAllEditorsForAsset` to close any open tab.
+- Uses `UPackageTools::ReloadPackages` with `AssumePositive` interaction mode (no dialog prompts).
+- Reopens the editor tab only if `reopen_after=true` and the tab was open before.
+- `capture_widget_preview` does NOT need this — it renders directly from the on-disk asset.
+
+### Response fields
+
+| Field | Meaning |
+|---|---|
+| `was_open` | Was an editor tab open for this asset before reload? |
+| `reloaded` | Did the hard package reload succeed? |
+| `reopened` | Was the editor tab reopened after reload? |
+
 ### Example: Import Font
 ```python
 import_font(
@@ -358,8 +451,10 @@ First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets
 | Blueprint Variables | 4 | add, set_default, remove, get_variables |
 | Material System | 14 | create, set_property, add_expr, set_expr_property, connect_exprs, connect_to_root, disconnect, remove_expr, compile, get_graph, list_classes, create_instance, set_param, save_instance, get_info |
 | Asset Import | 2 | import_texture, import_font |
+| Widget Preview Capture | 1 | capture_widget_preview (IFTP verify loop) |
+| Asset Lifecycle | 1 | reload_asset (clear cached editor tab after compile) |
 | Utility | 1 | ping |
-| **Total** | **55** | |
+| **Total** | **57** | |
 
 ---
 

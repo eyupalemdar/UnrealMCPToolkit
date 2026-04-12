@@ -8,6 +8,7 @@
 
 class UWidgetBlueprint;
 class UWidget;
+class UPanelWidget;
 class FJsonObject;
 
 /**
@@ -276,4 +277,7 @@ private:
 
 	/** Recursively build JSON for a widget and its children */
 	static TSharedPtr<FJsonObject> WidgetToJson(UWidget* Widget);
+
+	/** Recursively collect all descendant widgets of a panel widget */
+	static void CollectAllDescendants(UPanelWidget* Parent, TArray<UWidget*>& OutDescendants);
 };

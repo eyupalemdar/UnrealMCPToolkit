@@ -42,11 +42,13 @@ public class CommonAIExport : ModuleRules
 			"AudioModulation",  // For USoundControlBus, USoundControlBusMix, USoundModulationPatch
 			"CommonUI",  // For UCommonTextBlock
 			"ImageWrapper",  // For PNG export (IImageWrapper)
+			"RenderCore",  // For FlushRenderingCommands (widget preview capture)
 			"MovieScene",  // For UWidgetAnimation export
 			"MovieSceneTracks",  // For section types (FloatSection, ColorSection, etc.)
 			"PhysicsCore",  // For UPhysicalMaterial
 			"KismetCompiler",  // For FKismetEditorUtilities::CompileBlueprint
-			"MaterialEditor"  // For UMaterialEditingLibrary (Material Builder)
+			"MaterialEditor",  // For UMaterialEditingLibrary (Material Builder)
+			"AssetTools"  // For IAssetTools::RenameAssets + FAssetRenameData (rename_asset)
 		});
 	}
 }

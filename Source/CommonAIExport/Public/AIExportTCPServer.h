@@ -88,6 +88,7 @@ class FSocket;
  * - set_asset_property: Set property on any loaded asset (reflection-based)
  * - get_asset_properties: Get all properties of any loaded asset as JSON
  * - save_asset: Save any loaded asset to disk
+ * - rename_asset: Rename/move an asset (creates redirector, fixes references via AssetTools)
  *
  * Input Mapping Context commands:
  * - add_input_mapping: Add a key mapping to InputMappingContext
@@ -101,6 +102,12 @@ class FSocket;
  * Asset Import commands:
  * - import_texture: Import a texture file from disk into Content Browser
  * - import_font: Import font files (TTF/OTF) and create a Composite Font asset
+ *
+ * Widget Preview Capture commands (for IFTP verify loop):
+ * - capture_widget_preview: Render a Widget Blueprint to PNG at one or more ratios
+ *
+ * Asset Lifecycle commands:
+ * - reload_asset: Close asset editor, hard reload package, reopen editor (fixes cached tab after compile_and_save)
  */
 class FAIExportTCPServer : public FRunnable
 {
@@ -220,6 +227,7 @@ private:
 	FString HandleSetAssetProperty(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetAssetProperties(TSharedPtr<class FJsonObject> Params);
 	FString HandleSaveAsset(TSharedPtr<class FJsonObject> Params);
+	FString HandleRenameAsset(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Input Mapping Context */
 	FString HandleAddInputMapping(TSharedPtr<class FJsonObject> Params);
@@ -233,6 +241,12 @@ private:
 	/** Command handlers — Asset Import */
 	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);
 	FString HandleImportFont(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — Widget Preview Capture (for IFTP verify loop) */
+	FString HandleCaptureWidgetPreview(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers — Asset Lifecycle */
+	FString HandleReloadAsset(TSharedPtr<class FJsonObject> Params);
 
 	/** Create error response JSON */
 	FString CreateErrorResponse(const FString& ErrorMessage);
