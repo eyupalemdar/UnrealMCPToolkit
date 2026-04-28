@@ -1292,7 +1292,6 @@ UEdGraph* UAIBlueprintGraphBuilder::EnsureFunctionGraph(
 			FunctionGraph->AddNode(ResultNode, false, false);
 			ResultNode->CreateNewGuid();
 			ResultNode->PostPlacedNewNode();
-			ResultNode->AllocateDefaultPins();
 		}
 		else
 		{
