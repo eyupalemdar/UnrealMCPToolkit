@@ -18,6 +18,7 @@
 #include "K2Node_IfThenElse.h"
 #include "K2Node_CallParentFunction.h"
 #include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
 
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -25,6 +26,7 @@
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 #include "ScopedTransaction.h"
+#include "UObject/UObjectIterator.h"
 
 #define LOCTEXT_NAMESPACE "AIBlueprintGraphBuilder"
 
@@ -71,6 +73,51 @@ UEdGraph* UAIBlueprintGraphBuilder::GetEventGraph(UBlueprint* Blueprint)
 		Blueprint->UbergraphPages.Add(EventGraph);
 	}
 	return EventGraph;
+}
+
+UEdGraph* UAIBlueprintGraphBuilder::FindGraph(
+	UBlueprint* Blueprint,
+	const FString& GraphName)
+{
+	if (!Blueprint)
+	{
+		return nullptr;
+	}
+
+	if (GraphName.IsEmpty() || GraphName == UEdGraphSchema_K2::GN_EventGraph.ToString())
+	{
+		return GetEventGraph(Blueprint);
+	}
+
+	for (UEdGraph* Graph : Blueprint->UbergraphPages)
+	{
+		if (Graph && Graph->GetName() == GraphName)
+		{
+			return Graph;
+		}
+	}
+	for (UEdGraph* Graph : Blueprint->FunctionGraphs)
+	{
+		if (Graph && Graph->GetName() == GraphName)
+		{
+			return Graph;
+		}
+	}
+
+	return nullptr;
+}
+
+UEdGraph* UAIBlueprintGraphBuilder::ResolveGraph(
+	UBlueprint* Blueprint,
+	const FString& GraphName)
+{
+	UEdGraph* Graph = FindGraph(Blueprint, GraphName);
+	if (!Graph)
+	{
+		UE_LOG(LogAIGraphBuilder, Error, TEXT("ResolveGraph: Graph '%s' not found"),
+			GraphName.IsEmpty() ? TEXT("EventGraph") : *GraphName);
+	}
+	return Graph;
 }
 
 UK2Node* UAIBlueprintGraphBuilder::FindNodeByName(
@@ -247,6 +294,26 @@ UFunction* UAIBlueprintGraphBuilder::FindFunctionByName(
 		}
 	}
 
+	// Search Blueprint-generated classes for user-defined functions that may
+	// already be compiled into the BP skeleton/generated class.
+	if (Blueprint)
+	{
+		if (Blueprint->SkeletonGeneratedClass)
+		{
+			if (UFunction* Func = Blueprint->SkeletonGeneratedClass->FindFunctionByName(FuncName))
+			{
+				return Func;
+			}
+		}
+		if (Blueprint->GeneratedClass)
+		{
+			if (UFunction* Func = Blueprint->GeneratedClass->FindFunctionByName(FuncName))
+			{
+				return Func;
+			}
+		}
+	}
+
 	// Search Blueprint parent class hierarchy
 	if (Blueprint && Blueprint->ParentClass)
 	{
@@ -279,6 +346,7 @@ UFunction* UAIBlueprintGraphBuilder::FindFunctionByName(
 		TEXT("/Script/CommonUI.CommonActionWidget"),
 		TEXT("/Script/CommonUI.CommonActivatableWidget"),
 		TEXT("/Script/CommonUI.CommonTabListWidgetBase"),
+		TEXT("/Script/CommonGame.CommonUIExtensions"),
 		TEXT("/Script/SlateCore.SlateBlueprintLibrary"),
 		TEXT("/Script/Engine.KismetMathLibrary"),
 		TEXT("/Script/Engine.KismetSystemLibrary"),
@@ -302,56 +370,245 @@ UFunction* UAIBlueprintGraphBuilder::FindFunctionByName(
 	return nullptr;
 }
 
+namespace
+{
+FString CleanGraphTypeString(const FString& InType)
+{
+	FString Type = InType;
+	Type.TrimStartAndEndInline();
+
+	if (Type.Len() >= 2
+		&& ((Type.StartsWith(TEXT("\"")) && Type.EndsWith(TEXT("\"")))
+			|| (Type.StartsWith(TEXT("'")) && Type.EndsWith(TEXT("'")))))
+	{
+		Type = Type.Mid(1, Type.Len() - 2);
+		Type.TrimStartAndEndInline();
+	}
+
+	return Type;
+}
+
+bool ConsumeTypePrefix(FString& Type, const FString& Prefix)
+{
+	if (Type.StartsWith(Prefix, ESearchCase::IgnoreCase))
+	{
+		Type = Type.Mid(Prefix.Len());
+		Type.TrimStartAndEndInline();
+		return true;
+	}
+	return false;
+}
+
+bool ConsumeWrappedType(FString& Type, const FString& Prefix)
+{
+	if (Type.StartsWith(Prefix, ESearchCase::IgnoreCase) && Type.EndsWith(TEXT(">")))
+	{
+		Type = Type.Mid(Prefix.Len(), Type.Len() - Prefix.Len() - 1);
+		Type.TrimStartAndEndInline();
+		return true;
+	}
+	return false;
+}
+
+UClass* ResolveClassForGraphType(const FString& InType)
+{
+	FString Type = CleanGraphTypeString(InType);
+	if (Type.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	if (UClass* Class = FindObject<UClass>(nullptr, *Type))
+	{
+		return Class;
+	}
+	if (UClass* Class = LoadObject<UClass>(nullptr, *Type))
+	{
+		return Class;
+	}
+
+	if (Type.StartsWith(TEXT("/Script/")))
+	{
+		const FString ObjectPath = Type + TEXT(".") + Type.RightChop(Type.Find(TEXT(".")) + 1);
+		if (UClass* Class = LoadObject<UClass>(nullptr, *ObjectPath))
+		{
+			return Class;
+		}
+	}
+
+	for (TObjectIterator<UClass> It; It; ++It)
+	{
+		UClass* Class = *It;
+		if (!Class)
+		{
+			continue;
+		}
+		const FString ClassName = Class->GetName();
+		if (ClassName.Equals(Type, ESearchCase::IgnoreCase)
+			|| Class->GetPathName().Equals(Type, ESearchCase::IgnoreCase)
+			|| (ClassName.StartsWith(TEXT("U")) && ClassName.Mid(1).Equals(Type, ESearchCase::IgnoreCase)))
+		{
+			return Class;
+		}
+	}
+
+	return nullptr;
+}
+
+UEnum* ResolveEnumForGraphType(const FString& InType)
+{
+	FString Type = CleanGraphTypeString(InType);
+	if (Type.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	if (UEnum* Enum = FindObject<UEnum>(nullptr, *Type))
+	{
+		return Enum;
+	}
+	if (UEnum* Enum = LoadObject<UEnum>(nullptr, *Type))
+	{
+		return Enum;
+	}
+
+	static const TCHAR* EnumPrefixes[] = {
+		TEXT("/Script/CoreUObject."),
+		TEXT("/Script/Core."),
+		TEXT("/Script/Slate."),
+		TEXT("/Script/SlateCore."),
+		TEXT("/Script/UMG."),
+		TEXT("/Script/CommonInput."),
+		TEXT("/Script/CommonUI."),
+	};
+
+	for (const TCHAR* Prefix : EnumPrefixes)
+	{
+		const FString FullPath = FString(Prefix) + Type;
+		if (UEnum* Enum = FindObject<UEnum>(nullptr, *FullPath))
+		{
+			return Enum;
+		}
+		if (UEnum* Enum = LoadObject<UEnum>(nullptr, *FullPath))
+		{
+			return Enum;
+		}
+	}
+
+	for (TObjectIterator<UEnum> It; It; ++It)
+	{
+		UEnum* Enum = *It;
+		if (!Enum)
+		{
+			continue;
+		}
+		const FString EnumName = Enum->GetName();
+		if (EnumName.Equals(Type, ESearchCase::IgnoreCase)
+			|| Enum->GetPathName().Equals(Type, ESearchCase::IgnoreCase))
+		{
+			return Enum;
+		}
+	}
+
+	return nullptr;
+}
+}
+
 FEdGraphPinType UAIBlueprintGraphBuilder::ResolveVarType(const FString& TypeString)
 {
 	FEdGraphPinType PinType;
+	FString Type = CleanGraphTypeString(TypeString);
 
-	if (TypeString.Equals(TEXT("bool"), ESearchCase::IgnoreCase))
+	if (Type.Equals(TEXT("bool"), ESearchCase::IgnoreCase))
 	{
 		PinType.PinCategory = UEdGraphSchema_K2::PC_Boolean;
 	}
-	else if (TypeString.Equals(TEXT("byte"), ESearchCase::IgnoreCase))
+	else if (Type.Equals(TEXT("byte"), ESearchCase::IgnoreCase))
 	{
 		PinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
 	}
-	else if (TypeString.Equals(TEXT("int"), ESearchCase::IgnoreCase) ||
-			 TypeString.Equals(TEXT("int32"), ESearchCase::IgnoreCase))
+	else if (Type.Equals(TEXT("int"), ESearchCase::IgnoreCase) ||
+			 Type.Equals(TEXT("int32"), ESearchCase::IgnoreCase))
 	{
 		PinType.PinCategory = UEdGraphSchema_K2::PC_Int;
 	}
-	else if (TypeString.Equals(TEXT("int64"), ESearchCase::IgnoreCase))
+	else if (Type.Equals(TEXT("int64"), ESearchCase::IgnoreCase))
 	{
 		PinType.PinCategory = UEdGraphSchema_K2::PC_Int64;
 	}
-	else if (TypeString.Equals(TEXT("float"), ESearchCase::IgnoreCase))
+	else if (Type.Equals(TEXT("float"), ESearchCase::IgnoreCase))
 	{
 		PinType.PinCategory = UEdGraphSchema_K2::PC_Real;
 		PinType.PinSubCategory = TEXT("float");
 	}
-	else if (TypeString.Equals(TEXT("double"), ESearchCase::IgnoreCase))
+	else if (Type.Equals(TEXT("double"), ESearchCase::IgnoreCase))
 	{
 		PinType.PinCategory = UEdGraphSchema_K2::PC_Real;
 		PinType.PinSubCategory = TEXT("double");
 	}
-	else if (TypeString.Equals(TEXT("String"), ESearchCase::IgnoreCase) ||
-			 TypeString.Equals(TEXT("FString"), ESearchCase::IgnoreCase))
+	else if (Type.Equals(TEXT("String"), ESearchCase::IgnoreCase) ||
+			 Type.Equals(TEXT("FString"), ESearchCase::IgnoreCase))
 	{
 		PinType.PinCategory = UEdGraphSchema_K2::PC_String;
 	}
-	else if (TypeString.Equals(TEXT("Name"), ESearchCase::IgnoreCase) ||
-			 TypeString.Equals(TEXT("FName"), ESearchCase::IgnoreCase))
+	else if (Type.Equals(TEXT("Name"), ESearchCase::IgnoreCase) ||
+			 Type.Equals(TEXT("FName"), ESearchCase::IgnoreCase))
 	{
 		PinType.PinCategory = UEdGraphSchema_K2::PC_Name;
 	}
-	else if (TypeString.Equals(TEXT("Text"), ESearchCase::IgnoreCase) ||
-			 TypeString.Equals(TEXT("FText"), ESearchCase::IgnoreCase))
+	else if (Type.Equals(TEXT("Text"), ESearchCase::IgnoreCase) ||
+			 Type.Equals(TEXT("FText"), ESearchCase::IgnoreCase))
 	{
 		PinType.PinCategory = UEdGraphSchema_K2::PC_Text;
 	}
-	else if (TypeString.StartsWith(TEXT("/")))
+	else if (ConsumeTypePrefix(Type, TEXT("class:"))
+		|| ConsumeTypePrefix(Type, TEXT("class "))
+		|| ConsumeWrappedType(Type, TEXT("Class<"))
+		|| ConsumeWrappedType(Type, TEXT("TSubclassOf<")))
 	{
-		// Object reference path: "/Script/UMG.TextBlock"
-		UClass* Class = LoadObject<UClass>(nullptr, *TypeString);
+		if (UClass* Class = ResolveClassForGraphType(Type))
+		{
+			PinType.PinCategory = UEdGraphSchema_K2::PC_Class;
+			PinType.PinSubCategoryObject = Class;
+		}
+		else
+		{
+			UE_LOG(LogAIGraphBuilder, Warning, TEXT("ResolveVarType: Could not load class reference '%s'"), *TypeString);
+			PinType.PinCategory = UEdGraphSchema_K2::PC_Class;
+			PinType.PinSubCategoryObject = UObject::StaticClass();
+		}
+	}
+	else if (ConsumeTypePrefix(Type, TEXT("enum:"))
+		|| ConsumeTypePrefix(Type, TEXT("enum "))
+		|| ConsumeWrappedType(Type, TEXT("Enum<")))
+	{
+		PinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
+		if (UEnum* Enum = ResolveEnumForGraphType(Type))
+		{
+			PinType.PinSubCategoryObject = Enum;
+		}
+		else
+		{
+			UE_LOG(LogAIGraphBuilder, Warning, TEXT("ResolveVarType: Could not load enum '%s'"), *TypeString);
+		}
+	}
+	else if (ConsumeTypePrefix(Type, TEXT("object:"))
+		|| ConsumeTypePrefix(Type, TEXT("object ")))
+	{
+		if (UClass* Class = ResolveClassForGraphType(Type))
+		{
+			PinType.PinCategory = UEdGraphSchema_K2::PC_Object;
+			PinType.PinSubCategoryObject = Class;
+		}
+		else
+		{
+			UE_LOG(LogAIGraphBuilder, Warning, TEXT("ResolveVarType: Could not load object class '%s'"), *TypeString);
+		}
+	}
+	else if (Type.StartsWith(TEXT("/")))
+	{
+		// Backward-compatible object reference path: "/Script/UMG.TextBlock"
+		UClass* Class = ResolveClassForGraphType(Type);
 		if (Class)
 		{
 			PinType.PinCategory = UEdGraphSchema_K2::PC_Object;
@@ -359,7 +616,7 @@ FEdGraphPinType UAIBlueprintGraphBuilder::ResolveVarType(const FString& TypeStri
 		}
 		else
 		{
-			UE_LOG(LogAIGraphBuilder, Warning, TEXT("ResolveVarType: Could not load class '%s'"), *TypeString);
+			UE_LOG(LogAIGraphBuilder, Warning, TEXT("ResolveVarType: Could not load class '%s'"), *Type);
 		}
 	}
 	else
@@ -377,7 +634,7 @@ FEdGraphPinType UAIBlueprintGraphBuilder::ResolveVarType(const FString& TypeStri
 
 		for (const TCHAR* Prefix : StructPrefixes)
 		{
-			FString FullPath = FString(Prefix) + TypeString;
+			FString FullPath = FString(Prefix) + Type;
 			Struct = FindObject<UScriptStruct>(nullptr, *FullPath);
 			if (Struct) break;
 			Struct = LoadObject<UScriptStruct>(nullptr, *FullPath);
@@ -391,8 +648,16 @@ FEdGraphPinType UAIBlueprintGraphBuilder::ResolveVarType(const FString& TypeStri
 		}
 		else
 		{
-			UE_LOG(LogAIGraphBuilder, Warning, TEXT("ResolveVarType: Unknown type '%s', defaulting to String"), *TypeString);
-			PinType.PinCategory = UEdGraphSchema_K2::PC_String;
+			if (UEnum* Enum = ResolveEnumForGraphType(Type))
+			{
+				PinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
+				PinType.PinSubCategoryObject = Enum;
+			}
+			else
+			{
+				UE_LOG(LogAIGraphBuilder, Warning, TEXT("ResolveVarType: Unknown type '%s', defaulting to String"), *TypeString);
+				PinType.PinCategory = UEdGraphSchema_K2::PC_String;
+			}
 		}
 	}
 
@@ -407,7 +672,8 @@ UK2Node* UAIBlueprintGraphBuilder::AddEventNode(
 	UBlueprint* Blueprint,
 	const FString& EventName,
 	const FString& NodeName,
-	int32 PosX, int32 PosY)
+	int32 PosX, int32 PosY,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
@@ -415,7 +681,7 @@ UK2Node* UAIBlueprintGraphBuilder::AddEventNode(
 		return nullptr;
 	}
 
-	UEdGraph* EventGraph = GetEventGraph(Blueprint);
+	UEdGraph* EventGraph = ResolveGraph(Blueprint, GraphName);
 	if (!EventGraph)
 	{
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("AddEventNode: Could not get event graph"));
@@ -477,14 +743,15 @@ UK2Node* UAIBlueprintGraphBuilder::AddCustomEvent(
 	UBlueprint* Blueprint,
 	const FString& EventName,
 	const FString& NodeName,
-	int32 PosX, int32 PosY)
+	int32 PosX, int32 PosY,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
 		return nullptr;
 	}
 
-	UEdGraph* EventGraph = GetEventGraph(Blueprint);
+	UEdGraph* EventGraph = ResolveGraph(Blueprint, GraphName);
 	if (!EventGraph)
 	{
 		return nullptr;
@@ -517,21 +784,23 @@ UK2Node* UAIBlueprintGraphBuilder::AddFunctionCallNode(
 	const FString& FunctionName,
 	const FString& NodeName,
 	const FString& TargetClass,
-	int32 PosX, int32 PosY)
+	int32 PosX, int32 PosY,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
 		return nullptr;
 	}
 
-	UEdGraph* EventGraph = GetEventGraph(Blueprint);
+	UEdGraph* EventGraph = ResolveGraph(Blueprint, GraphName);
 	if (!EventGraph)
 	{
 		return nullptr;
 	}
 
 	UFunction* Function = FindFunctionByName(Blueprint, FunctionName, TargetClass);
-	if (!Function)
+	const bool bSelfFunctionGraph = !Function && FindGraph(Blueprint, FunctionName) != nullptr;
+	if (!Function && !bSelfFunctionGraph)
 	{
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("AddFunctionCallNode: Function '%s' not found"), *FunctionName);
 		return nullptr;
@@ -542,7 +811,14 @@ UK2Node* UAIBlueprintGraphBuilder::AddFunctionCallNode(
 	FString AIComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
 	UK2Node_CallFunction* CallNode = NewObject<UK2Node_CallFunction>(EventGraph);
-	CallNode->SetFromFunction(Function);
+	if (Function)
+	{
+		CallNode->SetFromFunction(Function);
+	}
+	else
+	{
+		CallNode->FunctionReference.SetSelfMember(FName(*FunctionName));
+	}
 	CallNode->NodePosX = PosX;
 	CallNode->NodePosY = PosY;
 	CallNode->NodeComment = AIComment;
@@ -563,14 +839,15 @@ UK2Node* UAIBlueprintGraphBuilder::AddVariableGetNode(
 	UBlueprint* Blueprint,
 	const FString& VariableName,
 	const FString& NodeName,
-	int32 PosX, int32 PosY)
+	int32 PosX, int32 PosY,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
 		return nullptr;
 	}
 
-	UEdGraph* EventGraph = GetEventGraph(Blueprint);
+	UEdGraph* EventGraph = ResolveGraph(Blueprint, GraphName);
 	if (!EventGraph)
 	{
 		return nullptr;
@@ -602,14 +879,15 @@ UK2Node* UAIBlueprintGraphBuilder::AddVariableSetNode(
 	UBlueprint* Blueprint,
 	const FString& VariableName,
 	const FString& NodeName,
-	int32 PosX, int32 PosY)
+	int32 PosX, int32 PosY,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
 		return nullptr;
 	}
 
-	UEdGraph* EventGraph = GetEventGraph(Blueprint);
+	UEdGraph* EventGraph = ResolveGraph(Blueprint, GraphName);
 	if (!EventGraph)
 	{
 		return nullptr;
@@ -641,14 +919,15 @@ UK2Node* UAIBlueprintGraphBuilder::AddMakeStructNode(
 	UBlueprint* Blueprint,
 	const FString& StructName,
 	const FString& NodeName,
-	int32 PosX, int32 PosY)
+	int32 PosX, int32 PosY,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
 		return nullptr;
 	}
 
-	UEdGraph* EventGraph = GetEventGraph(Blueprint);
+	UEdGraph* EventGraph = ResolveGraph(Blueprint, GraphName);
 	if (!EventGraph)
 	{
 		return nullptr;
@@ -688,14 +967,15 @@ UK2Node* UAIBlueprintGraphBuilder::AddMakeStructNode(
 UK2Node* UAIBlueprintGraphBuilder::AddBranchNode(
 	UBlueprint* Blueprint,
 	const FString& NodeName,
-	int32 PosX, int32 PosY)
+	int32 PosX, int32 PosY,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
 		return nullptr;
 	}
 
-	UEdGraph* EventGraph = GetEventGraph(Blueprint);
+	UEdGraph* EventGraph = ResolveGraph(Blueprint, GraphName);
 	if (!EventGraph)
 	{
 		return nullptr;
@@ -725,14 +1005,15 @@ UK2Node* UAIBlueprintGraphBuilder::AddCallParentFunctionNode(
 	UBlueprint* Blueprint,
 	const FString& FunctionName,
 	const FString& NodeName,
-	int32 PosX, int32 PosY)
+	int32 PosX, int32 PosY,
+	const FString& GraphName)
 {
 	if (!Blueprint || FunctionName.IsEmpty())
 	{
 		return nullptr;
 	}
 
-	UEdGraph* EventGraph = GetEventGraph(Blueprint);
+	UEdGraph* EventGraph = ResolveGraph(Blueprint, GraphName);
 	if (!EventGraph)
 	{
 		return nullptr;
@@ -782,15 +1063,16 @@ bool UAIBlueprintGraphBuilder::ConnectPins(
 	const FString& FromNodeName,
 	const FString& FromPinName,
 	const FString& ToNodeName,
-	const FString& ToPinName)
+	const FString& ToPinName,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
 		return false;
 	}
 
-	UK2Node* FromNode = FindNodeByName(Blueprint, FromNodeName);
-	UK2Node* ToNode = FindNodeByName(Blueprint, ToNodeName);
+	UK2Node* FromNode = FindNodeByName(Blueprint, FromNodeName, GraphName);
+	UK2Node* ToNode = FindNodeByName(Blueprint, ToNodeName, GraphName);
 
 	if (!FromNode)
 	{
@@ -842,14 +1124,15 @@ bool UAIBlueprintGraphBuilder::SetPinDefaultValue(
 	UBlueprint* Blueprint,
 	const FString& NodeName,
 	const FString& PinName,
-	const FString& DefaultValue)
+	const FString& DefaultValue,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
 		return false;
 	}
 
-	UK2Node* Node = FindNodeByName(Blueprint, NodeName);
+	UK2Node* Node = FindNodeByName(Blueprint, NodeName, GraphName);
 	if (!Node)
 	{
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("SetPinDefaultValue: Node '%s' not found"), *NodeName);
@@ -880,14 +1163,15 @@ bool UAIBlueprintGraphBuilder::SetPinDefaultValue(
 
 bool UAIBlueprintGraphBuilder::RemoveNode(
 	UBlueprint* Blueprint,
-	const FString& NodeName)
+	const FString& NodeName,
+	const FString& GraphName)
 {
 	if (!Blueprint)
 	{
 		return false;
 	}
 
-	UK2Node* Node = FindNodeByName(Blueprint, NodeName);
+	UK2Node* Node = FindNodeByName(Blueprint, NodeName, GraphName);
 	if (!Node)
 	{
 		UE_LOG(LogAIGraphBuilder, Warning, TEXT("RemoveNode: Node '%s' not found"), *NodeName);
@@ -899,6 +1183,152 @@ bool UAIBlueprintGraphBuilder::RemoveNode(
 	FBlueprintEditorUtils::RemoveNode(Blueprint, Node);
 	UE_LOG(LogAIGraphBuilder, Log, TEXT("RemoveNode: Removed '%s'"), *NodeName);
 	return true;
+}
+
+UEdGraph* UAIBlueprintGraphBuilder::EnsureFunctionGraph(
+	UBlueprint* Blueprint,
+	const FString& FunctionName,
+	const TArray<FAIBlueprintGraphPinSpec>& Inputs,
+	const TArray<FAIBlueprintGraphPinSpec>& Outputs,
+	const FString& EntryNodeName,
+	const FString& ResultNodeName)
+{
+	if (!Blueprint || FunctionName.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIEnsureFunctionGraph", "AI: Ensure Function Graph"));
+
+	UEdGraph* FunctionGraph = nullptr;
+	for (UEdGraph* Graph : Blueprint->FunctionGraphs)
+	{
+		if (Graph && Graph->GetName() == FunctionName)
+		{
+			FunctionGraph = Graph;
+			break;
+		}
+	}
+
+	if (!FunctionGraph)
+	{
+		Blueprint->Modify();
+		FunctionGraph = FBlueprintEditorUtils::CreateNewGraph(
+			Blueprint,
+			FName(*FunctionName),
+			UEdGraph::StaticClass(),
+			UEdGraphSchema_K2::StaticClass());
+
+		if (!FunctionGraph)
+		{
+			UE_LOG(LogAIGraphBuilder, Error, TEXT("EnsureFunctionGraph: Failed to create '%s'"), *FunctionName);
+			return nullptr;
+		}
+
+		FBlueprintEditorUtils::AddFunctionGraph<UFunction>(
+			Blueprint,
+			FunctionGraph,
+			/*bIsUserCreated=*/true,
+			/*SignatureFromObject=*/nullptr);
+	}
+
+	UK2Node_FunctionEntry* EntryNode = nullptr;
+	UK2Node_FunctionResult* ResultNode = nullptr;
+	for (UEdGraphNode* GraphNode : FunctionGraph->Nodes)
+	{
+		if (!EntryNode)
+		{
+			EntryNode = Cast<UK2Node_FunctionEntry>(GraphNode);
+		}
+		if (!ResultNode)
+		{
+			ResultNode = Cast<UK2Node_FunctionResult>(GraphNode);
+		}
+	}
+
+	if (EntryNode)
+	{
+		const FString EntryAIName = EntryNodeName.IsEmpty()
+			? FString::Printf(TEXT("%s_Entry"), *FunctionName)
+			: EntryNodeName;
+		EntryNode->NodeComment = FString::Printf(TEXT("AI:%s"), *EntryAIName);
+		EntryNode->bCommentBubbleVisible = false;
+		EntryNode->CustomGeneratedFunctionName = FName(*FunctionName);
+
+		for (const FAIBlueprintGraphPinSpec& PinSpec : Inputs)
+		{
+			if (PinSpec.Name.IsEmpty())
+			{
+				continue;
+			}
+			if (!FindPin(EntryNode, PinSpec.Name, EGPD_Output))
+			{
+				UEdGraphPin* Pin = EntryNode->CreateUserDefinedPin(
+					FName(*PinSpec.Name),
+					ResolveVarType(PinSpec.Type),
+					EGPD_Output,
+					/*bUseUniqueName=*/false);
+				if (Pin && !PinSpec.DefaultValue.IsEmpty())
+				{
+					Pin->DefaultValue = PinSpec.DefaultValue;
+				}
+			}
+		}
+	}
+
+	if (Outputs.Num() > 0)
+	{
+		if (!ResultNode)
+		{
+			ResultNode = NewObject<UK2Node_FunctionResult>(FunctionGraph);
+			const FString ResultAIName = ResultNodeName.IsEmpty()
+				? FString::Printf(TEXT("%s_Result"), *FunctionName)
+				: ResultNodeName;
+			ResultNode->NodePosX = 480;
+			ResultNode->NodePosY = 0;
+			ResultNode->NodeComment = FString::Printf(TEXT("AI:%s"), *ResultAIName);
+			ResultNode->bCommentBubbleVisible = false;
+
+			FunctionGraph->AddNode(ResultNode, false, false);
+			ResultNode->CreateNewGuid();
+			ResultNode->PostPlacedNewNode();
+			ResultNode->AllocateDefaultPins();
+		}
+		else
+		{
+			const FString ResultAIName = ResultNodeName.IsEmpty()
+				? FString::Printf(TEXT("%s_Result"), *FunctionName)
+				: ResultNodeName;
+			ResultNode->NodeComment = FString::Printf(TEXT("AI:%s"), *ResultAIName);
+			ResultNode->bCommentBubbleVisible = false;
+		}
+
+		for (const FAIBlueprintGraphPinSpec& PinSpec : Outputs)
+		{
+			if (!ResultNode || PinSpec.Name.IsEmpty())
+			{
+				continue;
+			}
+			if (!FindPin(ResultNode, PinSpec.Name, EGPD_Input))
+			{
+				UEdGraphPin* Pin = ResultNode->CreateUserDefinedPin(
+					FName(*PinSpec.Name),
+					ResolveVarType(PinSpec.Type),
+					EGPD_Input,
+					/*bUseUniqueName=*/false);
+				if (Pin && !PinSpec.DefaultValue.IsEmpty())
+				{
+					Pin->DefaultValue = PinSpec.DefaultValue;
+				}
+			}
+		}
+	}
+
+	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+
+	UE_LOG(LogAIGraphBuilder, Log, TEXT("EnsureFunctionGraph: Ensured '%s' (%d inputs, %d outputs)"),
+		*FunctionName, Inputs.Num(), Outputs.Num());
+	return FunctionGraph;
 }
 
 TSharedPtr<FJsonObject> UAIBlueprintGraphBuilder::GetGraphAsJson(
@@ -1067,6 +1497,10 @@ bool UAIBlueprintGraphBuilder::AddVariable(
 	if (bInstanceEditable)
 	{
 		FBlueprintEditorUtils::SetBlueprintOnlyEditableFlag(Blueprint, VarFName, false);
+	}
+	if (bBlueprintReadOnly)
+	{
+		FBlueprintEditorUtils::SetBlueprintPropertyReadOnlyFlag(Blueprint, VarFName, true);
 	}
 
 	// Set category

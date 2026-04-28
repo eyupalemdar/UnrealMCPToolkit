@@ -69,7 +69,7 @@ Input Mapping Context workflow:
 
 AnimBlueprint workflow:
 1. create_anim_blueprint - Create with skeleton and parent class
-2. Use Blueprint Graph tools (add_event_node, etc.) for EventGraph
+2. Use Blueprint Graph tools (add_event_node, ensure_function_graph, etc.)
 3. compile_and_save - Compile and save
 4. get_anim_blueprint_info - Inspect result
 """)
@@ -1195,10 +1195,11 @@ def add_event_node(
     event_name: str,
     node_name: str,
     pos_x: int = 0,
-    pos_y: int = 0
+    pos_y: int = 0,
+    graph_name: str = "EventGraph"
 ) -> str:
     """
-    Add an event override node to the Blueprint's event graph.
+    Add an event override node to a Blueprint graph.
 
     Creates a node that overrides a parent class event (e.g. BP_OnSelected,
     BP_OnDeselected, BP_OnHovered, ReceiveBeginPlay, HandleTabCreation).
@@ -1209,6 +1210,7 @@ def add_event_node(
         node_name: Logical name for later reference in connect_pins etc.
         pos_x: X position in graph
         pos_y: Y position in graph
+        graph_name: Target graph name. Defaults to "EventGraph".
 
     Returns:
         JSON with node_name and event_name on success.
@@ -1219,6 +1221,7 @@ def add_event_node(
         "node_name": node_name,
         "pos_x": pos_x,
         "pos_y": pos_y,
+        "graph_name": graph_name,
     }))
 
 
@@ -1228,10 +1231,11 @@ def add_custom_event(
     event_name: str,
     node_name: str,
     pos_x: int = 0,
-    pos_y: int = 0
+    pos_y: int = 0,
+    graph_name: str = "EventGraph"
 ) -> str:
     """
-    Add a Custom Event node to the Blueprint's event graph.
+    Add a Custom Event node to a Blueprint graph.
 
     Args:
         asset_path: Asset path of the Blueprint
@@ -1239,6 +1243,7 @@ def add_custom_event(
         node_name: Logical name for later reference
         pos_x: X position in graph
         pos_y: Y position in graph
+        graph_name: Target graph name. Defaults to "EventGraph".
 
     Returns:
         JSON with node_name and event_name.
@@ -1249,6 +1254,7 @@ def add_custom_event(
         "node_name": node_name,
         "pos_x": pos_x,
         "pos_y": pos_y,
+        "graph_name": graph_name,
     }))
 
 
@@ -1259,10 +1265,11 @@ def add_function_call(
     node_name: str,
     target_class: str = "",
     pos_x: int = 0,
-    pos_y: int = 0
+    pos_y: int = 0,
+    graph_name: str = "EventGraph"
 ) -> str:
     """
-    Add a function call node to the Blueprint's event graph.
+    Add a function call node to a Blueprint graph.
 
     Searches for the function in: target_class (if given), Blueprint parent class
     hierarchy, and common UMG/CommonUI classes.
@@ -1275,6 +1282,7 @@ def add_function_call(
         target_class: Optional class path to search (e.g. "/Script/UMG.TextBlock")
         pos_x: X position in graph
         pos_y: Y position in graph
+        graph_name: Target graph name. Defaults to "EventGraph".
 
     Returns:
         JSON with node_name and function_name.
@@ -1285,6 +1293,7 @@ def add_function_call(
         "node_name": node_name,
         "pos_x": pos_x,
         "pos_y": pos_y,
+        "graph_name": graph_name,
     }
     if target_class:
         params["target_class"] = target_class
@@ -1297,7 +1306,8 @@ def add_variable_get_node(
     variable_name: str,
     node_name: str,
     pos_x: int = 0,
-    pos_y: int = 0
+    pos_y: int = 0,
+    graph_name: str = "EventGraph"
 ) -> str:
     """
     Add a Variable Get node to the graph.
@@ -1308,6 +1318,7 @@ def add_variable_get_node(
         node_name: Logical name for later reference
         pos_x: X position in graph
         pos_y: Y position in graph
+        graph_name: Target graph name. Defaults to "EventGraph".
 
     Returns:
         JSON with node_name and variable_name.
@@ -1318,6 +1329,7 @@ def add_variable_get_node(
         "node_name": node_name,
         "pos_x": pos_x,
         "pos_y": pos_y,
+        "graph_name": graph_name,
     }))
 
 
@@ -1327,7 +1339,8 @@ def add_variable_set_node(
     variable_name: str,
     node_name: str,
     pos_x: int = 0,
-    pos_y: int = 0
+    pos_y: int = 0,
+    graph_name: str = "EventGraph"
 ) -> str:
     """
     Add a Variable Set node to the graph.
@@ -1338,6 +1351,7 @@ def add_variable_set_node(
         node_name: Logical name for later reference
         pos_x: X position in graph
         pos_y: Y position in graph
+        graph_name: Target graph name. Defaults to "EventGraph".
 
     Returns:
         JSON with node_name and variable_name.
@@ -1348,6 +1362,7 @@ def add_variable_set_node(
         "node_name": node_name,
         "pos_x": pos_x,
         "pos_y": pos_y,
+        "graph_name": graph_name,
     }))
 
 
@@ -1357,7 +1372,8 @@ def add_make_struct_node(
     struct_name: str,
     node_name: str,
     pos_x: int = 0,
-    pos_y: int = 0
+    pos_y: int = 0,
+    graph_name: str = "EventGraph"
 ) -> str:
     """
     Add a Make Struct node to the graph.
@@ -1368,6 +1384,7 @@ def add_make_struct_node(
         node_name: Logical name for later reference
         pos_x: X position in graph
         pos_y: Y position in graph
+        graph_name: Target graph name. Defaults to "EventGraph".
 
     Returns:
         JSON with node_name and struct_name.
@@ -1378,6 +1395,7 @@ def add_make_struct_node(
         "node_name": node_name,
         "pos_x": pos_x,
         "pos_y": pos_y,
+        "graph_name": graph_name,
     }))
 
 
@@ -1386,7 +1404,8 @@ def add_branch_node(
     asset_path: str,
     node_name: str,
     pos_x: int = 0,
-    pos_y: int = 0
+    pos_y: int = 0,
+    graph_name: str = "EventGraph"
 ) -> str:
     """
     Add a Branch (if/else) node to the graph.
@@ -1396,6 +1415,7 @@ def add_branch_node(
         node_name: Logical name for later reference
         pos_x: X position in graph
         pos_y: Y position in graph
+        graph_name: Target graph name. Defaults to "EventGraph".
 
     Returns:
         JSON with node_name.
@@ -1405,7 +1425,84 @@ def add_branch_node(
         "node_name": node_name,
         "pos_x": pos_x,
         "pos_y": pos_y,
+        "graph_name": graph_name,
     }))
+
+
+@mcp.tool()
+def add_call_parent_function(
+    asset_path: str,
+    function_name: str,
+    node_name: str,
+    pos_x: int = 0,
+    pos_y: int = 0,
+    graph_name: str = "EventGraph"
+) -> str:
+    """
+    Add a Call Parent Function node to a Blueprint graph.
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        function_name: Parent function to call
+        node_name: Logical name for later reference
+        pos_x: X position in graph
+        pos_y: Y position in graph
+        graph_name: Target graph name. Defaults to "EventGraph".
+
+    Returns:
+        JSON with node_name and function_name.
+    """
+    return _format_response(_send_command("add_call_parent_function", {
+        "asset_path": asset_path,
+        "function_name": function_name,
+        "node_name": node_name,
+        "pos_x": pos_x,
+        "pos_y": pos_y,
+        "graph_name": graph_name,
+    }))
+
+
+@mcp.tool()
+def ensure_function_graph(
+    asset_path: str,
+    function_name: str,
+    inputs: list[dict] | None = None,
+    outputs: list[dict] | None = None,
+    entry_node_name: str = "",
+    result_node_name: str = ""
+) -> str:
+    """
+    Create or update a Blueprint function graph and tag its entry/result nodes.
+
+    Use this before adding nodes to a named function graph. Pin specs are dicts:
+    {"name": "InputType", "type": "enum:/Script/CommonInput.ECommonInputType",
+     "default_value": "MouseAndKeyboard"}. Supported `type` strings include
+    primitives, structs, object class paths, "class:/Script/...", and "enum:/Script/...".
+
+    Args:
+        asset_path: Asset path of the Blueprint
+        function_name: Function graph name
+        inputs: Optional input pins exposed as output pins on the entry node
+        outputs: Optional return pins exposed as input pins on a result node
+        entry_node_name: Optional AI logical name for the function entry node
+        result_node_name: Optional AI logical name for the function result node
+
+    Returns:
+        JSON with graph_name, function_name, entry_node_name, and pin counts.
+    """
+    params = {
+        "asset_path": asset_path,
+        "function_name": function_name,
+    }
+    if inputs:
+        params["inputs"] = inputs
+    if outputs:
+        params["outputs"] = outputs
+    if entry_node_name:
+        params["entry_node_name"] = entry_node_name
+    if result_node_name:
+        params["result_node_name"] = result_node_name
+    return _format_response(_send_command("ensure_function_graph", params))
 
 
 @mcp.tool()
@@ -1414,7 +1511,8 @@ def connect_pins(
     from_node: str,
     from_pin: str,
     to_node: str,
-    to_pin: str
+    to_pin: str,
+    graph_name: str = ""
 ) -> str:
     """
     Connect an output pin to an input pin between two nodes.
@@ -1428,6 +1526,7 @@ def connect_pins(
         from_pin: Output pin name (e.g. "then", "ReturnValue", "output")
         to_node: Target node logical name
         to_pin: Input pin name (e.g. "execute", "self", "InText", "NewVisibility")
+        graph_name: Optional graph name to restrict node lookup.
 
     Returns:
         JSON with connection details.
@@ -1438,6 +1537,7 @@ def connect_pins(
         "from_pin": from_pin,
         "to_node": to_node,
         "to_pin": to_pin,
+        "graph_name": graph_name,
     }))
 
 
@@ -1446,7 +1546,8 @@ def set_pin_default(
     asset_path: str,
     node_name: str,
     pin_name: str,
-    default_value: str
+    default_value: str,
+    graph_name: str = ""
 ) -> str:
     """
     Set a pin's default value (for unconnected input pins).
@@ -1456,6 +1557,7 @@ def set_pin_default(
         node_name: Target node logical name
         pin_name: Pin name on the node
         default_value: Value as string (ImportText format)
+        graph_name: Optional graph name to restrict node lookup.
 
     Returns:
         JSON with success status.
@@ -1465,17 +1567,19 @@ def set_pin_default(
         "node_name": node_name,
         "pin_name": pin_name,
         "default_value": default_value,
+        "graph_name": graph_name,
     }))
 
 
 @mcp.tool()
-def remove_graph_node(asset_path: str, node_name: str) -> str:
+def remove_graph_node(asset_path: str, node_name: str, graph_name: str = "") -> str:
     """
     Remove a node from the Blueprint graph by its logical name.
 
     Args:
         asset_path: Asset path of the Blueprint
         node_name: Logical name of the node to remove
+        graph_name: Optional graph name to restrict node lookup.
 
     Returns:
         JSON with removal confirmation.
@@ -1483,6 +1587,7 @@ def remove_graph_node(asset_path: str, node_name: str) -> str:
     return _format_response(_send_command("remove_graph_node", {
         "asset_path": asset_path,
         "node_name": node_name,
+        "graph_name": graph_name,
     }))
 
 
@@ -1532,6 +1637,7 @@ def add_variable(
     var_name: str,
     var_type: str,
     instance_editable: bool = False,
+    blueprint_read_only: bool = False,
     category: str = ""
 ) -> str:
     """
@@ -1545,7 +1651,10 @@ def add_variable(
                  - Strings: "String", "Name", "Text"
                  - Structs: "Vector", "Rotator", "Transform", "LinearColor"
                  - Objects: "/Script/UMG.TextBlock" (class path for object refs)
+                 - Class refs: "class:/Script/CommonUI.CommonButtonStyle"
+                 - Enums: "enum:/Script/SlateCore.EHorizontalAlignment"
         instance_editable: Expose to Details panel in editor (default: False)
+        blueprint_read_only: Mark the variable read-only to child Blueprints
         category: Optional variable category name
 
     Returns:
@@ -1556,6 +1665,7 @@ def add_variable(
         "var_name": var_name,
         "var_type": var_type,
         "instance_editable": instance_editable,
+        "blueprint_read_only": blueprint_read_only,
     }
     if category:
         params["category"] = category

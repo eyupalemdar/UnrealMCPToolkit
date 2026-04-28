@@ -178,18 +178,38 @@ set_cdo_array_element_property(
 
 | Tool | Purpose |
 |------|---------|
-| `add_event_node(asset_path, event_name, node_name, pos_x?, pos_y?)` | Add event override (Construct, Tick, BP_OnSelected, etc.) |
-| `add_custom_event(asset_path, event_name, node_name, pos_x?, pos_y?)` | Add custom event |
-| `add_function_call(asset_path, function_name, node_name, target_class?, pos_x?, pos_y?)` | Add function call node |
-| `add_variable_get_node(asset_path, var_name, node_name, pos_x?, pos_y?)` | Add Get node for variable |
-| `add_variable_set_node(asset_path, var_name, node_name, pos_x?, pos_y?)` | Add Set node for variable |
-| `add_make_struct_node(asset_path, struct_type, node_name, pos_x?, pos_y?)` | Add Make Struct node |
-| `add_branch_node(asset_path, node_name, pos_x?, pos_y?)` | Add Branch (if) node |
-| `connect_pins(asset_path, source_node, source_pin, target_node, target_pin)` | Connect two pins |
-| `set_pin_default(asset_path, node_name, pin_name, value)` | Set pin default value |
-| `remove_graph_node(asset_path, node_name)` | Remove a graph node |
+| `add_event_node(asset_path, event_name, node_name, pos_x?, pos_y?, graph_name?)` | Add event override (Construct, Tick, BP_OnSelected, etc.) |
+| `add_custom_event(asset_path, event_name, node_name, pos_x?, pos_y?, graph_name?)` | Add custom event |
+| `ensure_function_graph(asset_path, function_name, inputs?, outputs?, entry_node_name?, result_node_name?)` | Create/update a function graph and tag entry/result nodes |
+| `add_function_call(asset_path, function_name, node_name, target_class?, pos_x?, pos_y?, graph_name?)` | Add function call node |
+| `add_variable_get_node(asset_path, var_name, node_name, pos_x?, pos_y?, graph_name?)` | Add Get node for variable |
+| `add_variable_set_node(asset_path, var_name, node_name, pos_x?, pos_y?, graph_name?)` | Add Set node for variable |
+| `add_make_struct_node(asset_path, struct_type, node_name, pos_x?, pos_y?, graph_name?)` | Add Make Struct node |
+| `add_branch_node(asset_path, node_name, pos_x?, pos_y?, graph_name?)` | Add Branch (if) node |
+| `connect_pins(asset_path, source_node, source_pin, target_node, target_pin, graph_name?)` | Connect two pins |
+| `set_pin_default(asset_path, node_name, pin_name, value, graph_name?)` | Set pin default value |
+| `remove_graph_node(asset_path, node_name, graph_name?)` | Remove a graph node |
 | `get_graph(asset_path, graph_name?)` | Get graph as JSON (default: "EventGraph") |
 | `list_graphs(asset_path)` | List all graphs |
+
+### Named Function Graphs
+```python
+ensure_function_graph(
+    path,
+    "UpdateTextStyle",
+    entry_node_name="UpdateTextStyle_Entry"
+)
+add_variable_get_node(path, "Text", "GetText", graph_name="UpdateTextStyle")
+add_function_call(path, "SetStyle", "SetTextStyle",
+    target_class="/Script/CommonUI.CommonTextBlock",
+    graph_name="UpdateTextStyle")
+connect_pins(path, "UpdateTextStyle_Entry", "then", "SetTextStyle", "execute",
+    graph_name="UpdateTextStyle")
+```
+
+Function pin specs use the same `type` strings as `add_variable`:
+`{"name": "InputType", "type": "enum:/Script/CommonInput.ECommonInputType",
+"default_value": "MouseAndKeyboard"}`.
 
 ### Example: Selected/Deselected Events
 ```python
@@ -236,7 +256,7 @@ Without `target_class`, the function may resolve to wrong overload or fail.
 
 | Tool | Purpose |
 |------|---------|
-| `add_variable(asset_path, var_name, var_type, is_exposed?, category?)` | Add member variable |
+| `add_variable(asset_path, var_name, var_type, instance_editable?, blueprint_read_only?, category?)` | Add member variable |
 | `set_variable_default(asset_path, var_name, value)` | Set default value |
 | `remove_variable(asset_path, var_name)` | Remove variable |
 | `get_variables(asset_path)` | Get all variables as JSON |
@@ -246,7 +266,9 @@ Without `target_class`, the function may resolve to wrong overload or fail.
 "bool", "int", "float", "string", "text", "name",
 "vector", "rotator", "transform", "color", "linearcolor",
 "/Script/UMG.Widget", "/Script/CommonUI.CommonTextBlock",  # Object types
-"class'/Script/UMG.Widget'"  # Class reference
+"class:/Script/CommonUI.CommonButtonStyle",                # TSubclassOf/class refs
+"enum:/Script/SlateCore.EHorizontalAlignment",             # Enum byte vars
+"enum:/Script/CommonInput.ECommonInputType"
 ```
 
 ---
@@ -467,7 +489,7 @@ First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets
 | Widget Properties | 4 | set_property, set_properties, set_slot, set_canvas_layout |
 | CDO Properties | 2 | set_cdo_property, get_cdo_properties |
 | CDO Arrays | 4 | add_element, set_element_property, remove_element, get_length |
-| Blueprint Graph | 12 | add_event, add_custom_event, add_function_call, add_var_get, add_var_set, add_make_struct, add_branch, connect_pins, set_pin_default, remove_node, get_graph, list_graphs |
+| Blueprint Graph | 14 | add_event, add_custom_event, ensure_function_graph, add_function_call, add_var_get, add_var_set, add_make_struct, add_branch, add_call_parent_function, connect_pins, set_pin_default, remove_node, get_graph, list_graphs |
 | Blueprint Variables | 4 | add, set_default, remove, get_variables |
 | Material System | 14 | create, set_property, add_expr, set_expr_property, connect_exprs, connect_to_root, disconnect, remove_expr, compile, get_graph, list_classes, create_instance, set_param, save_instance, get_info |
 | Asset Import | 2 | import_texture, import_font |

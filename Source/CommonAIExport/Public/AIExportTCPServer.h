@@ -48,6 +48,7 @@ class FSocket;
  * - add_variable_set_node: Add variable Set node
  * - add_make_struct_node: Add Make Struct node
  * - add_branch_node: Add Branch (if) node
+ * - ensure_function_graph: Create or update a Blueprint function graph
  * - connect_pins: Connect pins between nodes
  * - set_pin_default: Set pin default value
  * - remove_graph_node: Remove a node from the graph
@@ -188,6 +189,7 @@ private:
 	FString HandleAddMakeStructNode(TSharedPtr<class FJsonObject> Params);
 	FString HandleAddBranchNode(TSharedPtr<class FJsonObject> Params);
 	FString HandleAddCallParentFunction(TSharedPtr<class FJsonObject> Params);
+	FString HandleEnsureFunctionGraph(TSharedPtr<class FJsonObject> Params);
 	FString HandleConnectPins(TSharedPtr<class FJsonObject> Params);
 	FString HandleSetPinDefault(TSharedPtr<class FJsonObject> Params);
 	FString HandleRemoveGraphNode(TSharedPtr<class FJsonObject> Params);

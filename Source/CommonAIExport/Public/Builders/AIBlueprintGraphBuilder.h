@@ -13,6 +13,13 @@ class UEdGraphNode;
 class UK2Node;
 class FJsonObject;
 
+struct FAIBlueprintGraphPinSpec
+{
+	FString Name;
+	FString Type;
+	FString DefaultValue;
+};
+
 /**
  * Static utility class for Blueprint graph manipulation.
  *
@@ -56,7 +63,8 @@ public:
 		UBlueprint* Blueprint,
 		const FString& EventName,
 		const FString& NodeName,
-		int32 PosX = 0, int32 PosY = 0);
+		int32 PosX = 0, int32 PosY = 0,
+		const FString& GraphName = TEXT(""));
 
 	/**
 	 * Add a Custom Event node.
@@ -66,7 +74,8 @@ public:
 		UBlueprint* Blueprint,
 		const FString& EventName,
 		const FString& NodeName,
-		int32 PosX = 0, int32 PosY = 0);
+		int32 PosX = 0, int32 PosY = 0,
+		const FString& GraphName = TEXT(""));
 
 	/**
 	 * Add a function call node.
@@ -79,7 +88,8 @@ public:
 		const FString& FunctionName,
 		const FString& NodeName,
 		const FString& TargetClass = TEXT(""),
-		int32 PosX = 0, int32 PosY = 0);
+		int32 PosX = 0, int32 PosY = 0,
+		const FString& GraphName = TEXT(""));
 
 	/**
 	 * Add a variable Get node.
@@ -89,7 +99,8 @@ public:
 		UBlueprint* Blueprint,
 		const FString& VariableName,
 		const FString& NodeName,
-		int32 PosX = 0, int32 PosY = 0);
+		int32 PosX = 0, int32 PosY = 0,
+		const FString& GraphName = TEXT(""));
 
 	/**
 	 * Add a variable Set node.
@@ -98,7 +109,8 @@ public:
 		UBlueprint* Blueprint,
 		const FString& VariableName,
 		const FString& NodeName,
-		int32 PosX = 0, int32 PosY = 0);
+		int32 PosX = 0, int32 PosY = 0,
+		const FString& GraphName = TEXT(""));
 
 	/**
 	 * Add a "Make Struct" node (e.g. MakeLinearColor, MakeSlateFontInfo).
@@ -108,7 +120,8 @@ public:
 		UBlueprint* Blueprint,
 		const FString& StructName,
 		const FString& NodeName,
-		int32 PosX = 0, int32 PosY = 0);
+		int32 PosX = 0, int32 PosY = 0,
+		const FString& GraphName = TEXT(""));
 
 	/**
 	 * Add a Branch (if/else) node.
@@ -116,7 +129,8 @@ public:
 	static UK2Node* AddBranchNode(
 		UBlueprint* Blueprint,
 		const FString& NodeName,
-		int32 PosX = 0, int32 PosY = 0);
+		int32 PosX = 0, int32 PosY = 0,
+		const FString& GraphName = TEXT(""));
 
 	/**
 	 * Add a Call Parent Function node (Super:: call).
@@ -127,7 +141,8 @@ public:
 		UBlueprint* Blueprint,
 		const FString& FunctionName,
 		const FString& NodeName,
-		int32 PosX = 0, int32 PosY = 0);
+		int32 PosX = 0, int32 PosY = 0,
+		const FString& GraphName = TEXT(""));
 
 	// =========================================================================
 	// WIRING
@@ -146,7 +161,8 @@ public:
 		const FString& FromNodeName,
 		const FString& FromPinName,
 		const FString& ToNodeName,
-		const FString& ToPinName);
+		const FString& ToPinName,
+		const FString& GraphName = TEXT(""));
 
 	/**
 	 * Set a pin's default value (for unconnected input pins).
@@ -157,14 +173,27 @@ public:
 		UBlueprint* Blueprint,
 		const FString& NodeName,
 		const FString& PinName,
-		const FString& DefaultValue);
+		const FString& DefaultValue,
+		const FString& GraphName = TEXT(""));
 
 	// =========================================================================
 	// NODE MANAGEMENT
 	// =========================================================================
 
 	/** Remove a node by its logical name. */
-	static bool RemoveNode(UBlueprint* Blueprint, const FString& NodeName);
+	static bool RemoveNode(
+		UBlueprint* Blueprint,
+		const FString& NodeName,
+		const FString& GraphName = TEXT(""));
+
+	/** Ensure a Blueprint function graph exists and optionally define entry/result pins. */
+	static UEdGraph* EnsureFunctionGraph(
+		UBlueprint* Blueprint,
+		const FString& FunctionName,
+		const TArray<FAIBlueprintGraphPinSpec>& Inputs,
+		const TArray<FAIBlueprintGraphPinSpec>& Outputs,
+		const FString& EntryNodeName = TEXT(""),
+		const FString& ResultNodeName = TEXT(""));
 
 	/** Get a graph as JSON (nodes + connections). */
 	static TSharedPtr<FJsonObject> GetGraphAsJson(
@@ -228,6 +257,16 @@ public:
 
 	/** Get the event graph (or first UbergraphPage). */
 	static UEdGraph* GetEventGraph(UBlueprint* Blueprint);
+
+	/** Find an existing ubergraph or function graph by name. Empty/EventGraph resolves to the event graph. */
+	static UEdGraph* FindGraph(
+		UBlueprint* Blueprint,
+		const FString& GraphName = TEXT(""));
+
+	/** Find an existing graph, or create the event graph when requested by an empty/EventGraph name. */
+	static UEdGraph* ResolveGraph(
+		UBlueprint* Blueprint,
+		const FString& GraphName = TEXT(""));
 
 private:
 	/** Find a pin by name on a node, with fallback matching. */
