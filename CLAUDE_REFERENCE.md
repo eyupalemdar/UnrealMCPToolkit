@@ -54,6 +54,21 @@ compile_and_save("/Game/UI/Kale/Screens/W_KalePlayContent")
 ### Widget Classes (common)
 `TextBlock`, `Image`, `Button`, `Border`, `CanvasPanel`, `VerticalBox`, `HorizontalBox`, `Overlay`, `SizeBox`, `Spacer`, `WidgetSwitcher`, `ScrollBox`, `CommonTextBlock`, `CommonButtonBase`, `CommonActionWidget`, `CommonActivatableWidget`, `CommonAnimatedSwitcher`
 
+### Custom Widget Blueprint Children
+`list_widget_classes()` is a convenience list, not an authority for newly
+created Widget Blueprints. `add_widget` can resolve reusable WBP children by
+explicit asset/generated-class path:
+
+```
+add_widget("/Game/UI/Path/W_Parent", "/Game/UI/Path/W_Component", "GeneralTab", "Switcher")
+add_widget("/Game/UI/Path/W_Parent", "/Game/UI/Path/W_Component_C", "GeneralTab", "Switcher")
+add_widget("/Game/UI/Path/W_Parent", "/Game/UI/Path/W_Component.W_Component_C", "GeneralTab", "Switcher")
+add_widget("/Game/UI/Path/W_Parent", "WidgetBlueprintGeneratedClass'/Game/UI/Path/W_Component.W_Component_C'", "GeneralTab", "Switcher")
+```
+
+Do not assign class or asset paths into `WidgetSwitcher` or `NamedSlot` through
+slot `Content`; add an actual child widget instance instead.
+
 ---
 
 ## 3. Widget Properties
@@ -310,13 +325,14 @@ visually compare UE output with the Pencil source across multiple screen ratios.
 
 | Tool | Purpose |
 |------|---------|
-| `capture_widget_preview(asset_path, width?, height?, output_path?, warmup_frames?, transparent_bg?, return_base64?, dpi_scale?, ratios?)` | Render WBP to PNG at one or more resolutions |
+| `capture_widget_preview(asset_path, width?, height?, output_path?, warmup_frames?, transparent_bg?, return_base64?, dpi_scale?, preview_mode?, preview_function_calls?, ratios?)` | Render WBP to PNG at one or more resolutions |
 
 ### Single-shot example
 ```python
 capture_widget_preview(
     asset_path="/Game/UI/Menu/W_Splash_IFTP_Test",
-    width=1920, height=1080
+    width=1920, height=1080,
+    preview_mode="runtime"
 )
 # → {"pngs": [{"png_path": "<Project>/Intermediate/WidgetCaptures/W_Splash_IFTP_Test_1920x1080.png", "width": 1920, "height": 1080, "size_bytes": 42817}], "count": 1}
 ```
@@ -344,6 +360,10 @@ capture_widget_preview(
 ### Technical details
 - Uses `FWidgetRenderer` + `UTextureRenderTarget2D` → `IImageWrapper` (PNG).
 - Game-thread safe: asset load + widget instantiation run via `AsyncTask(GameThread)`.
+- `preview_mode="runtime"` is the default and is required for UI acceptance. It does not set `EWidgetDesignFlags::Designing`; CommonActivatable root widgets are activated before rendering.
+- `preview_mode="designer"` preserves design-time `PreConstruct` preview data for probes, but it is not a reliable runtime acceptance capture.
+- `preview_function_calls` applies optional reflection calls to the live widget instance after runtime activation and before rendering. Use this for stateful runtime captures where activation sets a default state, e.g. `preview_function_calls=[{"function_name":"SwitchToTab","args":{"Tab":"2"}}]` to capture a non-default settings tab without falling back to designer mode.
+- The response JSON includes `preview_mode` at the top level and on each PNG entry.
 - Warmup frames (default 3) absorb texture streaming delay.
 - Widget instance is rooted during render, cleaned up afterwards (no GC leak).
 - Default output directory: `<ProjectDir>/Intermediate/WidgetCaptures/`

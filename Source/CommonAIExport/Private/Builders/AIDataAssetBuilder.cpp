@@ -82,24 +82,170 @@ bool UAIDataAssetBuilder::SaveAsset(UObject* Asset)
 /**
  * Parse a segment like "Actions[0]" into property name "Actions" and index 0.
  * If no bracket notation, index is set to -1.
+ * Returns false if the segment is empty or malformed (empty prop name, bad index).
  */
 static bool ParseSegment(const FString& Segment, FString& OutPropName, int32& OutIndex)
 {
+	if (Segment.IsEmpty())
+	{
+		OutPropName.Reset();
+		OutIndex = -1;
+		return false;
+	}
+
 	int32 BracketIdx = INDEX_NONE;
 	if (Segment.FindChar(TEXT('['), BracketIdx))
 	{
 		OutPropName = Segment.Left(BracketIdx);
 		FString IndexStr = Segment.Mid(BracketIdx + 1);
 		IndexStr.RemoveFromEnd(TEXT("]"));
+		if (OutPropName.IsEmpty() || IndexStr.IsEmpty() || !IndexStr.IsNumeric())
+		{
+			return false;
+		}
 		OutIndex = FCString::Atoi(*IndexStr);
-		return true;
+		return OutIndex >= 0;
 	}
-	else
+
+	OutPropName = Segment;
+	OutIndex = -1;
+	return true;
+}
+
+/**
+ * Walk a property path and set the leaf value using reflection.
+ *
+ * Supports struct / object traversal, struct-array element navigation, and
+ * object-array element navigation at any depth. Example paths:
+ *
+ *   "Actions[0].Layout[0].LayoutClass"
+ *   "Widgets[2].WidgetClass"
+ *   "Foo.Bar.Baz"
+ *
+ * The previous implementation bounced back into SetProperty for paths rooted
+ * at a struct-array element, which caused infinite recursion and eventually
+ * a corrupted FName construction. This walker fully consumes the path
+ * without relying on UObject re-entry.
+ */
+static bool WalkAndSet(
+	UStruct* OwnerStruct,
+	void* Container,
+	const TArray<FString>& PathParts,
+	int32 StartIdx,
+	const FString& Value,
+	UObject* AssetForImport)
+{
+	if (!OwnerStruct || !Container || !AssetForImport) { return false; }
+	if (StartIdx >= PathParts.Num()) { return false; }
+
+	FString PropName;
+	int32 ArrayIndex = -1;
+	if (!ParseSegment(PathParts[StartIdx], PropName, ArrayIndex))
 	{
-		OutPropName = Segment;
-		OutIndex = -1;
+		UE_LOG(LogAIDataAssetBuilder, Warning,
+			TEXT("WalkAndSet: malformed segment '%s'"), *PathParts[StartIdx]);
+		return false;
+	}
+
+	FProperty* Prop = OwnerStruct->FindPropertyByName(FName(*PropName));
+	if (!Prop)
+	{
+		UE_LOG(LogAIDataAssetBuilder, Warning,
+			TEXT("WalkAndSet: property '%s' not found on %s"),
+			*PropName, *OwnerStruct->GetName());
+		return false;
+	}
+
+	const bool bIsLast = (StartIdx == PathParts.Num() - 1);
+
+	if (ArrayIndex >= 0)
+	{
+		FArrayProperty* ArrayProp = CastField<FArrayProperty>(Prop);
+		if (!ArrayProp)
+		{
+			UE_LOG(LogAIDataAssetBuilder, Warning,
+				TEXT("WalkAndSet: '%s' is not an array property"), *PropName);
+			return false;
+		}
+
+		FScriptArrayHelper ArrayHelper(ArrayProp,
+			ArrayProp->ContainerPtrToValuePtr<void>(Container));
+		if (ArrayIndex >= ArrayHelper.Num())
+		{
+			UE_LOG(LogAIDataAssetBuilder, Warning,
+				TEXT("WalkAndSet: index %d out of range on '%s' (size=%d)"),
+				ArrayIndex, *PropName, ArrayHelper.Num());
+			return false;
+		}
+
+		void* ElemPtr = ArrayHelper.GetRawPtr(ArrayIndex);
+
+		if (bIsLast)
+		{
+			// Replace the element in-place via inner property's ImportText.
+			if (!ArrayProp->Inner->ImportText_Direct(*Value, ElemPtr, AssetForImport, PPF_None))
+			{
+				return false;
+			}
+			AssetForImport->MarkPackageDirty();
+			return true;
+		}
+
+		// Continue walking into the element.
+		if (FStructProperty* InnerStruct = CastField<FStructProperty>(ArrayProp->Inner))
+		{
+			return WalkAndSet(InnerStruct->Struct, ElemPtr, PathParts, StartIdx + 1, Value, AssetForImport);
+		}
+		if (FObjectProperty* InnerObjProp = CastField<FObjectProperty>(ArrayProp->Inner))
+		{
+			UObject* InnerObj = InnerObjProp->GetObjectPropertyValue(ElemPtr);
+			if (!InnerObj)
+			{
+				UE_LOG(LogAIDataAssetBuilder, Warning,
+					TEXT("WalkAndSet: null object at '%s[%d]'"), *PropName, ArrayIndex);
+				return false;
+			}
+			return WalkAndSet(InnerObj->GetClass(), InnerObj, PathParts, StartIdx + 1, Value, InnerObj);
+		}
+
+		UE_LOG(LogAIDataAssetBuilder, Warning,
+			TEXT("WalkAndSet: array '%s' has unsupported inner type for traversal"), *PropName);
+		return false;
+	}
+
+	// No array index — direct property on Container.
+	if (bIsLast)
+	{
+		void* ValuePtr = Prop->ContainerPtrToValuePtr<void>(Container);
+		if (!Prop->ImportText_Direct(*Value, ValuePtr, AssetForImport, PPF_None))
+		{
+			return false;
+		}
+		AssetForImport->MarkPackageDirty();
 		return true;
 	}
+
+	if (FStructProperty* StructProp = CastField<FStructProperty>(Prop))
+	{
+		void* StructPtr = StructProp->ContainerPtrToValuePtr<void>(Container);
+		return WalkAndSet(StructProp->Struct, StructPtr, PathParts, StartIdx + 1, Value, AssetForImport);
+	}
+	if (FObjectProperty* ObjProp = CastField<FObjectProperty>(Prop))
+	{
+		UObject* InnerObj = ObjProp->GetObjectPropertyValue(
+			ObjProp->ContainerPtrToValuePtr<void>(Container));
+		if (!InnerObj)
+		{
+			UE_LOG(LogAIDataAssetBuilder, Warning,
+				TEXT("WalkAndSet: null object at '%s'"), *PropName);
+			return false;
+		}
+		return WalkAndSet(InnerObj->GetClass(), InnerObj, PathParts, StartIdx + 1, Value, InnerObj);
+	}
+
+	UE_LOG(LogAIDataAssetBuilder, Warning,
+		TEXT("WalkAndSet: '%s' is not navigable (not struct/object/array)"), *PropName);
+	return false;
 }
 
 bool UAIDataAssetBuilder::ResolveNestedPath(
@@ -336,68 +482,15 @@ bool UAIDataAssetBuilder::SetProperty(
 	const FString& PropertyPath,
 	const FString& Value)
 {
-	if (!Asset) return false;
+	if (!Asset || PropertyPath.IsEmpty()) { return false; }
 
 	FScopedTransaction Transaction(LOCTEXT("AISetProperty", "AI: Set Data Asset Property"));
 
-	// For simple paths (no array brackets), directly set on the asset
-	if (!PropertyPath.Contains(TEXT("[")))
-	{
-		// Use the same reflection pattern as WBP builder
-		// Navigate dot-notation path and use ImportText on the leaf
-		TArray<FString> PathParts;
-		PropertyPath.ParseIntoArray(PathParts, TEXT("."));
+	TArray<FString> PathParts;
+	PropertyPath.ParseIntoArray(PathParts, TEXT("."));
+	if (PathParts.Num() == 0) { return false; }
 
-		UStruct* CurrentStruct = Asset->GetClass();
-		void* CurrentContainer = Asset;
-
-		for (int32 i = 0; i < PathParts.Num(); ++i)
-		{
-			FProperty* Prop = CurrentStruct->FindPropertyByName(FName(*PathParts[i]));
-			if (!Prop)
-			{
-				UE_LOG(LogAIDataAssetBuilder, Warning,
-					TEXT("SetProperty: Property '%s' not found on %s"),
-					*PathParts[i], *CurrentStruct->GetName());
-				return false;
-			}
-
-			if (i == PathParts.Num() - 1)
-			{
-				void* ValuePtr = Prop->ContainerPtrToValuePtr<void>(CurrentContainer);
-				const TCHAR* ValueCStr = *Value;
-				bool bResult = Prop->ImportText_Direct(ValueCStr, ValuePtr, Asset, PPF_None) != nullptr;
-				if (bResult)
-				{
-					Asset->MarkPackageDirty();
-				}
-				return bResult;
-			}
-			else
-			{
-				FStructProperty* StructProp = CastField<FStructProperty>(Prop);
-				if (!StructProp)
-				{
-					return false;
-				}
-				CurrentContainer = StructProp->ContainerPtrToValuePtr<void>(CurrentContainer);
-				CurrentStruct = StructProp->Struct;
-			}
-		}
-		return false;
-	}
-
-	// For paths with array brackets, resolve nested path first
-	UObject* TargetObject = nullptr;
-	FString LeafPropertyName;
-
-	if (!ResolveNestedPath(Asset, PropertyPath, TargetObject, LeafPropertyName))
-	{
-		return false;
-	}
-
-	// Recursively call SetProperty on the resolved target
-	return SetProperty(TargetObject, LeafPropertyName, Value);
+	return WalkAndSet(Asset->GetClass(), Asset, PathParts, 0, Value, Asset);
 }
 
 TSharedPtr<FJsonObject> UAIDataAssetBuilder::GetPropertiesAsJson(UObject* Asset)

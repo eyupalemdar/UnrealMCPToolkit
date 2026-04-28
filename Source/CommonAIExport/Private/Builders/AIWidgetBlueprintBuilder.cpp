@@ -30,6 +30,100 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogAIWidgetBuilder, Log, All);
 
+namespace
+{
+bool IsConcreteWidgetClass(UClass* Class)
+{
+	if (!Class || !Class->IsChildOf(UWidget::StaticClass()))
+	{
+		return false;
+	}
+
+	return !Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists)
+		&& !Class->GetName().StartsWith(TEXT("SKEL_"))
+		&& !Class->GetName().StartsWith(TEXT("REINST_"));
+}
+
+void CacheWidgetClassAliases(
+	TMap<FString, UClass*>& ClassMap,
+	UClass* Class,
+	const TArray<FString>& Aliases = TArray<FString>())
+{
+	if (!IsConcreteWidgetClass(Class))
+	{
+		return;
+	}
+
+	const FString ClassName = Class->GetName();
+	ClassMap.Add(ClassName, Class);
+
+	if (ClassName.EndsWith(TEXT("_C")))
+	{
+		ClassMap.Add(ClassName.LeftChop(2), Class);
+	}
+
+	for (const FString& Alias : Aliases)
+	{
+		if (!Alias.IsEmpty())
+		{
+			ClassMap.Add(Alias, Class);
+		}
+	}
+}
+
+FString StripObjectPathDecorators(const FString& Input)
+{
+	FString Result = Input;
+	Result.TrimStartAndEndInline();
+
+	int32 FirstQuote = INDEX_NONE;
+	int32 LastQuote = INDEX_NONE;
+	if (Result.FindChar(TEXT('\''), FirstQuote)
+		&& Result.FindLastChar(TEXT('\''), LastQuote)
+		&& LastQuote > FirstQuote)
+	{
+		Result = Result.Mid(FirstQuote + 1, LastQuote - FirstQuote - 1);
+		Result.TrimStartAndEndInline();
+	}
+
+	if (Result.Len() >= 2
+		&& ((Result.StartsWith(TEXT("\"")) && Result.EndsWith(TEXT("\"")))
+			|| (Result.StartsWith(TEXT("'")) && Result.EndsWith(TEXT("'")))))
+	{
+		Result = Result.Mid(1, Result.Len() - 2);
+		Result.TrimStartAndEndInline();
+	}
+
+	return Result;
+}
+
+void AddUniqueCandidate(TArray<FString>& Candidates, const FString& Candidate)
+{
+	if (!Candidate.IsEmpty())
+	{
+		Candidates.AddUnique(Candidate);
+	}
+}
+
+FString GetObjectNameFromPath(const FString& Path)
+{
+	FString Left;
+	FString Right;
+	if (Path.Split(TEXT("."), &Left, &Right, ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+	{
+		return Right;
+	}
+
+	int32 SlashIndex = INDEX_NONE;
+	if (Path.FindLastChar(TEXT('/'), SlashIndex))
+	{
+		return Path.Mid(SlashIndex + 1);
+	}
+
+	return Path;
+}
+}
+
 // =============================================================================
 // BLUEPRINT LIFECYCLE
 // =============================================================================
@@ -704,19 +798,96 @@ bool UAIWidgetBlueprintBuilder::SetCanvasSlotLayout(
 
 UClass* UAIWidgetBlueprintBuilder::ResolveWidgetClass(const FString& ClassNameOrPath)
 {
-	// Try full path first
-	if (ClassNameOrPath.StartsWith(TEXT("/")))
+	const FString CleanPath = StripObjectPathDecorators(ClassNameOrPath);
+	TMap<FString, UClass*>& Map = GetWidgetClassMap();
+
+	// Try full generated-class or Widget Blueprint asset paths first. This is
+	// required for freshly created WBP classes that are not present in the class
+	// iterator cache yet, e.g. /Game/UI/W_Foo.W_Foo_C or /Game/UI/W_Foo.
+	if (CleanPath.StartsWith(TEXT("/")))
 	{
-		UClass* Cls = LoadObject<UClass>(nullptr, *ClassNameOrPath);
-		if (Cls && Cls->IsChildOf(UWidget::StaticClass()))
+		TArray<FString> ClassCandidates;
+		TArray<FString> BlueprintCandidates;
+
+		AddUniqueCandidate(ClassCandidates, CleanPath);
+
+		FString PackagePath;
+		FString ObjectName;
+		const bool bHasObjectName = CleanPath.Split(
+			TEXT("."),
+			&PackagePath,
+			&ObjectName,
+			ESearchCase::CaseSensitive,
+			ESearchDir::FromEnd);
+
+		if (bHasObjectName)
 		{
-			return Cls;
+			if (ObjectName.EndsWith(TEXT("_C")))
+			{
+				const FString BlueprintObjectName = ObjectName.LeftChop(2);
+				AddUniqueCandidate(BlueprintCandidates, PackagePath);
+				AddUniqueCandidate(BlueprintCandidates, PackagePath + TEXT(".") + BlueprintObjectName);
+			}
+			else
+			{
+				AddUniqueCandidate(BlueprintCandidates, CleanPath);
+				AddUniqueCandidate(ClassCandidates, PackagePath + TEXT(".") + ObjectName + TEXT("_C"));
+			}
+		}
+		else if (CleanPath.EndsWith(TEXT("_C")))
+		{
+			const FString BlueprintPath = CleanPath.LeftChop(2);
+			const FString BlueprintName = GetObjectNameFromPath(BlueprintPath);
+			AddUniqueCandidate(ClassCandidates, BlueprintPath + TEXT(".") + BlueprintName + TEXT("_C"));
+			AddUniqueCandidate(BlueprintCandidates, BlueprintPath);
+		}
+		else
+		{
+			const FString BlueprintName = GetObjectNameFromPath(CleanPath);
+			AddUniqueCandidate(ClassCandidates, CleanPath + TEXT(".") + BlueprintName + TEXT("_C"));
+			AddUniqueCandidate(BlueprintCandidates, CleanPath);
+			AddUniqueCandidate(BlueprintCandidates, CleanPath + TEXT(".") + BlueprintName);
+		}
+
+		for (const FString& Candidate : ClassCandidates)
+		{
+			UClass* Cls = LoadObject<UClass>(nullptr, *Candidate);
+			if (IsConcreteWidgetClass(Cls))
+			{
+				CacheWidgetClassAliases(Map, Cls, { ClassNameOrPath, CleanPath, Candidate });
+				return Cls;
+			}
+		}
+
+		for (const FString& Candidate : BlueprintCandidates)
+		{
+			UWidgetBlueprint* WidgetBP = LoadObject<UWidgetBlueprint>(nullptr, *Candidate);
+			if (!WidgetBP)
+			{
+				continue;
+			}
+
+			UClass* GenClass = WidgetBP->GeneratedClass;
+			if (!GenClass)
+			{
+				FKismetEditorUtilities::CompileBlueprint(WidgetBP, EBlueprintCompileOptions::SkipSave);
+				GenClass = WidgetBP->GeneratedClass;
+			}
+
+			if (IsConcreteWidgetClass(GenClass))
+			{
+				CacheWidgetClassAliases(Map, GenClass, { ClassNameOrPath, CleanPath, Candidate, WidgetBP->GetName() });
+				return GenClass;
+			}
 		}
 	}
 
 	// Try the cached map
-	TMap<FString, UClass*>& Map = GetWidgetClassMap();
 	if (UClass** Found = Map.Find(ClassNameOrPath))
+	{
+		return *Found;
+	}
+	if (UClass** Found = Map.Find(CleanPath))
 	{
 		return *Found;
 	}
@@ -724,7 +895,8 @@ UClass* UAIWidgetBlueprintBuilder::ResolveWidgetClass(const FString& ClassNameOr
 	// Try case-insensitive search
 	for (const auto& Pair : Map)
 	{
-		if (Pair.Key.Equals(ClassNameOrPath, ESearchCase::IgnoreCase))
+		if (Pair.Key.Equals(ClassNameOrPath, ESearchCase::IgnoreCase)
+			|| Pair.Key.Equals(CleanPath, ESearchCase::IgnoreCase))
 		{
 			return Pair.Value;
 		}
@@ -829,46 +1001,32 @@ TMap<FString, UClass*>& UAIWidgetBlueprintBuilder::GetWidgetClassMap()
 {
 	static TMap<FString, UClass*> ClassMap;
 
-	if (ClassMap.Num() == 0)
+	// Refresh from currently loaded classes on every call. New Widget Blueprint
+	// generated classes can appear after the first MCP request.
+	for (TObjectIterator<UClass> It; It; ++It)
 	{
-		// Iterate all UWidget subclasses
-		for (TObjectIterator<UClass> It; It; ++It)
+		UClass* Class = *It;
+		if (IsConcreteWidgetClass(Class))
 		{
-			UClass* Class = *It;
-			if (!Class->IsChildOf(UWidget::StaticClass()))
-			{
-				continue;
-			}
-			if (Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists))
-			{
-				continue;
-			}
-			// Skip SKEL_ and REINST_ (hot-reload artifacts)
-			FString ClassName = Class->GetName();
-			if (ClassName.StartsWith(TEXT("SKEL_")) || ClassName.StartsWith(TEXT("REINST_")))
-			{
-				continue;
-			}
-
-			ClassMap.Add(ClassName, Class);
+			CacheWidgetClassAliases(ClassMap, Class);
 		}
-
-		// Common aliases
-		auto AddAlias = [&](const FString& Alias, const FString& ClassName)
-		{
-			if (UClass** Found = ClassMap.Find(ClassName))
-			{
-				ClassMap.Add(Alias, *Found);
-			}
-		};
-
-		AddAlias(TEXT("Text"), TEXT("TextBlock"));
-		AddAlias(TEXT("HBox"), TEXT("HorizontalBox"));
-		AddAlias(TEXT("VBox"), TEXT("VerticalBox"));
-		AddAlias(TEXT("Canvas"), TEXT("CanvasPanel"));
-		AddAlias(TEXT("HBoxSlot"), TEXT("HorizontalBoxSlot"));
-		AddAlias(TEXT("VBoxSlot"), TEXT("VerticalBoxSlot"));
 	}
+
+	// Common aliases
+	auto AddAlias = [&](const FString& Alias, const FString& ClassName)
+	{
+		if (UClass** Found = ClassMap.Find(ClassName))
+		{
+			ClassMap.Add(Alias, *Found);
+		}
+	};
+
+	AddAlias(TEXT("Text"), TEXT("TextBlock"));
+	AddAlias(TEXT("HBox"), TEXT("HorizontalBox"));
+	AddAlias(TEXT("VBox"), TEXT("VerticalBox"));
+	AddAlias(TEXT("Canvas"), TEXT("CanvasPanel"));
+	AddAlias(TEXT("HBoxSlot"), TEXT("HorizontalBoxSlot"));
+	AddAlias(TEXT("VBoxSlot"), TEXT("VerticalBoxSlot"));
 
 	return ClassMap;
 }

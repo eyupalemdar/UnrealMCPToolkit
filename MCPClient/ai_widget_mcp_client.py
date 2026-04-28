@@ -252,7 +252,13 @@ def add_widget(
 
     Args:
         asset_path: Asset path of the Widget Blueprint
-        widget_class: Widget class short name. Common types:
+        widget_class: Widget class short name or explicit custom Widget Blueprint
+                     asset/generated-class path. Custom WBP forms:
+                     /Game/UI/Path/W_Component
+                     /Game/UI/Path/W_Component_C
+                     /Game/UI/Path/W_Component.W_Component_C
+                     WidgetBlueprintGeneratedClass'/Game/UI/Path/W_Component.W_Component_C'
+                     Common types:
                      Panels: CanvasPanel, VerticalBox (VBox), HorizontalBox (HBox),
                              Overlay, GridPanel, WrapBox, ScrollBox, WidgetSwitcher
                      Content: TextBlock (Text), Image, Button, CheckBox, Slider,
@@ -497,7 +503,11 @@ def get_widget_tree(asset_path: str) -> str:
 @mcp.tool()
 def list_widget_classes() -> str:
     """
-    List all available widget classes that can be used with add_widget.
+    List currently discoverable widget classes.
+
+    This is a convenience list, not the authority for freshly created Widget
+    Blueprint classes. add_widget can still resolve explicit WBP asset/generated
+    class paths.
 
     Returns:
         JSON with array of classes (name and is_panel flag).
@@ -1688,6 +1698,118 @@ def get_asset_properties(asset_path: str) -> str:
 
 
 @mcp.tool()
+def get_referencers(asset_path: str) -> str:
+    """
+    Find all packages that reference this asset (UE Reference Viewer "Referencers" direction).
+
+    Use before deleting an asset to confirm nothing depends on it. Empty list means
+    the asset is safe to delete from a hard-reference standpoint.
+
+    Args:
+        asset_path: Asset path, e.g. "/Game/UI/Hud/Textures/Tiles/T_Tile_Red_5"
+                   Accepts both "/Game/Path/Asset" and "/Game/Path/Asset.Asset" forms.
+
+    Returns:
+        JSON with:
+          - asset_path        : input path (as given)
+          - package_name      : normalized package name used for query
+          - count             : number of referencers
+          - scan_was_incomplete: true if AssetRegistry was still scanning (waited)
+          - referencers       : array of package names that reference this asset
+    """
+    return _format_response(_send_command("get_referencers", {
+        "asset_path": asset_path,
+    }))
+
+
+@mcp.tool()
+def get_dependencies(asset_path: str) -> str:
+    """
+    Find all packages that this asset references (UE Reference Viewer "Dependencies" direction).
+
+    Mirror of get_referencers — shows what this asset pulls in (textures referenced by
+    a material, materials used by a widget, etc.).
+
+    Args:
+        asset_path: Asset path, e.g. "/Game/UI/Hud/Materials/M_Tile_Base"
+                   Accepts both "/Game/Path/Asset" and "/Game/Path/Asset.Asset" forms.
+
+    Returns:
+        JSON with:
+          - asset_path        : input path (as given)
+          - package_name      : normalized package name used for query
+          - count             : number of dependencies
+          - scan_was_incomplete: true if AssetRegistry was still scanning (waited)
+          - dependencies      : array of package names this asset references
+    """
+    return _format_response(_send_command("get_dependencies", {
+        "asset_path": asset_path,
+    }))
+
+
+@mcp.tool()
+def list_redirectors(folder_path: str, recursive: bool = True) -> str:
+    """
+    List UObjectRedirector assets under a folder (Content Browser "Show Redirectors" equivalent).
+
+    Redirectors are left behind by legacy rename/move operations and may exist even though
+    rename_asset performs inline fixup, because older workflows (source control sync, manual
+    renames outside AssetTools) can still create them. Call this before fixup_redirectors to
+    see what will be touched.
+
+    Args:
+        folder_path: e.g. "/Game/UI/Hud/Textures/Tiles"
+        recursive: recurse into subfolders (default True)
+
+    Returns:
+        JSON with:
+          - folder_path       : input path
+          - recursive         : bool echoed back
+          - count             : number of redirectors found
+          - scan_was_incomplete: true if AssetRegistry was still scanning (waited)
+          - redirectors       : array of { redirector_path, destination_path, stale }
+                                stale=true means DestinationObject is null (broken redirector)
+    """
+    return _format_response(_send_command("list_redirectors", {
+        "folder_path": folder_path,
+        "recursive": recursive,
+    }))
+
+
+@mcp.tool()
+def fixup_redirectors(folder_path: str, recursive: bool = True) -> str:
+    """
+    Update all references to redirectors under a folder and delete the redirectors
+    (UE "Fix Up Redirectors in Folder" equivalent).
+
+    Uses IAssetTools::FixupReferencers which rewrites hard references from referencing
+    packages to the redirector's destination, then deletes the now-unused redirector
+    packages. Stale redirectors (DestinationObject = null) are skipped.
+
+    Run this after bulk rename/delete operations to clean up the package tree.
+
+    Args:
+        folder_path: e.g. "/Game/UI/Hud/Textures/Tiles"
+        recursive: recurse into subfolders (default True)
+
+    Returns:
+        JSON with:
+          - folder_path        : input path
+          - recursive          : bool echoed back
+          - redirectors_found  : total redirectors discovered
+          - redirectors_fixed  : redirectors passed to FixupReferencers
+          - skipped_count      : number skipped (stale/load-failed)
+          - scan_was_incomplete: true if AssetRegistry was still scanning (waited)
+          - skipped            : array of { redirector_path, reason }
+                                 reason in { "load_failed", "stale_no_destination" }
+    """
+    return _format_response(_send_command("fixup_redirectors", {
+        "folder_path": folder_path,
+        "recursive": recursive,
+    }))
+
+
+@mcp.tool()
 def save_asset(asset_path: str) -> str:
     """
     Save any loaded asset to disk.
@@ -1738,6 +1860,40 @@ def rename_asset(
     if new_asset_name:
         params["new_asset_name"] = new_asset_name
     return _format_response(_send_command("rename_asset", params))
+
+
+@mcp.tool()
+def delete_asset(asset_path: str, force: bool = False) -> str:
+    """
+    Delete an asset from disk via UE ObjectTools (no Content Browser UI required).
+
+    Default path (force=False) uses ObjectTools::DeleteAssets which refuses to delete
+    assets that still have referencers — returns count=0 in that case. Inspect with
+    get_referencers first, or pass force=True to use ForceDeleteObjects which bypasses
+    the reference check (leaves dangling refs; use only when you've verified externally).
+
+    Args:
+        asset_path: Asset path, e.g. "/Game/UI/Hud/Textures/Tiles/T_Tile_Red_5"
+                   Accepts both "/Game/Path/Asset" and "/Game/Path/Asset.Asset" forms.
+        force: If True, bypass reference check and force-delete. Default False.
+
+    Returns:
+        JSON with:
+          - deleted       : true on success
+          - asset_path    : input path
+          - package_name  : package that was deleted
+          - num_deleted   : int returned by ObjectTools (1 on success)
+          - force         : which code path was used
+
+    Notes:
+        - Runs on Game Thread; up to 120s timeout.
+        - Prefer get_referencers + default (non-force) delete — safest against dangling refs.
+        - For Blueprint/Widget Blueprint assets, pass the BP path (not the _C generated class).
+    """
+    params = {"asset_path": asset_path}
+    if force:
+        params["force"] = True
+    return _format_response(_send_command("delete_asset", params))
 
 
 # =============================================================================
@@ -1881,6 +2037,8 @@ def capture_widget_preview(
     transparent_bg: bool = False,
     return_base64: bool = False,
     dpi_scale: float = 1.0,
+    preview_mode: str = "runtime",
+    preview_function_calls: list[dict] | None = None,
     ratios: list[dict] | None = None,
 ) -> str:
     """
@@ -1904,6 +2062,11 @@ def capture_widget_preview(
         return_base64: If True, each PNG entry also includes a base64 "png_base64"
                       field. Normally False — prefer reading the file directly.
         dpi_scale: DPI scale passed to widget renderer. Default 1.0.
+        preview_mode: "runtime" (default) follows the runtime widget lifecycle.
+                      "designer" enables design-time PreConstruct preview data.
+        preview_function_calls: Optional function calls applied to the live widget
+                      instance after runtime activation and before rendering.
+                      Example: [{"function_name": "SwitchToTab", "args": {"Tab": "2"}}]
         ratios: Optional list of multi-ratio capture entries. Each entry is a dict:
                 {"width": int, "height": int, "label": str (optional)}
                 Example: [
@@ -1917,7 +2080,8 @@ def capture_widget_preview(
 
     Returns:
         JSON with `pngs` array. Each entry: `{png_path, width, height, size_bytes,
-        label?, png_base64?}`. Also `count` and `asset_path`.
+        preview_mode, label?, png_base64?}`. Also `count`, `asset_path`, and
+        `preview_mode`.
         After the call, read a png_path with the Read tool to visually inspect it.
     """
     params = {
@@ -1928,9 +2092,12 @@ def capture_widget_preview(
         "transparent_bg": transparent_bg,
         "return_base64": return_base64,
         "dpi_scale": dpi_scale,
+        "preview_mode": preview_mode,
     }
     if output_path:
         params["output_path"] = output_path
+    if preview_function_calls:
+        params["preview_function_calls"] = preview_function_calls
     if ratios:
         params["ratios"] = ratios
     return _format_response(_send_command("capture_widget_preview", params))

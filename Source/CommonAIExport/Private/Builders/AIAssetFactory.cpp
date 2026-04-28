@@ -71,6 +71,42 @@ UClass* UAIAssetFactory::ResolveAssetClass(const FString& AssetType)
 	if (AssetType.Equals(TEXT("PhysicalMaterial"), ESearchCase::IgnoreCase))
 		return UPhysicalMaterial::StaticClass();
 
+	// Generic fallback — resolve any loaded concrete UObject class by short or
+	// fully-qualified name. Enables DataAsset subclasses (UOkeySkinDefinition
+	// etc.) without extending the hardcoded switch for every project type.
+	if (!AssetType.IsEmpty())
+	{
+		// 1) Try direct object lookup by path (e.g. "/Script/OkeyGame.OkeySkinDefinition")
+		if (UClass* ByPath = FindObject<UClass>(nullptr, *AssetType))
+		{
+			if (!ByPath->HasAnyClassFlags(CLASS_Abstract))
+			{
+				UE_LOG(LogAIAssetFactory, Log,
+					TEXT("ResolveAssetClass: Resolved '%s' by path -> %s"),
+					*AssetType, *ByPath->GetName());
+				return ByPath;
+			}
+		}
+
+		// 2) Try short name iteration across loaded classes. Accept concrete
+		//    descendants of UObject (covers UDataAsset, UPrimaryDataAsset, etc.).
+		for (TObjectIterator<UClass> It; It; ++It)
+		{
+			if (It->HasAnyClassFlags(CLASS_Abstract))
+			{
+				continue;
+			}
+			if (It->GetName().Equals(AssetType, ESearchCase::IgnoreCase)
+			 || It->GetPathName().Equals(AssetType, ESearchCase::IgnoreCase))
+			{
+				UE_LOG(LogAIAssetFactory, Log,
+					TEXT("ResolveAssetClass: Resolved '%s' via reflection -> %s"),
+					*AssetType, *It->GetPathName());
+				return *It;
+			}
+		}
+	}
+
 	UE_LOG(LogAIAssetFactory, Warning, TEXT("ResolveAssetClass: Unsupported type '%s'"), *AssetType);
 	return nullptr;
 }

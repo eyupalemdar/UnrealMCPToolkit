@@ -41,6 +41,7 @@ public class CommonAIExport : ModuleRules
 			"AnimGraphRuntime",
 			"AudioModulation",  // For USoundControlBus, USoundControlBusMix, USoundModulationPatch
 			"CommonUI",  // For UCommonTextBlock
+			"CommonInput",  // For CommonUI runtime input data during widget preview capture
 			"ImageWrapper",  // For PNG export (IImageWrapper)
 			"RenderCore",  // For FlushRenderingCommands (widget preview capture)
 			"MovieScene",  // For UWidgetAnimation export

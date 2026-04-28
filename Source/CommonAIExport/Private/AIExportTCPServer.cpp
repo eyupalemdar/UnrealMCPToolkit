@@ -44,6 +44,10 @@
 #include "AssetToolsModule.h"
 #include "IAssetTools.h"
 
+// Asset delete (HandleDeleteAsset) — ObjectTools lives in UnrealEd
+#include "ObjectTools.h"
+#include "UObject/ObjectRedirector.h"
+
 #include "Engine/Font.h"
 #include "Engine/FontFace.h"
 #include "InputMappingContext.h"
@@ -60,11 +64,15 @@
 #include "ContentStreaming.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
+#include "CommonActivatableWidget.h"
+#include "ICommonInputModule.h"
 #include "Modules/ModuleManager.h"
 #include "Editor.h"
 #include "RenderingThread.h"
 #include "Engine/Engine.h"
+#include "RenderAssetUpdate.h"
 #include "Misc/Base64.h"
+#include "UObject/UnrealType.h"
 
 // Asset Lifecycle includes (for HandleReloadAsset)
 #include "Subsystems/AssetEditorSubsystem.h"
@@ -644,6 +652,26 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 	else if (CommandType == TEXT("rename_asset"))
 	{
 		return HandleRenameAsset(Params);
+	}
+	else if (CommandType == TEXT("get_referencers"))
+	{
+		return HandleGetReferencers(Params);
+	}
+	else if (CommandType == TEXT("get_dependencies"))
+	{
+		return HandleGetDependencies(Params);
+	}
+	else if (CommandType == TEXT("delete_asset"))
+	{
+		return HandleDeleteAsset(Params);
+	}
+	else if (CommandType == TEXT("list_redirectors"))
+	{
+		return HandleListRedirectors(Params);
+	}
+	else if (CommandType == TEXT("fixup_redirectors"))
+	{
+		return HandleFixupRedirectors(Params);
 	}
 	// Input Mapping Context commands
 	else if (CommandType == TEXT("add_input_mapping"))
@@ -3744,6 +3772,323 @@ FString FAIExportTCPServer::HandleRenameAsset(TSharedPtr<FJsonObject> Params)
 	return Future.Get();
 }
 
+namespace
+{
+	// Accepts "/Game/Path/Asset" OR "/Game/Path/Asset.Asset" — strips object suffix.
+	static FName NormalizePackageName(const FString& InAssetPath)
+	{
+		FString PackageName = InAssetPath;
+		int32 DotIndex = INDEX_NONE;
+		if (PackageName.FindChar(TEXT('.'), DotIndex))
+		{
+			PackageName = PackageName.Left(DotIndex);
+		}
+		return FName(*PackageName);
+	}
+}
+
+FString FAIExportTCPServer::HandleGetReferencers(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+
+		const bool bScanIncomplete = AR.IsLoadingAssets();
+		if (bScanIncomplete)
+		{
+			// Block briefly so reference results are not falsely empty.
+			AR.WaitForCompletion();
+		}
+
+		const FName PackageName = NormalizePackageName(AssetPath);
+		TArray<FName> Referencers;
+		AR.GetReferencers(PackageName, Referencers);
+
+		TArray<TSharedPtr<FJsonValue>> Array;
+		Array.Reserve(Referencers.Num());
+		for (const FName& Ref : Referencers)
+		{
+			Array.Add(MakeShared<FJsonValueString>(Ref.ToString()));
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetStringField(TEXT("package_name"), PackageName.ToString());
+		Data->SetNumberField(TEXT("count"), Array.Num());
+		Data->SetBoolField(TEXT("scan_was_incomplete"), bScanIncomplete);
+		Data->SetArrayField(TEXT("referencers"), Array);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get referencers timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleGetDependencies(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+
+		const bool bScanIncomplete = AR.IsLoadingAssets();
+		if (bScanIncomplete)
+		{
+			AR.WaitForCompletion();
+		}
+
+		const FName PackageName = NormalizePackageName(AssetPath);
+		TArray<FName> Dependencies;
+		AR.GetDependencies(PackageName, Dependencies);
+
+		TArray<TSharedPtr<FJsonValue>> Array;
+		Array.Reserve(Dependencies.Num());
+		for (const FName& Dep : Dependencies)
+		{
+			Array.Add(MakeShared<FJsonValueString>(Dep.ToString()));
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetStringField(TEXT("package_name"), PackageName.ToString());
+		Data->SetNumberField(TEXT("count"), Array.Num());
+		Data->SetBoolField(TEXT("scan_was_incomplete"), bScanIncomplete);
+		Data->SetArrayField(TEXT("dependencies"), Array);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get dependencies timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleDeleteAsset(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	bool bForce = false;
+	Params->TryGetBoolField(TEXT("force"), bForce);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, bForce, Promise, this]()
+	{
+		UObject* Asset = UAIDataAssetBuilder::LoadAssetObject(AssetPath);
+		if (!Asset)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Asset not found: %s"), *AssetPath)));
+			return;
+		}
+
+		const FString PackageName = Asset->GetOutermost()->GetName();
+
+		int32 NumDeleted = 0;
+		if (bForce)
+		{
+			TArray<UObject*> Objects;
+			Objects.Add(Asset);
+			NumDeleted = ObjectTools::ForceDeleteObjects(Objects, /*bShowConfirmation=*/false);
+		}
+		else
+		{
+			TArray<FAssetData> AssetsToDelete;
+			AssetsToDelete.Add(FAssetData(Asset));
+			NumDeleted = ObjectTools::DeleteAssets(AssetsToDelete, /*bShowConfirmation=*/false);
+		}
+
+		if (NumDeleted == 0)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("Delete returned 0 for %s (check referencers with get_referencers, or pass force=true to bypass reference check)"),
+				*AssetPath)));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("deleted"), true);
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetStringField(TEXT("package_name"), PackageName);
+		Data->SetNumberField(TEXT("num_deleted"), NumDeleted);
+		Data->SetBoolField(TEXT("force"), bForce);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Delete asset timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleListRedirectors(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString FolderPath;
+	if (!Params->TryGetStringField(TEXT("folder_path"), FolderPath))
+		return CreateErrorResponse(TEXT("Missing 'folder_path' parameter"));
+
+	bool bRecursive = true;
+	Params->TryGetBoolField(TEXT("recursive"), bRecursive);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [FolderPath, bRecursive, Promise, this]()
+	{
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+
+		const bool bScanIncomplete = AR.IsLoadingAssets();
+		if (bScanIncomplete)
+		{
+			AR.WaitForCompletion();
+		}
+
+		FARFilter Filter;
+		Filter.PackagePaths.Add(FName(*FolderPath));
+		Filter.ClassPaths.Add(UObjectRedirector::StaticClass()->GetClassPathName());
+		Filter.bRecursivePaths = bRecursive;
+
+		TArray<FAssetData> Assets;
+		AR.GetAssets(Filter, Assets);
+
+		TArray<TSharedPtr<FJsonValue>> Array;
+		Array.Reserve(Assets.Num());
+		for (const FAssetData& AssetData : Assets)
+		{
+			UObjectRedirector* Redirector = Cast<UObjectRedirector>(AssetData.GetAsset());
+			TSharedPtr<FJsonObject> Entry = MakeShared<FJsonObject>();
+			Entry->SetStringField(TEXT("redirector_path"), AssetData.GetSoftObjectPath().ToString());
+			Entry->SetStringField(TEXT("destination_path"),
+				(Redirector && Redirector->DestinationObject)
+					? Redirector->DestinationObject->GetPathName()
+					: TEXT(""));
+			Entry->SetBoolField(TEXT("stale"),
+				!(Redirector && Redirector->DestinationObject));
+			Array.Add(MakeShared<FJsonValueObject>(Entry));
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("folder_path"), FolderPath);
+		Data->SetBoolField(TEXT("recursive"), bRecursive);
+		Data->SetNumberField(TEXT("count"), Array.Num());
+		Data->SetBoolField(TEXT("scan_was_incomplete"), bScanIncomplete);
+		Data->SetArrayField(TEXT("redirectors"), Array);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("List redirectors timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleFixupRedirectors(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString FolderPath;
+	if (!Params->TryGetStringField(TEXT("folder_path"), FolderPath))
+		return CreateErrorResponse(TEXT("Missing 'folder_path' parameter"));
+
+	bool bRecursive = true;
+	Params->TryGetBoolField(TEXT("recursive"), bRecursive);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [FolderPath, bRecursive, Promise, this]()
+	{
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+
+		const bool bScanIncomplete = AR.IsLoadingAssets();
+		if (bScanIncomplete)
+		{
+			AR.WaitForCompletion();
+		}
+
+		FARFilter Filter;
+		Filter.PackagePaths.Add(FName(*FolderPath));
+		Filter.ClassPaths.Add(UObjectRedirector::StaticClass()->GetClassPathName());
+		Filter.bRecursivePaths = bRecursive;
+
+		TArray<FAssetData> Assets;
+		AR.GetAssets(Filter, Assets);
+
+		TArray<UObjectRedirector*> Redirectors;
+		TArray<TSharedPtr<FJsonValue>> Skipped;
+		Redirectors.Reserve(Assets.Num());
+		for (const FAssetData& AssetData : Assets)
+		{
+			UObjectRedirector* Redirector = Cast<UObjectRedirector>(AssetData.GetAsset());
+			if (!Redirector)
+			{
+				TSharedPtr<FJsonObject> Entry = MakeShared<FJsonObject>();
+				Entry->SetStringField(TEXT("redirector_path"), AssetData.GetSoftObjectPath().ToString());
+				Entry->SetStringField(TEXT("reason"), TEXT("load_failed"));
+				Skipped.Add(MakeShared<FJsonValueObject>(Entry));
+				continue;
+			}
+			if (!Redirector->DestinationObject)
+			{
+				TSharedPtr<FJsonObject> Entry = MakeShared<FJsonObject>();
+				Entry->SetStringField(TEXT("redirector_path"), AssetData.GetSoftObjectPath().ToString());
+				Entry->SetStringField(TEXT("reason"), TEXT("stale_no_destination"));
+				Skipped.Add(MakeShared<FJsonValueObject>(Entry));
+				continue;
+			}
+			Redirectors.Add(Redirector);
+		}
+
+		const int32 FoundCount = Assets.Num();
+		const int32 FixedCount = Redirectors.Num();
+
+		if (Redirectors.Num() > 0)
+		{
+			FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
+			AssetToolsModule.Get().FixupReferencers(Redirectors, /*bCheckoutDialogPrompt=*/false);
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("folder_path"), FolderPath);
+		Data->SetBoolField(TEXT("recursive"), bRecursive);
+		Data->SetNumberField(TEXT("redirectors_found"), FoundCount);
+		Data->SetNumberField(TEXT("redirectors_fixed"), FixedCount);
+		Data->SetNumberField(TEXT("skipped_count"), Skipped.Num());
+		Data->SetBoolField(TEXT("scan_was_incomplete"), bScanIncomplete);
+		Data->SetArrayField(TEXT("skipped"), Skipped);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Fixup redirectors timed out"));
+	return Future.Get();
+}
+
 // =============================================================================
 // Input Mapping Context Command Handlers
 // =============================================================================
@@ -3955,6 +4300,14 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 	bool bTransparentBG = false;
 	bool bReturnBase64 = false;
 	FString OutputPath;
+	FString PreviewMode = TEXT("runtime");
+	struct FPreviewFunctionCall
+	{
+		FString WidgetName;
+		FString FunctionName;
+		TMap<FString, FString> Args;
+	};
+	TArray<FPreviewFunctionCall> PreviewFunctionCalls;
 
 	{
 		double DVal = 0.0;
@@ -3966,6 +4319,56 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 	Params->TryGetBoolField(TEXT("transparent_bg"), bTransparentBG);
 	Params->TryGetBoolField(TEXT("return_base64"), bReturnBase64);
 	Params->TryGetStringField(TEXT("output_path"), OutputPath);
+	Params->TryGetStringField(TEXT("preview_mode"), PreviewMode);
+	PreviewMode.TrimStartAndEndInline();
+	PreviewMode.ToLowerInline();
+	if (PreviewMode.IsEmpty())
+	{
+		PreviewMode = TEXT("runtime");
+	}
+	if (PreviewMode != TEXT("runtime") && PreviewMode != TEXT("designer"))
+	{
+		return CreateErrorResponse(TEXT("Invalid 'preview_mode'. Expected 'runtime' or 'designer'."));
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* FunctionCallsArray = nullptr;
+	if (Params->TryGetArrayField(TEXT("preview_function_calls"), FunctionCallsArray) && FunctionCallsArray)
+	{
+		for (const TSharedPtr<FJsonValue>& Entry : *FunctionCallsArray)
+		{
+			const TSharedPtr<FJsonObject>* CallObj = nullptr;
+			if (!Entry->TryGetObject(CallObj) || !CallObj->IsValid())
+			{
+				continue;
+			}
+
+			FPreviewFunctionCall Call;
+			(*CallObj)->TryGetStringField(TEXT("widget_name"), Call.WidgetName);
+			if (!(*CallObj)->TryGetStringField(TEXT("function_name"), Call.FunctionName) || Call.FunctionName.IsEmpty())
+			{
+				return CreateErrorResponse(TEXT("Invalid 'preview_function_calls' entry: missing 'function_name'."));
+			}
+
+			const TSharedPtr<FJsonObject>* ArgsObj = nullptr;
+			if ((*CallObj)->TryGetObjectField(TEXT("args"), ArgsObj) && ArgsObj->IsValid())
+			{
+				for (const TPair<FString, TSharedPtr<FJsonValue>>& ArgPair : (*ArgsObj)->Values)
+				{
+					FString ArgValue;
+					if (ArgPair.Value->TryGetString(ArgValue))
+					{
+						Call.Args.Add(ArgPair.Key, ArgValue);
+					}
+					else
+					{
+						Call.Args.Add(ArgPair.Key, ArgPair.Value->AsString());
+					}
+				}
+			}
+
+			PreviewFunctionCalls.Add(MoveTemp(Call));
+		}
+	}
 
 	// Parse optional ratios array (multi-ratio mode)
 	// Each entry: { "width": 2560, "height": 1080, "label": "21x9" }
@@ -4010,7 +4413,7 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Ratios, WarmupFrames, DPIScale, bTransparentBG, bReturnBase64, OutputPath, OutputDir, Promise, this]()
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Ratios, WarmupFrames, DPIScale, bTransparentBG, bReturnBase64, OutputPath, OutputDir, PreviewMode, PreviewFunctionCalls, Promise, this]()
 	{
 		// 1) Load Widget Blueprint
 		UWidgetBlueprint* WidgetBP = LoadObject<UWidgetBlueprint>(nullptr, *AssetPath);
@@ -4048,8 +4451,98 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 		}
 		UserWidget->AddToRoot();  // Prevent GC during rendering
 
+#if WITH_EDITOR
+		if (PreviewMode == TEXT("designer"))
+		{
+			// Explicit designer preview path for widgets with IsDesignTime()-gated
+			// sample data. Runtime acceptance captures must not set these flags.
+			UserWidget->SetDesignerFlags(EWidgetDesignFlags::Designing | EWidgetDesignFlags::ExecutePreConstruct);
+			UserWidget->SynchronizeProperties();
+		}
+#endif
+
+		// Runtime CommonUI construction can bind default input actions before any
+		// LocalPlayer/CommonInputSubsystem exists in this offscreen editor context.
+		ICommonInputModule::GetSettings().LoadData();
+
 		// 4) Take Slate widget — triggers outer widget's Initialize + PreConstruct.
 		TSharedRef<SWidget> SlateWidget = UserWidget->TakeWidget();
+
+		// CommonUI screens often synchronize state during activation rather than
+		// designer PreConstruct. Offscreen captures need that lifecycle too, or
+		// button text, selected tabs, and settings rows can render with defaults.
+		if (UCommonActivatableWidget* ActivatableWidget = Cast<UCommonActivatableWidget>(UserWidget))
+		{
+			ActivatableWidget->ActivateWidget();
+		}
+
+		int32 PreviewFunctionCallCount = 0;
+		for (const FPreviewFunctionCall& Call : PreviewFunctionCalls)
+		{
+			UObject* Target = UserWidget;
+			if (!Call.WidgetName.IsEmpty())
+			{
+				Target = UserWidget->WidgetTree ? UserWidget->WidgetTree->FindWidget(FName(*Call.WidgetName)) : nullptr;
+			}
+			if (!Target)
+			{
+				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("preview_function_calls target widget not found: %s"), *Call.WidgetName)));
+				UserWidget->ReleaseSlateResources(true);
+				UserWidget->RemoveFromRoot();
+				return;
+			}
+
+			UFunction* Function = Target->FindFunction(FName(*Call.FunctionName));
+			if (!Function)
+			{
+				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("preview_function_calls function not found: %s on %s"), *Call.FunctionName, *Target->GetName())));
+				UserWidget->ReleaseSlateResources(true);
+				UserWidget->RemoveFromRoot();
+				return;
+			}
+
+			TArray<uint8> ParamBuffer;
+			ParamBuffer.SetNumZeroed(Function->ParmsSize);
+			Function->InitializeStruct(ParamBuffer.GetData());
+
+			bool bParamImportSucceeded = true;
+			FString ParamError;
+			for (TFieldIterator<FProperty> It(Function); It; ++It)
+			{
+				FProperty* Prop = *It;
+				if (!Prop->HasAnyPropertyFlags(CPF_Parm) || Prop->HasAnyPropertyFlags(CPF_ReturnParm))
+				{
+					continue;
+				}
+
+				const FString* ArgValue = Call.Args.Find(Prop->GetName());
+				if (!ArgValue)
+				{
+					continue;
+				}
+
+				void* PropAddr = Prop->ContainerPtrToValuePtr<void>(ParamBuffer.GetData());
+				if (!Prop->ImportText_Direct(**ArgValue, PropAddr, Target, PPF_None))
+				{
+					bParamImportSucceeded = false;
+					ParamError = FString::Printf(TEXT("Failed to import preview function arg %s=%s for %s"), *Prop->GetName(), **ArgValue, *Call.FunctionName);
+					break;
+				}
+			}
+
+			if (!bParamImportSucceeded)
+			{
+				Function->DestroyStruct(ParamBuffer.GetData());
+				Promise->SetValue(CreateErrorResponse(ParamError));
+				UserWidget->ReleaseSlateResources(true);
+				UserWidget->RemoveFromRoot();
+				return;
+			}
+
+			Target->ProcessEvent(Function, ParamBuffer.GetData());
+			Function->DestroyStruct(ParamBuffer.GetData());
+			++PreviewFunctionCallCount;
+		}
 
 		// 4a) Force-initialize all nested UUserWidget components, then preload textures.
 		//     Nested UUserWidgets in the WidgetTree are NOT auto-initialized by the outer
@@ -4061,21 +4554,49 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 		FlushAsyncLoading();
 		int32 InitCount = 0;
 		int32 TexCount = 0;
+		int32 SyncCount = 0;
+		int32 StreamingWaitSkippedCount = 0;
 		{
+			auto ForceTextureResidentForCapture = [&TexCount, &StreamingWaitSkippedCount](UTexture2D* Tex)
+			{
+				if (!Tex)
+				{
+					return;
+				}
+
+				Tex->SetForceMipLevelsToBeResident(30.0f, true);
+				if (!IsAssetStreamingSuspended())
+				{
+					Tex->WaitForStreaming();
+				}
+				else
+				{
+					++StreamingWaitSkippedCount;
+				}
+				++TexCount;
+			};
+
 			// Pass 1: force Initialize() on all nested UUserWidget instances (recursive)
 			TFunction<void(UWidgetTree*)> InitTree;
-			InitTree = [&InitTree, &InitCount](UWidgetTree* Tree)
+			InitTree = [&InitTree, &InitCount, &PreviewMode](UWidgetTree* Tree)
 			{
 				if (!Tree) return;
-				Tree->ForEachWidget([&InitTree, &InitCount](UWidget* W)
+				Tree->ForEachWidget([&InitTree, &InitCount, &PreviewMode](UWidget* W)
 				{
 					if (UUserWidget* NestedUW = Cast<UUserWidget>(W))
 					{
+#if WITH_EDITOR
+						if (PreviewMode == TEXT("designer"))
+						{
+							NestedUW->SetDesignerFlags(EWidgetDesignFlags::Designing | EWidgetDesignFlags::ExecutePreConstruct);
+						}
+#endif
 						if (!NestedUW->IsConstructed())
 						{
 							NestedUW->Initialize();  // runs BP PreConstruct on this nested instance
 							++InitCount;
 						}
+						NestedUW->TakeWidget();
 						InitTree(NestedUW->WidgetTree);
 					}
 				});
@@ -4090,23 +4611,20 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 			//         struct but is never copied to the SImage. A manual SynchronizeProperties()
 			//         after the slate tree is built (i.e. after TakeWidget) does exactly that copy.
 			TFunction<void(UWidgetTree*)> PreloadTree;
-			PreloadTree = [&PreloadTree, &TexCount](UWidgetTree* Tree)
+			PreloadTree = [&PreloadTree, &ForceTextureResidentForCapture, &SyncCount](UWidgetTree* Tree)
 			{
 				if (!Tree) return;
-				Tree->ForEachWidget([&PreloadTree, &TexCount](UWidget* W)
+				Tree->ForEachWidget([&PreloadTree, &ForceTextureResidentForCapture, &SyncCount](UWidget* W)
 				{
+					W->SynchronizeProperties();
+					++SyncCount;
+
 					if (UImage* Img = Cast<UImage>(W))
 					{
 						if (UTexture2D* Tex = Cast<UTexture2D>(Img->Brush.GetResourceObject()))
 						{
-							Tex->SetForceMipLevelsToBeResident(30.0f, true);
-							Tex->WaitForStreaming();
-							++TexCount;
+							ForceTextureResidentForCapture(Tex);
 						}
-						// Force slate to pick up the current Brush struct (which PreConstruct
-						// may have just updated via SetBrushFromTexture on an image whose
-						// MyImage wasn't constructed yet).
-						Img->SynchronizeProperties();
 					}
 					else if (UBorder* Brd = Cast<UBorder>(W))
 					{
@@ -4115,14 +4633,12 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 						// set_widget_property changes land on the Slate side.
 						if (UTexture2D* Tex = Cast<UTexture2D>(Brd->Background.GetResourceObject()))
 						{
-							Tex->SetForceMipLevelsToBeResident(30.0f, true);
-							Tex->WaitForStreaming();
-							++TexCount;
+							ForceTextureResidentForCapture(Tex);
 						}
-						Brd->SynchronizeProperties();
 					}
 					else if (UUserWidget* NestedUW = Cast<UUserWidget>(W))
 					{
+						NestedUW->SynchronizeProperties();
 						PreloadTree(NestedUW->WidgetTree);
 					}
 				});
@@ -4130,8 +4646,15 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 			PreloadTree(UserWidget->WidgetTree);
 		}
 		// Final global streaming flush — catches anything ForceMipLevelsToBeResident missed.
-		IStreamingManager::Get().StreamAllResources(0.0f);
-		UE_LOG(LogAIExport, Log, TEXT("CaptureWidgetPreview: initialized %d nested widgets, streamed %d textures"), InitCount, TexCount);
+		if (!IsAssetStreamingSuspended())
+		{
+			IStreamingManager::Get().StreamAllResources(0.0f);
+		}
+		else
+		{
+			++StreamingWaitSkippedCount;
+		}
+		UE_LOG(LogAIExport, Log, TEXT("CaptureWidgetPreview[%s]: applied %d preview function calls, initialized %d nested widgets, synchronized %d widgets, streamed %d textures, skipped %d streaming waits"), *PreviewMode, PreviewFunctionCallCount, InitCount, SyncCount, TexCount, StreamingWaitSkippedCount);
 
 		// 5) Get ImageWrapper module
 		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
@@ -4238,6 +4761,7 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 			Entry->SetNumberField(TEXT("width"), RW);
 			Entry->SetNumberField(TEXT("height"), RH);
 			Entry->SetNumberField(TEXT("size_bytes"), FlatPng.Num());
+			Entry->SetStringField(TEXT("preview_mode"), PreviewMode);
 			if (!Ratio.Label.IsEmpty())
 			{
 				Entry->SetStringField(TEXT("label"), Ratio.Label);
@@ -4254,6 +4778,13 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 		}
 
 		// Cleanup widget
+		if (UCommonActivatableWidget* ActivatableWidget = Cast<UCommonActivatableWidget>(UserWidget))
+		{
+			if (ActivatableWidget->IsActivated())
+			{
+				ActivatableWidget->DeactivateWidget();
+			}
+		}
 		UserWidget->ReleaseSlateResources(true);
 		UserWidget->RemoveFromRoot();
 
@@ -4266,6 +4797,8 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 		// Build response
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetStringField(TEXT("preview_mode"), PreviewMode);
+		Data->SetNumberField(TEXT("preview_function_calls_applied"), PreviewFunctionCallCount);
 		Data->SetArrayField(TEXT("pngs"), PngResults);
 		Data->SetNumberField(TEXT("count"), PngResults.Num());
 		if (!bAllSucceeded)

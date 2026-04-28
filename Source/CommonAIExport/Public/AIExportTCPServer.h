@@ -89,6 +89,7 @@ class FSocket;
  * - get_asset_properties: Get all properties of any loaded asset as JSON
  * - save_asset: Save any loaded asset to disk
  * - rename_asset: Rename/move an asset (creates redirector, fixes references via AssetTools)
+ * - delete_asset: Delete an asset from disk (ObjectTools::DeleteAssets, optional force=true bypasses ref check)
  *
  * Input Mapping Context commands:
  * - add_input_mapping: Add a key mapping to InputMappingContext
@@ -228,6 +229,11 @@ private:
 	FString HandleGetAssetProperties(TSharedPtr<class FJsonObject> Params);
 	FString HandleSaveAsset(TSharedPtr<class FJsonObject> Params);
 	FString HandleRenameAsset(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetReferencers(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetDependencies(TSharedPtr<class FJsonObject> Params);
+	FString HandleDeleteAsset(TSharedPtr<class FJsonObject> Params);
+	FString HandleListRedirectors(TSharedPtr<class FJsonObject> Params);
+	FString HandleFixupRedirectors(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Input Mapping Context */
 	FString HandleAddInputMapping(TSharedPtr<class FJsonObject> Params);
