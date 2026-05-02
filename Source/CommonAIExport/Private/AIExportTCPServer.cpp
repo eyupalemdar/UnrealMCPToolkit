@@ -4624,8 +4624,13 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 			}
 
 			TArray<uint8> ParamBuffer;
-			ParamBuffer.SetNumZeroed(Function->ParmsSize);
-			Function->InitializeStruct(ParamBuffer.GetData());
+			void* ParamData = nullptr;
+			if (Function->ParmsSize > 0)
+			{
+				ParamBuffer.SetNumZeroed(Function->ParmsSize);
+				ParamData = ParamBuffer.GetData();
+				Function->InitializeStruct(ParamData);
+			}
 
 			bool bParamImportSucceeded = true;
 			FString ParamError;
@@ -4643,7 +4648,14 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 					continue;
 				}
 
-				void* PropAddr = Prop->ContainerPtrToValuePtr<void>(ParamBuffer.GetData());
+				if (!ParamData)
+				{
+					bParamImportSucceeded = false;
+					ParamError = FString::Printf(TEXT("Function %s has no parameter storage for preview arg %s"), *Call.FunctionName, *Prop->GetName());
+					break;
+				}
+
+				void* PropAddr = Prop->ContainerPtrToValuePtr<void>(ParamData);
 				if (!Prop->ImportText_Direct(**ArgValue, PropAddr, Target, PPF_None))
 				{
 					bParamImportSucceeded = false;
@@ -4654,15 +4666,21 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 
 			if (!bParamImportSucceeded)
 			{
-				Function->DestroyStruct(ParamBuffer.GetData());
+				if (ParamData)
+				{
+					Function->DestroyStruct(ParamData);
+				}
 				Promise->SetValue(CreateErrorResponse(ParamError));
 				UserWidget->ReleaseSlateResources(true);
 				UserWidget->RemoveFromRoot();
 				return;
 			}
 
-			Target->ProcessEvent(Function, ParamBuffer.GetData());
-			Function->DestroyStruct(ParamBuffer.GetData());
+			Target->ProcessEvent(Function, ParamData);
+			if (ParamData)
+			{
+				Function->DestroyStruct(ParamData);
+			}
 			++PreviewFunctionCallCount;
 		}
 
