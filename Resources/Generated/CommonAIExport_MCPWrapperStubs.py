@@ -312,6 +312,21 @@ def runtime_ai_controller_diagnostics(world: str = 'auto', actor_path: str = '',
     return _format_response(_send_command("runtime_ai_controller_diagnostics", params))
 
 
+def runtime_eqs_diagnostics(world: str = 'auto', name_filter: str = '', class_filter: str = '', include_registered_item_types: bool = True, include_wrappers: bool = True, registered_item_type_limit: int = 100, wrapper_limit: int = 100, debug_string_limit: int = 1000) -> str:
+    """Generated stub for TCP command `runtime_eqs_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "name_filter": name_filter,
+        "class_filter": class_filter,
+        "include_registered_item_types": include_registered_item_types,
+        "include_wrappers": include_wrappers,
+        "registered_item_type_limit": registered_item_type_limit,
+        "wrapper_limit": wrapper_limit,
+        "debug_string_limit": debug_string_limit,
+    }
+    return _format_response(_send_command("runtime_eqs_diagnostics", params))
+
+
 def runtime_gameplay_tags_diagnostics(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', class_filter: str = '', component_class_filter: str = '', tag_filter: str = '', include_dictionary: bool = True, include_components: bool = True, actor_limit: int = 100, component_limit: int = 200, tag_limit: int = 500) -> str:
     """Generated stub for TCP command `runtime_gameplay_tags_diagnostics` (RuntimeInspector)."""
     params = {

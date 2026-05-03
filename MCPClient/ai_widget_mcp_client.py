@@ -1892,6 +1892,38 @@ def runtime_ai_controller_diagnostics(
 
 
 @mcp.tool()
+def runtime_eqs_diagnostics(
+    world: str = "auto",
+    name_filter: str = "",
+    class_filter: str = "",
+    include_registered_item_types: bool = True,
+    include_wrappers: bool = True,
+    registered_item_type_limit: int = 100,
+    wrapper_limit: int = 100,
+    debug_string_limit: int = 1000,
+) -> str:
+    """
+    Inspect runtime EQS manager availability, registered item types, and query wrapper summaries.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        name_filter: Optional substring matched against wrapper, query, owner names, and paths.
+        class_filter: Optional substring matched against wrapper, owner, and item type class paths.
+        include_registered_item_types: Include registered UEnvQueryItemType class references.
+        include_wrappers: Include UEnvQueryInstanceBlueprintWrapper summaries for the selected world.
+        registered_item_type_limit: Maximum registered item type records returned.
+        wrapper_limit: Maximum query wrapper records returned.
+        debug_string_limit: Maximum characters retained per debug string field.
+
+    Returns:
+        JSON with EQS manager/config availability, registered item type counts,
+        runtime query wrapper counts, result status summaries, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_eqs_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_gameplay_tags_diagnostics(
     world: str = "auto",
     actor_path: str = "",

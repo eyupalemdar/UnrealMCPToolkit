@@ -583,6 +583,29 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         _assert(isinstance(first_controller.get("blackboard"), dict), "runtime AI controller diagnostics missing blackboard object")
         _assert(isinstance(first_controller.get("path_following"), dict), "runtime AI controller diagnostics missing path following object")
 
+    eqs_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_eqs_diagnostics",
+            {
+                "world": "auto",
+                "include_registered_item_types": True,
+                "include_wrappers": True,
+                "registered_item_type_limit": 25,
+                "wrapper_limit": 10,
+                "debug_string_limit": 1000,
+            },
+        ),
+        "runtime_eqs_diagnostics",
+    )
+    _assert(eqs_diagnostics.get("world_available") is True, "runtime EQS diagnostics did not report an available world")
+    _assert(isinstance(eqs_diagnostics.get("world"), dict), "runtime EQS diagnostics missing world summary")
+    _assert(isinstance(eqs_diagnostics.get("eqs_manager_available"), bool), "runtime EQS diagnostics missing manager availability")
+    _assert(isinstance(eqs_diagnostics.get("eqs_manager"), dict), "runtime EQS diagnostics missing manager object")
+    _assert(isinstance(eqs_diagnostics.get("registered_item_type_count"), int), "runtime EQS diagnostics missing registered item type count")
+    _assert(isinstance(eqs_diagnostics.get("matched_wrapper_count"), int), "runtime EQS diagnostics missing wrapper count")
+    _assert(isinstance(eqs_diagnostics.get("wrappers"), list), "runtime EQS diagnostics missing wrapper array")
+
     gameplay_tags_diagnostics = _assert_tcp_success(
         _tcp_command(
             tcp_port,
@@ -902,6 +925,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_ability_system_diagnostics_checked": True,
         "runtime_ai_perception_diagnostics_checked": True,
         "runtime_ai_controller_diagnostics_checked": True,
+        "runtime_eqs_diagnostics_checked": True,
         "runtime_gameplay_tags_diagnostics_checked": True,
         "runtime_commonui_diagnostics_checked": True,
         "runtime_audio_diagnostics_checked": True,

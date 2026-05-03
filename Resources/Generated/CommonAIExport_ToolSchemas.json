@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T20:54:44.681587Z",
-  "tool_count": 145,
+  "generated_at_utc": "2026-05-03T21:58:51.541666Z",
+  "tool_count": 146,
   "tools": {
     "ping": {
       "type": "object",
@@ -1061,6 +1061,60 @@
         "debug_string_limit": {
           "type": "integer",
           "default": 4000
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_eqs_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "class_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "include_registered_item_types": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_wrappers": {
+          "type": "boolean",
+          "default": true
+        },
+        "registered_item_type_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "wrapper_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "debug_string_limit": {
+          "type": "integer",
+          "default": 1000
         }
       },
       "required": [],
