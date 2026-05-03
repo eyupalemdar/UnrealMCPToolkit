@@ -3365,7 +3365,9 @@ def task_cancel(task_id: str = "") -> str:
 def create_widget_blueprint(
     package_path: str,
     asset_name: str,
-    parent_class: str = ""
+    parent_class: str = "",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Create a new Widget Blueprint asset in the Unreal project.
@@ -3379,14 +3381,15 @@ def create_widget_blueprint(
     Returns:
         JSON with asset_path and asset_name on success.
     """
-    params = {"package_path": package_path, "asset_name": asset_name}
-    if parent_class:
-        params["parent_class"] = parent_class
-    return _format_response(_send_command("create_widget_blueprint", params))
+    return _send_generated_tcp_tool("create_widget_blueprint", locals())
 
 
 @mcp.tool()
-def compile_and_save(asset_path: str) -> str:
+def compile_and_save(
+    asset_path: str,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Compile and save a Widget Blueprint to disk.
 
@@ -3396,7 +3399,7 @@ def compile_and_save(asset_path: str) -> str:
     Returns:
         JSON with compiled/saved status and any warnings.
     """
-    return _format_response(_send_command("compile_and_save", {"asset_path": asset_path}))
+    return _send_generated_tcp_tool("compile_and_save", locals())
 
 
 # =============================================================================
@@ -3434,7 +3437,9 @@ def add_widget(
     asset_path: str,
     widget_class: str,
     widget_name: str,
-    parent_name: str = ""
+    parent_name: str = "",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a widget to the widget tree of a Widget Blueprint.
@@ -3459,18 +3464,16 @@ def add_widget(
     Returns:
         JSON with widget_name and widget_class of the created widget.
     """
-    params = {
-        "asset_path": asset_path,
-        "widget_class": widget_class,
-        "widget_name": widget_name,
-    }
-    if parent_name:
-        params["parent_name"] = parent_name
-    return _format_response(_send_command("add_widget", params))
+    return _send_generated_tcp_tool("add_widget", locals())
 
 
 @mcp.tool()
-def remove_widget(asset_path: str, widget_name: str) -> str:
+def remove_widget(
+    asset_path: str,
+    widget_name: str,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Remove a widget from the widget tree.
 
@@ -3481,10 +3484,7 @@ def remove_widget(asset_path: str, widget_name: str) -> str:
     Returns:
         JSON with removal confirmation.
     """
-    return _format_response(_send_command("remove_widget", {
-        "asset_path": asset_path,
-        "widget_name": widget_name,
-    }))
+    return _send_generated_tcp_tool("remove_widget", locals())
 
 
 @mcp.tool()
@@ -3492,7 +3492,9 @@ def move_widget(
     asset_path: str,
     widget_name: str,
     new_parent_name: str,
-    index: int = -1
+    index: int = -1,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Move a widget to a new parent in the widget tree.
@@ -3506,14 +3508,7 @@ def move_widget(
     Returns:
         JSON confirming the move.
     """
-    params = {
-        "asset_path": asset_path,
-        "widget_name": widget_name,
-        "new_parent_name": new_parent_name,
-    }
-    if index >= 0:
-        params["index"] = index
-    return _format_response(_send_command("move_widget", params))
+    return _send_generated_tcp_tool("move_widget", locals())
 
 
 # =============================================================================
@@ -3525,7 +3520,9 @@ def set_widget_property(
     asset_path: str,
     widget_name: str,
     property_name: str,
-    value: str
+    value: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a property on a widget using UE reflection.
@@ -3547,12 +3544,7 @@ def set_widget_property(
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_widget_property", {
-        "asset_path": asset_path,
-        "widget_name": widget_name,
-        "property_name": property_name,
-        "value": value,
-    }))
+    return _send_generated_tcp_tool("set_widget_property", locals())
 
 
 @mcp.tool()
@@ -3560,7 +3552,9 @@ def set_slot_property(
     asset_path: str,
     widget_name: str,
     property_name: str,
-    value: str
+    value: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a slot property on a widget (the parent panel's slot).
@@ -3579,12 +3573,7 @@ def set_slot_property(
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_slot_property", {
-        "asset_path": asset_path,
-        "widget_name": widget_name,
-        "property_name": property_name,
-        "value": value,
-    }))
+    return _send_generated_tcp_tool("set_slot_property", locals())
 
 
 @mcp.tool()
@@ -3600,7 +3589,9 @@ def set_canvas_slot_layout(
     anchor_max_x: float = 0,
     anchor_max_y: float = 0,
     alignment_x: float = 0,
-    alignment_y: float = 0
+    alignment_y: float = 0,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set canvas slot layout for a widget inside a CanvasPanel.
@@ -3622,27 +3613,16 @@ def set_canvas_slot_layout(
     Returns:
         JSON with success status and layout summary.
     """
-    return _format_response(_send_command("set_canvas_slot_layout", {
-        "asset_path": asset_path,
-        "widget_name": widget_name,
-        "position_x": position_x,
-        "position_y": position_y,
-        "size_x": size_x,
-        "size_y": size_y,
-        "anchor_min_x": anchor_min_x,
-        "anchor_min_y": anchor_min_y,
-        "anchor_max_x": anchor_max_x,
-        "anchor_max_y": anchor_max_y,
-        "alignment_x": alignment_x,
-        "alignment_y": alignment_y,
-    }))
+    return _send_generated_tcp_tool("set_canvas_slot_layout", locals())
 
 
 @mcp.tool()
 def set_widget_properties(
     asset_path: str,
     widget_name: str,
-    properties: str
+    properties: dict | str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set multiple properties on a widget in one call.
@@ -3656,16 +3636,21 @@ def set_widget_properties(
     Returns:
         JSON with set_count and any failed property names.
     """
-    try:
-        props_dict = json.loads(properties)
-    except json.JSONDecodeError:
-        return json.dumps({"success": False, "error": "Invalid JSON in properties parameter"})
+    if isinstance(properties, str):
+        try:
+            properties = json.loads(properties)
+        except json.JSONDecodeError:
+            return json.dumps({"success": False, "error": "Invalid JSON in properties parameter"})
+    if not isinstance(properties, dict):
+        return json.dumps({"success": False, "error": "properties must be a JSON object or dict"})
 
-    return _format_response(_send_command("set_widget_properties", {
+    return _send_generated_tcp_tool("set_widget_properties", {
         "asset_path": asset_path,
         "widget_name": widget_name,
-        "properties": props_dict,
-    }))
+        "properties": properties,
+        "scope": scope,
+        "dry_run": dry_run,
+    })
 
 
 # =============================================================================

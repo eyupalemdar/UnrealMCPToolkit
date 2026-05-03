@@ -57,8 +57,8 @@ Claude Code ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE E
 
 | Tool | Purpose |
 |------|---------|
-| `create_widget_blueprint(package_path, asset_name, parent_class?)` | Create new WBP. parent_class e.g. `/Script/CommonUI.CommonUserWidget` |
-| `compile_and_save(asset_path)` | Compile + save to disk. **Always call after modifications.** |
+| `create_widget_blueprint(package_path, asset_name, parent_class?, scope?, dry_run?)` | Create new WBP. parent_class e.g. `/Script/CommonUI.CommonUserWidget` |
+| `compile_and_save(asset_path, scope?, dry_run?)` | Compile + save to disk. **Always call after modifications.** |
 | `reparent_blueprint(asset_path, new_parent_class, scope?, dry_run?)` | Change parent class. e.g. `/Script/LyraGame.LyraActivatableWidget` |
 | `get_widget_tree(asset_path)` | Get full widget hierarchy as JSON |
 | `list_widget_classes()` | List all available non-abstract widget classes |
@@ -79,9 +79,9 @@ compile_and_save("/Game/UI/Kale/Screens/W_KalePlayContent")
 
 | Tool | Purpose |
 |------|---------|
-| `add_widget(asset_path, widget_class, widget_name, parent_name?)` | Add widget. parent="" = root |
-| `remove_widget(asset_path, widget_name)` | Remove widget |
-| `move_widget(asset_path, widget_name, new_parent, index?)` | Move widget. index=-1 = append |
+| `add_widget(asset_path, widget_class, widget_name, parent_name?, scope?, dry_run?)` | Add widget. parent="" = root |
+| `remove_widget(asset_path, widget_name, scope?, dry_run?)` | Remove widget |
+| `move_widget(asset_path, widget_name, new_parent, index?, scope?, dry_run?)` | Move widget. index=-1 = append |
 
 ### Widget Classes (common)
 `TextBlock`, `Image`, `Button`, `Border`, `CanvasPanel`, `VerticalBox`, `HorizontalBox`, `Overlay`, `SizeBox`, `Spacer`, `WidgetSwitcher`, `ScrollBox`, `CommonTextBlock`, `CommonButtonBase`, `CommonActionWidget`, `CommonActivatableWidget`, `CommonAnimatedSwitcher`
@@ -107,10 +107,10 @@ slot `Content`; add an actual child widget instance instead.
 
 | Tool | Purpose |
 |------|---------|
-| `set_widget_property(asset_path, widget_name, property_name, value)` | Set single property |
-| `set_widget_properties(asset_path, widget_name, properties_json)` | Set multiple properties at once |
-| `set_slot_property(asset_path, widget_name, property_name, value)` | Set slot property (Padding, Size, Alignment, etc.) |
-| `set_canvas_slot_layout(asset_path, widget_name, pos_x, pos_y, size_x, size_y, ...)` | Canvas slot shortcut |
+| `set_widget_property(asset_path, widget_name, property_name, value, scope?, dry_run?)` | Set single property |
+| `set_widget_properties(asset_path, widget_name, properties, scope?, dry_run?)` | Set multiple properties at once; accepts JSON string or dict |
+| `set_slot_property(asset_path, widget_name, property_name, value, scope?, dry_run?)` | Set slot property (Padding, Size, Alignment, etc.) |
+| `set_canvas_slot_layout(asset_path, widget_name, pos_x?, pos_y?, size_x?, size_y?, ..., scope?, dry_run?)` | Canvas slot shortcut |
 
 ### Property Format (ImportText)
 ```
@@ -770,10 +770,10 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 `CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
-now covers 113 wrappers: read-only payload wrappers, the safe write-scope set
+now covers 122 wrappers: read-only payload wrappers, the safe write-scope set
 (editor/level/actor/PIE/viewport, Asset/DataAsset/Input, Import,
 AnimBlueprint, CDO/CDOArray, Material graph/MIC, Blueprint graph/variable, and
-Blueprint utility wrappers), and the current destructive dry-run set
+Blueprint utility, and Widget wrappers), and the current destructive dry-run set
 (`actor_delete`, `delete_asset`, and `editor_console_command`).
 Payload fields, optional dict transform values, `scope`, and `dry_run` request
 meta are encoded explicitly so destructive tools keep their existing

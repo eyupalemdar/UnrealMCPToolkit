@@ -51,6 +51,12 @@ CLIENT_ONLY_TOOLS = {
     "native_mcp_probe",
 }
 
+PAYLOAD_RULE_OVERRIDES = {
+    "move_widget": {
+        "index": {"name": "index", "include": "when_ge_zero"},
+    },
+}
+
 COMMONAI_RESOURCES = [
     "commonai://project/status",
     "commonai://commands/manifest",
@@ -455,12 +461,16 @@ def read_mcp_tool_wrappers() -> dict[str, dict]:
             )
 
         param_names = {param["name"] for param in params}
+        payload_params = _payload_param_rules(node, node.name, param_names)
+        for name, rule in PAYLOAD_RULE_OVERRIDES.get(node.name, {}).items():
+            if name in param_names:
+                payload_params[name] = dict(rule)
         wrappers[node.name] = {
             "name": node.name,
             "source": _project_relative(MCP_CLIENT),
             "line": node.lineno,
             "params": params,
-            "payload_params": _payload_param_rules(node, node.name, param_names),
+            "payload_params": payload_params,
             "returns": _ast_source(node.returns),
             "literal_send_commands": _send_command_names(node),
         }

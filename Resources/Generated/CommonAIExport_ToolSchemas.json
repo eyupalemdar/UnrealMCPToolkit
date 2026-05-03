@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T18:56:49.643814Z",
+  "generated_at_utc": "2026-05-03T19:10:50.207758Z",
   "tool_count": 140,
   "tools": {
     "ping": {
@@ -1941,6 +1941,14 @@
         "parent_class": {
           "type": "string",
           "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -1979,6 +1987,14 @@
         "parent_name": {
           "type": "string",
           "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2011,6 +2027,14 @@
         },
         "widget_name": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2049,6 +2073,14 @@
         "index": {
           "type": "integer",
           "default": -1
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2087,6 +2119,14 @@
         },
         "value": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2126,6 +2166,14 @@
         },
         "value": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2199,6 +2247,14 @@
         "alignment_y": {
           "type": "number",
           "default": 0
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2232,7 +2288,23 @@
           "type": "string"
         },
         "properties": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2262,6 +2334,14 @@
       "properties": {
         "asset_path": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [

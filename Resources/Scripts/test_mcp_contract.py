@@ -193,6 +193,7 @@ def _failures() -> list[str]:
             "create_asset",
             "create_material",
             "create_material_instance",
+            "create_widget_blueprint",
             "disconnect_input",
             "ensure_function_graph",
             "fixup_redirectors",
@@ -202,16 +203,21 @@ def _failures() -> list[str]:
             "level_save_current",
             "pie_start",
             "pie_stop",
+            "add_widget",
+            "compile_and_save",
             "remove_input_mapping",
             "rename_asset",
             "remove_cdo_array_element",
             "remove_expression",
             "remove_graph_node",
+            "remove_widget",
             "remove_variable",
             "reparent_blueprint",
             "save_asset",
             "save_data_asset",
             "save_material_instance",
+            "move_widget",
+            "set_canvas_slot_layout",
             "set_cdo_array_element_property",
             "set_cdo_property",
             "set_expression_property",
@@ -220,6 +226,9 @@ def _failures() -> list[str]:
             "set_material_property",
             "set_pin_default",
             "set_variable_default",
+            "set_slot_property",
+            "set_widget_properties",
+            "set_widget_property",
             "viewport_capture",
         ):
             spec = generated_wrappers.get(expected_name)
@@ -604,6 +613,77 @@ def _failures() -> list[str]:
             )
             if reparent_call.get("params") != {"asset_path": "/Game/UI/W_Test", "new_parent_class": "/Script/UMG.UserWidget"} or reparent_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed reparent_blueprint payload/meta mapping")
+            create_widget_call = build_tcp_call(
+                "create_widget_blueprint",
+                {
+                    "package_path": "/Game/UI",
+                    "asset_name": "W_Test",
+                    "parent_class": "",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if create_widget_call.get("params") != {"package_path": "/Game/UI", "asset_name": "W_Test"} or create_widget_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed create_widget_blueprint default payload/meta mapping")
+            add_widget_call = build_tcp_call(
+                "add_widget",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "widget_class": "TextBlock",
+                    "widget_name": "TitleText",
+                    "parent_name": "",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if add_widget_call.get("params") != {"asset_path": "/Game/UI/W_Test", "widget_class": "TextBlock", "widget_name": "TitleText"} or add_widget_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed add_widget default payload/meta mapping")
+            move_widget_call = build_tcp_call(
+                "move_widget",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "widget_name": "TitleText",
+                    "new_parent_name": "Root",
+                    "index": 0,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if move_widget_call.get("params") != {"asset_path": "/Game/UI/W_Test", "widget_name": "TitleText", "new_parent_name": "Root", "index": 0} or move_widget_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed move_widget index payload/meta mapping")
+            canvas_slot_call = build_tcp_call(
+                "set_canvas_slot_layout",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "widget_name": "TitleText",
+                    "position_x": 0,
+                    "position_y": 8,
+                    "size_x": 100,
+                    "size_y": 30,
+                    "anchor_min_x": 0,
+                    "anchor_min_y": 0,
+                    "anchor_max_x": 0,
+                    "anchor_max_y": 0,
+                    "alignment_x": 0,
+                    "alignment_y": 0,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if canvas_slot_call.get("params") != {"asset_path": "/Game/UI/W_Test", "widget_name": "TitleText", "position_y": 8} or canvas_slot_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed set_canvas_slot_layout default payload/meta mapping")
+            widget_properties_call = build_tcp_call(
+                "set_widget_properties",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "widget_name": "TitleText",
+                    "properties": {"Text": "Hello"},
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if widget_properties_call.get("params") != {"asset_path": "/Game/UI/W_Test", "widget_name": "TitleText", "properties": {"Text": "Hello"}} or widget_properties_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed set_widget_properties dict payload/meta mapping")
             spawn_call = build_tcp_call(
                 "actor_spawn",
                 {

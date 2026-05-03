@@ -513,17 +513,17 @@ def viewport_capture(output_path: str = '', show_ui: bool = True, add_filename_s
     return _format_response(_send_command("viewport_capture", params, _request_meta(scope, dry_run)))
 
 
-def create_widget_blueprint(package_path: str, asset_name: str, parent_class: str = '') -> str:
+def create_widget_blueprint(package_path: str, asset_name: str, parent_class: str = '', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `create_widget_blueprint` (Widget)."""
     params = {
         "package_path": package_path,
         "asset_name": asset_name,
         "parent_class": parent_class,
     }
-    return _format_response(_send_command("create_widget_blueprint", params))
+    return _format_response(_send_command("create_widget_blueprint", params, _request_meta(scope, dry_run)))
 
 
-def add_widget(asset_path: str, widget_class: str, widget_name: str, parent_name: str = '') -> str:
+def add_widget(asset_path: str, widget_class: str, widget_name: str, parent_name: str = '', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_widget` (Widget)."""
     params = {
         "asset_path": asset_path,
@@ -531,19 +531,19 @@ def add_widget(asset_path: str, widget_class: str, widget_name: str, parent_name
         "widget_name": widget_name,
         "parent_name": parent_name,
     }
-    return _format_response(_send_command("add_widget", params))
+    return _format_response(_send_command("add_widget", params, _request_meta(scope, dry_run)))
 
 
-def remove_widget(asset_path: str, widget_name: str) -> str:
+def remove_widget(asset_path: str, widget_name: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `remove_widget` (Widget)."""
     params = {
         "asset_path": asset_path,
         "widget_name": widget_name,
     }
-    return _format_response(_send_command("remove_widget", params))
+    return _format_response(_send_command("remove_widget", params, _request_meta(scope, dry_run)))
 
 
-def move_widget(asset_path: str, widget_name: str, new_parent_name: str, index: int = -1) -> str:
+def move_widget(asset_path: str, widget_name: str, new_parent_name: str, index: int = -1, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `move_widget` (Widget)."""
     params = {
         "asset_path": asset_path,
@@ -551,10 +551,10 @@ def move_widget(asset_path: str, widget_name: str, new_parent_name: str, index: 
         "new_parent_name": new_parent_name,
         "index": index,
     }
-    return _format_response(_send_command("move_widget", params))
+    return _format_response(_send_command("move_widget", params, _request_meta(scope, dry_run)))
 
 
-def set_widget_property(asset_path: str, widget_name: str, property_name: str, value: str) -> str:
+def set_widget_property(asset_path: str, widget_name: str, property_name: str, value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_widget_property` (Widget)."""
     params = {
         "asset_path": asset_path,
@@ -562,10 +562,10 @@ def set_widget_property(asset_path: str, widget_name: str, property_name: str, v
         "property_name": property_name,
         "value": value,
     }
-    return _format_response(_send_command("set_widget_property", params))
+    return _format_response(_send_command("set_widget_property", params, _request_meta(scope, dry_run)))
 
 
-def set_slot_property(asset_path: str, widget_name: str, property_name: str, value: str) -> str:
+def set_slot_property(asset_path: str, widget_name: str, property_name: str, value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_slot_property` (Widget)."""
     params = {
         "asset_path": asset_path,
@@ -573,10 +573,10 @@ def set_slot_property(asset_path: str, widget_name: str, property_name: str, val
         "property_name": property_name,
         "value": value,
     }
-    return _format_response(_send_command("set_slot_property", params))
+    return _format_response(_send_command("set_slot_property", params, _request_meta(scope, dry_run)))
 
 
-def set_canvas_slot_layout(asset_path: str, widget_name: str, position_x: float = 0, position_y: float = 0, size_x: float = 100, size_y: float = 30, anchor_min_x: float = 0, anchor_min_y: float = 0, anchor_max_x: float = 0, anchor_max_y: float = 0, alignment_x: float = 0, alignment_y: float = 0) -> str:
+def set_canvas_slot_layout(asset_path: str, widget_name: str, position_x: float = 0, position_y: float = 0, size_x: float = 100, size_y: float = 30, anchor_min_x: float = 0, anchor_min_y: float = 0, anchor_max_x: float = 0, anchor_max_y: float = 0, alignment_x: float = 0, alignment_y: float = 0, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_canvas_slot_layout` (Widget)."""
     params = {
         "asset_path": asset_path,
@@ -592,25 +592,25 @@ def set_canvas_slot_layout(asset_path: str, widget_name: str, position_x: float 
         "alignment_x": alignment_x,
         "alignment_y": alignment_y,
     }
-    return _format_response(_send_command("set_canvas_slot_layout", params))
+    return _format_response(_send_command("set_canvas_slot_layout", params, _request_meta(scope, dry_run)))
 
 
-def set_widget_properties(asset_path: str, widget_name: str, properties: str) -> str:
+def set_widget_properties(asset_path: str, widget_name: str, properties: dict | str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_widget_properties` (Widget)."""
     params = {
         "asset_path": asset_path,
         "widget_name": widget_name,
         "properties": properties,
     }
-    return _format_response(_send_command("set_widget_properties", params))
+    return _format_response(_send_command("set_widget_properties", params, _request_meta(scope, dry_run)))
 
 
-def compile_and_save(asset_path: str) -> str:
+def compile_and_save(asset_path: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `compile_and_save` (Widget)."""
     params = {
         "asset_path": asset_path,
     }
-    return _format_response(_send_command("compile_and_save", params))
+    return _format_response(_send_command("compile_and_save", params, _request_meta(scope, dry_run)))
 
 
 def get_widget_tree(asset_path: str) -> str:
