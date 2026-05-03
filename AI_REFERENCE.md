@@ -776,7 +776,9 @@ now covers read-only payload wrappers, the safe write-scope set
 dry-run set (`actor_delete`, `delete_asset`, and `editor_console_command`).
 Payload fields, optional dict transform values, `scope`, and `dry_run` request
 meta are encoded explicitly so destructive tools keep their existing
-client/server scope gates.
+client/server scope gates. Payload inclusion rules now include explicit
+numeric predicates such as `when_ge_zero`; static tests fail if wrapper metadata
+falls back to unresolved `conditional` rules.
 
 Regenerate them with:
 

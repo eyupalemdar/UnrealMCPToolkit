@@ -115,6 +115,26 @@ def _failures() -> list[str]:
     else:
         failures.append(f"missing generated schemas: {TOOL_SCHEMAS_PATH}")
 
+    conditional_payload_rules = []
+    for tool_name, item in wrapper_spec.get("tools", {}).items():
+        payload_rules = item.get("wrapper", {}).get("payload_params", {})
+        for param_name, rule in payload_rules.items():
+            if rule.get("include") == "conditional":
+                conditional_payload_rules.append(f"{tool_name}.{param_name}")
+    if conditional_payload_rules:
+        failures.append("generated wrapper payload rules contain unresolved conditionals: " + ", ".join(sorted(conditional_payload_rules)[:10]))
+
+    move_widget_index_rule = (
+        wrapper_spec.get("tools", {})
+        .get("move_widget", {})
+        .get("wrapper", {})
+        .get("payload_params", {})
+        .get("index", {})
+        .get("include")
+    )
+    if move_widget_index_rule != "when_ge_zero":
+        failures.append("move_widget.index payload rule should be encoded as when_ge_zero")
+
     if WRAPPER_SPEC_PATH.exists():
         generated_wrapper_spec = json.loads(WRAPPER_SPEC_PATH.read_text(encoding="utf-8"))
         stable_generated = dict(generated_wrapper_spec)

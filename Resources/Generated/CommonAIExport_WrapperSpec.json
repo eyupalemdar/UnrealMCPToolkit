@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T18:15:38.718051Z",
+  "generated_at_utc": "2026-05-03T18:24:03.270252Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "Plugins/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
@@ -8217,7 +8217,7 @@
           },
           "index": {
             "name": "index",
-            "include": "conditional"
+            "include": "when_ge_zero"
           }
         },
         "returns": "str",

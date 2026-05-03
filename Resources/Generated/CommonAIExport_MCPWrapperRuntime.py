@@ -1173,6 +1173,8 @@ def build_tcp_call(tool_name: str, arguments: dict | None = None) -> dict:
             continue
         if include == "when_gt_zero" and not (isinstance(value, (int, float)) and value > 0):
             continue
+        if include == "when_ge_zero" and not (isinstance(value, (int, float)) and value >= 0):
+            continue
         if include == "when_provided" and value == param.get("default"):
             continue
         params[name] = value

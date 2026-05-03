@@ -333,6 +333,10 @@ def _include_rule_for_if(test: ast.AST, param_name: str) -> str:
             comparator = test.comparators[0]
             if isinstance(comparator, ast.Constant) and comparator.value == 0:
                 return "when_gt_zero"
+        if len(test.ops) == 1 and isinstance(test.ops[0], ast.GtE):
+            comparator = test.comparators[0]
+            if isinstance(comparator, ast.Constant) and comparator.value == 0:
+                return "when_ge_zero"
     return "conditional"
 
 
@@ -675,7 +679,7 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
                 default_include = "when_not_none"
             rule = payload_rules.get(param_name, {})
             include = rule.get("include", default_include)
-            if include not in {"always", "when_truthy", "when_not_none", "when_gt_zero", "when_provided", "conditional"}:
+            if include not in {"always", "when_truthy", "when_not_none", "when_gt_zero", "when_ge_zero", "when_provided", "conditional"}:
                 b_can_generate = False
                 break
             if include == "conditional":
@@ -749,6 +753,8 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
         "        if include == \"when_not_none\" and value is None:",
         "            continue",
         "        if include == \"when_gt_zero\" and not (isinstance(value, (int, float)) and value > 0):",
+        "            continue",
+        "        if include == \"when_ge_zero\" and not (isinstance(value, (int, float)) and value >= 0):",
         "            continue",
         "        if include == \"when_provided\" and value == param.get(\"default\"):",
         "            continue",
