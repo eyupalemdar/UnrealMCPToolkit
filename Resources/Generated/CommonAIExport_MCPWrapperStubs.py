@@ -318,6 +318,18 @@ def runtime_game_instance_diagnostics(world: str = 'auto', include_local_players
     return _format_response(_send_command("runtime_game_instance_diagnostics", params))
 
 
+def runtime_level_travel_diagnostics(world: str = 'auto', include_url_options: bool = True, include_preparing_levels: bool = True, url_option_limit: int = 50, preparing_level_limit: int = 100) -> str:
+    """Generated stub for TCP command `runtime_level_travel_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "include_url_options": include_url_options,
+        "include_preparing_levels": include_preparing_levels,
+        "url_option_limit": url_option_limit,
+        "preparing_level_limit": preparing_level_limit,
+    }
+    return _format_response(_send_command("runtime_level_travel_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

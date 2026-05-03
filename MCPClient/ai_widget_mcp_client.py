@@ -1936,6 +1936,33 @@ def runtime_game_instance_diagnostics(
 
 
 @mcp.tool()
+def runtime_level_travel_diagnostics(
+    world: str = "auto",
+    include_url_options: bool = True,
+    include_preparing_levels: bool = True,
+    url_option_limit: int = 50,
+    preparing_level_limit: int = 100,
+) -> str:
+    """
+    Inspect runtime level travel, URL, seamless travel, and NetDriver state.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        include_url_options: Include current FURL option strings.
+        include_preparing_levels: Include names loaded by PrepareMapChange/CommitMapChange.
+        url_option_limit: Maximum URL options returned.
+        preparing_level_limit: Maximum preparing level names returned.
+
+    Returns:
+        JSON with current/local/address URL data, pending server travel state,
+        seamless travel flag, preparing level summary, NetDriver connection
+        summary, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_level_travel_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

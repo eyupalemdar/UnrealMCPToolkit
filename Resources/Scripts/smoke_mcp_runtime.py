@@ -609,6 +609,25 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     if game_instance_diagnostics.get("game_instance_available"):
         _assert(isinstance(game_instance_diagnostics.get("game_instance"), dict), "runtime game instance diagnostics missing GameInstance object")
 
+    level_travel_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_level_travel_diagnostics",
+            {
+                "world": "auto",
+                "include_url_options": True,
+                "include_preparing_levels": True,
+                "url_option_limit": 20,
+                "preparing_level_limit": 20,
+            },
+        ),
+        "runtime_level_travel_diagnostics",
+    )
+    _assert(level_travel_diagnostics.get("world_available") is True, "runtime level travel diagnostics did not report an available world")
+    _assert(isinstance(level_travel_diagnostics.get("travel"), dict), "runtime level travel diagnostics missing travel object")
+    _assert(isinstance(level_travel_diagnostics["travel"].get("current_url"), dict), "runtime level travel diagnostics missing current URL object")
+    _assert(isinstance(level_travel_diagnostics.get("net_driver"), dict), "runtime level travel diagnostics missing NetDriver object")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -672,6 +691,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_commonui_diagnostics_checked": True,
         "runtime_asset_streaming_diagnostics_checked": True,
         "runtime_game_instance_diagnostics_checked": True,
+        "runtime_level_travel_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),

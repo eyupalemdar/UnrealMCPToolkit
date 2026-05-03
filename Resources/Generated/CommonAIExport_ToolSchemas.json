@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T16:45:01.932171Z",
-  "tool_count": 134,
+  "generated_at_utc": "2026-05-03T16:55:20.578561Z",
+  "tool_count": 135,
   "tools": {
     "ping": {
       "type": "object",
@@ -1085,6 +1085,48 @@
           "default": 100
         },
         "save_name_limit": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_level_travel_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "include_url_options": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_preparing_levels": {
+          "type": "boolean",
+          "default": true
+        },
+        "url_option_limit": {
+          "type": "integer",
+          "default": 50
+        },
+        "preparing_level_limit": {
           "type": "integer",
           "default": 100
         }

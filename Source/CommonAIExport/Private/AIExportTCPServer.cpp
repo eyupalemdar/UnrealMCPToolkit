@@ -103,6 +103,8 @@
 #include "UObject/UnrealType.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/NetConnection.h"
+#include "Engine/NetDriver.h"
 #include "PlatformFeatures.h"
 #include "SaveGameSystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
@@ -422,6 +424,56 @@ FString SaveExistsResultToString(ISaveGameSystem::ESaveExistsResult Result)
 	default:
 		return TEXT("Unknown");
 	}
+}
+
+FString TravelTypeToString(ETravelType TravelType)
+{
+	switch (TravelType)
+	{
+	case TRAVEL_Absolute:
+		return TEXT("Absolute");
+	case TRAVEL_Partial:
+		return TEXT("Partial");
+	case TRAVEL_Relative:
+		return TEXT("Relative");
+	default:
+		return TEXT("Unknown");
+	}
+}
+
+TSharedPtr<FJsonObject> BuildURLJson(const FURL& URL, bool bIncludeOptions, int32 OptionLimit)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("text"), URL.ToString(false));
+	Data->SetStringField(TEXT("fully_qualified_text"), URL.ToString(true));
+	Data->SetStringField(TEXT("protocol"), URL.Protocol);
+	Data->SetStringField(TEXT("host"), URL.Host);
+	Data->SetNumberField(TEXT("port"), URL.Port);
+	Data->SetBoolField(TEXT("valid"), URL.Valid != 0);
+	Data->SetStringField(TEXT("map"), URL.Map);
+	Data->SetStringField(TEXT("redirect_url"), URL.RedirectURL);
+	Data->SetStringField(TEXT("portal"), URL.Portal);
+	Data->SetBoolField(TEXT("internal"), URL.IsInternal());
+	Data->SetBoolField(TEXT("local_internal"), URL.IsLocalInternal());
+	Data->SetNumberField(TEXT("option_count"), URL.Op.Num());
+	Data->SetBoolField(TEXT("include_options"), bIncludeOptions);
+	Data->SetNumberField(TEXT("option_limit"), OptionLimit);
+	if (bIncludeOptions)
+	{
+		TArray<TSharedPtr<FJsonValue>> OptionsJson;
+		for (const FString& Option : URL.Op)
+		{
+			if (OptionsJson.Num() >= OptionLimit)
+			{
+				break;
+			}
+			OptionsJson.Add(MakeShared<FJsonValueString>(Option));
+		}
+		Data->SetNumberField(TEXT("returned_option_count"), OptionsJson.Num());
+		Data->SetBoolField(TEXT("options_truncated"), URL.Op.Num() > OptionsJson.Num());
+		Data->SetArrayField(TEXT("options"), OptionsJson);
+	}
+	return Data;
 }
 
 TSharedPtr<FJsonObject> BuildRuntimeObjectReferenceJson(const UObject* Object);
@@ -839,6 +891,44 @@ TSharedPtr<FJsonObject> BuildRuntimeLocalPlayerJson(ULocalPlayer* LocalPlayer, U
 		Data->SetNumberField(TEXT("returned_subsystem_count"), SubsystemsJson.Num());
 		Data->SetBoolField(TEXT("subsystems_truncated"), Subsystems.Num() > SubsystemsJson.Num());
 		Data->SetArrayField(TEXT("subsystems"), SubsystemsJson);
+	}
+
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeNetDriverJson(UNetDriver* NetDriver)
+{
+	TSharedPtr<FJsonObject> Data = BuildRuntimeObjectReferenceJson(NetDriver);
+	if (!NetDriver)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("net_driver_name"), NetDriver->NetDriverName.ToString());
+	Data->SetStringField(TEXT("net_driver_definition"), NetDriver->GetNetDriverDefinition().ToString());
+	Data->SetStringField(TEXT("net_mode"), NetModeToString(NetDriver->GetNetMode()));
+	Data->SetBoolField(TEXT("is_server"), NetDriver->IsServer());
+	Data->SetBoolField(TEXT("server_connection_present"), NetDriver->ServerConnection != nullptr);
+	Data->SetNumberField(TEXT("client_connection_count"), NetDriver->ClientConnections.Num());
+	Data->SetNumberField(TEXT("recently_disconnected_client_count"), NetDriver->RecentlyDisconnectedClients.Num());
+	Data->SetNumberField(TEXT("channel_definition_count"), NetDriver->ChannelDefinitions.Num());
+	Data->SetBoolField(TEXT("replication_driver_present"), NetDriver->GetReplicationDriver() != nullptr);
+
+	if (NetDriver->ServerConnection)
+	{
+		Data->SetObjectField(TEXT("server_connection"), BuildRuntimeObjectReferenceJson(NetDriver->ServerConnection));
+	}
+	if (NetDriver->NetConnectionClass)
+	{
+		Data->SetStringField(TEXT("net_connection_class"), NetDriver->NetConnectionClass->GetPathName());
+	}
+	if (NetDriver->ChildNetConnectionClass)
+	{
+		Data->SetStringField(TEXT("child_net_connection_class"), NetDriver->ChildNetConnectionClass->GetPathName());
+	}
+	if (NetDriver->ReplicationDriverClass)
+	{
+		Data->SetStringField(TEXT("replication_driver_class"), NetDriver->ReplicationDriverClass->GetPathName());
 	}
 
 	return Data;
@@ -1967,6 +2057,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_commonui_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeCommonUIDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_asset_streaming_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAssetStreamingDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_game_instance_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeGameInstanceDiagnostics),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_level_travel_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeLevelTravelDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
 		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
 		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
@@ -5775,6 +5866,89 @@ FString FAIExportTCPServer::HandleRuntimeGameInstanceDiagnostics(TSharedPtr<FJso
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime game instance diagnostics timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeLevelTravelDiagnostics(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+	bool bIncludeURLOptions = true;
+	bool bIncludePreparingLevels = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetBoolField(TEXT("include_url_options"), bIncludeURLOptions);
+		Params->TryGetBoolField(TEXT("include_preparing_levels"), bIncludePreparingLevels);
+	}
+	const int32 URLOptionLimit = ReadClampedIntField(Params, TEXT("url_option_limit"), 50, 0, 500);
+	const int32 PreparingLevelLimit = ReadClampedIntField(Params, TEXT("preparing_level_limit"), 100, 0, 1000);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, bIncludeURLOptions, bIncludePreparingLevels, URLOptionLimit, PreparingLevelLimit, Promise, this]()
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("requested_world"), WorldSelector);
+		Data->SetObjectField(TEXT("pie"), BuildPIEStateJson());
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetBoolField(TEXT("world_available"), World != nullptr);
+		if (!World)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			Data->SetArrayField(TEXT("warnings"), Warnings);
+			Promise->SetValue(CreateSuccessResponse(Data));
+			return;
+		}
+
+		if (WorldSource == TEXT("editor") && (WorldSelector == TEXT("auto") || WorldSelector == TEXT("pie") || WorldSelector == TEXT("runtime") || WorldSelector == TEXT("play")))
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE is inactive; level travel diagnostics reflect the editor world")));
+		}
+
+		Data->SetObjectField(TEXT("world"), BuildRuntimeWorldJson(World, WorldSource));
+
+		TSharedPtr<FJsonObject> TravelJson = MakeShared<FJsonObject>();
+		TravelJson->SetObjectField(TEXT("current_url"), BuildURLJson(World->URL, bIncludeURLOptions, URLOptionLimit));
+		TravelJson->SetStringField(TEXT("local_url"), World->GetLocalURL());
+		TravelJson->SetStringField(TEXT("address_url"), World->GetAddressURL());
+		TravelJson->SetStringField(TEXT("next_url"), World->NextURL);
+		TravelJson->SetBoolField(TEXT("server_travel_pending"), !World->NextURL.IsEmpty() || World->NextSwitchCountdown > 0.0f);
+		TravelJson->SetNumberField(TEXT("next_switch_countdown"), World->NextSwitchCountdown);
+		TravelJson->SetStringField(TEXT("next_travel_type"), TravelTypeToString(World->NextTravelType));
+		TravelJson->SetBoolField(TEXT("seamless_travel_active"), World->IsInSeamlessTravel());
+		TravelJson->SetNumberField(TEXT("preparing_level_count"), World->PreparingLevelNames.Num());
+		TravelJson->SetStringField(TEXT("committed_persistent_level_name"), World->CommittedPersistentLevelName.ToString());
+		TravelJson->SetBoolField(TEXT("include_preparing_levels"), bIncludePreparingLevels);
+		TravelJson->SetNumberField(TEXT("preparing_level_limit"), PreparingLevelLimit);
+		if (bIncludePreparingLevels)
+		{
+			TArray<TSharedPtr<FJsonValue>> PreparingLevelsJson;
+			for (const FName& LevelName : World->PreparingLevelNames)
+			{
+				if (PreparingLevelsJson.Num() >= PreparingLevelLimit)
+				{
+					break;
+				}
+				PreparingLevelsJson.Add(MakeShared<FJsonValueString>(LevelName.ToString()));
+			}
+			TravelJson->SetNumberField(TEXT("returned_preparing_level_count"), PreparingLevelsJson.Num());
+			TravelJson->SetBoolField(TEXT("preparing_levels_truncated"), World->PreparingLevelNames.Num() > PreparingLevelsJson.Num());
+			TravelJson->SetArrayField(TEXT("preparing_levels"), PreparingLevelsJson);
+		}
+		Data->SetObjectField(TEXT("travel"), TravelJson);
+
+		Data->SetObjectField(TEXT("net_driver"), BuildRuntimeNetDriverJson(World->GetNetDriver()));
+
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime level travel diagnostics timed out"));
 	return Future.Get();
 }
 
