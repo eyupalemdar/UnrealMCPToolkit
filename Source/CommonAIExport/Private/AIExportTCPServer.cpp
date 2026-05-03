@@ -896,7 +896,53 @@ TSharedPtr<FJsonObject> BuildRuntimeLocalPlayerJson(ULocalPlayer* LocalPlayer, U
 	return Data;
 }
 
-TSharedPtr<FJsonObject> BuildRuntimeNetDriverJson(UNetDriver* NetDriver)
+TSharedPtr<FJsonObject> BuildRuntimeNetConnectionJson(UNetConnection* Connection, bool bIncludeURLOptions, int32 URLOptionLimit)
+{
+	TSharedPtr<FJsonObject> Data = BuildRuntimeObjectReferenceJson(Connection);
+	if (!Connection)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("state"), LexToString(Connection->GetConnectionState()));
+	Data->SetBoolField(TEXT("closing_or_closed"), Connection->IsClosingOrClosed());
+	Data->SetBoolField(TEXT("pending_destroy"), Connection->bPendingDestroy != 0);
+	Data->SetBoolField(TEXT("internal_ack"), Connection->IsInternalAck());
+	Data->SetBoolField(TEXT("replay"), Connection->IsReplay());
+	Data->SetBoolField(TEXT("force_initial_dirty"), Connection->IsForceInitialDirty());
+	Data->SetBoolField(TEXT("unlimited_bunch_size_allowed"), Connection->IsUnlimitedBunchSizeAllowed());
+	Data->SetStringField(TEXT("remote_address"), Connection->RemoteAddressToString());
+	Data->SetStringField(TEXT("low_level_remote_address"), Connection->LowLevelGetRemoteAddress(true));
+	Data->SetStringField(TEXT("client_world_package_name"), Connection->GetClientWorldPackageName().ToString());
+	Data->SetStringField(TEXT("client_login_state"), EClientLoginState::ToString(Connection->ClientLoginState));
+	Data->SetStringField(TEXT("request_url"), Connection->RequestURL);
+	Data->SetObjectField(TEXT("url"), BuildURLJson(Connection->URL, bIncludeURLOptions, URLOptionLimit));
+	Data->SetNumberField(TEXT("current_net_speed"), Connection->CurrentNetSpeed);
+	Data->SetNumberField(TEXT("configured_internet_speed"), Connection->ConfiguredInternetSpeed);
+	Data->SetNumberField(TEXT("configured_lan_speed"), Connection->ConfiguredLanSpeed);
+	Data->SetNumberField(TEXT("max_packet"), Connection->MaxPacket);
+	Data->SetNumberField(TEXT("packet_overhead"), Connection->PacketOverhead);
+	Data->SetNumberField(TEXT("queued_bits"), Connection->QueuedBits);
+	Data->SetNumberField(TEXT("tick_count"), Connection->TickCount);
+	Data->SetNumberField(TEXT("open_channel_count"), Connection->OpenChannels.Num());
+	Data->SetNumberField(TEXT("child_connection_count"), Connection->Children.Num());
+	Data->SetNumberField(TEXT("sent_temporary_actor_count"), Connection->SentTemporaries.Num());
+	Data->SetNumberField(TEXT("last_receive_time"), Connection->LastReceiveTime);
+	Data->SetNumberField(TEXT("last_receive_realtime"), Connection->LastReceiveRealtime);
+	Data->SetNumberField(TEXT("last_good_packet_realtime"), Connection->LastGoodPacketRealtime);
+	Data->SetNumberField(TEXT("last_send_time"), Connection->LastSendTime);
+	Data->SetNumberField(TEXT("last_tick_time"), Connection->LastTickTime);
+	Data->SetNumberField(TEXT("connect_time"), Connection->GetConnectTime());
+	Data->SetNumberField(TEXT("last_recv_ack_time"), Connection->GetLastRecvAckTime());
+
+	Data->SetObjectField(TEXT("driver"), BuildRuntimeObjectReferenceJson(Connection->GetDriver()));
+	Data->SetObjectField(TEXT("player_controller"), BuildRuntimeObjectReferenceJson(Connection->PlayerController));
+	Data->SetObjectField(TEXT("owning_actor"), BuildRuntimeObjectReferenceJson(Connection->OwningActor));
+	Data->SetObjectField(TEXT("view_target"), BuildRuntimeObjectReferenceJson(Connection->ViewTarget));
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeNetDriverJson(UNetDriver* NetDriver, bool bIncludeConnections = false, int32 ConnectionLimit = 0, bool bIncludeURLOptions = false, int32 URLOptionLimit = 0)
 {
 	TSharedPtr<FJsonObject> Data = BuildRuntimeObjectReferenceJson(NetDriver);
 	if (!NetDriver)
@@ -913,10 +959,14 @@ TSharedPtr<FJsonObject> BuildRuntimeNetDriverJson(UNetDriver* NetDriver)
 	Data->SetNumberField(TEXT("recently_disconnected_client_count"), NetDriver->RecentlyDisconnectedClients.Num());
 	Data->SetNumberField(TEXT("channel_definition_count"), NetDriver->ChannelDefinitions.Num());
 	Data->SetBoolField(TEXT("replication_driver_present"), NetDriver->GetReplicationDriver() != nullptr);
+	Data->SetBoolField(TEXT("include_connections"), bIncludeConnections);
+	Data->SetNumberField(TEXT("connection_limit"), ConnectionLimit);
 
 	if (NetDriver->ServerConnection)
 	{
-		Data->SetObjectField(TEXT("server_connection"), BuildRuntimeObjectReferenceJson(NetDriver->ServerConnection));
+		Data->SetObjectField(TEXT("server_connection"), bIncludeConnections
+			? BuildRuntimeNetConnectionJson(NetDriver->ServerConnection, bIncludeURLOptions, URLOptionLimit)
+			: BuildRuntimeObjectReferenceJson(NetDriver->ServerConnection));
 	}
 	if (NetDriver->NetConnectionClass)
 	{
@@ -929,6 +979,26 @@ TSharedPtr<FJsonObject> BuildRuntimeNetDriverJson(UNetDriver* NetDriver)
 	if (NetDriver->ReplicationDriverClass)
 	{
 		Data->SetStringField(TEXT("replication_driver_class"), NetDriver->ReplicationDriverClass->GetPathName());
+	}
+
+	if (bIncludeConnections)
+	{
+		TArray<TSharedPtr<FJsonValue>> ClientConnectionsJson;
+		for (UNetConnection* ClientConnection : NetDriver->ClientConnections)
+		{
+			if (!ClientConnection)
+			{
+				continue;
+			}
+			if (ClientConnectionsJson.Num() >= ConnectionLimit)
+			{
+				break;
+			}
+			ClientConnectionsJson.Add(MakeShared<FJsonValueObject>(BuildRuntimeNetConnectionJson(ClientConnection, bIncludeURLOptions, URLOptionLimit)));
+		}
+		Data->SetNumberField(TEXT("returned_client_connection_count"), ClientConnectionsJson.Num());
+		Data->SetBoolField(TEXT("client_connections_truncated"), NetDriver->ClientConnections.Num() > ClientConnectionsJson.Num());
+		Data->SetArrayField(TEXT("client_connections"), ClientConnectionsJson);
 	}
 
 	return Data;
@@ -2058,6 +2128,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_asset_streaming_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAssetStreamingDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_game_instance_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeGameInstanceDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_level_travel_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeLevelTravelDiagnostics),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_multiplayer_connection_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeMultiplayerConnectionDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
 		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
 		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
@@ -5949,6 +6020,188 @@ FString FAIExportTCPServer::HandleRuntimeLevelTravelDiagnostics(TSharedPtr<FJson
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime level travel diagnostics timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeMultiplayerConnectionDiagnostics(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+	bool bIncludeConnections = true;
+	bool bIncludePlayerControllers = true;
+	bool bIncludeWorldContext = true;
+	bool bIncludeURLOptions = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetBoolField(TEXT("include_connections"), bIncludeConnections);
+		Params->TryGetBoolField(TEXT("include_player_controllers"), bIncludePlayerControllers);
+		Params->TryGetBoolField(TEXT("include_world_context"), bIncludeWorldContext);
+		Params->TryGetBoolField(TEXT("include_url_options"), bIncludeURLOptions);
+	}
+	const int32 ConnectionLimit = ReadClampedIntField(Params, TEXT("connection_limit"), 32, 0, 512);
+	const int32 PlayerControllerLimit = ReadClampedIntField(Params, TEXT("player_controller_limit"), 64, 0, 1024);
+	const int32 URLOptionLimit = ReadClampedIntField(Params, TEXT("url_option_limit"), 50, 0, 500);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, bIncludeConnections, bIncludePlayerControllers, bIncludeWorldContext, bIncludeURLOptions, ConnectionLimit, PlayerControllerLimit, URLOptionLimit, Promise, this]()
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("requested_world"), WorldSelector);
+		Data->SetObjectField(TEXT("pie"), BuildPIEStateJson());
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetBoolField(TEXT("world_available"), World != nullptr);
+		if (!World)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			Data->SetArrayField(TEXT("warnings"), Warnings);
+			Promise->SetValue(CreateSuccessResponse(Data));
+			return;
+		}
+
+		if (WorldSource == TEXT("editor") && (WorldSelector == TEXT("auto") || WorldSelector == TEXT("pie") || WorldSelector == TEXT("runtime") || WorldSelector == TEXT("play")))
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE is inactive; multiplayer diagnostics reflect the editor world")));
+		}
+
+		Data->SetObjectField(TEXT("world"), BuildRuntimeWorldJson(World, WorldSource));
+
+		UGameInstance* GameInstance = World->GetGameInstance();
+		TSharedPtr<FJsonObject> OnlineSessionJson = MakeShared<FJsonObject>();
+		OnlineSessionJson->SetBoolField(TEXT("game_instance_available"), GameInstance != nullptr);
+		if (GameInstance)
+		{
+			OnlineSessionJson->SetObjectField(TEXT("game_instance"), BuildRuntimeObjectReferenceJson(GameInstance));
+			OnlineSessionJson->SetStringField(TEXT("online_platform_name"), GameInstance->GetOnlinePlatformName().ToString());
+			OnlineSessionJson->SetBoolField(TEXT("online_session_present"), GameInstance->GetOnlineSession() != nullptr);
+			if (UClass* OnlineSessionClass = GameInstance->GetOnlineSessionClass())
+			{
+				OnlineSessionJson->SetStringField(TEXT("online_session_class"), OnlineSessionClass->GetPathName());
+			}
+		}
+		Data->SetObjectField(TEXT("online_session"), OnlineSessionJson);
+
+		UNetDriver* WorldNetDriver = World->GetNetDriver();
+		Data->SetObjectField(TEXT("net_driver"), BuildRuntimeNetDriverJson(WorldNetDriver, bIncludeConnections, ConnectionLimit, bIncludeURLOptions, URLOptionLimit));
+
+		if (bIncludePlayerControllers)
+		{
+			TArray<TSharedPtr<FJsonValue>> ControllersJson;
+			int32 TotalControllerCount = 0;
+			for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+			{
+				APlayerController* Controller = It->Get();
+				if (!Controller)
+				{
+					continue;
+				}
+				++TotalControllerCount;
+				if (ControllersJson.Num() >= PlayerControllerLimit)
+				{
+					continue;
+				}
+
+				TSharedPtr<FJsonObject> ControllerJson = BuildRuntimeObjectReferenceJson(Controller);
+				ControllerJson->SetBoolField(TEXT("is_local_controller"), Controller->IsLocalController());
+				ControllerJson->SetStringField(TEXT("net_mode"), NetModeToString(Controller->GetNetMode()));
+				if (APawn* Pawn = Controller->GetPawn())
+				{
+					ControllerJson->SetObjectField(TEXT("pawn"), BuildRuntimeActorJson(Pawn));
+				}
+				if (UNetConnection* NetConnection = Controller->GetNetConnection())
+				{
+					ControllerJson->SetBoolField(TEXT("net_connection_present"), true);
+					ControllerJson->SetObjectField(TEXT("net_connection"), bIncludeConnections
+						? BuildRuntimeNetConnectionJson(NetConnection, bIncludeURLOptions, URLOptionLimit)
+						: BuildRuntimeObjectReferenceJson(NetConnection));
+				}
+				else
+				{
+					ControllerJson->SetBoolField(TEXT("net_connection_present"), false);
+				}
+				if (Controller->PlayerState)
+				{
+					ControllerJson->SetStringField(TEXT("player_state_name"), Controller->PlayerState->GetPlayerName());
+					ControllerJson->SetObjectField(TEXT("player_state"), BuildRuntimeObjectReferenceJson(Controller->PlayerState));
+				}
+				ControllersJson.Add(MakeShared<FJsonValueObject>(ControllerJson));
+			}
+			Data->SetNumberField(TEXT("player_controller_count"), TotalControllerCount);
+			Data->SetNumberField(TEXT("returned_player_controller_count"), ControllersJson.Num());
+			Data->SetBoolField(TEXT("player_controllers_truncated"), TotalControllerCount > ControllersJson.Num());
+			Data->SetArrayField(TEXT("player_controllers"), ControllersJson);
+		}
+
+		if (bIncludeWorldContext && GEngine)
+		{
+			if (const FWorldContext* WorldContext = GEngine->GetWorldContextFromWorld(World))
+			{
+				TSharedPtr<FJsonObject> ContextJson = MakeShared<FJsonObject>();
+				ContextJson->SetBoolField(TEXT("present"), true);
+				ContextJson->SetStringField(TEXT("context_handle"), WorldContext->ContextHandle.ToString());
+				ContextJson->SetStringField(TEXT("world_type"), LexToString(WorldContext->WorldType));
+				ContextJson->SetStringField(TEXT("travel_url"), WorldContext->TravelURL);
+				ContextJson->SetStringField(TEXT("travel_type"), TravelTypeToString(static_cast<ETravelType>(WorldContext->TravelType)));
+				ContextJson->SetObjectField(TEXT("last_url"), BuildURLJson(WorldContext->LastURL, bIncludeURLOptions, URLOptionLimit));
+				ContextJson->SetObjectField(TEXT("last_remote_url"), BuildURLJson(WorldContext->LastRemoteURL, bIncludeURLOptions, URLOptionLimit));
+				ContextJson->SetBoolField(TEXT("pending_net_game_present"), WorldContext->PendingNetGame != nullptr);
+				ContextJson->SetBoolField(TEXT("waiting_on_online_subsystem"), WorldContext->bWaitingOnOnlineSubsystem);
+				ContextJson->SetBoolField(TEXT("run_as_dedicated"), WorldContext->RunAsDedicated);
+				ContextJson->SetBoolField(TEXT("primary_pie_instance"), WorldContext->bIsPrimaryPIEInstance);
+				ContextJson->SetNumberField(TEXT("pie_instance"), WorldContext->PIEInstance);
+				ContextJson->SetStringField(TEXT("pie_prefix"), WorldContext->PIEPrefix);
+				ContextJson->SetNumberField(TEXT("active_net_driver_count"), WorldContext->ActiveNetDrivers.Num());
+				ContextJson->SetNumberField(TEXT("levels_to_load_for_pending_map_change_count"), WorldContext->LevelsToLoadForPendingMapChange.Num());
+				ContextJson->SetNumberField(TEXT("loaded_levels_for_pending_map_change_count"), WorldContext->LoadedLevelsForPendingMapChange.Num());
+				ContextJson->SetBoolField(TEXT("should_commit_pending_map_change"), WorldContext->bShouldCommitPendingMapChange != 0);
+				ContextJson->SetStringField(TEXT("pending_map_change_failure_description"), WorldContext->PendingMapChangeFailureDescription);
+				ContextJson->SetObjectField(TEXT("game_viewport"), BuildRuntimeObjectReferenceJson(WorldContext->GameViewport));
+				ContextJson->SetObjectField(TEXT("owning_game_instance"), BuildRuntimeObjectReferenceJson(WorldContext->OwningGameInstance));
+
+				if (UPendingNetGame* PendingNetGame = WorldContext->PendingNetGame)
+				{
+					TSharedPtr<FJsonObject> PendingJson = BuildRuntimeObjectReferenceJson(PendingNetGame);
+					PendingJson->SetObjectField(TEXT("url"), BuildURLJson(PendingNetGame->URL, bIncludeURLOptions, URLOptionLimit));
+					PendingJson->SetBoolField(TEXT("successfully_connected"), PendingNetGame->bSuccessfullyConnected);
+					PendingJson->SetBoolField(TEXT("sent_join_request"), PendingNetGame->bSentJoinRequest);
+					PendingJson->SetBoolField(TEXT("loaded_map_successfully"), PendingNetGame->bLoadedMapSuccessfully);
+					PendingJson->SetBoolField(TEXT("failed_travel"), PendingNetGame->HasFailedTravel());
+					PendingJson->SetStringField(TEXT("connection_error"), PendingNetGame->ConnectionError);
+					PendingJson->SetObjectField(TEXT("net_driver"), BuildRuntimeNetDriverJson(PendingNetGame->GetNetDriver(), bIncludeConnections, ConnectionLimit, bIncludeURLOptions, URLOptionLimit));
+					PendingJson->SetBoolField(TEXT("demo_net_driver_present"), PendingNetGame->GetDemoNetDriver() != nullptr);
+					ContextJson->SetObjectField(TEXT("pending_net_game"), PendingJson);
+				}
+
+				TArray<TSharedPtr<FJsonValue>> ActiveNetDriversJson;
+				for (const FNamedNetDriver& NamedDriver : WorldContext->ActiveNetDrivers)
+				{
+					TSharedPtr<FJsonObject> NamedDriverJson = MakeShared<FJsonObject>();
+					NamedDriverJson->SetBoolField(TEXT("present"), NamedDriver.NetDriver != nullptr);
+					NamedDriverJson->SetObjectField(TEXT("net_driver"), BuildRuntimeNetDriverJson(NamedDriver.NetDriver, bIncludeConnections, ConnectionLimit, bIncludeURLOptions, URLOptionLimit));
+					ActiveNetDriversJson.Add(MakeShared<FJsonValueObject>(NamedDriverJson));
+				}
+				ContextJson->SetArrayField(TEXT("active_net_drivers"), ActiveNetDriversJson);
+				Data->SetObjectField(TEXT("world_context"), ContextJson);
+			}
+			else
+			{
+				TSharedPtr<FJsonObject> ContextJson = MakeShared<FJsonObject>();
+				ContextJson->SetBoolField(TEXT("present"), false);
+				Data->SetObjectField(TEXT("world_context"), ContextJson);
+				Warnings.Add(MakeShared<FJsonValueString>(TEXT("No engine world context was found for the selected world")));
+			}
+		}
+
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime multiplayer connection diagnostics timed out"));
 	return Future.Get();
 }
 

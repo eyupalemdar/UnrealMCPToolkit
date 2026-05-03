@@ -330,6 +330,21 @@ def runtime_level_travel_diagnostics(world: str = 'auto', include_url_options: b
     return _format_response(_send_command("runtime_level_travel_diagnostics", params))
 
 
+def runtime_multiplayer_connection_diagnostics(world: str = 'auto', include_connections: bool = True, include_player_controllers: bool = True, include_world_context: bool = True, include_url_options: bool = True, connection_limit: int = 32, player_controller_limit: int = 64, url_option_limit: int = 50) -> str:
+    """Generated stub for TCP command `runtime_multiplayer_connection_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "include_connections": include_connections,
+        "include_player_controllers": include_player_controllers,
+        "include_world_context": include_world_context,
+        "include_url_options": include_url_options,
+        "connection_limit": connection_limit,
+        "player_controller_limit": player_controller_limit,
+        "url_option_limit": url_option_limit,
+    }
+    return _format_response(_send_command("runtime_multiplayer_connection_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

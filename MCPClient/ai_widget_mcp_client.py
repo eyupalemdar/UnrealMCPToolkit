@@ -1963,6 +1963,39 @@ def runtime_level_travel_diagnostics(
 
 
 @mcp.tool()
+def runtime_multiplayer_connection_diagnostics(
+    world: str = "auto",
+    include_connections: bool = True,
+    include_player_controllers: bool = True,
+    include_world_context: bool = True,
+    include_url_options: bool = True,
+    connection_limit: int = 32,
+    player_controller_limit: int = 64,
+    url_option_limit: int = 50,
+) -> str:
+    """
+    Inspect runtime multiplayer, NetDriver, connection, and online-session shell state.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        include_connections: Include detailed UNetConnection summaries.
+        include_player_controllers: Include PlayerController net connection summaries.
+        include_world_context: Include FWorldContext, PendingNetGame, and active NetDriver state.
+        include_url_options: Include FURL option strings where URLs are returned.
+        connection_limit: Maximum client connection records returned per NetDriver.
+        player_controller_limit: Maximum PlayerController records returned.
+        url_option_limit: Maximum URL option records returned per URL.
+
+    Returns:
+        JSON with selected world metadata, GameInstance online-session presence,
+        NetDriver summaries, connection state, PlayerController connection state,
+        world-context pending network travel data, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_multiplayer_connection_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

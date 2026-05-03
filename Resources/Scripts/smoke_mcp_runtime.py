@@ -628,6 +628,29 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     _assert(isinstance(level_travel_diagnostics["travel"].get("current_url"), dict), "runtime level travel diagnostics missing current URL object")
     _assert(isinstance(level_travel_diagnostics.get("net_driver"), dict), "runtime level travel diagnostics missing NetDriver object")
 
+    multiplayer_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_multiplayer_connection_diagnostics",
+            {
+                "world": "auto",
+                "include_connections": True,
+                "include_player_controllers": True,
+                "include_world_context": True,
+                "include_url_options": True,
+                "connection_limit": 8,
+                "player_controller_limit": 8,
+                "url_option_limit": 20,
+            },
+        ),
+        "runtime_multiplayer_connection_diagnostics",
+    )
+    _assert(multiplayer_diagnostics.get("world_available") is True, "runtime multiplayer diagnostics did not report an available world")
+    _assert(isinstance(multiplayer_diagnostics.get("online_session"), dict), "runtime multiplayer diagnostics missing online session object")
+    _assert(isinstance(multiplayer_diagnostics.get("net_driver"), dict), "runtime multiplayer diagnostics missing NetDriver object")
+    _assert(isinstance(multiplayer_diagnostics.get("world_context"), dict), "runtime multiplayer diagnostics missing world context object")
+    _assert(isinstance(multiplayer_diagnostics.get("player_controllers"), list), "runtime multiplayer diagnostics missing player controller array")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -692,6 +715,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_asset_streaming_diagnostics_checked": True,
         "runtime_game_instance_diagnostics_checked": True,
         "runtime_level_travel_diagnostics_checked": True,
+        "runtime_multiplayer_connection_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),

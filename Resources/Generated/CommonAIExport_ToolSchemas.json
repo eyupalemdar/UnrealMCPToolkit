@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T16:55:20.578561Z",
-  "tool_count": 135,
+  "generated_at_utc": "2026-05-03T17:08:16.642776Z",
+  "tool_count": 136,
   "tools": {
     "ping": {
       "type": "object",
@@ -1129,6 +1129,60 @@
         "preparing_level_limit": {
           "type": "integer",
           "default": 100
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_multiplayer_connection_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "include_connections": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_player_controllers": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_world_context": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_url_options": {
+          "type": "boolean",
+          "default": true
+        },
+        "connection_limit": {
+          "type": "integer",
+          "default": 32
+        },
+        "player_controller_limit": {
+          "type": "integer",
+          "default": 64
+        },
+        "url_option_limit": {
+          "type": "integer",
+          "default": 50
         }
       },
       "required": [],
