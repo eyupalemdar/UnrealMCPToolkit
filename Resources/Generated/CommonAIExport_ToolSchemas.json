@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T18:24:03.212101Z",
+  "generated_at_utc": "2026-05-03T18:34:54.601368Z",
   "tool_count": 140,
   "tools": {
     "ping": {
@@ -3859,6 +3859,14 @@
       "properties": {
         "asset_path": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3903,6 +3911,14 @@
               "type": "null"
             }
           ]
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3938,6 +3954,14 @@
         },
         "value": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -4137,6 +4161,14 @@
       "properties": {
         "asset_path": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -4172,6 +4204,14 @@
         "new_asset_name": {
           "type": "string",
           "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -4327,6 +4367,14 @@
         "recursive": {
           "type": "boolean",
           "default": true
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -4386,6 +4434,14 @@
               "type": "null"
             }
           ]
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -4418,6 +4474,14 @@
         },
         "mapping_index": {
           "type": "integer"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [

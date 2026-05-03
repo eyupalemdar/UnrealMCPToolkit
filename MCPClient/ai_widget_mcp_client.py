@@ -4124,17 +4124,23 @@ def get_material_instance_info(asset_path: str) -> str:
 # =============================================================================
 
 @mcp.tool()
-def save_data_asset(asset_path: str) -> str:
+def save_data_asset(
+    asset_path: str,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Save a Data Asset to disk without compiling.
 
     Args:
         asset_path: Asset path, e.g. "/Game/Data/DA_MyData"
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without saving.
 
     Returns:
         JSON with saved status.
     """
-    return _format_response(_send_command("save_data_asset", {"asset_path": asset_path}))
+    return _send_generated_tcp_tool("save_data_asset", locals())
 
 
 # =============================================================================
@@ -4938,7 +4944,9 @@ def create_asset(
     package_path: str,
     asset_name: str,
     asset_type: str,
-    properties: dict | None = None
+    properties: dict | None = None,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Create a new asset of the given type.
@@ -4951,25 +4959,22 @@ def create_asset(
                    SoundControlBus, SoundControlBusMix, SoundModulationPatch,
                    PhysicalMaterial
         properties: Optional dict of initial property values (ImportText format)
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without creating the asset.
 
     Returns:
         JSON with asset_path, asset_name, asset_type, class.
     """
-    params = {
-        "package_path": package_path,
-        "asset_name": asset_name,
-        "asset_type": asset_type,
-    }
-    if properties:
-        params["properties"] = properties
-    return _format_response(_send_command("create_asset", params))
+    return _send_generated_tcp_tool("create_asset", locals())
 
 
 @mcp.tool()
 def set_asset_property(
     asset_path: str,
     property_path: str,
-    value: str
+    value: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a property on any loaded asset using reflection.
@@ -4979,15 +4984,13 @@ def set_asset_property(
         property_path: Property path with dot/bracket notation,
                       e.g. "ValueType", "Triggers[0].ActuationThreshold"
         value: Value in UE ImportText format
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without changing the asset.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_asset_property", {
-        "asset_path": asset_path,
-        "property_path": property_path,
-        "value": value,
-    }))
+    return _send_generated_tcp_tool("set_asset_property", locals())
 
 
 @mcp.tool()
@@ -5170,7 +5173,12 @@ def list_redirectors(folder_path: str, recursive: bool = True) -> str:
 
 
 @mcp.tool()
-def fixup_redirectors(folder_path: str, recursive: bool = True) -> str:
+def fixup_redirectors(
+    folder_path: str,
+    recursive: bool = True,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Update all references to redirectors under a folder and delete the redirectors
     (UE "Fix Up Redirectors in Folder" equivalent).
@@ -5184,6 +5192,8 @@ def fixup_redirectors(folder_path: str, recursive: bool = True) -> str:
     Args:
         folder_path: e.g. "/Game/UI/Hud/Textures/Tiles"
         recursive: recurse into subfolders (default True)
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without fixing redirectors.
 
     Returns:
         JSON with:
@@ -5196,33 +5206,36 @@ def fixup_redirectors(folder_path: str, recursive: bool = True) -> str:
           - skipped            : array of { redirector_path, reason }
                                  reason in { "load_failed", "stale_no_destination" }
     """
-    return _format_response(_send_command("fixup_redirectors", {
-        "folder_path": folder_path,
-        "recursive": recursive,
-    }))
+    return _send_generated_tcp_tool("fixup_redirectors", locals())
 
 
 @mcp.tool()
-def save_asset(asset_path: str) -> str:
+def save_asset(
+    asset_path: str,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Save any loaded asset to disk.
 
     Args:
         asset_path: Asset path, e.g. "/Game/Input/IA_Jump"
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without saving.
 
     Returns:
         JSON with saved status.
     """
-    return _format_response(_send_command("save_asset", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("save_asset", locals())
 
 
 @mcp.tool()
 def rename_asset(
     asset_path: str,
     new_package_path: str = "",
-    new_asset_name: str = ""
+    new_asset_name: str = "",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Rename and/or move an asset. Uses UE AssetTools::RenameAssets which automatically
@@ -5237,6 +5250,8 @@ def rename_asset(
                          If empty, keeps current folder.
         new_asset_name: New asset name (optional), e.g. "W_IconCircleButton"
                        If empty, keeps current name.
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without renaming or moving.
 
     Returns:
         JSON with renamed status, old_path, new_path, new_package_path, new_asset_name.
@@ -5247,12 +5262,7 @@ def rename_asset(
         - Operation runs on Game Thread; up to 120s timeout.
         - For Blueprint/Widget Blueprint assets, pass the BP path (not the _C generated class).
     """
-    params = {"asset_path": asset_path}
-    if new_package_path:
-        params["new_package_path"] = new_package_path
-    if new_asset_name:
-        params["new_asset_name"] = new_asset_name
-    return _format_response(_send_command("rename_asset", params))
+    return _send_generated_tcp_tool("rename_asset", locals())
 
 
 @mcp.tool()
@@ -5304,7 +5314,9 @@ def add_input_mapping(
     input_action_path: str,
     key: str,
     triggers: list[str] | None = None,
-    modifiers: list[str] | None = None
+    modifiers: list[str] | None = None,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a key mapping to an InputMappingContext.
@@ -5320,26 +5332,21 @@ def add_input_mapping(
         modifiers: Optional modifier class short names, e.g. ["Negate", "SwizzleAxis"]
                   Available: Negate, DeadZone, Scalar, ScaleByDeltaTime,
                             FOVScaling, ResponseCurve, Smooth, SwizzleAxis, ToWorldSpace
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without adding a mapping.
 
     Returns:
         JSON with success status, action and key.
     """
-    params = {
-        "asset_path": asset_path,
-        "input_action_path": input_action_path,
-        "key": key,
-    }
-    if triggers:
-        params["triggers"] = triggers
-    if modifiers:
-        params["modifiers"] = modifiers
-    return _format_response(_send_command("add_input_mapping", params))
+    return _send_generated_tcp_tool("add_input_mapping", locals())
 
 
 @mcp.tool()
 def remove_input_mapping(
     asset_path: str,
-    mapping_index: int
+    mapping_index: int,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Remove a key mapping from an InputMappingContext by index.
@@ -5347,14 +5354,13 @@ def remove_input_mapping(
     Args:
         asset_path: Path to InputMappingContext
         mapping_index: Index of the mapping to remove (0-based)
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without removing a mapping.
 
     Returns:
         JSON with removal confirmation.
     """
-    return _format_response(_send_command("remove_input_mapping", {
-        "asset_path": asset_path,
-        "mapping_index": mapping_index,
-    }))
+    return _send_generated_tcp_tool("remove_input_mapping", locals())
 
 
 @mcp.tool()

@@ -1052,15 +1052,15 @@ def get_material_instance_info(asset_path: str) -> str:
     return _format_response(_send_command("get_material_instance_info", params))
 
 
-def save_data_asset(asset_path: str) -> str:
+def save_data_asset(asset_path: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `save_data_asset` (DataAsset)."""
     params = {
         "asset_path": asset_path,
     }
-    return _format_response(_send_command("save_data_asset", params))
+    return _format_response(_send_command("save_data_asset", params, _request_meta(scope, dry_run)))
 
 
-def create_asset(package_path: str, asset_name: str, asset_type: str, properties: dict | None = None) -> str:
+def create_asset(package_path: str, asset_name: str, asset_type: str, properties: dict | None = None, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `create_asset` (Asset)."""
     params = {
         "package_path": package_path,
@@ -1068,17 +1068,17 @@ def create_asset(package_path: str, asset_name: str, asset_type: str, properties
         "asset_type": asset_type,
         "properties": properties,
     }
-    return _format_response(_send_command("create_asset", params))
+    return _format_response(_send_command("create_asset", params, _request_meta(scope, dry_run)))
 
 
-def set_asset_property(asset_path: str, property_path: str, value: str) -> str:
+def set_asset_property(asset_path: str, property_path: str, value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_asset_property` (Asset)."""
     params = {
         "asset_path": asset_path,
         "property_path": property_path,
         "value": value,
     }
-    return _format_response(_send_command("set_asset_property", params))
+    return _format_response(_send_command("set_asset_property", params, _request_meta(scope, dry_run)))
 
 
 def get_asset_properties(asset_path: str) -> str:
@@ -1128,22 +1128,22 @@ def asset_validate_light(asset_path: str) -> str:
     return _format_response(_send_command("asset_validate_light", params))
 
 
-def save_asset(asset_path: str) -> str:
+def save_asset(asset_path: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `save_asset` (Asset)."""
     params = {
         "asset_path": asset_path,
     }
-    return _format_response(_send_command("save_asset", params))
+    return _format_response(_send_command("save_asset", params, _request_meta(scope, dry_run)))
 
 
-def rename_asset(asset_path: str, new_package_path: str = '', new_asset_name: str = '') -> str:
+def rename_asset(asset_path: str, new_package_path: str = '', new_asset_name: str = '', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `rename_asset` (Asset)."""
     params = {
         "asset_path": asset_path,
         "new_package_path": new_package_path,
         "new_asset_name": new_asset_name,
     }
-    return _format_response(_send_command("rename_asset", params))
+    return _format_response(_send_command("rename_asset", params, _request_meta(scope, dry_run)))
 
 
 def get_referencers(asset_path: str) -> str:
@@ -1180,16 +1180,16 @@ def list_redirectors(folder_path: str, recursive: bool = True) -> str:
     return _format_response(_send_command("list_redirectors", params))
 
 
-def fixup_redirectors(folder_path: str, recursive: bool = True) -> str:
+def fixup_redirectors(folder_path: str, recursive: bool = True, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `fixup_redirectors` (Asset)."""
     params = {
         "folder_path": folder_path,
         "recursive": recursive,
     }
-    return _format_response(_send_command("fixup_redirectors", params))
+    return _format_response(_send_command("fixup_redirectors", params, _request_meta(scope, dry_run)))
 
 
-def add_input_mapping(asset_path: str, input_action_path: str, key: str, triggers: list[str] | None = None, modifiers: list[str] | None = None) -> str:
+def add_input_mapping(asset_path: str, input_action_path: str, key: str, triggers: list[str] | None = None, modifiers: list[str] | None = None, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_input_mapping` (Input)."""
     params = {
         "asset_path": asset_path,
@@ -1198,16 +1198,16 @@ def add_input_mapping(asset_path: str, input_action_path: str, key: str, trigger
         "triggers": triggers,
         "modifiers": modifiers,
     }
-    return _format_response(_send_command("add_input_mapping", params))
+    return _format_response(_send_command("add_input_mapping", params, _request_meta(scope, dry_run)))
 
 
-def remove_input_mapping(asset_path: str, mapping_index: int) -> str:
+def remove_input_mapping(asset_path: str, mapping_index: int, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `remove_input_mapping` (Input)."""
     params = {
         "asset_path": asset_path,
         "mapping_index": mapping_index,
     }
-    return _format_response(_send_command("remove_input_mapping", params))
+    return _format_response(_send_command("remove_input_mapping", params, _request_meta(scope, dry_run)))
 
 
 def get_input_mappings(asset_path: str) -> str:

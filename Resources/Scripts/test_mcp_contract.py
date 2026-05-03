@@ -173,10 +173,18 @@ def _failures() -> list[str]:
         for expected_name in (
             "actor_set_transform",
             "actor_spawn",
+            "add_input_mapping",
+            "create_asset",
+            "fixup_redirectors",
             "level_open",
             "level_save_current",
             "pie_start",
             "pie_stop",
+            "remove_input_mapping",
+            "rename_asset",
+            "save_asset",
+            "save_data_asset",
+            "set_asset_property",
             "viewport_capture",
         ):
             spec = generated_wrappers.get(expected_name)
@@ -228,6 +236,67 @@ def _failures() -> list[str]:
             )
             if viewport_call.get("params") != {"show_ui": False, "add_filename_suffix": True} or viewport_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed write-scope optional payload mapping")
+            create_asset_call = build_tcp_call(
+                "create_asset",
+                {
+                    "package_path": "/Game/Input",
+                    "asset_name": "IA_Test",
+                    "asset_type": "InputAction",
+                    "properties": None,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if create_asset_call.get("params") != {"package_path": "/Game/Input", "asset_name": "IA_Test", "asset_type": "InputAction"} or create_asset_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed create_asset payload/meta mapping")
+            rename_asset_call = build_tcp_call(
+                "rename_asset",
+                {
+                    "asset_path": "/Game/Input/IA_Test",
+                    "new_package_path": "",
+                    "new_asset_name": "IA_TestRenamed",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if rename_asset_call.get("params") != {"asset_path": "/Game/Input/IA_Test", "new_asset_name": "IA_TestRenamed"} or rename_asset_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed rename_asset optional payload/meta mapping")
+            fixup_call = build_tcp_call(
+                "fixup_redirectors",
+                {
+                    "folder_path": "/Game/Input",
+                    "recursive": False,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if fixup_call.get("params") != {"folder_path": "/Game/Input", "recursive": False} or fixup_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed fixup_redirectors payload/meta mapping")
+            input_mapping_call = build_tcp_call(
+                "add_input_mapping",
+                {
+                    "asset_path": "/Game/Input/IMC_Default",
+                    "input_action_path": "/Game/Input/IA_Test",
+                    "key": "SpaceBar",
+                    "triggers": None,
+                    "modifiers": None,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if input_mapping_call.get("params") != {"asset_path": "/Game/Input/IMC_Default", "input_action_path": "/Game/Input/IA_Test", "key": "SpaceBar"} or input_mapping_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed add_input_mapping optional payload/meta mapping")
+            remove_mapping_call = build_tcp_call(
+                "remove_input_mapping",
+                {
+                    "asset_path": "/Game/Input/IMC_Default",
+                    "mapping_index": 0,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if remove_mapping_call.get("params") != {"asset_path": "/Game/Input/IMC_Default", "mapping_index": 0} or remove_mapping_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed remove_input_mapping payload/meta mapping")
             spawn_call = build_tcp_call(
                 "actor_spawn",
                 {
