@@ -9,11 +9,14 @@ import json
 from pathlib import Path
 
 from generate_mcp_artifacts import (
+    AI_REFERENCE_SUMMARY_BEGIN,
+    AI_REFERENCE_SUMMARY_END,
     CLIENT_ONLY_TOOLS,
     COMMAND_MANIFEST_PATH,
     SERVER_METADATA_PATH,
     TOOL_CATALOG_PATH,
     TOOL_SCHEMAS_PATH,
+    build_ai_reference_tool_summary,
     build_command_manifest,
     build_tool_schemas,
 )
@@ -136,6 +139,14 @@ def _validate_generated_artifacts(expected_tcp_commands: list[str], expected_mcp
     catalog_text = TOOL_CATALOG_PATH.read_text(encoding="utf-8")
     if f"- TCP commands: {len(expected_tcp_commands)}" not in catalog_text or f"- MCP tools: {expected_mcp_count}" not in catalog_text:
         errors.append("Generated tool catalog count summary is stale; run generate_mcp_artifacts.py")
+
+    ai_reference_text = AI_REFERENCE.read_text(encoding="utf-8")
+    if AI_REFERENCE_SUMMARY_BEGIN not in ai_reference_text or AI_REFERENCE_SUMMARY_END not in ai_reference_text:
+        errors.append("AI_REFERENCE.md generated tool summary block is missing; run generate_mcp_artifacts.py")
+    else:
+        expected_summary = build_ai_reference_tool_summary(current_manifest, current_schemas)
+        if expected_summary not in ai_reference_text:
+            errors.append("AI_REFERENCE.md generated tool summary block is stale; run generate_mcp_artifacts.py")
 
     return errors
 

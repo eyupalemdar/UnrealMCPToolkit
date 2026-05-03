@@ -7,9 +7,11 @@ import json
 import sys
 
 from generate_mcp_artifacts import (
+    AI_REFERENCE_PATH,
     CLIENT_ONLY_TOOLS,
     COMMAND_MANIFEST_PATH,
     TOOL_SCHEMAS_PATH,
+    build_ai_reference_tool_summary,
     build_command_manifest,
     build_tool_schemas,
     read_mcp_tool_signatures,
@@ -100,6 +102,14 @@ def _failures() -> list[str]:
             failures.append("generated tool schemas are not strict: " + ", ".join(sorted(broad_tools)[:10]))
     else:
         failures.append(f"missing generated schemas: {TOOL_SCHEMAS_PATH}")
+
+    if AI_REFERENCE_PATH.exists():
+        ai_reference = AI_REFERENCE_PATH.read_text(encoding="utf-8")
+        expected_summary = build_ai_reference_tool_summary(manifest, schemas)
+        if expected_summary not in ai_reference:
+            failures.append("AI_REFERENCE.md generated tool summary is stale")
+    else:
+        failures.append(f"missing AI_REFERENCE.md: {AI_REFERENCE_PATH}")
 
     return failures
 
