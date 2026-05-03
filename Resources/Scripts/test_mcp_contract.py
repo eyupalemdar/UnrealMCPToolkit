@@ -162,6 +162,20 @@ def _failures() -> list[str]:
         runtime_namespace: dict = {}
         exec(expected_runtime, runtime_namespace)
         generated_wrappers = runtime_namespace.get("GENERATED_TCP_WRAPPERS", {})
+        missing_mutating_wrappers = [
+            command["name"]
+            for command in commands
+            if command["mutating"] and command["supports_dry_run"] and command["name"] not in generated_wrappers
+        ]
+        if missing_mutating_wrappers:
+            failures.append("generated wrapper runtime missing mutating dry-run commands: " + ", ".join(sorted(missing_mutating_wrappers)[:10]))
+        unexpected_non_generated_commands = [
+            command["name"]
+            for command in commands
+            if command["name"] not in generated_wrappers and command["name"] != "task_submit"
+        ]
+        if unexpected_non_generated_commands:
+            failures.append("generated wrapper runtime has unexpected non-generated TCP commands: " + ", ".join(sorted(unexpected_non_generated_commands)[:10]))
         parameterized_wrappers = [
             name for name, spec in generated_wrappers.items() if spec.get("params")
         ]
