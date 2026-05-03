@@ -329,6 +329,7 @@ private:
 	FString HandleRuntimeMultiplayerConnectionDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeTickTimerLatentDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeSchedulerPerformanceDiagnostics(TSharedPtr<class FJsonObject> Params);
+	FString HandleRuntimePhysicsCollisionDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorList(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSpawn(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSetTransform(TSharedPtr<class FJsonObject> Params);

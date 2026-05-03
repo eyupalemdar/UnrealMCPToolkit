@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T17:52:37.360548Z",
-  "tool_count": 139,
+  "generated_at_utc": "2026-05-03T18:15:38.660318Z",
+  "tool_count": 140,
   "tools": {
     "ping": {
       "type": "object",
@@ -1379,6 +1379,56 @@
         "hitch_threshold_ms": {
           "type": "number",
           "default": 33.333
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_physics_collision_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "class_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "component_class_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "include_components": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_responses": {
+          "type": "boolean",
+          "default": true
+        },
+        "component_limit": {
+          "type": "integer",
+          "default": 200
         }
       },
       "required": [],

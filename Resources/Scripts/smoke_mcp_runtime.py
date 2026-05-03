@@ -714,6 +714,25 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     _assert(isinstance(scheduler_performance_diagnostics.get("threading"), dict), "runtime scheduler/performance diagnostics missing threading object")
     _assert(isinstance(scheduler_performance_diagnostics.get("tick_summary"), dict), "runtime scheduler/performance diagnostics missing tick summary object")
 
+    physics_collision_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_physics_collision_diagnostics",
+            {
+                "world": "auto",
+                "include_components": True,
+                "include_responses": True,
+                "component_limit": 16,
+            },
+        ),
+        "runtime_physics_collision_diagnostics",
+    )
+    _assert(physics_collision_diagnostics.get("world_available") is True, "runtime physics/collision diagnostics did not report an available world")
+    _assert(isinstance(physics_collision_diagnostics.get("physics_settings"), dict), "runtime physics/collision diagnostics missing physics settings object")
+    _assert(isinstance(physics_collision_diagnostics.get("physics_world"), dict), "runtime physics/collision diagnostics missing physics world object")
+    _assert(isinstance(physics_collision_diagnostics.get("summary"), dict), "runtime physics/collision diagnostics missing summary object")
+    _assert(isinstance(physics_collision_diagnostics.get("components"), list), "runtime physics/collision diagnostics missing components list")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -782,6 +801,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_multiplayer_connection_diagnostics_checked": True,
         "runtime_tick_timer_latent_diagnostics_checked": True,
         "runtime_scheduler_performance_diagnostics_checked": True,
+        "runtime_physics_collision_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),

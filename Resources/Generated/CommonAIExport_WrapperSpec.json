@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T17:52:37.417899Z",
+  "generated_at_utc": "2026-05-03T18:15:38.718051Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "Plugins/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 139,
-  "tcp_command_count": 122,
+  "tool_count": 140,
+  "tcp_command_count": 123,
   "client_only_count": 17,
-  "wrapper_count": 139,
+  "wrapper_count": 140,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -66,7 +66,7 @@
       "wrapper": {
         "name": "actor_delete",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2269,
+        "line": 2301,
         "params": [
           {
             "name": "actor_path",
@@ -167,7 +167,7 @@
       "wrapper": {
         "name": "actor_list",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2180,
+        "line": 2212,
         "params": [
           {
             "name": "name_filter",
@@ -304,7 +304,7 @@
       "wrapper": {
         "name": "actor_set_transform",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2235,
+        "line": 2267,
         "params": [
           {
             "name": "actor_path",
@@ -470,7 +470,7 @@
       "wrapper": {
         "name": "actor_spawn",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2206,
+        "line": 2238,
         "params": [
           {
             "name": "class_path",
@@ -598,7 +598,7 @@
       "wrapper": {
         "name": "add_branch_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4574,
+        "line": 4606,
         "params": [
           {
             "name": "asset_path",
@@ -733,7 +733,7 @@
       "wrapper": {
         "name": "add_call_parent_function",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4604,
+        "line": 4636,
         "params": [
           {
             "name": "asset_path",
@@ -873,7 +873,7 @@
       "wrapper": {
         "name": "add_cdo_array_element",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4250,
+        "line": 4282,
         "params": [
           {
             "name": "asset_path",
@@ -995,7 +995,7 @@
       "wrapper": {
         "name": "add_custom_event",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4400,
+        "line": 4432,
         "params": [
           {
             "name": "asset_path",
@@ -1143,7 +1143,7 @@
       "wrapper": {
         "name": "add_event_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4364,
+        "line": 4396,
         "params": [
           {
             "name": "asset_path",
@@ -1287,7 +1287,7 @@
       "wrapper": {
         "name": "add_expression",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3795,
+        "line": 3827,
         "params": [
           {
             "name": "asset_path",
@@ -1426,7 +1426,7 @@
       "wrapper": {
         "name": "add_function_call",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4433,
+        "line": 4465,
         "params": [
           {
             "name": "asset_path",
@@ -1601,7 +1601,7 @@
       "wrapper": {
         "name": "add_input_mapping",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5270,
+        "line": 5302,
         "params": [
           {
             "name": "asset_path",
@@ -1736,7 +1736,7 @@
       "wrapper": {
         "name": "add_make_struct_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4541,
+        "line": 4573,
         "params": [
           {
             "name": "asset_path",
@@ -1884,7 +1884,7 @@
       "wrapper": {
         "name": "add_variable",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4804,
+        "line": 4836,
         "params": [
           {
             "name": "asset_path",
@@ -2032,7 +2032,7 @@
       "wrapper": {
         "name": "add_variable_get_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4475,
+        "line": 4507,
         "params": [
           {
             "name": "asset_path",
@@ -2180,7 +2180,7 @@
       "wrapper": {
         "name": "add_variable_set_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4508,
+        "line": 4540,
         "params": [
           {
             "name": "asset_path",
@@ -2320,7 +2320,7 @@
       "wrapper": {
         "name": "add_widget",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3402,
+        "line": 3434,
         "params": [
           {
             "name": "asset_path",
@@ -2422,7 +2422,7 @@
       "wrapper": {
         "name": "asset_exists",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5024,
+        "line": 5056,
         "params": [
           {
             "name": "asset_path",
@@ -2499,7 +2499,7 @@
       "wrapper": {
         "name": "asset_search",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4976,
+        "line": 5008,
         "params": [
           {
             "name": "path",
@@ -2676,7 +2676,7 @@
       "wrapper": {
         "name": "asset_transfer_execute",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2626,
+        "line": 2658,
         "params": [
           {
             "name": "source_asset_path",
@@ -2881,7 +2881,7 @@
       "wrapper": {
         "name": "asset_transfer_plan",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2463,
+        "line": 2495,
         "params": [
           {
             "name": "source_asset_path",
@@ -3050,7 +3050,7 @@
       "wrapper": {
         "name": "asset_transfer_verify",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2812,
+        "line": 2844,
         "params": [
           {
             "name": "source_asset_path",
@@ -3186,7 +3186,7 @@
       "wrapper": {
         "name": "asset_validate_light",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5009,
+        "line": 5041,
         "params": [
           {
             "name": "asset_path",
@@ -3304,7 +3304,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5393,
+        "line": 5425,
         "params": [
           {
             "name": "asset_path",
@@ -3589,7 +3589,7 @@
       "wrapper": {
         "name": "code_transfer_execute",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3018,
+        "line": 3050,
         "params": [
           {
             "name": "source_paths",
@@ -3810,7 +3810,7 @@
       "wrapper": {
         "name": "code_transfer_plan",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2872,
+        "line": 2904,
         "params": [
           {
             "name": "source_paths",
@@ -3995,7 +3995,7 @@
       "wrapper": {
         "name": "code_transfer_verify",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3154,
+        "line": 3186,
         "params": [
           {
             "name": "source_paths",
@@ -4391,7 +4391,7 @@
       "wrapper": {
         "name": "compile_and_save",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3357,
+        "line": 3389,
         "params": [
           {
             "name": "asset_path",
@@ -4454,7 +4454,7 @@
       "wrapper": {
         "name": "compile_material",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3966,
+        "line": 3998,
         "params": [
           {
             "name": "asset_path",
@@ -4533,7 +4533,7 @@
       "wrapper": {
         "name": "connect_expressions",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3863,
+        "line": 3895,
         "params": [
           {
             "name": "asset_path",
@@ -4668,7 +4668,7 @@
       "wrapper": {
         "name": "connect_pins",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4680,
+        "line": 4712,
         "params": [
           {
             "name": "asset_path",
@@ -4808,7 +4808,7 @@
       "wrapper": {
         "name": "connect_to_material_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3893,
+        "line": 3925,
         "params": [
           {
             "name": "asset_path",
@@ -4922,7 +4922,7 @@
       "wrapper": {
         "name": "create_anim_blueprint",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5347,
+        "line": 5379,
         "params": [
           {
             "name": "package_path",
@@ -5043,7 +5043,7 @@
       "wrapper": {
         "name": "create_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4905,
+        "line": 4937,
         "params": [
           {
             "name": "package_path",
@@ -5165,7 +5165,7 @@
       "wrapper": {
         "name": "create_material",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3737,
+        "line": 3769,
         "params": [
           {
             "name": "package_path",
@@ -5301,7 +5301,7 @@
       "wrapper": {
         "name": "create_material_instance",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4009,
+        "line": 4041,
         "params": [
           {
             "name": "package_path",
@@ -5398,7 +5398,7 @@
       "wrapper": {
         "name": "create_widget_blueprint",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3333,
+        "line": 3365,
         "params": [
           {
             "name": "package_path",
@@ -5499,7 +5499,7 @@
       "wrapper": {
         "name": "delete_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5227,
+        "line": 5259,
         "params": [
           {
             "name": "asset_path",
@@ -5592,7 +5592,7 @@
       "wrapper": {
         "name": "disconnect_input",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3924,
+        "line": 3956,
         "params": [
           {
             "name": "asset_path",
@@ -5826,7 +5826,7 @@
       "wrapper": {
         "name": "editor_console_command",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2385,
+        "line": 2417,
         "params": [
           {
             "name": "command",
@@ -5951,7 +5951,7 @@
       "wrapper": {
         "name": "editor_log_read",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2408,
+        "line": 2440,
         "params": [
           {
             "name": "max_lines",
@@ -6173,7 +6173,7 @@
       "wrapper": {
         "name": "ensure_function_graph",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4637,
+        "line": 4669,
         "params": [
           {
             "name": "asset_path",
@@ -6309,7 +6309,7 @@
       "wrapper": {
         "name": "export_blueprint",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3710,
+        "line": 3742,
         "params": [
           {
             "name": "asset_path",
@@ -6406,7 +6406,7 @@
       "wrapper": {
         "name": "export_widget",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3687,
+        "line": 3719,
         "params": [
           {
             "name": "asset_path",
@@ -6499,7 +6499,7 @@
       "wrapper": {
         "name": "fixup_redirectors",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5141,
+        "line": 5173,
         "params": [
           {
             "name": "folder_path",
@@ -6575,7 +6575,7 @@
       "wrapper": {
         "name": "get_anim_blueprint_info",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5375,
+        "line": 5407,
         "params": [
           {
             "name": "asset_path",
@@ -6633,7 +6633,7 @@
       "wrapper": {
         "name": "get_asset_properties",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4962,
+        "line": 4994,
         "params": [
           {
             "name": "asset_path",
@@ -6695,7 +6695,7 @@
       "wrapper": {
         "name": "get_cdo_array_length",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4342,
+        "line": 4374,
         "params": [
           {
             "name": "asset_path",
@@ -6762,7 +6762,7 @@
       "wrapper": {
         "name": "get_cdo_properties",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4235,
+        "line": 4267,
         "params": [
           {
             "name": "asset_path",
@@ -6820,7 +6820,7 @@
       "wrapper": {
         "name": "get_dependencies",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5089,
+        "line": 5121,
         "params": [
           {
             "name": "asset_path",
@@ -6882,7 +6882,7 @@
       "wrapper": {
         "name": "get_graph",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4766,
+        "line": 4798,
         "params": [
           {
             "name": "asset_path",
@@ -6958,7 +6958,7 @@
       "wrapper": {
         "name": "get_input_mappings",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5329,
+        "line": 5361,
         "params": [
           {
             "name": "asset_path",
@@ -7016,7 +7016,7 @@
       "wrapper": {
         "name": "get_material_graph",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3980,
+        "line": 4012,
         "params": [
           {
             "name": "asset_path",
@@ -7074,7 +7074,7 @@
       "wrapper": {
         "name": "get_material_instance_info",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4077,
+        "line": 4109,
         "params": [
           {
             "name": "asset_path",
@@ -7132,7 +7132,7 @@
       "wrapper": {
         "name": "get_referencers",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5066,
+        "line": 5098,
         "params": [
           {
             "name": "asset_path",
@@ -7190,7 +7190,7 @@
       "wrapper": {
         "name": "get_variables",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4887,
+        "line": 4919,
         "params": [
           {
             "name": "asset_path",
@@ -7248,7 +7248,7 @@
       "wrapper": {
         "name": "get_widget_tree",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3645,
+        "line": 3677,
         "params": [
           {
             "name": "asset_path",
@@ -7373,7 +7373,7 @@
       "wrapper": {
         "name": "import_font",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4167,
+        "line": 4199,
         "params": [
           {
             "name": "package_path",
@@ -7499,7 +7499,7 @@
       "wrapper": {
         "name": "import_texture",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4113,
+        "line": 4145,
         "params": [
           {
             "name": "source_path",
@@ -7648,7 +7648,7 @@
       "wrapper": {
         "name": "level_open",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2296,
+        "line": 2328,
         "params": [
           {
             "name": "map_path",
@@ -7727,7 +7727,7 @@
       "wrapper": {
         "name": "level_save_current",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2317,
+        "line": 2349,
         "params": [
           {
             "name": "scope",
@@ -7830,7 +7830,7 @@
       "wrapper": {
         "name": "list_expression_classes",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3994,
+        "line": 4026,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -7878,7 +7878,7 @@
       "wrapper": {
         "name": "list_graphs",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4786,
+        "line": 4818,
         "params": [
           {
             "name": "asset_path",
@@ -7940,7 +7940,7 @@
       "wrapper": {
         "name": "list_redirectors",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5112,
+        "line": 5144,
         "params": [
           {
             "name": "folder_path",
@@ -8010,7 +8010,7 @@
       "wrapper": {
         "name": "list_supported_types",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3677,
+        "line": 3709,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -8052,7 +8052,7 @@
       "wrapper": {
         "name": "list_widget_classes",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3662,
+        "line": 3694,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -8163,7 +8163,7 @@
       "wrapper": {
         "name": "move_widget",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3460,
+        "line": 3492,
         "params": [
           {
             "name": "asset_path",
@@ -8340,7 +8340,7 @@
       "wrapper": {
         "name": "pie_start",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2347,
+        "line": 2379,
         "params": [
           {
             "name": "scope",
@@ -8401,7 +8401,7 @@
       "wrapper": {
         "name": "pie_status",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2336,
+        "line": 2368,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -8452,7 +8452,7 @@
       "wrapper": {
         "name": "pie_stop",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2366,
+        "line": 2398,
         "params": [
           {
             "name": "scope",
@@ -8607,7 +8607,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5473,
+        "line": 5505,
         "params": [
           {
             "name": "asset_path",
@@ -8691,7 +8691,7 @@
       "wrapper": {
         "name": "remove_cdo_array_element",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4318,
+        "line": 4350,
         "params": [
           {
             "name": "asset_path",
@@ -8784,7 +8784,7 @@
       "wrapper": {
         "name": "remove_expression",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3948,
+        "line": 3980,
         "params": [
           {
             "name": "asset_path",
@@ -8868,7 +8868,7 @@
       "wrapper": {
         "name": "remove_graph_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4746,
+        "line": 4778,
         "params": [
           {
             "name": "asset_path",
@@ -8961,7 +8961,7 @@
       "wrapper": {
         "name": "remove_input_mapping",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5308,
+        "line": 5340,
         "params": [
           {
             "name": "asset_path",
@@ -9041,7 +9041,7 @@
       "wrapper": {
         "name": "remove_variable",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4869,
+        "line": 4901,
         "params": [
           {
             "name": "asset_path",
@@ -9121,7 +9121,7 @@
       "wrapper": {
         "name": "remove_widget",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3442,
+        "line": 3474,
         "params": [
           {
             "name": "asset_path",
@@ -9205,7 +9205,7 @@
       "wrapper": {
         "name": "rename_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5190,
+        "line": 5222,
         "params": [
           {
             "name": "asset_path",
@@ -9298,7 +9298,7 @@
       "wrapper": {
         "name": "reparent_blueprint",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3375,
+        "line": 3407,
         "params": [
           {
             "name": "asset_path",
@@ -10263,7 +10263,7 @@
       "wrapper": {
         "name": "runtime_component_list",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2106,
+        "line": 2138,
         "params": [
           {
             "name": "world",
@@ -10436,7 +10436,7 @@
       "wrapper": {
         "name": "runtime_diagnostics",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2153,
+        "line": 2185,
         "params": [
           {
             "name": "world",
@@ -10972,6 +10972,141 @@
         "returns": "str",
         "literal_send_commands": [
           "runtime_multiplayer_connection_diagnostics"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "runtime_physics_collision_diagnostics": {
+      "name": "runtime_physics_collision_diagnostics",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "runtime_physics_collision_diagnostics",
+      "literal_send_commands": [
+        "runtime_physics_collision_diagnostics"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "world": {
+            "type": "string",
+            "default": "auto"
+          },
+          "name_filter": {
+            "type": "string",
+            "default": ""
+          },
+          "class_filter": {
+            "type": "string",
+            "default": ""
+          },
+          "component_class_filter": {
+            "type": "string",
+            "default": ""
+          },
+          "include_components": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_responses": {
+            "type": "boolean",
+            "default": true
+          },
+          "component_limit": {
+            "type": "integer",
+            "default": 200
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "RuntimeInspector",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "runtime_physics_collision_diagnostics",
+        "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 2106,
+        "params": [
+          {
+            "name": "world",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'auto'",
+            "default_value": "auto",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "name_filter",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "class_filter",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "component_class_filter",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_components",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_responses",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "component_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "runtime_physics_collision_diagnostics"
         ]
       },
       "calls_expected_tcp_command": true
@@ -11595,7 +11730,7 @@
       "wrapper": {
         "name": "save_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5174,
+        "line": 5206,
         "params": [
           {
             "name": "asset_path",
@@ -11658,7 +11793,7 @@
       "wrapper": {
         "name": "save_data_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4095,
+        "line": 4127,
         "params": [
           {
             "name": "asset_path",
@@ -11721,7 +11856,7 @@
       "wrapper": {
         "name": "save_material_instance",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4063,
+        "line": 4095,
         "params": [
           {
             "name": "asset_path",
@@ -11800,7 +11935,7 @@
       "wrapper": {
         "name": "scan_asset_paths",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5039,
+        "line": 5071,
         "params": [
           {
             "name": "paths",
@@ -11939,7 +12074,7 @@
       "wrapper": {
         "name": "set_asset_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4937,
+        "line": 4969,
         "params": [
           {
             "name": "asset_path",
@@ -12072,7 +12207,7 @@
       "wrapper": {
         "name": "set_canvas_slot_layout",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3560,
+        "line": 3592,
         "params": [
           {
             "name": "asset_path",
@@ -12294,7 +12429,7 @@
       "wrapper": {
         "name": "set_cdo_array_element_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4288,
+        "line": 4320,
         "params": [
           {
             "name": "asset_path",
@@ -12417,7 +12552,7 @@
       "wrapper": {
         "name": "set_cdo_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4208,
+        "line": 4240,
         "params": [
           {
             "name": "asset_path",
@@ -12518,7 +12653,7 @@
       "wrapper": {
         "name": "set_expression_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3832,
+        "line": 3864,
         "params": [
           {
             "name": "asset_path",
@@ -12632,7 +12767,7 @@
       "wrapper": {
         "name": "set_instance_parameter",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4033,
+        "line": 4065,
         "params": [
           {
             "name": "asset_path",
@@ -12742,7 +12877,7 @@
       "wrapper": {
         "name": "set_material_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3771,
+        "line": 3803,
         "params": [
           {
             "name": "asset_path",
@@ -12847,7 +12982,7 @@
       "wrapper": {
         "name": "set_pin_default",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4716,
+        "line": 4748,
         "params": [
           {
             "name": "asset_path",
@@ -12974,7 +13109,7 @@
       "wrapper": {
         "name": "set_slot_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3528,
+        "line": 3560,
         "params": [
           {
             "name": "asset_path",
@@ -13084,7 +13219,7 @@
       "wrapper": {
         "name": "set_variable_default",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4845,
+        "line": 4877,
         "params": [
           {
             "name": "asset_path",
@@ -13181,7 +13316,7 @@
       "wrapper": {
         "name": "set_widget_properties",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3611,
+        "line": 3643,
         "params": [
           {
             "name": "asset_path",
@@ -13278,7 +13413,7 @@
       "wrapper": {
         "name": "set_widget_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3493,
+        "line": 3525,
         "params": [
           {
             "name": "asset_path",
@@ -13934,7 +14069,7 @@
       "wrapper": {
         "name": "task_cancel",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3312,
+        "line": 3344,
         "params": [
           {
             "name": "task_id",
@@ -14005,7 +14140,7 @@
       "wrapper": {
         "name": "task_events",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3290,
+        "line": 3322,
         "params": [
           {
             "name": "task_id",
@@ -14094,7 +14229,7 @@
       "wrapper": {
         "name": "task_result",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3274,
+        "line": 3306,
         "params": [
           {
             "name": "task_id",
@@ -14158,7 +14293,7 @@
       "wrapper": {
         "name": "task_status",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3258,
+        "line": 3290,
         "params": [
           {
             "name": "task_id",
@@ -14241,7 +14376,7 @@
       "wrapper": {
         "name": "task_submit",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3227,
+        "line": 3259,
         "params": [
           {
             "name": "command",
@@ -14354,7 +14489,7 @@
       "wrapper": {
         "name": "viewport_capture",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2434,
+        "line": 2466,
         "params": [
           {
             "name": "output_path",

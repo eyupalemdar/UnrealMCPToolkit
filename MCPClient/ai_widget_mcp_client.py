@@ -2103,6 +2103,38 @@ def runtime_scheduler_performance_diagnostics(
 
 
 @mcp.tool()
+def runtime_physics_collision_diagnostics(
+    world: str = "auto",
+    name_filter: str = "",
+    class_filter: str = "",
+    component_class_filter: str = "",
+    include_components: bool = True,
+    include_responses: bool = True,
+    component_limit: int = 200,
+) -> str:
+    """
+    Inspect runtime physics and collision component state without running queries.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        name_filter: Optional substring matched against component names, paths,
+                     owner actor names, labels, and paths.
+        class_filter: Optional substring matched against owner actor class paths.
+        component_class_filter: Optional substring matched against primitive component class paths.
+        include_components: Include sampled primitive component collision records.
+        include_responses: Include per-channel collision responses on returned components.
+        component_limit: Maximum primitive component records returned.
+
+    Returns:
+        JSON with physics settings/world gravity, primitive collision summaries,
+        sampled component body/collision response state, public-API limitations,
+        and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_physics_collision_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

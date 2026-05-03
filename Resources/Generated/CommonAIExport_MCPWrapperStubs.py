@@ -394,6 +394,20 @@ def runtime_scheduler_performance_diagnostics(world: str = 'auto', name_filter: 
     return _format_response(_send_command("runtime_scheduler_performance_diagnostics", params))
 
 
+def runtime_physics_collision_diagnostics(world: str = 'auto', name_filter: str = '', class_filter: str = '', component_class_filter: str = '', include_components: bool = True, include_responses: bool = True, component_limit: int = 200) -> str:
+    """Generated stub for TCP command `runtime_physics_collision_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "name_filter": name_filter,
+        "class_filter": class_filter,
+        "component_class_filter": component_class_filter,
+        "include_components": include_components,
+        "include_responses": include_responses,
+        "component_limit": component_limit,
+    }
+    return _format_response(_send_command("runtime_physics_collision_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {
