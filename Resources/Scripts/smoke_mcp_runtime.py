@@ -139,14 +139,50 @@ def _assert_tcp_success(response: dict, label: str) -> dict:
     return data if isinstance(data, dict) else {}
 
 
-def _delete_smoke_asset(tcp_port: int, asset_path: str) -> dict:
-    return _tcp_command(
+def _asset_exists(tcp_port: int, asset_path: str) -> bool:
+    data = _assert_tcp_success(
+        _tcp_command(tcp_port, "asset_exists", {"asset_path": asset_path}, timeout=30),
+        f"asset_exists {asset_path}",
+    )
+    return bool(data.get("exists"))
+
+
+def _scan_smoke_asset_path(tcp_port: int) -> None:
+    _assert_tcp_success(
+        _tcp_command(tcp_port, "scan_asset_paths", {"path": "/Game/CommonAIExport/_Smoke", "force_rescan": True}, timeout=60),
+        "scan_asset_paths /Game/CommonAIExport/_Smoke",
+    )
+
+
+def _delete_smoke_asset(tcp_port: int, asset_path: str, *, force: bool = False, allow_missing: bool = True) -> dict:
+    if allow_missing and not _asset_exists(tcp_port, asset_path):
+        return {"success": True, "data": {"asset_path": asset_path, "deleted": False, "missing": True}}
+
+    response = _tcp_command(
         tcp_port,
         "delete_asset",
-        {"asset_path": asset_path, "force": True},
+        {"asset_path": asset_path, "force": force},
         {"scope": "destructive"},
         timeout=60,
     )
+    if not response.get("success"):
+        return response
+
+    _scan_smoke_asset_path(tcp_port)
+    time.sleep(0.1)
+    if _asset_exists(tcp_port, asset_path):
+        return {"success": False, "error": f"smoke asset still exists after delete: {asset_path}", "data": response.get("data", {})}
+
+    return response
+
+
+def _cleanup_smoke_asset(tcp_port: int, asset_path: str, *, allow_missing: bool = True) -> dict:
+    cleanup = _delete_smoke_asset(tcp_port, asset_path, allow_missing=allow_missing)
+    if cleanup.get("success"):
+        return cleanup
+    if not _asset_exists(tcp_port, asset_path):
+        return {"success": True, "data": {"asset_path": asset_path, "deleted": False, "missing_after_failed_delete": True}}
+    return _delete_smoke_asset(tcp_port, asset_path, force=True, allow_missing=False)
 
 
 def _run_mutating_widget_smoke(tcp_port: int) -> dict:
@@ -155,7 +191,8 @@ def _run_mutating_widget_smoke(tcp_port: int) -> dict:
     asset_name = "W_CommonAIExportRuntimeSmoke"
     asset_path = f"{package_path}/{asset_name}"
 
-    _delete_smoke_asset(tcp_port, asset_path)
+    cleanup = _cleanup_smoke_asset(tcp_port, asset_path)
+    _assert(bool(cleanup.get("success")), f"smoke asset pre-cleanup failed: {cleanup.get('error', cleanup)}")
     created = False
     try:
         create_data = _assert_tcp_success(
@@ -263,7 +300,7 @@ def _run_mutating_widget_smoke(tcp_port: int) -> dict:
         }
     finally:
         if created:
-            cleanup = _delete_smoke_asset(tcp_port, asset_path)
+            cleanup = _cleanup_smoke_asset(tcp_port, asset_path, allow_missing=False)
             _assert(bool(cleanup.get("success")), f"smoke asset cleanup failed: {cleanup.get('error', cleanup)}")
 
 
@@ -273,7 +310,8 @@ def _run_mutating_material_smoke(tcp_port: int) -> dict:
     asset_name = "M_CommonAIExportRuntimeSmoke"
     asset_path = f"{package_path}/{asset_name}"
 
-    _delete_smoke_asset(tcp_port, asset_path)
+    cleanup = _cleanup_smoke_asset(tcp_port, asset_path)
+    _assert(bool(cleanup.get("success")), f"smoke material pre-cleanup failed: {cleanup.get('error', cleanup)}")
     created = False
     try:
         create_data = _assert_tcp_success(
@@ -336,7 +374,7 @@ def _run_mutating_material_smoke(tcp_port: int) -> dict:
         }
     finally:
         if created:
-            cleanup = _delete_smoke_asset(tcp_port, asset_path)
+            cleanup = _cleanup_smoke_asset(tcp_port, asset_path, allow_missing=False)
             _assert(bool(cleanup.get("success")), f"smoke material cleanup failed: {cleanup.get('error', cleanup)}")
 
 
@@ -346,7 +384,8 @@ def _run_mutating_asset_smoke(tcp_port: int) -> dict:
     asset_name = "IA_CommonAIExportRuntimeSmoke"
     asset_path = f"{package_path}/{asset_name}"
 
-    _delete_smoke_asset(tcp_port, asset_path)
+    cleanup = _cleanup_smoke_asset(tcp_port, asset_path)
+    _assert(bool(cleanup.get("success")), f"smoke generic asset pre-cleanup failed: {cleanup.get('error', cleanup)}")
     created = False
     try:
         create_data = _assert_tcp_success(
@@ -379,7 +418,7 @@ def _run_mutating_asset_smoke(tcp_port: int) -> dict:
         }
     finally:
         if created:
-            cleanup = _delete_smoke_asset(tcp_port, asset_path)
+            cleanup = _cleanup_smoke_asset(tcp_port, asset_path, allow_missing=False)
             _assert(bool(cleanup.get("success")), f"smoke generic asset cleanup failed: {cleanup.get('error', cleanup)}")
 
 
