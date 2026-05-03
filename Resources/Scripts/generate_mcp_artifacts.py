@@ -55,6 +55,7 @@ COMMONAI_RESOURCES = [
     "commonai://project/status",
     "commonai://commands/manifest",
     "commonai://editors/list",
+    "commonai://tasks/events",
     "commonai://logs/latest",
     "commonai://audit/http",
 ]

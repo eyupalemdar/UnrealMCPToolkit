@@ -498,6 +498,12 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         if task_result.get("data", {}).get("status") in {"completed", "failed", "cancelled"}:
             break
     _assert(bool(task_result and task_result.get("success") and task_result.get("data", {}).get("status") == "completed"), "async ping task did not complete")
+    task_events = _assert_tcp_success(
+        _tcp_command(tcp_port, "task_events", {"task_id": task_id, "limit": 20}),
+        "task_events",
+    )
+    event_text = json.dumps(task_events, ensure_ascii=False)
+    _assert(task_events.get("returned_count", 0) >= 2 and "queued" in event_text and "completed" in event_text, "async task events missing queued/completed lifecycle")
 
     delete_session = _http_request(http_port, "/mcp", headers={"Mcp-Session-Id": session_id}, method="DELETE")
     _assert(bool(delete_session.get("success") and delete_session.get("body", {}).get("success")), "MCP session delete failed")
@@ -532,6 +538,8 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "dry_run_scope_gate": True,
         "destructive_scope_gate": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
+        "async_task_event_count": task_events.get("returned_count", 0),
+        "latest_task_event_sequence": task_events.get("latest_sequence", 0),
         "session_delete_success": True,
         "mutating_widget_smoke": mutating_widget_result,
         "mutating_material_smoke": mutating_material_result,

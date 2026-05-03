@@ -196,6 +196,17 @@ private:
 		bool bCancelRequested = false;
 	};
 
+	struct FAsyncCommandEvent
+	{
+		int64 Sequence = 0;
+		FString TaskId;
+		FString CommandName;
+		FString Status;
+		FString EventType;
+		FString TimestampUtc;
+		FString Message;
+	};
+
 	struct FMcpHttpSession
 	{
 		FString SessionId;
@@ -255,6 +266,12 @@ private:
 	/** Convert async job state to JSON */
 	TSharedPtr<class FJsonObject> BuildTaskJson(const FAsyncCommandJob& Job, bool bIncludeResult) const;
 
+	/** Convert async job event state to JSON */
+	TSharedPtr<class FJsonObject> BuildTaskEventJson(const FAsyncCommandEvent& Event) const;
+
+	/** Append an async job lifecycle event while AsyncJobsCriticalSection is held */
+	void AppendTaskEventLocked(const FAsyncCommandJob& Job, const FString& EventType, const FString& Message);
+
 	/** Find a task by id under lock and return a copy of its state */
 	bool TryCopyTask(const FString& TaskId, FAsyncCommandJob& OutJob) const;
 
@@ -279,6 +296,7 @@ private:
 	FString HandleTaskStatus(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskResult(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskCancel(TSharedPtr<class FJsonObject> Params);
+	FString HandleTaskEvents(TSharedPtr<class FJsonObject> Params);
 	FString HandleExportWidget(TSharedPtr<class FJsonObject> Params);
 	FString HandleExportBlueprint(TSharedPtr<class FJsonObject> Params);
 	FString HandleListSupportedTypes();
@@ -463,6 +481,9 @@ private:
 	/** Async job registry for long-running commands */
 	mutable FCriticalSection AsyncJobsCriticalSection;
 	TMap<FString, TSharedPtr<FAsyncCommandJob>> AsyncJobs;
+	TArray<FAsyncCommandEvent> AsyncJobEvents;
+	int64 AsyncJobEventSequence = 0;
+	static constexpr int32 MaxAsyncJobEvents = 1000;
 };
 
 /**

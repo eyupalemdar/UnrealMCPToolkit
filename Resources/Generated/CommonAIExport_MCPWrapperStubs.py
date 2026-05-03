@@ -128,6 +128,16 @@ def task_cancel(task_id: str = '') -> str:
     return _format_response(_send_command("task_cancel", params))
 
 
+def task_events(task_id: str = '', after_sequence: int = 0, limit: int = 100) -> str:
+    """Generated stub for TCP command `task_events` (AsyncJob)."""
+    params = {
+        "task_id": task_id,
+        "after_sequence": after_sequence,
+        "limit": limit,
+    }
+    return _format_response(_send_command("task_events", params))
+
+
 def export_widget(asset_path: str, output_directory: str = '', both_formats: bool = True) -> str:
     """Generated stub for TCP command `export_widget` (Export)."""
     params = {

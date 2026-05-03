@@ -615,6 +615,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("task_status", "AsyncJob", false, 0, HandleTaskStatus),
 		AI_COMMAND_OPTIONAL_PARAMS("task_result", "AsyncJob", false, 0, HandleTaskResult),
 		AI_COMMAND_OPTIONAL_PARAMS("task_cancel", "AsyncJob", false, 0, HandleTaskCancel),
+		AI_COMMAND_OPTIONAL_PARAMS("task_events", "AsyncJob", false, 0, HandleTaskEvents),
 		AI_COMMAND_PARAMS("export_widget", "Export", false, 60, HandleExportWidget),
 		AI_COMMAND_PARAMS("export_blueprint", "Export", false, 60, HandleExportBlueprint),
 		AI_COMMAND_NO_PARAMS("list_supported_types", "Export", 0, HandleListSupportedTypes),
@@ -1332,6 +1333,12 @@ void FAIExportTCPServer::StartHttpServer()
 		FUTF8ToTCHAR BodyText(reinterpret_cast<const ANSICHAR*>(Request.Body.GetData()), Request.Body.Num());
 		return ProcessCommand(FString(BodyText.Length(), BodyText.Get()));
 	});
+	BindRoute(TEXT("/commonai/tasks/events"), EHttpServerRequestVerbs::VERB_GET | EHttpServerRequestVerbs::VERB_OPTIONS, [this](const FHttpServerRequest&)
+	{
+		TSharedPtr<FJsonObject> Params = MakeShared<FJsonObject>();
+		Params->SetNumberField(TEXT("limit"), 200);
+		return HandleTaskEvents(Params);
+	});
 
 	FHttpRouteHandle McpRouteHandle = HttpRouter->BindRoute(
 		FHttpPath(TEXT("/mcp")),
@@ -1704,6 +1711,7 @@ FString FAIExportTCPServer::HandleMcpJsonRpc(const FString& RequestJson, const F
 		AddResource(TEXT("commonai://editor/status"), TEXT("Editor Identity"), TEXT("Current editor identity and capabilities"));
 		AddResource(TEXT("commonai://logs/latest"), TEXT("Latest Log"), TEXT("Recent project log lines"));
 		AddResource(TEXT("commonai://audit/http"), TEXT("HTTP MCP Audit"), TEXT("Recent CommonAIExport native HTTP/MCP audit JSONL events"));
+		AddResource(TEXT("commonai://tasks/events"), TEXT("Async Task Events"), TEXT("Recent CommonAIExport async task lifecycle events"));
 
 		TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
 		Result->SetArrayField(TEXT("resources"), Resources);
@@ -1774,6 +1782,12 @@ FString FAIExportTCPServer::HandleMcpJsonRpc(const FString& RequestJson, const F
 			Audit->SetArrayField(TEXT("events"), Events);
 			TSharedRef<TJsonWriter<>> AuditWriter = TJsonWriterFactory<>::Create(&Text);
 			FJsonSerializer::Serialize(Audit.ToSharedRef(), AuditWriter);
+		}
+		else if (Uri == TEXT("commonai://tasks/events"))
+		{
+			TSharedPtr<FJsonObject> Params = MakeShared<FJsonObject>();
+			Params->SetNumberField(TEXT("limit"), 200);
+			Text = HandleTaskEvents(Params);
 		}
 		else return MakeRpcError(IdValue, -32602, FString::Printf(TEXT("Unknown resource URI: %s"), *Uri));
 
@@ -1937,6 +1951,40 @@ TSharedPtr<FJsonObject> FAIExportTCPServer::BuildTaskJson(const FAsyncCommandJob
 		}
 	}
 	return Data;
+}
+
+TSharedPtr<FJsonObject> FAIExportTCPServer::BuildTaskEventJson(const FAsyncCommandEvent& Event) const
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetNumberField(TEXT("sequence"), static_cast<double>(Event.Sequence));
+	Data->SetStringField(TEXT("task_id"), Event.TaskId);
+	Data->SetStringField(TEXT("command"), Event.CommandName);
+	Data->SetStringField(TEXT("status"), Event.Status);
+	Data->SetStringField(TEXT("event"), Event.EventType);
+	Data->SetStringField(TEXT("timestamp_utc"), Event.TimestampUtc);
+	if (!Event.Message.IsEmpty())
+	{
+		Data->SetStringField(TEXT("message"), Event.Message);
+	}
+	return Data;
+}
+
+void FAIExportTCPServer::AppendTaskEventLocked(const FAsyncCommandJob& Job, const FString& EventType, const FString& Message)
+{
+	FAsyncCommandEvent Event;
+	Event.Sequence = ++AsyncJobEventSequence;
+	Event.TaskId = Job.TaskId;
+	Event.CommandName = Job.CommandName;
+	Event.Status = Job.Status;
+	Event.EventType = EventType;
+	Event.TimestampUtc = FDateTime::UtcNow().ToIso8601();
+	Event.Message = Message;
+
+	AsyncJobEvents.Add(Event);
+	while (AsyncJobEvents.Num() > MaxAsyncJobEvents)
+	{
+		AsyncJobEvents.RemoveAt(0, 1, EAllowShrinking::No);
+	}
 }
 
 bool FAIExportTCPServer::TryCopyTask(const FString& TaskId, FAsyncCommandJob& OutJob) const
@@ -2244,6 +2292,8 @@ FString FAIExportTCPServer::HandleServerStatus()
 	int32 CompletedTasks = 0;
 	int32 FailedTasks = 0;
 	int32 CancelledTasks = 0;
+	int32 TaskEventCount = 0;
+	int64 LatestTaskEventSequence = 0;
 
 	{
 		FScopeLock Lock(&AsyncJobsCriticalSection);
@@ -2261,6 +2311,8 @@ FString FAIExportTCPServer::HandleServerStatus()
 			else if (Status == TEXT("failed")) ++FailedTasks;
 			else if (Status == TEXT("cancelled")) ++CancelledTasks;
 		}
+		TaskEventCount = AsyncJobEvents.Num();
+		LatestTaskEventSequence = AsyncJobEventSequence;
 	}
 
 	TSharedPtr<FJsonObject> Data = BuildEditorIdentityJson();
@@ -2277,6 +2329,8 @@ FString FAIExportTCPServer::HandleServerStatus()
 	Data->SetNumberField(TEXT("tasks_completed"), CompletedTasks);
 	Data->SetNumberField(TEXT("tasks_failed"), FailedTasks);
 	Data->SetNumberField(TEXT("tasks_cancelled"), CancelledTasks);
+	Data->SetNumberField(TEXT("task_event_count"), TaskEventCount);
+	Data->SetNumberField(TEXT("latest_task_event_sequence"), static_cast<double>(LatestTaskEventSequence));
 	return CreateSuccessResponse(Data);
 }
 
@@ -2724,6 +2778,7 @@ FString FAIExportTCPServer::HandleTaskSubmit(TSharedPtr<FJsonObject> Params)
 	{
 		FScopeLock Lock(&AsyncJobsCriticalSection);
 		AsyncJobs.Add(TaskId, Job);
+		AppendTaskEventLocked(*Job, TEXT("queued"), TEXT("Task queued"));
 	}
 
 	Async(EAsyncExecution::ThreadPool, [this, TaskId, CommandName, TargetDescriptor, CommandParams]()
@@ -2739,10 +2794,12 @@ FString FAIExportTCPServer::HandleTaskSubmit(TSharedPtr<FJsonObject> Params)
 			{
 				(*FoundJob)->Status = TEXT("cancelled");
 				(*FoundJob)->FinishedAt = FDateTime::UtcNow().ToIso8601();
+				AppendTaskEventLocked(*FoundJob->Get(), TEXT("cancelled"), TEXT("Task cancelled before start"));
 				return;
 			}
 			(*FoundJob)->Status = TEXT("running");
 			(*FoundJob)->StartedAt = FDateTime::UtcNow().ToIso8601();
+			AppendTaskEventLocked(*FoundJob->Get(), TEXT("running"), TEXT("Task started"));
 		}
 
 		const FString Response = DispatchCommand(*TargetDescriptor, CommandParams);
@@ -2771,6 +2828,10 @@ FString FAIExportTCPServer::HandleTaskSubmit(TSharedPtr<FJsonObject> Params)
 			{
 				(*FoundJob)->Status = TEXT("cancelled");
 			}
+			AppendTaskEventLocked(
+				*FoundJob->Get(),
+				(*FoundJob)->Status,
+				bSuccess ? TEXT("Task completed") : (ErrorMessage.IsEmpty() ? TEXT("Task failed") : ErrorMessage));
 		}
 	});
 
@@ -2856,6 +2917,56 @@ FString FAIExportTCPServer::HandleTaskResult(TSharedPtr<FJsonObject> Params)
 	return CreateSuccessResponse(Data);
 }
 
+FString FAIExportTCPServer::HandleTaskEvents(TSharedPtr<FJsonObject> Params)
+{
+	FString TaskId;
+	double AfterSequenceNumber = 0.0;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("task_id"), TaskId);
+		Params->TryGetNumberField(TEXT("after_sequence"), AfterSequenceNumber);
+	}
+	TaskId.TrimStartAndEndInline();
+	const int64 AfterSequence = FMath::Max<int64>(0, static_cast<int64>(AfterSequenceNumber));
+	const int32 Limit = ReadClampedIntField(Params, TEXT("limit"), 100, 1, 1000);
+
+	TArray<TSharedPtr<FJsonValue>> Events;
+	int32 MatchedCount = 0;
+	int64 LatestSequence = 0;
+	{
+		FScopeLock Lock(&AsyncJobsCriticalSection);
+		LatestSequence = AsyncJobEventSequence;
+		for (const FAsyncCommandEvent& Event : AsyncJobEvents)
+		{
+			if (!TaskId.IsEmpty() && Event.TaskId != TaskId)
+			{
+				continue;
+			}
+			if (Event.Sequence <= AfterSequence)
+			{
+				continue;
+			}
+
+			++MatchedCount;
+			if (Events.Num() < Limit)
+			{
+				Events.Add(MakeShared<FJsonValueObject>(BuildTaskEventJson(Event)));
+			}
+		}
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("task_id"), TaskId);
+	Data->SetNumberField(TEXT("after_sequence"), static_cast<double>(AfterSequence));
+	Data->SetNumberField(TEXT("latest_sequence"), static_cast<double>(LatestSequence));
+	Data->SetNumberField(TEXT("matched_count"), MatchedCount);
+	Data->SetNumberField(TEXT("returned_count"), Events.Num());
+	Data->SetNumberField(TEXT("limit"), Limit);
+	Data->SetBoolField(TEXT("has_more"), MatchedCount > Events.Num());
+	Data->SetArrayField(TEXT("events"), Events);
+	return CreateSuccessResponse(Data);
+}
+
 FString FAIExportTCPServer::HandleTaskCancel(TSharedPtr<FJsonObject> Params)
 {
 	FString TaskId;
@@ -2899,6 +3010,11 @@ FString FAIExportTCPServer::HandleTaskCancel(TSharedPtr<FJsonObject> Params)
 		{
 			(*FoundJob)->Status = TEXT("cancelled");
 			(*FoundJob)->FinishedAt = FDateTime::UtcNow().ToIso8601();
+			AppendTaskEventLocked(*FoundJob->Get(), TEXT("cancelled"), TEXT("Task cancelled before start"));
+		}
+		else if ((*FoundJob)->Status == TEXT("running"))
+		{
+			AppendTaskEventLocked(*FoundJob->Get(), TEXT("cancel_requested"), TEXT("Cancellation requested"));
 		}
 		JobCopy = *FoundJob->Get();
 	}

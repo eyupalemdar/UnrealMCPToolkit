@@ -897,6 +897,11 @@ COMMONAI_RESOURCES = {
         "description": "Live CommonAIExport editor registry entries.",
         "mime_type": "application/json",
     },
+    "commonai://tasks/events": {
+        "name": "Async Task Events",
+        "description": "Recent async task lifecycle events with sequence cursors.",
+        "mime_type": "application/json",
+    },
     "commonai://logs/latest": {
         "name": "Latest Project Log",
         "description": "Recent project log lines from Saved/Logs.",
@@ -981,6 +986,8 @@ def _resource_payload(uri: str) -> dict:
             "editors": _list_editors(include_stale=True),
             "registry_dirs": [str(path) for path in _registry_dirs()],
         }
+    if uri == "commonai://tasks/events":
+        return _send_command("task_events", {"limit": 200})
     if uri == "commonai://logs/latest":
         return _send_command("editor_log_read", {"max_lines": 200})
     if uri == "commonai://audit/http":
@@ -2901,6 +2908,28 @@ def task_result(task_id: str = "") -> str:
     if task_id:
         return _format_response(_send_command("task_result", {"task_id": task_id}))
     return _format_response(_send_command("task_result"))
+
+
+@mcp.tool()
+def task_events(task_id: str = "", after_sequence: int = 0, limit: int = 100) -> str:
+    """
+    Read async task lifecycle events.
+
+    Args:
+        task_id: Optional task id filter.
+        after_sequence: Return events with sequence greater than this value.
+        limit: Maximum number of events to return, clamped by the editor.
+
+    Returns:
+        JSON with ordered queued/running/completed/failed/cancel events and
+        latest_sequence for cursor-based polling.
+    """
+    payload: dict = {"limit": limit}
+    if task_id:
+        payload["task_id"] = task_id
+    if after_sequence > 0:
+        payload["after_sequence"] = after_sequence
+    return _format_response(_send_command("task_events", payload))
 
 
 @mcp.tool()

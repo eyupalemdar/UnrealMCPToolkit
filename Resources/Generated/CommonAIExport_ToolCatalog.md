@@ -2,8 +2,8 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 108
-- MCP tools: 125
+- TCP commands: 109
+- MCP tools: 126
 - Categories: 24
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
@@ -17,7 +17,7 @@
 | `AnimBlueprint` | 2 |
 | `Asset` | 14 |
 | `AssetLifecycle` | 1 |
-| `AsyncJob` | 4 |
+| `AsyncJob` | 5 |
 | `BlueprintGraph` | 14 |
 | `BlueprintUtility` | 1 |
 | `BlueprintVariable` | 4 |
@@ -57,6 +57,7 @@
 | `task_status` | `AsyncJob` | `read` | false | false | false | 0 |
 | `task_result` | `AsyncJob` | `read` | false | false | false | 0 |
 | `task_cancel` | `AsyncJob` | `read` | false | false | false | 0 |
+| `task_events` | `AsyncJob` | `read` | false | false | false | 0 |
 | `export_widget` | `Export` | `read` | false | false | false | 60 |
 | `export_blueprint` | `Export` | `read` | false | false | false | 60 |
 | `list_supported_types` | `Export` | `read` | false | false | false | 0 |
