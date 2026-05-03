@@ -1845,6 +1845,40 @@ def runtime_ai_perception_diagnostics(
 
 
 @mcp.tool()
+def runtime_commonui_diagnostics(
+    world: str = "auto",
+    name_filter: str = "",
+    class_filter: str = "",
+    include_widgets: bool = True,
+    include_bindings: bool = True,
+    local_player_limit: int = 8,
+    widget_limit: int = 100,
+    container_limit: int = 100,
+    binding_limit: int = 100,
+) -> str:
+    """
+    Inspect runtime CommonUI action routing and activation state without mutating UI assets.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        name_filter: Optional substring matched against CommonUI widget object names.
+        class_filter: Optional substring matched against CommonUI widget class paths.
+        include_widgets: Include live UCommonActivatableWidget and container summaries.
+        include_bindings: Include active CommonUI action binding summaries per local player.
+        local_player_limit: Maximum local-player records returned.
+        widget_limit: Maximum activatable widget records returned.
+        container_limit: Maximum activatable container records returned.
+        binding_limit: Maximum action binding records returned per local player.
+
+    Returns:
+        JSON with local player CommonInput state, CommonUI action router state,
+        active binding summaries, live activatable widgets, containers, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_commonui_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

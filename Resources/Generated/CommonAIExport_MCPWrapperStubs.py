@@ -276,6 +276,22 @@ def runtime_ai_perception_diagnostics(world: str = 'auto', actor_path: str = '',
     return _format_response(_send_command("runtime_ai_perception_diagnostics", params))
 
 
+def runtime_commonui_diagnostics(world: str = 'auto', name_filter: str = '', class_filter: str = '', include_widgets: bool = True, include_bindings: bool = True, local_player_limit: int = 8, widget_limit: int = 100, container_limit: int = 100, binding_limit: int = 100) -> str:
+    """Generated stub for TCP command `runtime_commonui_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "name_filter": name_filter,
+        "class_filter": class_filter,
+        "include_widgets": include_widgets,
+        "include_bindings": include_bindings,
+        "local_player_limit": local_player_limit,
+        "widget_limit": widget_limit,
+        "container_limit": container_limit,
+        "binding_limit": binding_limit,
+    }
+    return _format_response(_send_command("runtime_commonui_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {
