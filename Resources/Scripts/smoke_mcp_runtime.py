@@ -24,7 +24,10 @@ def _project_root() -> Path:
     cwd = Path.cwd().resolve()
     if (cwd / "Intermediate" / "AIExport_port.txt").exists():
         return cwd
-    return Path(__file__).resolve().parents[3]
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "Intermediate").exists() and any(parent.glob("*.uproject")):
+            return parent
+    return Path(__file__).resolve().parents[4]
 
 
 PROJECT_ROOT = _project_root()
@@ -226,6 +229,27 @@ def _run_mutating_widget_smoke(tcp_port: int) -> dict:
             ),
             "set_canvas_slot_layout",
         )
+        _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "ensure_function_graph",
+                {
+                    "asset_path": smoke_asset_path,
+                    "function_name": "RuntimeSmokeFunction",
+                    "inputs": [{"name": "Enabled", "type": "bool", "default_value": "true"}],
+                    "outputs": [{"name": "ReturnValue", "type": "bool", "default_value": "true"}],
+                    "entry_node_name": "RuntimeSmokeFunction_Entry",
+                    "result_node_name": "RuntimeSmokeFunction_Result",
+                },
+                timeout=60,
+            ),
+            "ensure_function_graph RuntimeSmokeFunction",
+        )
+        graphs_data = _assert_tcp_success(
+            _tcp_command(tcp_port, "list_graphs", {"asset_path": smoke_asset_path}, timeout=60),
+            "list_graphs",
+        )
+        _assert("RuntimeSmokeFunction" in json.dumps(graphs_data, ensure_ascii=False), "mutating graph smoke missing RuntimeSmokeFunction")
         _assert_tcp_success(_tcp_command(tcp_port, "compile_and_save", {"asset_path": smoke_asset_path}, timeout=60), "compile_and_save")
         tree_data = _assert_tcp_success(_tcp_command(tcp_port, "get_widget_tree", {"asset_path": smoke_asset_path}, timeout=60), "get_widget_tree")
         tree_text = json.dumps(tree_data, ensure_ascii=False)
@@ -234,12 +258,129 @@ def _run_mutating_widget_smoke(tcp_port: int) -> dict:
             "success": True,
             "asset_path": smoke_asset_path,
             "created": True,
+            "graph_checked": True,
             "tree_checked": True,
         }
     finally:
         if created:
             cleanup = _delete_smoke_asset(tcp_port, asset_path)
             _assert(bool(cleanup.get("success")), f"smoke asset cleanup failed: {cleanup.get('error', cleanup)}")
+
+
+def _run_mutating_material_smoke(tcp_port: int) -> dict:
+    """Create, mutate, inspect, and delete an isolated smoke Material."""
+    package_path = "/Game/CommonAIExport/_Smoke"
+    asset_name = "M_CommonAIExportRuntimeSmoke"
+    asset_path = f"{package_path}/{asset_name}"
+
+    _delete_smoke_asset(tcp_port, asset_path)
+    created = False
+    try:
+        create_data = _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "create_material",
+                {
+                    "package_path": package_path,
+                    "asset_name": asset_name,
+                    "domain": "Surface",
+                    "blend_mode": "Opaque",
+                    "shading_model": "DefaultLit",
+                    "two_sided": True,
+                },
+                timeout=60,
+            ),
+            "create_material",
+        )
+        created = True
+        smoke_asset_path = str(create_data.get("asset_path") or asset_path)
+
+        _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "add_expression",
+                {
+                    "asset_path": smoke_asset_path,
+                    "expression_class": "Constant3",
+                    "node_name": "SmokeColor",
+                    "pos_x": -320,
+                    "pos_y": 0,
+                },
+                timeout=60,
+            ),
+            "add_expression SmokeColor",
+        )
+        _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "set_expression_property",
+                {
+                    "asset_path": smoke_asset_path,
+                    "node_name": "SmokeColor",
+                    "property_name": "Constant",
+                    "value": "(R=0.050000,G=0.350000,B=0.900000,A=1.000000)",
+                },
+                timeout=60,
+            ),
+            "set_expression_property SmokeColor.Constant",
+        )
+        _assert_tcp_success(_tcp_command(tcp_port, "compile_material", {"asset_path": smoke_asset_path}, timeout=120), "compile_material")
+        graph_data = _assert_tcp_success(_tcp_command(tcp_port, "get_material_graph", {"asset_path": smoke_asset_path}, timeout=60), "get_material_graph")
+        graph_text = json.dumps(graph_data, ensure_ascii=False)
+        _assert("SmokeColor" in graph_text and "MaterialExpressionConstant3Vector" in graph_text, "material smoke graph missing expected expression")
+        return {
+            "success": True,
+            "asset_path": smoke_asset_path,
+            "created": True,
+            "graph_checked": True,
+        }
+    finally:
+        if created:
+            cleanup = _delete_smoke_asset(tcp_port, asset_path)
+            _assert(bool(cleanup.get("success")), f"smoke material cleanup failed: {cleanup.get('error', cleanup)}")
+
+
+def _run_mutating_asset_smoke(tcp_port: int) -> dict:
+    """Create, save, inspect, and delete an isolated generic asset."""
+    package_path = "/Game/CommonAIExport/_Smoke"
+    asset_name = "IA_CommonAIExportRuntimeSmoke"
+    asset_path = f"{package_path}/{asset_name}"
+
+    _delete_smoke_asset(tcp_port, asset_path)
+    created = False
+    try:
+        create_data = _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "create_asset",
+                {
+                    "package_path": package_path,
+                    "asset_name": asset_name,
+                    "asset_type": "InputAction",
+                },
+                timeout=60,
+            ),
+            "create_asset InputAction",
+        )
+        created = True
+        smoke_asset_path = str(create_data.get("asset_path") or asset_path)
+
+        _assert_tcp_success(_tcp_command(tcp_port, "save_asset", {"asset_path": smoke_asset_path}, timeout=60), "save_asset InputAction")
+        props_data = _assert_tcp_success(
+            _tcp_command(tcp_port, "get_asset_properties", {"asset_path": smoke_asset_path}, timeout=60),
+            "get_asset_properties InputAction",
+        )
+        _assert("InputAction" in json.dumps(props_data, ensure_ascii=False), "generic asset smoke missing InputAction properties")
+        return {
+            "success": True,
+            "asset_path": smoke_asset_path,
+            "created": True,
+            "properties_checked": True,
+        }
+    finally:
+        if created:
+            cleanup = _delete_smoke_asset(tcp_port, asset_path)
+            _assert(bool(cleanup.get("success")), f"smoke generic asset cleanup failed: {cleanup.get('error', cleanup)}")
 
 
 def run_smoke(mutating_smoke: bool = False) -> dict:
@@ -249,6 +390,9 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
 
     ping = _send_tcp(tcp_port, {"type": "ping"})
     _assert(bool(ping.get("success")), "TCP ping failed")
+    server_status = _assert_tcp_success(_tcp_command(tcp_port, "server_status"), "server_status")
+    expected_tool_count = int(server_status.get("command_count") or 0)
+    _assert(expected_tool_count > 0, "server_status did not report command_count")
 
     health = _http_request(http_port, "/commonai/health")
     _assert(bool(health.get("success") and health.get("body", {}).get("success")), "HTTP health failed")
@@ -287,7 +431,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         if not cursor:
             break
         request_id += 1
-    _assert(tool_count == 102, f"unexpected native MCP tool count: {tool_count}")
+    _assert(tool_count == expected_tool_count, f"unexpected native MCP tool count: {tool_count} != {expected_tool_count}")
 
     bad_protocol = _mcp(http_port, 90, "tools/list", {}, session_id=session_id, protocol_version="1900-01-01")
     _assert(bad_protocol.get("body", {}).get("error", {}).get("code") == -32002, "unsupported protocol did not return -32002")
@@ -322,8 +466,12 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     _assert(after_delete.get("body", {}).get("error", {}).get("code") == -32001, "deleted session did not return -32001")
 
     mutating_widget_result = None
+    mutating_material_result = None
+    mutating_asset_result = None
     if mutating_smoke:
         mutating_widget_result = _run_mutating_widget_smoke(tcp_port)
+        mutating_material_result = _run_mutating_material_smoke(tcp_port)
+        mutating_asset_result = _run_mutating_asset_smoke(tcp_port)
 
     identity = _send_tcp(tcp_port, {"type": "editor_identity"})
     audit_path = Path(identity.get("data", {}).get("http_audit_log_path", ""))
@@ -339,6 +487,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "tcp_port": tcp_port,
         "http_port": http_port,
         "native_mcp_tool_count": tool_count,
+        "expected_native_mcp_tool_count": expected_tool_count,
         "native_mcp_page_count": page_count,
         "unsupported_protocol_code": bad_protocol.get("body", {}).get("error", {}).get("code"),
         "dry_run_scope_gate": True,
@@ -346,6 +495,8 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "session_delete_success": True,
         "mutating_widget_smoke": mutating_widget_result,
+        "mutating_material_smoke": mutating_material_result,
+        "mutating_asset_smoke": mutating_asset_result,
         "audit_log_path": str(audit_path),
         "audit_line_count": len(audit_lines),
         "audit_parse_checked": min(len(audit_lines), 20),

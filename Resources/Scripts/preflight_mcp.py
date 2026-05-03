@@ -52,7 +52,7 @@ def main() -> int:
     parser.add_argument(
         "--mutating-smoke",
         action="store_true",
-        help="When used with --runtime-smoke, run the isolated mutating WBP smoke.",
+        help="When used with --runtime-smoke, run isolated mutating WBP, Blueprint graph, Material, and generic Asset smoke checks.",
     )
     args = parser.parse_args()
 
