@@ -3772,7 +3772,9 @@ def create_material(
     domain: str = "Surface",
     blend_mode: str = "Opaque",
     shading_model: str = "DefaultLit",
-    two_sided: bool = False
+    two_sided: bool = False,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Create a new Material asset.
@@ -3784,26 +3786,22 @@ def create_material(
         blend_mode: "Opaque", "Masked", "Translucent", "Additive", "Modulate"
         shading_model: "DefaultLit", "Unlit", "Subsurface", "TwoSidedFoliage", etc.
         two_sided: Enable two-sided rendering
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without creating the material.
 
     Returns:
         JSON with asset_path and asset_name on success.
     """
-    params = {
-        "package_path": package_path,
-        "asset_name": asset_name,
-        "domain": domain,
-        "blend_mode": blend_mode,
-        "shading_model": shading_model,
-        "two_sided": two_sided,
-    }
-    return _format_response(_send_command("create_material", params))
+    return _send_generated_tcp_tool("create_material", locals())
 
 
 @mcp.tool()
 def set_material_property(
     asset_path: str,
     property_name: str,
-    value: str
+    value: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a material-level property.
@@ -3812,15 +3810,13 @@ def set_material_property(
         asset_path: Asset path of the Material
         property_name: UMaterial property name (e.g. "BlendMode", "bTwoSided")
         value: Value in ImportText format
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without changing the material.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_material_property", {
-        "asset_path": asset_path,
-        "property_name": property_name,
-        "value": value,
-    }))
+    return _send_generated_tcp_tool("set_material_property", locals())
 
 
 @mcp.tool()
@@ -3829,7 +3825,9 @@ def add_expression(
     expression_class: str,
     node_name: str,
     pos_x: int = 0,
-    pos_y: int = 0
+    pos_y: int = 0,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a material expression node to the material graph.
@@ -3847,17 +3845,13 @@ def add_expression(
         node_name: Logical name for the node (used for lookup in other commands)
         pos_x: X position in graph (negative = left of root inputs)
         pos_y: Y position in graph
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without adding a node.
 
     Returns:
         JSON with node_name, expression_class, and position.
     """
-    return _format_response(_send_command("add_expression", {
-        "asset_path": asset_path,
-        "expression_class": expression_class,
-        "node_name": node_name,
-        "pos_x": pos_x,
-        "pos_y": pos_y,
-    }))
+    return _send_generated_tcp_tool("add_expression", locals())
 
 
 @mcp.tool()
@@ -3865,7 +3859,9 @@ def set_expression_property(
     asset_path: str,
     node_name: str,
     property_name: str,
-    value: str
+    value: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a property on a material expression node via UE reflection.
@@ -3879,16 +3875,13 @@ def set_expression_property(
                - ScalarParameter default: "0.5"
                - TextureSample texture: "Texture2D'/Game/Textures/T_Gold.T_Gold'"
                - ComponentMask R: "true"
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without changing the expression.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_expression_property", {
-        "asset_path": asset_path,
-        "node_name": node_name,
-        "property_name": property_name,
-        "value": value,
-    }))
+    return _send_generated_tcp_tool("set_expression_property", locals())
 
 
 @mcp.tool()
@@ -3897,7 +3890,9 @@ def connect_expressions(
     from_node: str,
     from_output: str,
     to_node: str,
-    to_input: str
+    to_input: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Connect two material expression nodes.
@@ -3908,17 +3903,13 @@ def connect_expressions(
         from_output: Output pin name on source (e.g. "RGB", "R", "G", "" for default)
         to_node: Target node name
         to_input: Input pin name on target (e.g. "A", "B", "Alpha", "Base")
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without connecting nodes.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("connect_expressions", {
-        "asset_path": asset_path,
-        "from_node": from_node,
-        "from_output": from_output,
-        "to_node": to_node,
-        "to_input": to_input,
-    }))
+    return _send_generated_tcp_tool("connect_expressions", locals())
 
 
 @mcp.tool()
@@ -3926,7 +3917,9 @@ def connect_to_material_property(
     asset_path: str,
     from_node: str,
     from_output: str,
-    material_property: str
+    material_property: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Connect an expression output to a material root input property.
@@ -3940,23 +3933,22 @@ def connect_to_material_property(
             "EmissiveColor" (or "Emissive"), "Opacity", "OpacityMask",
             "WorldPositionOffset" (or "WPO"), "AmbientOcclusion" (or "AO"),
             "SubsurfaceColor", "Refraction", "PixelDepthOffset" (or "PDO")
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without connecting the root input.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("connect_to_material_property", {
-        "asset_path": asset_path,
-        "from_node": from_node,
-        "from_output": from_output,
-        "material_property": material_property,
-    }))
+    return _send_generated_tcp_tool("connect_to_material_property", locals())
 
 
 @mcp.tool()
 def disconnect_input(
     asset_path: str,
     node_name: str,
-    input_name: str
+    input_name: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Disconnect a specific input on an expression node.
@@ -3965,47 +3957,55 @@ def disconnect_input(
         asset_path: Asset path of the Material
         node_name: Target expression node name
         input_name: Input pin name to disconnect (e.g. "A", "B", "Alpha")
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without disconnecting.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("disconnect_input", {
-        "asset_path": asset_path,
-        "node_name": node_name,
-        "input_name": input_name,
-    }))
+    return _send_generated_tcp_tool("disconnect_input", locals())
 
 
 @mcp.tool()
-def remove_expression(asset_path: str, node_name: str) -> str:
+def remove_expression(
+    asset_path: str,
+    node_name: str,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Remove an expression node from the material graph.
 
     Args:
         asset_path: Asset path of the Material
         node_name: Node name to remove
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without removing the node.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("remove_expression", {
-        "asset_path": asset_path,
-        "node_name": node_name,
-    }))
+    return _send_generated_tcp_tool("remove_expression", locals())
 
 
 @mcp.tool()
-def compile_material(asset_path: str) -> str:
+def compile_material(
+    asset_path: str,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Recompile a material and save to disk.
 
     Args:
         asset_path: Asset path of the Material
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without compiling or saving.
 
     Returns:
         JSON with compiled/saved status and any warnings.
     """
-    return _format_response(_send_command("compile_material", {"asset_path": asset_path}))
+    return _send_generated_tcp_tool("compile_material", locals())
 
 
 @mcp.tool()
@@ -4041,7 +4041,9 @@ def list_expression_classes() -> str:
 def create_material_instance(
     package_path: str,
     asset_name: str,
-    parent_material_path: str
+    parent_material_path: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Create a Material Instance Constant (MIC).
@@ -4050,15 +4052,13 @@ def create_material_instance(
         package_path: Content path, e.g. "/Game/Materials/Instances"
         asset_name: Asset name, e.g. "MI_GoldVariant"
         parent_material_path: Path to parent material, e.g. "/Game/Materials/M_Gold"
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without creating the MIC.
 
     Returns:
         JSON with asset_path and asset_name on success.
     """
-    return _format_response(_send_command("create_material_instance", {
-        "package_path": package_path,
-        "asset_name": asset_name,
-        "parent_material_path": parent_material_path,
-    }))
+    return _send_generated_tcp_tool("create_material_instance", locals())
 
 
 @mcp.tool()
@@ -4066,7 +4066,9 @@ def set_instance_parameter(
     asset_path: str,
     param_name: str,
     param_type: str,
-    value: str
+    value: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a parameter on a Material Instance Constant.
@@ -4079,30 +4081,33 @@ def set_instance_parameter(
                scalar: "0.5"
                vector: "(R=1.0,G=0.0,B=0.0,A=1.0)"
                texture: "/Game/Textures/T_MyTex"
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without setting the parameter.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_instance_parameter", {
-        "asset_path": asset_path,
-        "param_name": param_name,
-        "param_type": param_type,
-        "value": value,
-    }))
+    return _send_generated_tcp_tool("set_instance_parameter", locals())
 
 
 @mcp.tool()
-def save_material_instance(asset_path: str) -> str:
+def save_material_instance(
+    asset_path: str,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Save a Material Instance Constant to disk.
 
     Args:
         asset_path: Asset path of the MIC
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without saving.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("save_material_instance", {"asset_path": asset_path}))
+    return _send_generated_tcp_tool("save_material_instance", locals())
 
 
 @mcp.tool()

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T18:45:46.692699Z",
+  "generated_at_utc": "2026-05-03T18:51:57.851959Z",
   "tool_count": 140,
   "tools": {
     "ping": {
@@ -3395,6 +3395,14 @@
         "two_sided": {
           "type": "boolean",
           "default": false
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3429,6 +3437,14 @@
         },
         "value": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3472,6 +3488,14 @@
         "pos_y": {
           "type": "integer",
           "default": 0
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3510,6 +3534,14 @@
         },
         "value": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3552,6 +3584,14 @@
         },
         "to_input": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3592,6 +3632,14 @@
         },
         "material_property": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3628,6 +3676,14 @@
         },
         "input_name": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3660,6 +3716,14 @@
         },
         "node_name": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3688,6 +3752,14 @@
       "properties": {
         "asset_path": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3769,6 +3841,14 @@
         },
         "parent_material_path": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3807,6 +3887,14 @@
         },
         "value": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3837,6 +3925,14 @@
       "properties": {
         "asset_path": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [

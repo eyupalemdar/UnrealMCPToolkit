@@ -905,7 +905,7 @@ def reparent_blueprint(asset_path: str, new_parent_class: str) -> str:
     return _format_response(_send_command("reparent_blueprint", params))
 
 
-def create_material(package_path: str, asset_name: str, domain: str = 'Surface', blend_mode: str = 'Opaque', shading_model: str = 'DefaultLit', two_sided: bool = False) -> str:
+def create_material(package_path: str, asset_name: str, domain: str = 'Surface', blend_mode: str = 'Opaque', shading_model: str = 'DefaultLit', two_sided: bool = False, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `create_material` (Material)."""
     params = {
         "package_path": package_path,
@@ -915,20 +915,20 @@ def create_material(package_path: str, asset_name: str, domain: str = 'Surface',
         "shading_model": shading_model,
         "two_sided": two_sided,
     }
-    return _format_response(_send_command("create_material", params))
+    return _format_response(_send_command("create_material", params, _request_meta(scope, dry_run)))
 
 
-def set_material_property(asset_path: str, property_name: str, value: str) -> str:
+def set_material_property(asset_path: str, property_name: str, value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_material_property` (Material)."""
     params = {
         "asset_path": asset_path,
         "property_name": property_name,
         "value": value,
     }
-    return _format_response(_send_command("set_material_property", params))
+    return _format_response(_send_command("set_material_property", params, _request_meta(scope, dry_run)))
 
 
-def add_expression(asset_path: str, expression_class: str, node_name: str, pos_x: int = 0, pos_y: int = 0) -> str:
+def add_expression(asset_path: str, expression_class: str, node_name: str, pos_x: int = 0, pos_y: int = 0, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_expression` (Material)."""
     params = {
         "asset_path": asset_path,
@@ -937,10 +937,10 @@ def add_expression(asset_path: str, expression_class: str, node_name: str, pos_x
         "pos_x": pos_x,
         "pos_y": pos_y,
     }
-    return _format_response(_send_command("add_expression", params))
+    return _format_response(_send_command("add_expression", params, _request_meta(scope, dry_run)))
 
 
-def set_expression_property(asset_path: str, node_name: str, property_name: str, value: str) -> str:
+def set_expression_property(asset_path: str, node_name: str, property_name: str, value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_expression_property` (Material)."""
     params = {
         "asset_path": asset_path,
@@ -948,10 +948,10 @@ def set_expression_property(asset_path: str, node_name: str, property_name: str,
         "property_name": property_name,
         "value": value,
     }
-    return _format_response(_send_command("set_expression_property", params))
+    return _format_response(_send_command("set_expression_property", params, _request_meta(scope, dry_run)))
 
 
-def connect_expressions(asset_path: str, from_node: str, from_output: str, to_node: str, to_input: str) -> str:
+def connect_expressions(asset_path: str, from_node: str, from_output: str, to_node: str, to_input: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `connect_expressions` (Material)."""
     params = {
         "asset_path": asset_path,
@@ -960,10 +960,10 @@ def connect_expressions(asset_path: str, from_node: str, from_output: str, to_no
         "to_node": to_node,
         "to_input": to_input,
     }
-    return _format_response(_send_command("connect_expressions", params))
+    return _format_response(_send_command("connect_expressions", params, _request_meta(scope, dry_run)))
 
 
-def connect_to_material_property(asset_path: str, from_node: str, from_output: str, material_property: str) -> str:
+def connect_to_material_property(asset_path: str, from_node: str, from_output: str, material_property: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `connect_to_material_property` (Material)."""
     params = {
         "asset_path": asset_path,
@@ -971,34 +971,34 @@ def connect_to_material_property(asset_path: str, from_node: str, from_output: s
         "from_output": from_output,
         "material_property": material_property,
     }
-    return _format_response(_send_command("connect_to_material_property", params))
+    return _format_response(_send_command("connect_to_material_property", params, _request_meta(scope, dry_run)))
 
 
-def disconnect_input(asset_path: str, node_name: str, input_name: str) -> str:
+def disconnect_input(asset_path: str, node_name: str, input_name: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `disconnect_input` (Material)."""
     params = {
         "asset_path": asset_path,
         "node_name": node_name,
         "input_name": input_name,
     }
-    return _format_response(_send_command("disconnect_input", params))
+    return _format_response(_send_command("disconnect_input", params, _request_meta(scope, dry_run)))
 
 
-def remove_expression(asset_path: str, node_name: str) -> str:
+def remove_expression(asset_path: str, node_name: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `remove_expression` (Material)."""
     params = {
         "asset_path": asset_path,
         "node_name": node_name,
     }
-    return _format_response(_send_command("remove_expression", params))
+    return _format_response(_send_command("remove_expression", params, _request_meta(scope, dry_run)))
 
 
-def compile_material(asset_path: str) -> str:
+def compile_material(asset_path: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `compile_material` (Material)."""
     params = {
         "asset_path": asset_path,
     }
-    return _format_response(_send_command("compile_material", params))
+    return _format_response(_send_command("compile_material", params, _request_meta(scope, dry_run)))
 
 
 def get_material_graph(asset_path: str) -> str:
@@ -1015,17 +1015,17 @@ def list_expression_classes() -> str:
     return _format_response(_send_command("list_expression_classes"))
 
 
-def create_material_instance(package_path: str, asset_name: str, parent_material_path: str) -> str:
+def create_material_instance(package_path: str, asset_name: str, parent_material_path: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `create_material_instance` (Material)."""
     params = {
         "package_path": package_path,
         "asset_name": asset_name,
         "parent_material_path": parent_material_path,
     }
-    return _format_response(_send_command("create_material_instance", params))
+    return _format_response(_send_command("create_material_instance", params, _request_meta(scope, dry_run)))
 
 
-def set_instance_parameter(asset_path: str, param_name: str, param_type: str, value: str) -> str:
+def set_instance_parameter(asset_path: str, param_name: str, param_type: str, value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_instance_parameter` (Material)."""
     params = {
         "asset_path": asset_path,
@@ -1033,15 +1033,15 @@ def set_instance_parameter(asset_path: str, param_name: str, param_type: str, va
         "param_type": param_type,
         "value": value,
     }
-    return _format_response(_send_command("set_instance_parameter", params))
+    return _format_response(_send_command("set_instance_parameter", params, _request_meta(scope, dry_run)))
 
 
-def save_material_instance(asset_path: str) -> str:
+def save_material_instance(asset_path: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `save_material_instance` (Material)."""
     params = {
         "asset_path": asset_path,
     }
-    return _format_response(_send_command("save_material_instance", params))
+    return _format_response(_send_command("save_material_instance", params, _request_meta(scope, dry_run)))
 
 
 def get_material_instance_info(asset_path: str) -> str:

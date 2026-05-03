@@ -311,15 +311,15 @@ Without `target_class`, the function may resolve to wrong overload or fail.
 
 | Tool | Purpose |
 |------|---------|
-| `create_material(package_path, asset_name, domain?, blend_mode?, shading_model?)` | Create material |
-| `set_material_property(asset_path, property_name, value)` | Set material property (domain, blend, shading) |
-| `add_expression(asset_path, expression_class, node_name, pos_x?, pos_y?)` | Add expression node |
-| `set_expression_property(asset_path, node_name, property_name, value)` | Set expression property |
-| `connect_expressions(asset_path, source_node, source_index, target_node, target_index)` | Wire nodes |
-| `connect_to_material_property(asset_path, source_node, source_index, material_property)` | Wire to root |
-| `disconnect_input(asset_path, node_name, input_index)` | Disconnect input |
-| `remove_expression(asset_path, node_name)` | Remove expression |
-| `compile_material(asset_path)` | Compile + save |
+| `create_material(package_path, asset_name, domain?, blend_mode?, shading_model?, two_sided?, scope?, dry_run?)` | Create material |
+| `set_material_property(asset_path, property_name, value, scope?, dry_run?)` | Set material property (domain, blend, shading) |
+| `add_expression(asset_path, expression_class, node_name, pos_x?, pos_y?, scope?, dry_run?)` | Add expression node |
+| `set_expression_property(asset_path, node_name, property_name, value, scope?, dry_run?)` | Set expression property |
+| `connect_expressions(asset_path, from_node, from_output, to_node, to_input, scope?, dry_run?)` | Wire nodes |
+| `connect_to_material_property(asset_path, from_node, from_output, material_property, scope?, dry_run?)` | Wire to root |
+| `disconnect_input(asset_path, node_name, input_name, scope?, dry_run?)` | Disconnect input |
+| `remove_expression(asset_path, node_name, scope?, dry_run?)` | Remove expression |
+| `compile_material(asset_path, scope?, dry_run?)` | Compile + save |
 | `get_material_graph(asset_path)` | Get graph as JSON |
 | `list_expression_classes()` | List available expression types |
 
@@ -327,9 +327,9 @@ Without `target_class`, the function may resolve to wrong overload or fail.
 
 | Tool | Purpose |
 |------|---------|
-| `create_material_instance(package_path, asset_name, parent_material)` | Create MIC |
-| `set_instance_parameter(asset_path, param_name, param_type, value)` | Set scalar/vector/texture param |
-| `save_material_instance(asset_path)` | Save to disk |
+| `create_material_instance(package_path, asset_name, parent_material_path, scope?, dry_run?)` | Create MIC |
+| `set_instance_parameter(asset_path, param_name, param_type, value, scope?, dry_run?)` | Set scalar/vector/texture param |
+| `save_material_instance(asset_path, scope?, dry_run?)` | Save to disk |
 | `get_material_instance_info(asset_path)` | Get MIC info |
 
 ### Material Property Values
@@ -770,15 +770,11 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 `CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
-now covers 85 wrappers: read-only payload wrappers, the safe write-scope set
-(`actor_spawn`, `actor_set_transform`, `level_open`, `level_save_current`,
-`pie_start`, `pie_stop`, `viewport_capture`, `save_data_asset`,
-`create_asset`, `set_asset_property`, `save_asset`, `rename_asset`,
-`fixup_redirectors`, `add_input_mapping`, `remove_input_mapping`,
-`create_anim_blueprint`, `import_texture`, `import_font`, `set_cdo_property`,
-`add_cdo_array_element`, `set_cdo_array_element_property`, and
-`remove_cdo_array_element`), and the current destructive dry-run set
-(`actor_delete`, `delete_asset`, and `editor_console_command`).
+now covers 97 wrappers: read-only payload wrappers, the safe write-scope set
+(editor/level/actor/PIE/viewport, Asset/DataAsset/Input, Import,
+AnimBlueprint, CDO/CDOArray, and Material graph/MIC wrappers), and the current
+destructive dry-run set (`actor_delete`, `delete_asset`, and
+`editor_console_command`).
 Payload fields, optional dict transform values, `scope`, and `dry_run` request
 meta are encoded explicitly so destructive tools keep their existing
 client/server scope gates. Payload inclusion rules now include explicit

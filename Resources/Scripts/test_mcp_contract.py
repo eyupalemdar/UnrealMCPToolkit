@@ -174,9 +174,16 @@ def _failures() -> list[str]:
             "actor_set_transform",
             "actor_spawn",
             "add_cdo_array_element",
+            "add_expression",
             "add_input_mapping",
+            "compile_material",
+            "connect_expressions",
+            "connect_to_material_property",
             "create_anim_blueprint",
             "create_asset",
+            "create_material",
+            "create_material_instance",
+            "disconnect_input",
             "fixup_redirectors",
             "import_font",
             "import_texture",
@@ -187,11 +194,16 @@ def _failures() -> list[str]:
             "remove_input_mapping",
             "rename_asset",
             "remove_cdo_array_element",
+            "remove_expression",
             "save_asset",
             "save_data_asset",
+            "save_material_instance",
             "set_cdo_array_element_property",
             "set_cdo_property",
+            "set_expression_property",
+            "set_instance_parameter",
             "set_asset_property",
+            "set_material_property",
             "viewport_capture",
         ):
             spec = generated_wrappers.get(expected_name)
@@ -404,6 +416,83 @@ def _failures() -> list[str]:
             )
             if remove_cdo_array_call.get("params") != {"asset_path": "/Game/UI/W_Test", "array_name": "PreregisteredTabInfoArray", "index": 0} or remove_cdo_array_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed remove_cdo_array_element payload/meta mapping")
+            create_material_call = build_tcp_call(
+                "create_material",
+                {
+                    "package_path": "/Game/Materials",
+                    "asset_name": "M_Test",
+                    "domain": "Surface",
+                    "blend_mode": "Opaque",
+                    "shading_model": "DefaultLit",
+                    "two_sided": False,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if create_material_call.get("params") != {"package_path": "/Game/Materials", "asset_name": "M_Test"} or create_material_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed create_material default payload/meta mapping")
+            add_expression_call = build_tcp_call(
+                "add_expression",
+                {
+                    "asset_path": "/Game/Materials/M_Test",
+                    "expression_class": "ScalarParam",
+                    "node_name": "Roughness",
+                    "pos_x": -200,
+                    "pos_y": 0,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if add_expression_call.get("params") != {"asset_path": "/Game/Materials/M_Test", "expression_class": "ScalarParam", "node_name": "Roughness", "pos_x": -200} or add_expression_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed add_expression optional payload/meta mapping")
+            connect_material_call = build_tcp_call(
+                "connect_to_material_property",
+                {
+                    "asset_path": "/Game/Materials/M_Test",
+                    "from_node": "Color",
+                    "from_output": "",
+                    "material_property": "BaseColor",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if connect_material_call.get("params") != {"asset_path": "/Game/Materials/M_Test", "from_node": "Color", "from_output": "", "material_property": "BaseColor"} or connect_material_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed connect_to_material_property payload/meta mapping")
+            material_instance_call = build_tcp_call(
+                "create_material_instance",
+                {
+                    "package_path": "/Game/Materials",
+                    "asset_name": "MI_Test",
+                    "parent_material_path": "/Game/Materials/M_Test",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if material_instance_call.get("params") != {"package_path": "/Game/Materials", "asset_name": "MI_Test", "parent_material_path": "/Game/Materials/M_Test"} or material_instance_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed create_material_instance payload/meta mapping")
+            set_instance_call = build_tcp_call(
+                "set_instance_parameter",
+                {
+                    "asset_path": "/Game/Materials/MI_Test",
+                    "param_name": "Roughness",
+                    "param_type": "scalar",
+                    "value": "0.5",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if set_instance_call.get("params") != {"asset_path": "/Game/Materials/MI_Test", "param_name": "Roughness", "param_type": "scalar", "value": "0.5"} or set_instance_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed set_instance_parameter payload/meta mapping")
+            compile_material_call = build_tcp_call(
+                "compile_material",
+                {
+                    "asset_path": "/Game/Materials/M_Test",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if compile_material_call.get("params") != {"asset_path": "/Game/Materials/M_Test"} or compile_material_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed compile_material payload/meta mapping")
             spawn_call = build_tcp_call(
                 "actor_spawn",
                 {
