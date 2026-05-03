@@ -219,6 +219,16 @@ def _literal_default(node: ast.AST | None) -> object:
         return None
 
 
+def _literal_default_info(node: ast.AST | None) -> tuple[bool, object, bool]:
+    """Return (has_default, value, is_literal) for wrapper defaults."""
+    if node is None:
+        return False, None, False
+    try:
+        return True, ast.literal_eval(node), True
+    except (TypeError, ValueError):
+        return True, None, False
+
+
 def _schema_for_annotation(annotation: ast.AST | None) -> dict:
     """Convert the type-hint subset used by MCP wrappers to JSON Schema."""
     if annotation is None:
@@ -299,6 +309,101 @@ def _send_command_names(function: ast.FunctionDef) -> list[str]:
     return names
 
 
+def _dict_payload_rules(node: ast.Dict, param_names: set[str], include: str) -> dict[str, str]:
+    rules: dict[str, str] = {}
+    for key, value in zip(node.keys, node.values):
+        if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+            continue
+        if key.value not in param_names:
+            continue
+        if isinstance(value, ast.Name) and value.id == key.value:
+            rules[key.value] = include
+    return rules
+
+
+def _include_rule_for_if(test: ast.AST, param_name: str) -> str:
+    if isinstance(test, ast.Name) and test.id == param_name:
+        return "when_truthy"
+    if isinstance(test, ast.Compare) and isinstance(test.left, ast.Name) and test.left.id == param_name:
+        if len(test.ops) == 1 and isinstance(test.ops[0], ast.Gt):
+            comparator = test.comparators[0]
+            if isinstance(comparator, ast.Constant) and comparator.value == 0:
+                return "when_gt_zero"
+    return "conditional"
+
+
+def _payload_param_rules(function: ast.FunctionDef, command_name: str, param_names: set[str]) -> dict[str, dict]:
+    """Infer simple wrapper payload inclusion rules from direct pass-through bodies."""
+    rules: dict[str, dict] = {}
+    payload_vars = {"params", "payload"}
+    condition_stack: list[ast.AST] = []
+
+    def mark(name: str, include: str) -> None:
+        if name in param_names:
+            rules[name] = {"name": name, "include": include}
+
+    def current_include(name: str) -> str:
+        for condition in reversed(condition_stack):
+            return _include_rule_for_if(condition, name)
+        return "always"
+
+    class Visitor(ast.NodeVisitor):
+        def visit_Assign(self, node: ast.Assign) -> None:  # noqa: N802 - ast visitor API
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id in payload_vars and isinstance(node.value, ast.Dict):
+                    for name, include in _dict_payload_rules(node.value, param_names, "always").items():
+                        mark(name, include)
+                elif isinstance(target, ast.Subscript):
+                    self._visit_payload_assignment(target, node.value)
+            self.generic_visit(node)
+
+        def visit_AnnAssign(self, node: ast.AnnAssign) -> None:  # noqa: N802 - ast visitor API
+            if isinstance(node.target, ast.Name) and node.target.id in payload_vars and isinstance(node.value, ast.Dict):
+                for name, include in _dict_payload_rules(node.value, param_names, "always").items():
+                    mark(name, include)
+            elif isinstance(node.target, ast.Subscript) and node.value is not None:
+                self._visit_payload_assignment(node.target, node.value)
+            self.generic_visit(node)
+
+        def visit_If(self, node: ast.If) -> None:  # noqa: N802 - ast visitor API
+            condition_stack.append(node.test)
+            for statement in node.body:
+                self.visit(statement)
+            condition_stack.pop()
+            for statement in node.orelse:
+                self.visit(statement)
+
+        def visit_Call(self, node: ast.Call) -> None:  # noqa: N802 - ast visitor API
+            if not (isinstance(node.func, ast.Name) and node.func.id == "_send_command"):
+                self.generic_visit(node)
+                return
+            if not node.args:
+                self.generic_visit(node)
+                return
+            command_arg = node.args[0]
+            if not (isinstance(command_arg, ast.Constant) and command_arg.value == command_name):
+                self.generic_visit(node)
+                return
+            if len(node.args) > 1 and isinstance(node.args[1], ast.Dict):
+                for name in _dict_payload_rules(node.args[1], param_names, "always"):
+                    mark(name, current_include(name))
+            self.generic_visit(node)
+
+        def _visit_payload_assignment(self, target: ast.Subscript, value: ast.AST) -> None:
+            if not (isinstance(target.value, ast.Name) and target.value.id in payload_vars):
+                return
+            key = target.slice
+            if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+                return
+            param_name = key.value
+            if not (isinstance(value, ast.Name) and value.id == param_name):
+                return
+            mark(param_name, current_include(param_name))
+
+    Visitor().visit(function)
+    return rules
+
+
 def read_mcp_tool_wrappers() -> dict[str, dict]:
     """Read wrapper metadata from @mcp.tool functions in the Python MCP client."""
     tree = ast.parse(MCP_CLIENT.read_text(encoding="utf-8"), filename=str(MCP_CLIENT))
@@ -314,32 +419,40 @@ def read_mcp_tool_wrappers() -> dict[str, dict]:
         for arg, default_node in zip(positional_args, defaults):
             if arg.arg in {"self", "cls"}:
                 continue
+            has_default, default_value, default_is_literal = _literal_default_info(default_node)
             params.append(
                 {
                     "name": arg.arg,
                     "kind": "positional_or_keyword",
                     "annotation": _ast_source(arg.annotation),
                     "default": _ast_source(default_node) if default_node is not None else None,
-                    "required": default_node is None,
+                    "default_value": default_value,
+                    "default_is_literal": default_is_literal,
+                    "required": not has_default,
                 }
             )
 
         for arg, default_node in zip(node.args.kwonlyargs, node.args.kw_defaults):
+            has_default, default_value, default_is_literal = _literal_default_info(default_node)
             params.append(
                 {
                     "name": arg.arg,
                     "kind": "keyword_only",
                     "annotation": _ast_source(arg.annotation),
                     "default": _ast_source(default_node) if default_node is not None else None,
-                    "required": default_node is None,
+                    "default_value": default_value,
+                    "default_is_literal": default_is_literal,
+                    "required": not has_default,
                 }
             )
 
+        param_names = {param["name"] for param in params}
         wrappers[node.name] = {
             "name": node.name,
             "source": _project_relative(MCP_CLIENT),
             "line": node.lineno,
             "params": params,
+            "payload_params": _payload_param_rules(node, node.name, param_names),
             "returns": _ast_source(node.returns),
             "literal_send_commands": _send_command_names(node),
         }
@@ -517,23 +630,53 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
         item = wrapper_spec["tools"].get(name, {})
         wrapper = item.get("wrapper") or {}
         params = wrapper.get("params") or []
-        if command.get("mutating") or params:
+        if command.get("mutating") or command.get("required_scope") != "read":
             continue
-        if item.get("literal_send_commands") != [name]:
+        if any(param.get("name") in {"scope", "dry_run"} for param in params):
+            continue
+        literal_send_commands = item.get("literal_send_commands") or []
+        if not literal_send_commands or any(command_name != name for command_name in literal_send_commands):
+            continue
+
+        payload_rules = wrapper.get("payload_params") or {}
+        runtime_params: list[dict] = []
+        b_can_generate = True
+        for param in params:
+            param_name = param["name"]
+            rule = payload_rules.get(param_name, {})
+            include = rule.get("include", "always" if param.get("required") else "when_provided")
+            if include not in {"always", "when_truthy", "when_gt_zero", "when_provided", "conditional"}:
+                b_can_generate = False
+                break
+            if include == "conditional":
+                b_can_generate = False
+                break
+            if not param.get("required") and not param.get("default_is_literal", False):
+                b_can_generate = False
+                break
+            runtime_params.append(
+                {
+                    "name": param_name,
+                    "required": bool(param.get("required")),
+                    "default": param.get("default_value"),
+                    "include": include,
+                }
+            )
+        if not b_can_generate:
             continue
 
         specs[name] = {
             "command": name,
             "category": command["category"],
             "required_scope": command["required_scope"],
-            "params": [],
+            "params": runtime_params,
         }
 
     lines = [
         '"""Generated CommonAIExport MCP wrapper runtime registry.',
         "",
         "This file is generated by Resources/Scripts/generate_mcp_artifacts.py.",
-        "The MCP client imports it for selected no-argument read-only wrappers.",
+        "The MCP client imports it for selected read-only pass-through wrappers.",
         '"""',
         "",
         "from __future__ import annotations",
@@ -547,17 +690,37 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
         "    if spec is None:",
         "        return {\"success\": False, \"error\": f\"No generated TCP wrapper spec for {tool_name}\"}",
         "    arguments = arguments or {}",
-        "    unexpected = sorted(set(arguments) - set(spec[\"params\"]))",
+        "    param_names = {param[\"name\"] for param in spec[\"params\"]}",
+        "    unexpected = sorted(set(arguments) - param_names)",
         "    if unexpected:",
         "        return {",
         "            \"success\": False,",
         "            \"error\": f\"Unexpected generated TCP wrapper arguments for {tool_name}: {', '.join(unexpected)}\",",
         "        }",
-        "    params = {name: arguments[name] for name in spec[\"params\"] if name in arguments}",
+        "    params = {}",
+        "    missing = [param[\"name\"] for param in spec[\"params\"] if param.get(\"required\") and param[\"name\"] not in arguments]",
+        "    if missing:",
+        "        return {",
+        "            \"success\": False,",
+        "            \"error\": f\"Missing generated TCP wrapper arguments for {tool_name}: {', '.join(missing)}\",",
+        "        }",
+        "    for param in spec[\"params\"]:",
+        "        name = param[\"name\"]",
+        "        if name not in arguments:",
+        "            continue",
+        "        value = arguments[name]",
+        "        include = param.get(\"include\", \"always\")",
+        "        if include == \"when_truthy\" and not value:",
+        "            continue",
+        "        if include == \"when_gt_zero\" and not (isinstance(value, (int, float)) and value > 0):",
+        "            continue",
+        "        if include == \"when_provided\" and value == param.get(\"default\"):",
+        "            continue",
+        "        params[name] = value",
         "    return {",
         "        \"success\": True,",
         "        \"command\": spec[\"command\"],",
-        "        \"params\": params or None,",
+        "        \"params\": params if spec[\"params\"] else None,",
         "        \"meta\": None,",
         "    }",
         "",

@@ -139,6 +139,33 @@ def _failures() -> list[str]:
         expected_runtime = build_wrapper_runtime(manifest, wrapper_spec)
         if WRAPPER_RUNTIME_PATH.read_text(encoding="utf-8") != expected_runtime:
             failures.append("generated wrapper runtime is stale")
+        runtime_namespace: dict = {}
+        exec(expected_runtime, runtime_namespace)
+        generated_wrappers = runtime_namespace.get("GENERATED_TCP_WRAPPERS", {})
+        parameterized_wrappers = [
+            name for name, spec in generated_wrappers.items() if spec.get("params")
+        ]
+        if len(parameterized_wrappers) < 20:
+            failures.append("generated wrapper runtime did not promote parameterized read-only wrappers")
+        for expected_name in ("asset_exists", "get_widget_tree", "task_events"):
+            if expected_name not in generated_wrappers:
+                failures.append(f"generated wrapper runtime missing {expected_name}")
+        build_tcp_call = runtime_namespace.get("build_tcp_call")
+        if callable(build_tcp_call):
+            asset_call = build_tcp_call("asset_exists", {"asset_path": "/Game/Example"})
+            if asset_call.get("params") != {"asset_path": "/Game/Example"}:
+                failures.append("generated wrapper runtime failed required parameter payload mapping")
+            task_call = build_tcp_call("task_events", {"task_id": "", "after_sequence": 0, "limit": 100})
+            if task_call.get("params") != {"limit": 100}:
+                failures.append("generated wrapper runtime failed optional parameter omission mapping")
+            missing_call = build_tcp_call("asset_exists", {})
+            if missing_call.get("success") is not False:
+                failures.append("generated wrapper runtime did not reject missing required parameters")
+            unexpected_call = build_tcp_call("asset_exists", {"asset_path": "/Game/Example", "extra": True})
+            if unexpected_call.get("success") is not False:
+                failures.append("generated wrapper runtime did not reject unexpected parameters")
+        else:
+            failures.append("generated wrapper runtime missing build_tcp_call")
     else:
         failures.append(f"missing generated wrapper runtime: {WRAPPER_RUNTIME_PATH}")
 

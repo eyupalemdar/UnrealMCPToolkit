@@ -750,11 +750,13 @@ Generated artifacts are checked by the contract validator and live under
 - `CommonAIExport_MCPWrapperRuntime.py`
 
 `CommonAIExport_WrapperSpec.json` binds each TCP descriptor to the Python MCP
-wrapper function, records the wrapper signature, and fails validation when a
-wrapper is missing or calls the wrong TCP command. `CommonAIExport_MCPWrapperStubs.py`
-is a generated review aid for the next wrapper-generation pass.
-`CommonAIExport_MCPWrapperRuntime.py` is imported by the MCP client for selected
-no-argument read-only pass-through wrappers.
+wrapper function, records the wrapper signature and payload inclusion rules,
+and fails validation when a wrapper is missing or calls the wrong TCP command.
+`CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
+wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
+the MCP client for selected read-only pass-through wrappers, including safe
+parameterized wrappers whose required/default/omitted payload fields are encoded
+in generated metadata.
 
 Regenerate them with:
 

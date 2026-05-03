@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T13:42:15.187566Z",
+  "generated_at_utc": "2026-05-03T14:36:48.472809Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "Plugins/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
@@ -73,6 +73,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -80,6 +82,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -87,6 +91,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -94,6 +100,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -101,9 +109,25 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "actor_path": {
+            "name": "actor_path",
+            "include": "when_truthy"
+          },
+          "actor_label": {
+            "name": "actor_label",
+            "include": "when_truthy"
+          },
+          "actor_name": {
+            "name": "actor_name",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "actor_delete"
@@ -163,6 +187,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -170,6 +196,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -177,9 +205,25 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "500",
+            "default_value": 500,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "limit": {
+            "name": "limit",
+            "include": "always"
+          },
+          "name_filter": {
+            "name": "name_filter",
+            "include": "when_truthy"
+          },
+          "class_filter": {
+            "name": "class_filter",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "actor_list"
@@ -280,6 +324,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -287,6 +333,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -294,6 +342,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -301,6 +351,8 @@
             "kind": "positional_or_keyword",
             "annotation": "dict | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -308,6 +360,8 @@
             "kind": "positional_or_keyword",
             "annotation": "dict | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -315,6 +369,8 @@
             "kind": "positional_or_keyword",
             "annotation": "dict | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -322,6 +378,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -329,9 +387,37 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "actor_path": {
+            "name": "actor_path",
+            "include": "when_truthy"
+          },
+          "actor_label": {
+            "name": "actor_label",
+            "include": "when_truthy"
+          },
+          "actor_name": {
+            "name": "actor_name",
+            "include": "when_truthy"
+          },
+          "location": {
+            "name": "location",
+            "include": "conditional"
+          },
+          "rotation": {
+            "name": "rotation",
+            "include": "conditional"
+          },
+          "scale": {
+            "name": "scale",
+            "include": "conditional"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "actor_set_transform"
@@ -429,6 +515,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -436,6 +524,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -443,6 +533,8 @@
             "kind": "positional_or_keyword",
             "annotation": "dict | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -450,6 +542,8 @@
             "kind": "positional_or_keyword",
             "annotation": "dict | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -457,6 +551,8 @@
             "kind": "positional_or_keyword",
             "annotation": "dict | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -464,6 +560,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -471,9 +569,33 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "class_path": {
+            "name": "class_path",
+            "include": "always"
+          },
+          "actor_label": {
+            "name": "actor_label",
+            "include": "when_truthy"
+          },
+          "location": {
+            "name": "location",
+            "include": "conditional"
+          },
+          "rotation": {
+            "name": "rotation",
+            "include": "conditional"
+          },
+          "scale": {
+            "name": "scale",
+            "include": "conditional"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "actor_spawn"
@@ -535,13 +657,15 @@
       "wrapper": {
         "name": "add_branch_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4203,
+        "line": 4198,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -549,6 +673,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -556,6 +682,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -563,6 +691,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -570,9 +700,33 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'EventGraph'",
+            "default_value": "EventGraph",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pos_x": {
+            "name": "pos_x",
+            "include": "always"
+          },
+          "pos_y": {
+            "name": "pos_y",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_branch_node"
@@ -638,13 +792,15 @@
       "wrapper": {
         "name": "add_call_parent_function",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4233,
+        "line": 4228,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -652,6 +808,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -659,6 +817,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -666,6 +826,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -673,6 +835,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -680,9 +844,37 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'EventGraph'",
+            "default_value": "EventGraph",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "function_name": {
+            "name": "function_name",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pos_x": {
+            "name": "pos_x",
+            "include": "always"
+          },
+          "pos_y": {
+            "name": "pos_y",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_call_parent_function"
@@ -740,13 +932,15 @@
       "wrapper": {
         "name": "add_cdo_array_element",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3876,
+        "line": 3874,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -754,6 +948,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -761,6 +957,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'{}'",
+            "default_value": "{}",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -768,9 +966,29 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "array_name": {
+            "name": "array_name",
+            "include": "always"
+          },
+          "element_values": {
+            "name": "element_values",
+            "include": "always"
+          },
+          "class_name": {
+            "name": "class_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_cdo_array_element"
@@ -836,13 +1054,15 @@
       "wrapper": {
         "name": "add_custom_event",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4029,
+        "line": 4024,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -850,6 +1070,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -857,6 +1079,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -864,6 +1088,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -871,6 +1097,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -878,9 +1106,37 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'EventGraph'",
+            "default_value": "EventGraph",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "event_name": {
+            "name": "event_name",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pos_x": {
+            "name": "pos_x",
+            "include": "always"
+          },
+          "pos_y": {
+            "name": "pos_y",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_custom_event"
@@ -946,13 +1202,15 @@
       "wrapper": {
         "name": "add_event_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3993,
+        "line": 3988,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -960,6 +1218,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -967,6 +1227,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -974,6 +1236,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -981,6 +1245,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -988,9 +1254,37 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'EventGraph'",
+            "default_value": "EventGraph",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "event_name": {
+            "name": "event_name",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pos_x": {
+            "name": "pos_x",
+            "include": "always"
+          },
+          "pos_y": {
+            "name": "pos_y",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_event_node"
@@ -1059,6 +1353,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1066,6 +1362,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1073,6 +1371,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1080,6 +1380,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1087,9 +1389,33 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "expression_class": {
+            "name": "expression_class",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pos_x": {
+            "name": "pos_x",
+            "include": "always"
+          },
+          "pos_y": {
+            "name": "pos_y",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_expression"
@@ -1159,13 +1485,15 @@
       "wrapper": {
         "name": "add_function_call",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4062,
+        "line": 4057,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1173,6 +1501,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1180,6 +1510,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1187,6 +1519,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1194,6 +1528,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1201,6 +1537,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1208,9 +1546,41 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'EventGraph'",
+            "default_value": "EventGraph",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "function_name": {
+            "name": "function_name",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pos_x": {
+            "name": "pos_x",
+            "include": "always"
+          },
+          "pos_y": {
+            "name": "pos_y",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          },
+          "target_class": {
+            "name": "target_class",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_function_call"
@@ -1290,13 +1660,15 @@
       "wrapper": {
         "name": "add_input_mapping",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4916,
+        "line": 4897,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1304,6 +1676,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1311,6 +1685,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1318,6 +1694,8 @@
             "kind": "positional_or_keyword",
             "annotation": "list[str] | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1325,9 +1703,33 @@
             "kind": "positional_or_keyword",
             "annotation": "list[str] | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "input_action_path": {
+            "name": "input_action_path",
+            "include": "always"
+          },
+          "key": {
+            "name": "key",
+            "include": "always"
+          },
+          "triggers": {
+            "name": "triggers",
+            "include": "when_truthy"
+          },
+          "modifiers": {
+            "name": "modifiers",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_input_mapping"
@@ -1393,13 +1795,15 @@
       "wrapper": {
         "name": "add_make_struct_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4170,
+        "line": 4165,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1407,6 +1811,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1414,6 +1820,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1421,6 +1829,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1428,6 +1838,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1435,9 +1847,37 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'EventGraph'",
+            "default_value": "EventGraph",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "struct_name": {
+            "name": "struct_name",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pos_x": {
+            "name": "pos_x",
+            "include": "always"
+          },
+          "pos_y": {
+            "name": "pos_y",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_make_struct_node"
@@ -1503,13 +1943,15 @@
       "wrapper": {
         "name": "add_variable",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4435,
+        "line": 4428,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1517,6 +1959,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1524,6 +1968,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1531,6 +1977,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1538,6 +1986,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1545,9 +1995,37 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "var_name": {
+            "name": "var_name",
+            "include": "always"
+          },
+          "var_type": {
+            "name": "var_type",
+            "include": "always"
+          },
+          "instance_editable": {
+            "name": "instance_editable",
+            "include": "always"
+          },
+          "blueprint_read_only": {
+            "name": "blueprint_read_only",
+            "include": "always"
+          },
+          "category": {
+            "name": "category",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_variable"
@@ -1613,13 +2091,15 @@
       "wrapper": {
         "name": "add_variable_get_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4104,
+        "line": 4099,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1627,6 +2107,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1634,6 +2116,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1641,6 +2125,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1648,6 +2134,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1655,9 +2143,37 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'EventGraph'",
+            "default_value": "EventGraph",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "variable_name": {
+            "name": "variable_name",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pos_x": {
+            "name": "pos_x",
+            "include": "always"
+          },
+          "pos_y": {
+            "name": "pos_y",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_variable_get_node"
@@ -1723,13 +2239,15 @@
       "wrapper": {
         "name": "add_variable_set_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4137,
+        "line": 4132,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1737,6 +2255,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1744,6 +2264,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1751,6 +2273,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1758,6 +2282,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1765,9 +2291,37 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'EventGraph'",
+            "default_value": "EventGraph",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "variable_name": {
+            "name": "variable_name",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pos_x": {
+            "name": "pos_x",
+            "include": "always"
+          },
+          "pos_y": {
+            "name": "pos_y",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_variable_set_node"
@@ -1832,6 +2386,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1839,6 +2395,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1846,6 +2404,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -1853,9 +2413,29 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "widget_class": {
+            "name": "widget_class",
+            "include": "always"
+          },
+          "widget_name": {
+            "name": "widget_name",
+            "include": "always"
+          },
+          "parent_name": {
+            "name": "parent_name",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "add_widget"
@@ -1901,16 +2481,19 @@
       "wrapper": {
         "name": "asset_exists",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4661,
+        "line": 4648,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "asset_exists"
@@ -1975,13 +2558,15 @@
       "wrapper": {
         "name": "asset_search",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4611,
+        "line": 4600,
         "params": [
           {
             "name": "path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'/Game'",
+            "default_value": "/Game",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1989,6 +2574,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -1996,6 +2583,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2003,6 +2592,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2010,6 +2601,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2017,9 +2610,37 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "path": {
+            "name": "path",
+            "include": "always"
+          },
+          "name_filter": {
+            "name": "name_filter",
+            "include": "always"
+          },
+          "class_filter": {
+            "name": "class_filter",
+            "include": "always"
+          },
+          "recursive": {
+            "name": "recursive",
+            "include": "always"
+          },
+          "offset": {
+            "name": "offset",
+            "include": "always"
+          },
+          "limit": {
+            "name": "limit",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "asset_search"
@@ -2121,6 +2742,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -2128,6 +2751,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2135,6 +2760,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2142,6 +2769,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2149,6 +2778,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2156,6 +2787,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2163,6 +2796,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2170,6 +2805,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2177,6 +2814,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "2",
+            "default_value": 2,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2184,6 +2823,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2191,6 +2832,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2198,6 +2841,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2205,6 +2850,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2212,9 +2859,12 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -2297,6 +2947,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -2304,6 +2956,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2311,6 +2965,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2318,6 +2974,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2325,6 +2983,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2332,6 +2992,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2339,6 +3001,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2346,6 +3010,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2353,6 +3019,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "2",
+            "default_value": 2,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2360,9 +3028,12 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -2445,6 +3116,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -2452,6 +3125,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2459,6 +3134,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2466,6 +3143,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2473,6 +3152,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2480,6 +3161,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2487,6 +3170,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2494,6 +3179,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2501,6 +3188,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "2",
+            "default_value": 2,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2508,9 +3197,12 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -2553,16 +3245,19 @@
       "wrapper": {
         "name": "asset_validate_light",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4644,
+        "line": 4633,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "asset_validate_light"
@@ -2668,13 +3363,15 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5043,
+        "line": 5020,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -2682,6 +3379,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "1920",
+            "default_value": 1920,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2689,6 +3388,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "1080",
+            "default_value": 1080,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2696,6 +3397,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2703,6 +3406,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "3",
+            "default_value": 3,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2710,6 +3415,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2717,6 +3424,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2724,6 +3433,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "1.0",
+            "default_value": 1.0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2731,6 +3442,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'runtime'",
+            "default_value": "runtime",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2738,6 +3451,8 @@
             "kind": "positional_or_keyword",
             "annotation": "list[dict] | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2745,9 +3460,57 @@
             "kind": "positional_or_keyword",
             "annotation": "list[dict] | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "width": {
+            "name": "width",
+            "include": "always"
+          },
+          "height": {
+            "name": "height",
+            "include": "always"
+          },
+          "warmup_frames": {
+            "name": "warmup_frames",
+            "include": "always"
+          },
+          "transparent_bg": {
+            "name": "transparent_bg",
+            "include": "always"
+          },
+          "return_base64": {
+            "name": "return_base64",
+            "include": "always"
+          },
+          "dpi_scale": {
+            "name": "dpi_scale",
+            "include": "always"
+          },
+          "preview_mode": {
+            "name": "preview_mode",
+            "include": "always"
+          },
+          "output_path": {
+            "name": "output_path",
+            "include": "when_truthy"
+          },
+          "preview_function_calls": {
+            "name": "preview_function_calls",
+            "include": "when_truthy"
+          },
+          "ratios": {
+            "name": "ratios",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "capture_widget_preview"
@@ -2786,6 +3549,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1456,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -2891,6 +3655,8 @@
             "kind": "positional_or_keyword",
             "annotation": "list[str]",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -2898,6 +3664,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2905,6 +3673,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2912,6 +3682,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2919,6 +3691,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2926,6 +3700,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2933,6 +3709,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2940,6 +3718,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2947,6 +3727,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2954,6 +3736,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2961,6 +3745,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2968,6 +3754,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2975,6 +3763,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2982,6 +3772,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -2989,9 +3781,12 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -3081,6 +3876,8 @@
             "kind": "positional_or_keyword",
             "annotation": "list[str]",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3088,6 +3885,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3095,6 +3894,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3102,6 +3903,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3109,6 +3912,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3116,6 +3921,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3123,6 +3930,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3130,6 +3939,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3137,6 +3948,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3144,6 +3957,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3151,9 +3966,12 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -3243,6 +4061,8 @@
             "kind": "positional_or_keyword",
             "annotation": "list[str]",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3250,6 +4070,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3257,6 +4079,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3264,6 +4088,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3271,6 +4097,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3278,6 +4106,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3285,6 +4115,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3292,6 +4124,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3299,6 +4133,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3306,6 +4142,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -3313,9 +4151,12 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -3364,9 +4205,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "output_path": {
+            "name": "output_path",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "command_manifest_export"
@@ -3420,6 +4269,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3427,9 +4278,12 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -3465,6 +4319,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1384,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -3511,9 +4366,12 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -3549,6 +4407,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1350,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -3598,9 +4457,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "compile_and_save"
@@ -3653,9 +4520,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "compile_material"
@@ -3724,6 +4599,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3731,6 +4608,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3738,6 +4617,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3745,6 +4626,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3752,9 +4635,33 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "from_node": {
+            "name": "from_node",
+            "include": "always"
+          },
+          "from_output": {
+            "name": "from_output",
+            "include": "always"
+          },
+          "to_node": {
+            "name": "to_node",
+            "include": "always"
+          },
+          "to_input": {
+            "name": "to_input",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "connect_expressions"
@@ -3820,13 +4727,15 @@
       "wrapper": {
         "name": "connect_pins",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4309,
+        "line": 4304,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3834,6 +4743,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3841,6 +4752,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3848,6 +4761,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3855,6 +4770,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3862,9 +4779,37 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "from_node": {
+            "name": "from_node",
+            "include": "always"
+          },
+          "from_pin": {
+            "name": "from_pin",
+            "include": "always"
+          },
+          "to_node": {
+            "name": "to_node",
+            "include": "always"
+          },
+          "to_pin": {
+            "name": "to_pin",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "connect_pins"
@@ -3929,6 +4874,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3936,6 +4883,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3943,6 +4892,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -3950,9 +4901,29 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "from_node": {
+            "name": "from_node",
+            "include": "always"
+          },
+          "from_output": {
+            "name": "from_output",
+            "include": "always"
+          },
+          "material_property": {
+            "name": "material_property",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "connect_to_material_property"
@@ -4010,13 +4981,15 @@
       "wrapper": {
         "name": "create_anim_blueprint",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4995,
+        "line": 4974,
         "params": [
           {
             "name": "package_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4024,6 +4997,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4031,6 +5006,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4038,9 +5015,29 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'AnimInstance'",
+            "default_value": "AnimInstance",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "package_path": {
+            "name": "package_path",
+            "include": "always"
+          },
+          "asset_name": {
+            "name": "asset_name",
+            "include": "always"
+          },
+          "skeleton_path": {
+            "name": "skeleton_path",
+            "include": "always"
+          },
+          "parent_class": {
+            "name": "parent_class",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "create_anim_blueprint"
@@ -4105,13 +5102,15 @@
       "wrapper": {
         "name": "create_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4538,
+        "line": 4529,
         "params": [
           {
             "name": "package_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4119,6 +5118,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4126,6 +5127,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4133,9 +5136,29 @@
             "kind": "positional_or_keyword",
             "annotation": "dict | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "package_path": {
+            "name": "package_path",
+            "include": "always"
+          },
+          "asset_name": {
+            "name": "asset_name",
+            "include": "always"
+          },
+          "asset_type": {
+            "name": "asset_type",
+            "include": "always"
+          },
+          "properties": {
+            "name": "properties",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "create_asset"
@@ -4208,6 +5231,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4215,6 +5240,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4222,6 +5249,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'Surface'",
+            "default_value": "Surface",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4229,6 +5258,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'Opaque'",
+            "default_value": "Opaque",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4236,6 +5267,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'DefaultLit'",
+            "default_value": "DefaultLit",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4243,9 +5276,37 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "package_path": {
+            "name": "package_path",
+            "include": "always"
+          },
+          "asset_name": {
+            "name": "asset_name",
+            "include": "always"
+          },
+          "domain": {
+            "name": "domain",
+            "include": "always"
+          },
+          "blend_mode": {
+            "name": "blend_mode",
+            "include": "always"
+          },
+          "shading_model": {
+            "name": "shading_model",
+            "include": "always"
+          },
+          "two_sided": {
+            "name": "two_sided",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "create_material"
@@ -4306,6 +5367,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4313,6 +5376,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4320,9 +5385,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "package_path": {
+            "name": "package_path",
+            "include": "always"
+          },
+          "asset_name": {
+            "name": "asset_name",
+            "include": "always"
+          },
+          "parent_material_path": {
+            "name": "parent_material_path",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "create_material_instance"
@@ -4383,6 +5464,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4390,6 +5473,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4397,9 +5482,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "package_path": {
+            "name": "package_path",
+            "include": "always"
+          },
+          "asset_name": {
+            "name": "asset_name",
+            "include": "always"
+          },
+          "parent_class": {
+            "name": "parent_class",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "create_widget_blueprint"
@@ -4457,13 +5558,15 @@
       "wrapper": {
         "name": "delete_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4870,
+        "line": 4851,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4471,6 +5574,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4478,6 +5583,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4485,9 +5592,17 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "delete_asset"
@@ -4548,6 +5663,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4555,6 +5672,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4562,9 +5681,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "input_name": {
+            "name": "input_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "disconnect_input"
@@ -4645,6 +5780,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4652,6 +5789,8 @@
             "kind": "positional_or_keyword",
             "annotation": "dict | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4659,6 +5798,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4666,6 +5807,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4673,6 +5816,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4680,6 +5825,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4687,9 +5834,12 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -4747,6 +5897,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -4754,6 +5906,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4761,9 +5915,17 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "command": {
+            "name": "command",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "editor_console_command"
@@ -4805,6 +5967,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1178,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "editor_identity"
@@ -4864,6 +6027,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4871,6 +6036,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -4878,9 +6045,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "max_lines": {
+            "name": "max_lines",
+            "include": "always"
+          },
+          "filter": {
+            "name": "filter",
+            "include": "when_truthy"
+          },
+          "log_name": {
+            "name": "log_name",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "editor_log_read"
@@ -4922,6 +6105,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1672,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "editor_world_info"
@@ -4970,9 +6154,12 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -5055,13 +6242,15 @@
       "wrapper": {
         "name": "ensure_function_graph",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4266,
+        "line": 4261,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -5069,6 +6258,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -5076,6 +6267,8 @@
             "kind": "positional_or_keyword",
             "annotation": "list[dict] | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -5083,6 +6276,8 @@
             "kind": "positional_or_keyword",
             "annotation": "list[dict] | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -5090,6 +6285,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -5097,9 +6294,37 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "function_name": {
+            "name": "function_name",
+            "include": "always"
+          },
+          "inputs": {
+            "name": "inputs",
+            "include": "when_truthy"
+          },
+          "outputs": {
+            "name": "outputs",
+            "include": "when_truthy"
+          },
+          "entry_node_name": {
+            "name": "entry_node_name",
+            "include": "when_truthy"
+          },
+          "result_node_name": {
+            "name": "result_node_name",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "ensure_function_graph"
@@ -5160,6 +6385,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -5167,6 +6394,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -5174,9 +6403,25 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "both_formats": {
+            "name": "both_formats",
+            "include": "always"
+          },
+          "output_directory": {
+            "name": "output_directory",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "export_blueprint"
@@ -5237,6 +6482,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -5244,6 +6491,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -5251,9 +6500,25 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "both_formats": {
+            "name": "both_formats",
+            "include": "always"
+          },
+          "output_directory": {
+            "name": "output_directory",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "export_widget"
@@ -5303,13 +6568,15 @@
       "wrapper": {
         "name": "fixup_redirectors",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4784,
+        "line": 4765,
         "params": [
           {
             "name": "folder_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -5317,9 +6584,21 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "folder_path": {
+            "name": "folder_path",
+            "include": "always"
+          },
+          "recursive": {
+            "name": "recursive",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "fixup_redirectors"
@@ -5365,16 +6644,19 @@
       "wrapper": {
         "name": "get_anim_blueprint_info",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5023,
+        "line": 5002,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_anim_blueprint_info"
@@ -5420,16 +6702,19 @@
       "wrapper": {
         "name": "get_asset_properties",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4595,
+        "line": 4586,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_asset_properties"
@@ -5479,13 +6764,15 @@
       "wrapper": {
         "name": "get_cdo_array_length",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3968,
+        "line": 3966,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -5493,9 +6780,12 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_cdo_array_length"
@@ -5548,9 +6838,12 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_cdo_properties"
@@ -5596,16 +6889,19 @@
       "wrapper": {
         "name": "get_dependencies",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4730,
+        "line": 4713,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_dependencies"
@@ -5655,13 +6951,15 @@
       "wrapper": {
         "name": "get_graph",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4395,
+        "line": 4390,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -5669,9 +6967,21 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'EventGraph'",
+            "default_value": "EventGraph",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "get_graph"
@@ -5717,16 +7027,19 @@
       "wrapper": {
         "name": "get_input_mappings",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4975,
+        "line": 4956,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_input_mappings"
@@ -5779,9 +7092,12 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_material_graph"
@@ -5834,9 +7150,12 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_material_instance_info"
@@ -5882,16 +7201,19 @@
       "wrapper": {
         "name": "get_referencers",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4705,
+        "line": 4690,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_referencers"
@@ -5937,16 +7259,19 @@
       "wrapper": {
         "name": "get_variables",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4518,
+        "line": 4511,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_variables"
@@ -5999,9 +7324,12 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "get_widget_tree"
@@ -6050,9 +7378,12 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "120",
+            "default_value": 120,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -6118,6 +7449,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6125,6 +7458,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6132,6 +7467,8 @@
             "kind": "positional_or_keyword",
             "annotation": "list[dict]",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6139,9 +7476,29 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'Auto'",
+            "default_value": "Auto",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "package_path": {
+            "name": "package_path",
+            "include": "always"
+          },
+          "font_name": {
+            "name": "font_name",
+            "include": "always"
+          },
+          "faces": {
+            "name": "faces",
+            "include": "always"
+          },
+          "hinting": {
+            "name": "hinting",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "import_font"
@@ -6218,6 +7575,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6225,6 +7584,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6232,6 +7593,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -6239,6 +7602,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'UserInterface2D'",
+            "default_value": "UserInterface2D",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -6246,6 +7611,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -6253,6 +7620,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'NoMipmaps'",
+            "default_value": "NoMipmaps",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -6260,9 +7629,41 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'UI'",
+            "default_value": "UI",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "source_path": {
+            "name": "source_path",
+            "include": "always"
+          },
+          "package_path": {
+            "name": "package_path",
+            "include": "always"
+          },
+          "asset_name": {
+            "name": "asset_name",
+            "include": "always"
+          },
+          "compression": {
+            "name": "compression",
+            "include": "always"
+          },
+          "srgb": {
+            "name": "srgb",
+            "include": "always"
+          },
+          "mip_gen": {
+            "name": "mip_gen",
+            "include": "always"
+          },
+          "lod_group": {
+            "name": "lod_group",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "import_texture"
@@ -6323,6 +7724,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6330,6 +7733,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -6337,9 +7742,17 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "map_path": {
+            "name": "map_path",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "level_open"
@@ -6395,6 +7808,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -6402,9 +7817,12 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "level_save_current"
@@ -6446,6 +7864,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1154,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "list_commands"
@@ -6487,6 +7906,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 3618,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "list_expression_classes"
@@ -6532,16 +7952,19 @@
       "wrapper": {
         "name": "list_graphs",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4415,
+        "line": 4410,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "list_graphs"
@@ -6591,13 +8014,15 @@
       "wrapper": {
         "name": "list_redirectors",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4755,
+        "line": 4736,
         "params": [
           {
             "name": "folder_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6605,9 +8030,21 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "folder_path": {
+            "name": "folder_path",
+            "include": "always"
+          },
+          "recursive": {
+            "name": "recursive",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "list_redirectors"
@@ -6649,6 +8086,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 3301,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "list_supported_types"
@@ -6690,6 +8128,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 3286,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "list_widget_classes"
@@ -6738,9 +8177,12 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -6802,6 +8244,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6809,6 +8253,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6816,6 +8262,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -6823,9 +8271,29 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "-1",
+            "default_value": -1,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "widget_name": {
+            "name": "widget_name",
+            "include": "always"
+          },
+          "new_parent_name": {
+            "name": "new_parent_name",
+            "include": "always"
+          },
+          "index": {
+            "name": "index",
+            "include": "conditional"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "move_widget"
@@ -6864,6 +8332,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1511,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -6899,6 +8368,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1522,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": []
       }
@@ -6951,6 +8421,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -6958,9 +8430,12 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "pie_start"
@@ -7002,6 +8477,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1952,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "pie_status"
@@ -7057,6 +8533,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -7064,9 +8542,12 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "pie_stop"
@@ -7108,6 +8589,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1148,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "ping"
@@ -7149,6 +8631,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1208,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "project_status"
@@ -7198,13 +8681,15 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5123,
+        "line": 5100,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7212,9 +8697,21 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "reopen_after": {
+            "name": "reopen_after",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "reload_asset"
@@ -7268,13 +8765,15 @@
       "wrapper": {
         "name": "remove_cdo_array_element",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3944,
+        "line": 3942,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7282,6 +8781,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7289,9 +8790,25 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "array_name": {
+            "name": "array_name",
+            "include": "always"
+          },
+          "index": {
+            "name": "index",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "remove_cdo_array_element"
@@ -7348,6 +8865,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7355,9 +8874,21 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "remove_expression"
@@ -7411,13 +8942,15 @@
       "wrapper": {
         "name": "remove_graph_node",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4375,
+        "line": 4370,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7425,6 +8958,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7432,9 +8967,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "remove_graph_node"
@@ -7484,13 +9035,15 @@
       "wrapper": {
         "name": "remove_input_mapping",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4954,
+        "line": 4935,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7498,9 +9051,21 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "mapping_index": {
+            "name": "mapping_index",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "remove_input_mapping"
@@ -7550,13 +9115,15 @@
       "wrapper": {
         "name": "remove_variable",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4500,
+        "line": 4493,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7564,9 +9131,21 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "var_name": {
+            "name": "var_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "remove_variable"
@@ -7623,6 +9202,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7630,9 +9211,21 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "widget_name": {
+            "name": "widget_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "remove_widget"
@@ -7686,13 +9279,15 @@
       "wrapper": {
         "name": "rename_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4833,
+        "line": 4814,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7700,6 +9295,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -7707,9 +9304,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "new_package_path": {
+            "name": "new_package_path",
+            "include": "when_truthy"
+          },
+          "new_asset_name": {
+            "name": "new_asset_name",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "rename_asset"
@@ -7766,6 +9379,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -7773,9 +9388,21 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "new_parent_class": {
+            "name": "new_parent_class",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "reparent_blueprint"
@@ -7855,6 +9482,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'auto'",
+            "default_value": "auto",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -7862,6 +9491,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -7869,6 +9500,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -7876,6 +9509,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -7883,6 +9518,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -7890,6 +9527,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -7897,6 +9536,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -7904,9 +9545,45 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "500",
+            "default_value": 500,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "world": {
+            "name": "world",
+            "include": "always"
+          },
+          "limit": {
+            "name": "limit",
+            "include": "always"
+          },
+          "actor_path": {
+            "name": "actor_path",
+            "include": "when_truthy"
+          },
+          "actor_label": {
+            "name": "actor_label",
+            "include": "when_truthy"
+          },
+          "actor_name": {
+            "name": "actor_name",
+            "include": "when_truthy"
+          },
+          "name_filter": {
+            "name": "name_filter",
+            "include": "when_truthy"
+          },
+          "actor_class_filter": {
+            "name": "actor_class_filter",
+            "include": "when_truthy"
+          },
+          "component_class_filter": {
+            "name": "component_class_filter",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "runtime_component_list"
@@ -7958,9 +9635,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'auto'",
+            "default_value": "auto",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "world": {
+            "name": "world",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "runtime_player_list"
@@ -8012,9 +9697,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'auto'",
+            "default_value": "auto",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "world": {
+            "name": "world",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "runtime_world_info"
@@ -8060,16 +9753,24 @@
       "wrapper": {
         "name": "save_asset",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4817,
+        "line": 4798,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "save_asset"
@@ -8122,9 +9823,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "save_data_asset"
@@ -8177,9 +9886,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "save_material_instance"
@@ -8241,13 +9958,15 @@
       "wrapper": {
         "name": "scan_asset_paths",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4678,
+        "line": 4663,
         "params": [
           {
             "name": "paths",
             "kind": "positional_or_keyword",
             "annotation": "list[str] | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8255,6 +9974,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8262,9 +9983,25 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "force_rescan": {
+            "name": "force_rescan",
+            "include": "always"
+          },
+          "paths": {
+            "name": "paths",
+            "include": "when_truthy"
+          },
+          "path": {
+            "name": "path",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "scan_asset_paths"
@@ -8306,6 +10043,7 @@
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
         "line": 1166,
         "params": [],
+        "payload_params": {},
         "returns": "str",
         "literal_send_commands": [
           "server_status"
@@ -8359,13 +10097,15 @@
       "wrapper": {
         "name": "set_asset_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4570,
+        "line": 4561,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8373,6 +10113,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8380,9 +10122,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "property_path": {
+            "name": "property_path",
+            "include": "always"
+          },
+          "value": {
+            "name": "value",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_asset_property"
@@ -8479,6 +10237,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8486,6 +10246,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8493,6 +10255,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8500,6 +10264,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8507,6 +10273,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8514,6 +10282,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "30",
+            "default_value": 30,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8521,6 +10291,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8528,6 +10300,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8535,6 +10309,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8542,6 +10318,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8549,6 +10327,8 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -8556,9 +10336,61 @@
             "kind": "positional_or_keyword",
             "annotation": "float",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "widget_name": {
+            "name": "widget_name",
+            "include": "always"
+          },
+          "position_x": {
+            "name": "position_x",
+            "include": "always"
+          },
+          "position_y": {
+            "name": "position_y",
+            "include": "always"
+          },
+          "size_x": {
+            "name": "size_x",
+            "include": "always"
+          },
+          "size_y": {
+            "name": "size_y",
+            "include": "always"
+          },
+          "anchor_min_x": {
+            "name": "anchor_min_x",
+            "include": "always"
+          },
+          "anchor_min_y": {
+            "name": "anchor_min_y",
+            "include": "always"
+          },
+          "anchor_max_x": {
+            "name": "anchor_max_x",
+            "include": "always"
+          },
+          "anchor_max_y": {
+            "name": "anchor_max_y",
+            "include": "always"
+          },
+          "alignment_x": {
+            "name": "alignment_x",
+            "include": "always"
+          },
+          "alignment_y": {
+            "name": "alignment_y",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_canvas_slot_layout"
@@ -8620,13 +10452,15 @@
       "wrapper": {
         "name": "set_cdo_array_element_property",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3914,
+        "line": 3912,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8634,6 +10468,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8641,6 +10477,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8648,6 +10486,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8655,9 +10495,33 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "array_name": {
+            "name": "array_name",
+            "include": "always"
+          },
+          "index": {
+            "name": "index",
+            "include": "always"
+          },
+          "property_name": {
+            "name": "property_name",
+            "include": "always"
+          },
+          "value": {
+            "name": "value",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_cdo_array_element_property"
@@ -8718,6 +10582,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8725,6 +10591,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8732,9 +10600,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "property_name": {
+            "name": "property_name",
+            "include": "always"
+          },
+          "value": {
+            "name": "value",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_cdo_property"
@@ -8799,6 +10683,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8806,6 +10692,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8813,6 +10701,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8820,9 +10710,29 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "property_name": {
+            "name": "property_name",
+            "include": "always"
+          },
+          "value": {
+            "name": "value",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_expression_property"
@@ -8887,6 +10797,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8894,6 +10806,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8901,6 +10815,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8908,9 +10824,29 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "param_name": {
+            "name": "param_name",
+            "include": "always"
+          },
+          "param_type": {
+            "name": "param_type",
+            "include": "always"
+          },
+          "value": {
+            "name": "value",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_instance_parameter"
@@ -8971,6 +10907,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8978,6 +10916,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -8985,9 +10925,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "property_name": {
+            "name": "property_name",
+            "include": "always"
+          },
+          "value": {
+            "name": "value",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_material_property"
@@ -9049,13 +11005,15 @@
       "wrapper": {
         "name": "set_pin_default",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4345,
+        "line": 4340,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9063,6 +11021,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9070,6 +11030,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9077,6 +11039,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9084,9 +11048,33 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "node_name": {
+            "name": "node_name",
+            "include": "always"
+          },
+          "pin_name": {
+            "name": "pin_name",
+            "include": "always"
+          },
+          "default_value": {
+            "name": "default_value",
+            "include": "always"
+          },
+          "graph_name": {
+            "name": "graph_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_pin_default"
@@ -9151,6 +11139,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9158,6 +11148,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9165,6 +11157,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9172,9 +11166,29 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "widget_name": {
+            "name": "widget_name",
+            "include": "always"
+          },
+          "property_name": {
+            "name": "property_name",
+            "include": "always"
+          },
+          "value": {
+            "name": "value",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_slot_property"
@@ -9228,13 +11242,15 @@
       "wrapper": {
         "name": "set_variable_default",
         "source": "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4476,
+        "line": 4469,
         "params": [
           {
             "name": "asset_path",
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9242,6 +11258,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9249,9 +11267,25 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "var_name": {
+            "name": "var_name",
+            "include": "always"
+          },
+          "default_value": {
+            "name": "default_value",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_variable_default"
@@ -9312,6 +11346,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9319,6 +11355,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9326,9 +11364,21 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "widget_name": {
+            "name": "widget_name",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_widget_properties"
@@ -9393,6 +11443,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9400,6 +11452,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9407,6 +11461,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -9414,9 +11470,29 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           }
         ],
+        "payload_params": {
+          "asset_path": {
+            "name": "asset_path",
+            "include": "always"
+          },
+          "widget_name": {
+            "name": "widget_name",
+            "include": "always"
+          },
+          "property_name": {
+            "name": "property_name",
+            "include": "always"
+          },
+          "value": {
+            "name": "value",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "set_widget_property"
@@ -9488,6 +11564,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'auto'",
+            "default_value": "auto",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9495,6 +11573,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9502,6 +11582,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9509,6 +11591,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9516,6 +11600,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9523,9 +11609,37 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "provider": {
+            "name": "provider",
+            "include": "always"
+          },
+          "repo_path": {
+            "name": "repo_path",
+            "include": "always"
+          },
+          "path": {
+            "name": "path",
+            "include": "always"
+          },
+          "base": {
+            "name": "base",
+            "include": "always"
+          },
+          "compare": {
+            "name": "compare",
+            "include": "always"
+          },
+          "name_status": {
+            "name": "name_status",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "source_control_diff"
@@ -9605,6 +11719,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'auto'",
+            "default_value": "auto",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9612,6 +11728,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9619,6 +11737,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9626,6 +11746,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "20",
+            "default_value": 20,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9633,6 +11755,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9640,6 +11764,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9647,6 +11773,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9654,9 +11782,45 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "provider": {
+            "name": "provider",
+            "include": "always"
+          },
+          "repo_path": {
+            "name": "repo_path",
+            "include": "always"
+          },
+          "path": {
+            "name": "path",
+            "include": "always"
+          },
+          "limit": {
+            "name": "limit",
+            "include": "always"
+          },
+          "oneline": {
+            "name": "oneline",
+            "include": "always"
+          },
+          "since": {
+            "name": "since",
+            "include": "always"
+          },
+          "until": {
+            "name": "until",
+            "include": "always"
+          },
+          "ref": {
+            "name": "ref",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "source_control_log"
@@ -9720,6 +11884,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'auto'",
+            "default_value": "auto",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9727,6 +11893,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9734,6 +11902,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9741,9 +11911,29 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "provider": {
+            "name": "provider",
+            "include": "always"
+          },
+          "repo_path": {
+            "name": "repo_path",
+            "include": "always"
+          },
+          "ref": {
+            "name": "ref",
+            "include": "always"
+          },
+          "name_status": {
+            "name": "name_status",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "source_control_show"
@@ -9807,6 +11997,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "'auto'",
+            "default_value": "auto",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9814,6 +12006,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9821,6 +12015,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9828,9 +12024,29 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "provider": {
+            "name": "provider",
+            "include": "always"
+          },
+          "repo_path": {
+            "name": "repo_path",
+            "include": "always"
+          },
+          "path": {
+            "name": "path",
+            "include": "always"
+          },
+          "no_limit": {
+            "name": "no_limit",
+            "include": "always"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "source_control_status"
@@ -9883,9 +12099,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "task_id": {
+            "name": "task_id",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "task_cancel",
@@ -9946,6 +12170,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9953,6 +12179,8 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "0",
+            "default_value": 0,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -9960,9 +12188,25 @@
             "kind": "positional_or_keyword",
             "annotation": "int",
             "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "limit": {
+            "name": "limit",
+            "include": "always"
+          },
+          "task_id": {
+            "name": "task_id",
+            "include": "when_truthy"
+          },
+          "after_sequence": {
+            "name": "after_sequence",
+            "include": "when_gt_zero"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "task_events"
@@ -10015,9 +12259,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "task_id": {
+            "name": "task_id",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "task_result",
@@ -10071,9 +12323,17 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "task_id": {
+            "name": "task_id",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "task_status",
@@ -10146,6 +12406,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": null,
+            "default_value": null,
+            "default_is_literal": false,
             "required": true
           },
           {
@@ -10153,6 +12415,8 @@
             "kind": "positional_or_keyword",
             "annotation": "dict | None",
             "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -10160,6 +12424,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -10167,9 +12433,25 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "command": {
+            "name": "command",
+            "include": "always"
+          },
+          "params": {
+            "name": "params",
+            "include": "conditional"
+          },
+          "scope": {
+            "name": "scope",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "task_submit"
@@ -10237,6 +12519,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -10244,6 +12528,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -10251,6 +12537,8 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -10258,6 +12546,8 @@
             "kind": "positional_or_keyword",
             "annotation": "str",
             "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
             "required": false
           },
           {
@@ -10265,9 +12555,25 @@
             "kind": "positional_or_keyword",
             "annotation": "bool",
             "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
             "required": false
           }
         ],
+        "payload_params": {
+          "show_ui": {
+            "name": "show_ui",
+            "include": "always"
+          },
+          "add_filename_suffix": {
+            "name": "add_filename_suffix",
+            "include": "always"
+          },
+          "output_path": {
+            "name": "output_path",
+            "include": "when_truthy"
+          }
+        },
         "returns": "str",
         "literal_send_commands": [
           "viewport_capture"

@@ -3279,7 +3279,7 @@ def get_widget_tree(asset_path: str) -> str:
     Returns:
         JSON tree with name, type, slot info, children for each widget.
     """
-    return _format_response(_send_command("get_widget_tree", {"asset_path": asset_path}))
+    return _send_generated_tcp_tool("get_widget_tree", locals())
 
 
 @mcp.tool()
@@ -3611,7 +3611,7 @@ def get_material_graph(asset_path: str) -> str:
     Returns:
         JSON with domain, blend_mode, expressions array, and connections array.
     """
-    return _format_response(_send_command("get_material_graph", {"asset_path": asset_path}))
+    return _send_generated_tcp_tool("get_material_graph", locals())
 
 
 @mcp.tool()
@@ -3708,7 +3708,7 @@ def get_material_instance_info(asset_path: str) -> str:
     Returns:
         JSON with parent material, scalar/vector/texture parameters.
     """
-    return _format_response(_send_command("get_material_instance_info", {"asset_path": asset_path}))
+    return _send_generated_tcp_tool("get_material_instance_info", locals())
 
 
 # =============================================================================
@@ -3863,9 +3863,7 @@ def get_cdo_properties(asset_path: str) -> str:
     Returns:
         JSON with property name -> value pairs.
     """
-    return _format_response(_send_command("get_cdo_properties", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("get_cdo_properties", locals())
 
 
 # =============================================================================
@@ -3979,10 +3977,7 @@ def get_cdo_array_length(
     Returns:
         JSON with array_name and length.
     """
-    return _format_response(_send_command("get_cdo_array_length", {
-        "asset_path": asset_path,
-        "array_name": array_name,
-    }))
+    return _send_generated_tcp_tool("get_cdo_array_length", locals())
 
 
 # =============================================================================
@@ -4422,9 +4417,7 @@ def list_graphs(asset_path: str) -> str:
     Returns:
         JSON with graphs array of names.
     """
-    return _format_response(_send_command("list_graphs", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("list_graphs", locals())
 
 
 # =============================================================================
@@ -4525,9 +4518,7 @@ def get_variables(asset_path: str) -> str:
     Returns:
         JSON with variables array containing name, type, default_value, category.
     """
-    return _format_response(_send_command("get_variables", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("get_variables", locals())
 
 
 # =============================================================================
@@ -4602,9 +4593,7 @@ def get_asset_properties(asset_path: str) -> str:
     Returns:
         JSON with asset_path, class, and properties object.
     """
-    return _format_response(_send_command("get_asset_properties", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("get_asset_properties", locals())
 
 
 @mcp.tool()
@@ -4652,9 +4641,7 @@ def asset_validate_light(asset_path: str) -> str:
         JSON with existence, package file, dependency/referencer counts,
         redirector/missing warnings, and external dependency hints.
     """
-    return _format_response(_send_command("asset_validate_light", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("asset_validate_light", locals())
 
 
 @mcp.tool()
@@ -4669,9 +4656,7 @@ def asset_exists(asset_path: str) -> str:
         JSON with exists, package_name, package filename, class path when known,
         and scan state.
     """
-    return _format_response(_send_command("asset_exists", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("asset_exists", locals())
 
 
 @mcp.tool()
@@ -4721,9 +4706,7 @@ def get_referencers(asset_path: str) -> str:
           - scan_was_incomplete: true if AssetRegistry was still scanning (waited)
           - referencers       : array of package names that reference this asset
     """
-    return _format_response(_send_command("get_referencers", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("get_referencers", locals())
 
 
 @mcp.tool()
@@ -4746,9 +4729,7 @@ def get_dependencies(asset_path: str) -> str:
           - scan_was_incomplete: true if AssetRegistry was still scanning (waited)
           - dependencies      : array of package names this asset references
     """
-    return _format_response(_send_command("get_dependencies", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("get_dependencies", locals())
 
 
 @mcp.tool()
@@ -4982,9 +4963,7 @@ def get_input_mappings(asset_path: str) -> str:
     Returns:
         JSON with mappings array containing index, action, key, triggers, modifiers.
     """
-    return _format_response(_send_command("get_input_mappings", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("get_input_mappings", locals())
 
 
 # =============================================================================
@@ -5030,9 +5009,7 @@ def get_anim_blueprint_info(asset_path: str) -> str:
     Returns:
         JSON with asset info including skeleton, parent_class, status, graphs, variables.
     """
-    return _format_response(_send_command("get_anim_blueprint_info", {
-        "asset_path": asset_path,
-    }))
+    return _send_generated_tcp_tool("get_anim_blueprint_info", locals())
 
 
 # =============================================================================
