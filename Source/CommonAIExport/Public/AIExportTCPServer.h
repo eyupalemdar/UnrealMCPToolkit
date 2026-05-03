@@ -328,6 +328,7 @@ private:
 	FString HandleRuntimeGameplayTagsDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeCommonUIDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeAudioDiagnostics(TSharedPtr<class FJsonObject> Params);
+	FString HandleRuntimeNavigationDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeAssetStreamingDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeAsyncLoadDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeGameInstanceDiagnostics(TSharedPtr<class FJsonObject> Params);

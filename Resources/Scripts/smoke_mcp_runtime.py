@@ -610,6 +610,33 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     _assert(isinstance(audio_diagnostics.get("audio_components"), list), "runtime audio diagnostics missing audio component array")
     _assert(isinstance(audio_diagnostics.get("audio_component_count"), int), "runtime audio diagnostics missing audio component count")
 
+    navigation_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_navigation_diagnostics",
+            {
+                "world": "auto",
+                "include_nav_data": True,
+                "include_bounds": True,
+                "include_supported_agents": True,
+                "include_invokers": True,
+                "nav_data_limit": 10,
+                "bounds_limit": 10,
+                "invoker_limit": 10,
+                "tile_sample_limit": 2,
+            },
+        ),
+        "runtime_navigation_diagnostics",
+    )
+    _assert(navigation_diagnostics.get("world_available") is True, "runtime navigation diagnostics did not report an available world")
+    _assert(isinstance(navigation_diagnostics.get("world"), dict), "runtime navigation diagnostics missing world summary")
+    _assert(isinstance(navigation_diagnostics.get("navigation_system_available"), bool), "runtime navigation diagnostics missing NavigationSystem availability")
+    _assert(isinstance(navigation_diagnostics.get("navigation_system"), dict), "runtime navigation diagnostics missing NavigationSystem object")
+    _assert(isinstance(navigation_diagnostics.get("nav_data_count"), int), "runtime navigation diagnostics missing nav data count")
+    _assert(isinstance(navigation_diagnostics.get("navigation_bounds_count"), int), "runtime navigation diagnostics missing navigation bounds count")
+    _assert(isinstance(navigation_diagnostics.get("supported_agent_count"), int), "runtime navigation diagnostics missing supported agent count")
+    _assert(isinstance(navigation_diagnostics.get("nav_data"), list), "runtime navigation diagnostics missing nav data array")
+
     asset_streaming_diagnostics = _assert_tcp_success(
         _tcp_command(
             tcp_port,
@@ -852,6 +879,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_gameplay_tags_diagnostics_checked": True,
         "runtime_commonui_diagnostics_checked": True,
         "runtime_audio_diagnostics_checked": True,
+        "runtime_navigation_diagnostics_checked": True,
         "runtime_asset_streaming_diagnostics_checked": True,
         "runtime_async_load_diagnostics_checked": True,
         "runtime_game_instance_diagnostics_checked": True,

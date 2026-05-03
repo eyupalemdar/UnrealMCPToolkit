@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T20:08:15.188070Z",
-  "tool_count": 143,
+  "generated_at_utc": "2026-05-03T20:24:33.580462Z",
+  "tool_count": 144,
   "tools": {
     "ping": {
       "type": "object",
@@ -1173,6 +1173,68 @@
         "component_limit": {
           "type": "integer",
           "default": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_navigation_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "nav_data_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "include_nav_data": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_bounds": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_supported_agents": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_invokers": {
+          "type": "boolean",
+          "default": true
+        },
+        "nav_data_limit": {
+          "type": "integer",
+          "default": 50
+        },
+        "bounds_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "invoker_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "tile_sample_limit": {
+          "type": "integer",
+          "default": 0
         }
       },
       "required": [],

@@ -1958,6 +1958,43 @@ def runtime_audio_diagnostics(
 
 
 @mcp.tool()
+def runtime_navigation_diagnostics(
+    world: str = "auto",
+    nav_data_filter: str = "",
+    include_nav_data: bool = True,
+    include_bounds: bool = True,
+    include_supported_agents: bool = True,
+    include_invokers: bool = True,
+    nav_data_limit: int = 50,
+    bounds_limit: int = 100,
+    invoker_limit: int = 100,
+    tile_sample_limit: int = 0,
+) -> str:
+    """
+    Inspect runtime NavigationSystem and NavMesh state without mutating navigation.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        nav_data_filter: Optional substring matched against nav data name/path/class/config.
+        include_nav_data: Include registered NavigationData actor summaries.
+        include_bounds: Include registered navigation bounds summaries.
+        include_supported_agents: Include supported agent configs and mask state.
+        include_invokers: Include active navigation invoker location/radius summaries.
+        nav_data_limit: Maximum NavigationData records returned.
+        bounds_limit: Maximum navigation bounds records returned.
+        invoker_limit: Maximum invoker records returned.
+        tile_sample_limit: Maximum Recast tile sample records returned per navmesh.
+
+    Returns:
+        JSON with selected world metadata, NavigationSystem build/dirty flags,
+        supported agents, registered nav data, nav bounds, active invokers,
+        and Recast NavMesh tile/config summaries.
+    """
+    return _send_generated_tcp_tool("runtime_navigation_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_asset_streaming_diagnostics(
     world: str = "auto",
     include_levels: bool = True,

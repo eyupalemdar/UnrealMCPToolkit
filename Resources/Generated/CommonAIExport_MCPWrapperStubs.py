@@ -343,6 +343,23 @@ def runtime_audio_diagnostics(world: str = 'auto', actor_path: str = '', actor_l
     return _format_response(_send_command("runtime_audio_diagnostics", params))
 
 
+def runtime_navigation_diagnostics(world: str = 'auto', nav_data_filter: str = '', include_nav_data: bool = True, include_bounds: bool = True, include_supported_agents: bool = True, include_invokers: bool = True, nav_data_limit: int = 50, bounds_limit: int = 100, invoker_limit: int = 100, tile_sample_limit: int = 0) -> str:
+    """Generated stub for TCP command `runtime_navigation_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "nav_data_filter": nav_data_filter,
+        "include_nav_data": include_nav_data,
+        "include_bounds": include_bounds,
+        "include_supported_agents": include_supported_agents,
+        "include_invokers": include_invokers,
+        "nav_data_limit": nav_data_limit,
+        "bounds_limit": bounds_limit,
+        "invoker_limit": invoker_limit,
+        "tile_sample_limit": tile_sample_limit,
+    }
+    return _format_response(_send_command("runtime_navigation_diagnostics", params))
+
+
 def runtime_asset_streaming_diagnostics(world: str = 'auto', include_levels: bool = True, level_limit: int = 100) -> str:
     """Generated stub for TCP command `runtime_asset_streaming_diagnostics` (RuntimeInspector)."""
     params = {

@@ -32,6 +32,7 @@ public class CommonAIExport : ModuleRules
 			"EnhancedInput",
 			"InputCore",  // For FKey
 			"AIModule",
+			"NavigationSystem",
 			"GameplayAbilities",
 			"GameplayTags",
 			"DeveloperSettings",
