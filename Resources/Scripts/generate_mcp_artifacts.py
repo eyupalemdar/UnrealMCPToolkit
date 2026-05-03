@@ -57,6 +57,10 @@ PAYLOAD_RULE_OVERRIDES = {
     },
 }
 
+PAYLOAD_META_NAME_EXCEPTIONS = {
+    "task_submit": {"scope", "dry_run"},
+}
+
 COMMONAI_RESOURCES = [
     "commonai://project/status",
     "commonai://commands/manifest",
@@ -613,9 +617,10 @@ def build_wrapper_stubs(command_manifest: dict, wrapper_spec: dict) -> str:
         lines.append(f"def {name}({signature}) -> str:" if signature else f"def {name}() -> str:")
         lines.append(f'    """Generated stub for TCP command `{name}` ({command["category"]})."""')
 
-        payload_names = [param["name"] for param in params if param["name"] not in {"scope", "dry_run"}]
-        has_scope = any(param["name"] == "scope" for param in params)
-        has_dry_run = any(param["name"] == "dry_run" for param in params)
+        payload_meta_name_exceptions = PAYLOAD_META_NAME_EXCEPTIONS.get(name, set())
+        payload_names = [param["name"] for param in params if param["name"] not in {"scope", "dry_run"} or param["name"] in payload_meta_name_exceptions]
+        has_scope = any(param["name"] == "scope" and param["name"] not in payload_meta_name_exceptions for param in params)
+        has_dry_run = any(param["name"] == "dry_run" and param["name"] not in payload_meta_name_exceptions for param in params)
 
         if payload_names:
             lines.append("    params = {")
@@ -653,7 +658,9 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
             continue
 
         param_names = {param.get("name") for param in params}
-        b_read_only_candidate = not command.get("mutating") and command.get("required_scope") == "read" and not (param_names & {"scope", "dry_run"})
+        payload_meta_name_exceptions = PAYLOAD_META_NAME_EXCEPTIONS.get(name, set())
+        request_meta_names = (param_names & {"scope", "dry_run"}) - payload_meta_name_exceptions
+        b_read_only_candidate = not command.get("mutating") and command.get("required_scope") == "read" and not request_meta_names
         b_mutating_candidate = (
             command.get("mutating")
             and command.get("required_scope") in {"write", "destructive"}
@@ -669,7 +676,7 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
         b_can_generate = True
         for param in params:
             param_name = param["name"]
-            if param_name in {"scope", "dry_run"}:
+            if param_name in {"scope", "dry_run"} and param_name not in payload_meta_name_exceptions:
                 if not b_mutating_candidate or param.get("required") or not param.get("default_is_literal", False):
                     b_can_generate = False
                     break

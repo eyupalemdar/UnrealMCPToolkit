@@ -770,16 +770,18 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 `CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
-now covers 122 wrappers: read-only payload wrappers, the safe write-scope set
+now covers all 123 TCP wrappers: read-only payload wrappers, the safe write-scope set
 (editor/level/actor/PIE/viewport, Asset/DataAsset/Input, Import,
 AnimBlueprint, CDO/CDOArray, Material graph/MIC, Blueprint graph/variable, and
 Blueprint utility, and Widget wrappers), and the current destructive dry-run set
 (`actor_delete`, `delete_asset`, and `editor_console_command`).
 Payload fields, optional dict transform values, `scope`, and `dry_run` request
 meta are encoded explicitly so destructive tools keep their existing
-client/server scope gates. Payload inclusion rules now include explicit
-numeric predicates such as `when_ge_zero`; static tests fail if wrapper metadata
-falls back to unresolved `conditional` rules.
+client/server scope gates. `task_submit` is the payload-scope exception: its
+`scope` and `dry_run` fields stay in the TCP payload because they describe the
+submitted command, not the submit command itself. Payload inclusion rules now
+include explicit numeric predicates such as `when_ge_zero`; static tests fail
+if wrapper metadata falls back to unresolved `conditional` rules.
 
 Regenerate them with:
 

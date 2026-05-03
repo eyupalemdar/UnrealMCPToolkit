@@ -172,7 +172,7 @@ def _failures() -> list[str]:
         unexpected_non_generated_commands = [
             command["name"]
             for command in commands
-            if command["name"] not in generated_wrappers and command["name"] != "task_submit"
+            if command["name"] not in generated_wrappers
         ]
         if unexpected_non_generated_commands:
             failures.append("generated wrapper runtime has unexpected non-generated TCP commands: " + ", ".join(sorted(unexpected_non_generated_commands)[:10]))
@@ -181,7 +181,7 @@ def _failures() -> list[str]:
         ]
         if len(parameterized_wrappers) < 20:
             failures.append("generated wrapper runtime did not promote parameterized read-only wrappers")
-        for expected_name in ("asset_exists", "get_widget_tree", "task_events"):
+        for expected_name in ("asset_exists", "get_widget_tree", "task_events", "task_submit"):
             if expected_name not in generated_wrappers:
                 failures.append(f"generated wrapper runtime missing {expected_name}")
         for expected_name in (
@@ -270,6 +270,17 @@ def _failures() -> list[str]:
             task_call = build_tcp_call("task_events", {"task_id": "", "after_sequence": 0, "limit": 100})
             if task_call.get("params") != {"limit": 100}:
                 failures.append("generated wrapper runtime failed optional parameter omission mapping")
+            task_submit_call = build_tcp_call(
+                "task_submit",
+                {
+                    "command": "asset_exists",
+                    "params": {"asset_path": "/Game/Example"},
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if task_submit_call.get("params") != {"command": "asset_exists", "params": {"asset_path": "/Game/Example"}, "scope": "write", "dry_run": True} or task_submit_call.get("meta") is not None:
+                failures.append("generated wrapper runtime failed task_submit payload-scope mapping")
             missing_call = build_tcp_call("asset_exists", {})
             if missing_call.get("success") is not False:
                 failures.append("generated wrapper runtime did not reject missing required parameters")

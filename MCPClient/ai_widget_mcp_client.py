@@ -3276,14 +3276,7 @@ def task_submit(
     Returns:
         JSON with task_id, command, status, and target timeout metadata.
     """
-    payload: dict = {"command": command}
-    if params is not None:
-        payload["params"] = params
-    if scope:
-        payload["scope"] = scope
-    if dry_run:
-        payload["dry_run"] = True
-    return _format_response(_send_command("task_submit", payload))
+    return _send_generated_tcp_tool("task_submit", locals())
 
 
 @mcp.tool()

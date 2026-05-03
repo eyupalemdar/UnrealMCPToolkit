@@ -100,8 +100,10 @@ def task_submit(command: str, params: dict | None = None, scope: str = '', dry_r
     params = {
         "command": command,
         "params": params,
+        "scope": scope,
+        "dry_run": dry_run,
     }
-    return _format_response(_send_command("task_submit", params, _request_meta(scope, dry_run)))
+    return _format_response(_send_command("task_submit", params))
 
 
 def task_status(task_id: str = '') -> str:
