@@ -588,6 +588,27 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     _assert(isinstance(asset_streaming_diagnostics.get("streaming_level_count"), int), "runtime asset streaming diagnostics missing streaming level count")
     _assert(isinstance(asset_streaming_diagnostics.get("streaming_levels"), list), "runtime asset streaming diagnostics missing streaming level array")
 
+    game_instance_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_game_instance_diagnostics",
+            {
+                "world": "auto",
+                "include_local_players": True,
+                "include_subsystems": True,
+                "include_save_names": False,
+                "local_player_limit": 4,
+                "subsystem_limit": 20,
+            },
+        ),
+        "runtime_game_instance_diagnostics",
+    )
+    _assert(game_instance_diagnostics.get("world_available") is True, "runtime game instance diagnostics did not report an available world")
+    _assert(isinstance(game_instance_diagnostics.get("game_instance_available"), bool), "runtime game instance diagnostics missing availability flag")
+    _assert(isinstance(game_instance_diagnostics.get("save_game_system"), dict), "runtime game instance diagnostics missing save game system object")
+    if game_instance_diagnostics.get("game_instance_available"):
+        _assert(isinstance(game_instance_diagnostics.get("game_instance"), dict), "runtime game instance diagnostics missing GameInstance object")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -650,6 +671,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_ai_perception_diagnostics_checked": True,
         "runtime_commonui_diagnostics_checked": True,
         "runtime_asset_streaming_diagnostics_checked": True,
+        "runtime_game_instance_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),

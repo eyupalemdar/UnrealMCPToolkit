@@ -2,8 +2,8 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 116
-- MCP tools: 133
+- TCP commands: 117
+- MCP tools: 134
 - Categories: 24
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
@@ -33,7 +33,7 @@
 | `Input` | 3 |
 | `Material` | 15 |
 | `PIE` | 3 |
-| `RuntimeInspector` | 10 |
+| `RuntimeInspector` | 11 |
 | `Utility` | 5 |
 | `Widget` | 11 |
 | `WidgetPreview` | 1 |
@@ -72,6 +72,7 @@
 | `runtime_ai_perception_diagnostics` | `RuntimeInspector` | `read` | false | false | false | 60 |
 | `runtime_commonui_diagnostics` | `RuntimeInspector` | `read` | false | false | false | 60 |
 | `runtime_asset_streaming_diagnostics` | `RuntimeInspector` | `read` | false | false | false | 60 |
+| `runtime_game_instance_diagnostics` | `RuntimeInspector` | `read` | false | false | false | 60 |
 | `actor_list` | `EditorActor` | `read` | false | false | false | 60 |
 | `actor_spawn` | `EditorActor` | `write` | true | true | false | 60 |
 | `actor_set_transform` | `EditorActor` | `write` | true | true | false | 60 |

@@ -302,6 +302,22 @@ def runtime_asset_streaming_diagnostics(world: str = 'auto', include_levels: boo
     return _format_response(_send_command("runtime_asset_streaming_diagnostics", params))
 
 
+def runtime_game_instance_diagnostics(world: str = 'auto', include_local_players: bool = True, include_subsystems: bool = True, include_save_names: bool = False, save_slot_name: str = '', save_user_index: int = 0, local_player_limit: int = 16, subsystem_limit: int = 100, save_name_limit: int = 100) -> str:
+    """Generated stub for TCP command `runtime_game_instance_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "include_local_players": include_local_players,
+        "include_subsystems": include_subsystems,
+        "include_save_names": include_save_names,
+        "save_slot_name": save_slot_name,
+        "save_user_index": save_user_index,
+        "local_player_limit": local_player_limit,
+        "subsystem_limit": subsystem_limit,
+        "save_name_limit": save_name_limit,
+    }
+    return _format_response(_send_command("runtime_game_instance_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

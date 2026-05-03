@@ -95,6 +95,7 @@
 #include "Engine/Engine.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/StreamableRenderAsset.h"
+#include "Engine/GameViewportClient.h"
 #include "RenderAssetUpdate.h"
 #include "Misc/Base64.h"
 #include "ScopedTransaction.h"
@@ -102,6 +103,10 @@
 #include "UObject/UnrealType.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
+#include "PlatformFeatures.h"
+#include "SaveGameSystem.h"
+#include "Subsystems/GameInstanceSubsystem.h"
+#include "Subsystems/LocalPlayerSubsystem.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedPlayerInput.h"
@@ -111,6 +116,7 @@
 #include "Components/ActorComponent.h"
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/GameStateBase.h"
+#include "GameFramework/OnlineSession.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerInput.h"
@@ -391,6 +397,31 @@ TSharedPtr<FJsonObject> BuildVectorJson(const FVector& Vector)
 	Data->SetNumberField(TEXT("y"), Vector.Y);
 	Data->SetNumberField(TEXT("z"), Vector.Z);
 	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildVector2DJson(const FVector2D& Vector)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetNumberField(TEXT("x"), Vector.X);
+	Data->SetNumberField(TEXT("y"), Vector.Y);
+	return Data;
+}
+
+FString SaveExistsResultToString(ISaveGameSystem::ESaveExistsResult Result)
+{
+	switch (Result)
+	{
+	case ISaveGameSystem::ESaveExistsResult::OK:
+		return TEXT("OK");
+	case ISaveGameSystem::ESaveExistsResult::DoesNotExist:
+		return TEXT("DoesNotExist");
+	case ISaveGameSystem::ESaveExistsResult::Corrupt:
+		return TEXT("Corrupt");
+	case ISaveGameSystem::ESaveExistsResult::UnspecifiedError:
+		return TEXT("UnspecifiedError");
+	default:
+		return TEXT("Unknown");
+	}
 }
 
 TSharedPtr<FJsonObject> BuildRuntimeObjectReferenceJson(const UObject* Object);
@@ -737,6 +768,79 @@ TSharedPtr<FJsonObject> BuildRuntimeObjectReferenceJson(const UObject* Object)
 	Data->SetStringField(TEXT("name"), Object->GetName());
 	Data->SetStringField(TEXT("path"), Object->GetPathName());
 	Data->SetStringField(TEXT("class"), Object->GetClass() ? Object->GetClass()->GetPathName() : TEXT(""));
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeSubsystemJson(const USubsystem* Subsystem)
+{
+	TSharedPtr<FJsonObject> Data = BuildRuntimeObjectReferenceJson(Subsystem);
+	if (!Subsystem)
+	{
+		return Data;
+	}
+
+	if (const UObject* Outer = Subsystem->GetOuter())
+	{
+		Data->SetObjectField(TEXT("outer"), BuildRuntimeObjectReferenceJson(Outer));
+	}
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeLocalPlayerJson(ULocalPlayer* LocalPlayer, UWorld* World, bool bIncludeSubsystems, int32 SubsystemLimit)
+{
+	TSharedPtr<FJsonObject> Data = BuildRuntimeObjectReferenceJson(LocalPlayer);
+	if (!LocalPlayer)
+	{
+		return Data;
+	}
+
+	const FPlatformUserId PlatformUserId = LocalPlayer->GetPlatformUserId();
+	Data->SetNumberField(TEXT("controller_id"), LocalPlayer->GetControllerId());
+	Data->SetNumberField(TEXT("platform_user_id"), PlatformUserId.GetInternalId());
+	Data->SetBoolField(TEXT("platform_user_valid"), PlatformUserId.IsValid());
+	Data->SetStringField(TEXT("nickname"), LocalPlayer->GetNickname());
+	Data->SetObjectField(TEXT("origin"), BuildVector2DJson(LocalPlayer->Origin));
+	Data->SetObjectField(TEXT("size"), BuildVector2DJson(LocalPlayer->Size));
+	Data->SetBoolField(TEXT("sent_split_join"), LocalPlayer->bSentSplitJoin != 0);
+	Data->SetBoolField(TEXT("emulate_splitscreen"), LocalPlayer->bEmulateSplitscreen);
+
+	if (APlayerController* PlayerController = LocalPlayer->GetPlayerController(World))
+	{
+		Data->SetObjectField(TEXT("player_controller"), BuildRuntimeObjectReferenceJson(PlayerController));
+		if (APawn* Pawn = PlayerController->GetPawn())
+		{
+			Data->SetObjectField(TEXT("pawn"), BuildRuntimeActorJson(Pawn));
+		}
+	}
+
+	if (LocalPlayer->ViewportClient)
+	{
+		Data->SetObjectField(TEXT("viewport_client"), BuildRuntimeObjectReferenceJson(LocalPlayer->ViewportClient));
+	}
+
+	if (bIncludeSubsystems)
+	{
+		const TArray<ULocalPlayerSubsystem*> Subsystems = LocalPlayer->GetSubsystemArrayCopy<ULocalPlayerSubsystem>();
+		TArray<TSharedPtr<FJsonValue>> SubsystemsJson;
+		for (ULocalPlayerSubsystem* Subsystem : Subsystems)
+		{
+			if (!Subsystem)
+			{
+				continue;
+			}
+			if (SubsystemsJson.Num() >= SubsystemLimit)
+			{
+				break;
+			}
+			SubsystemsJson.Add(MakeShared<FJsonValueObject>(BuildRuntimeSubsystemJson(Subsystem)));
+		}
+
+		Data->SetNumberField(TEXT("subsystem_count"), Subsystems.Num());
+		Data->SetNumberField(TEXT("returned_subsystem_count"), SubsystemsJson.Num());
+		Data->SetBoolField(TEXT("subsystems_truncated"), Subsystems.Num() > SubsystemsJson.Num());
+		Data->SetArrayField(TEXT("subsystems"), SubsystemsJson);
+	}
+
 	return Data;
 }
 
@@ -1862,6 +1966,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_ai_perception_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAIPerceptionDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_commonui_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeCommonUIDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_asset_streaming_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAssetStreamingDiagnostics),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_game_instance_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeGameInstanceDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
 		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
 		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
@@ -5489,6 +5594,187 @@ FString FAIExportTCPServer::HandleRuntimeAssetStreamingDiagnostics(TSharedPtr<FJ
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime asset streaming diagnostics timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeGameInstanceDiagnostics(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+	bool bIncludeLocalPlayers = true;
+	bool bIncludeSubsystems = true;
+	bool bIncludeSaveNames = false;
+	FString SaveSlotName;
+	int32 SaveUserIndex = 0;
+	if (Params.IsValid())
+	{
+		Params->TryGetBoolField(TEXT("include_local_players"), bIncludeLocalPlayers);
+		Params->TryGetBoolField(TEXT("include_subsystems"), bIncludeSubsystems);
+		Params->TryGetBoolField(TEXT("include_save_names"), bIncludeSaveNames);
+		Params->TryGetStringField(TEXT("save_slot_name"), SaveSlotName);
+		double NumberValue = 0.0;
+		if (Params->TryGetNumberField(TEXT("save_user_index"), NumberValue))
+		{
+			SaveUserIndex = static_cast<int32>(NumberValue);
+		}
+	}
+	SaveSlotName.TrimStartAndEndInline();
+	const int32 LocalPlayerLimit = ReadClampedIntField(Params, TEXT("local_player_limit"), 16, 0, 128);
+	const int32 SubsystemLimit = ReadClampedIntField(Params, TEXT("subsystem_limit"), 100, 0, 1000);
+	const int32 SaveNameLimit = ReadClampedIntField(Params, TEXT("save_name_limit"), 100, 0, 1000);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, bIncludeLocalPlayers, bIncludeSubsystems, bIncludeSaveNames, SaveSlotName, SaveUserIndex, LocalPlayerLimit, SubsystemLimit, SaveNameLimit, Promise, this]()
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("requested_world"), WorldSelector);
+		Data->SetObjectField(TEXT("pie"), BuildPIEStateJson());
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetBoolField(TEXT("world_available"), World != nullptr);
+		if (!World)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+		}
+		else
+		{
+			if (WorldSource == TEXT("editor") && (WorldSelector == TEXT("auto") || WorldSelector == TEXT("pie") || WorldSelector == TEXT("runtime") || WorldSelector == TEXT("play")))
+			{
+				Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE is inactive; game instance diagnostics reflect the editor world and may not have a runtime GameInstance")));
+			}
+
+			Data->SetObjectField(TEXT("world"), BuildRuntimeWorldJson(World, WorldSource));
+			UGameInstance* GameInstance = World->GetGameInstance();
+			Data->SetBoolField(TEXT("game_instance_available"), GameInstance != nullptr);
+			if (GameInstance)
+			{
+				TSharedPtr<FJsonObject> GameInstanceJson = BuildRuntimeObjectReferenceJson(GameInstance);
+				GameInstanceJson->SetBoolField(TEXT("dedicated_server_instance"), GameInstance->IsDedicatedServerInstance());
+				GameInstanceJson->SetStringField(TEXT("online_platform_name"), GameInstance->GetOnlinePlatformName().ToString());
+				TSharedPtr<FJsonObject> OnlineSessionJson = MakeShared<FJsonObject>();
+				OnlineSessionJson->SetBoolField(TEXT("present"), GameInstance->GetOnlineSession() != nullptr);
+				if (UClass* OnlineSessionClass = GameInstance->GetOnlineSessionClass())
+				{
+					OnlineSessionJson->SetStringField(TEXT("class"), OnlineSessionClass->GetPathName());
+				}
+				GameInstanceJson->SetObjectField(TEXT("online_session"), OnlineSessionJson);
+
+				const TArray<ULocalPlayer*>& LocalPlayers = GameInstance->GetLocalPlayers();
+				GameInstanceJson->SetNumberField(TEXT("local_player_count"), LocalPlayers.Num());
+				GameInstanceJson->SetBoolField(TEXT("include_local_players"), bIncludeLocalPlayers);
+				GameInstanceJson->SetNumberField(TEXT("local_player_limit"), LocalPlayerLimit);
+				if (bIncludeLocalPlayers)
+				{
+					TArray<TSharedPtr<FJsonValue>> LocalPlayersJson;
+					for (ULocalPlayer* LocalPlayer : LocalPlayers)
+					{
+						if (!LocalPlayer)
+						{
+							continue;
+						}
+						if (LocalPlayersJson.Num() >= LocalPlayerLimit)
+						{
+							break;
+						}
+						LocalPlayersJson.Add(MakeShared<FJsonValueObject>(BuildRuntimeLocalPlayerJson(LocalPlayer, World, bIncludeSubsystems, SubsystemLimit)));
+					}
+					GameInstanceJson->SetNumberField(TEXT("returned_local_player_count"), LocalPlayersJson.Num());
+					GameInstanceJson->SetBoolField(TEXT("local_players_truncated"), LocalPlayers.Num() > LocalPlayersJson.Num());
+					GameInstanceJson->SetArrayField(TEXT("local_players"), LocalPlayersJson);
+				}
+
+				GameInstanceJson->SetBoolField(TEXT("include_subsystems"), bIncludeSubsystems);
+				GameInstanceJson->SetNumberField(TEXT("subsystem_limit"), SubsystemLimit);
+				if (bIncludeSubsystems)
+				{
+					const TArray<UGameInstanceSubsystem*> Subsystems = GameInstance->GetSubsystemArrayCopy<UGameInstanceSubsystem>();
+					TArray<TSharedPtr<FJsonValue>> SubsystemsJson;
+					for (UGameInstanceSubsystem* Subsystem : Subsystems)
+					{
+						if (!Subsystem)
+						{
+							continue;
+						}
+						if (SubsystemsJson.Num() >= SubsystemLimit)
+						{
+							break;
+						}
+						SubsystemsJson.Add(MakeShared<FJsonValueObject>(BuildRuntimeSubsystemJson(Subsystem)));
+					}
+					GameInstanceJson->SetNumberField(TEXT("subsystem_count"), Subsystems.Num());
+					GameInstanceJson->SetNumberField(TEXT("returned_subsystem_count"), SubsystemsJson.Num());
+					GameInstanceJson->SetBoolField(TEXT("subsystems_truncated"), Subsystems.Num() > SubsystemsJson.Num());
+					GameInstanceJson->SetArrayField(TEXT("subsystems"), SubsystemsJson);
+				}
+
+				Data->SetObjectField(TEXT("game_instance"), GameInstanceJson);
+			}
+			else
+			{
+				Data->SetObjectField(TEXT("game_instance"), BuildRuntimeObjectReferenceJson(nullptr));
+				Warnings.Add(MakeShared<FJsonValueString>(TEXT("Selected world has no GameInstance")));
+			}
+		}
+
+		TSharedPtr<FJsonObject> SaveSystemJson = MakeShared<FJsonObject>();
+		SaveSystemJson->SetBoolField(TEXT("include_save_names"), bIncludeSaveNames);
+		SaveSystemJson->SetStringField(TEXT("save_slot_name"), SaveSlotName);
+		SaveSystemJson->SetNumberField(TEXT("save_user_index"), SaveUserIndex);
+		SaveSystemJson->SetNumberField(TEXT("save_name_limit"), SaveNameLimit);
+		ISaveGameSystem* SaveSystem = IPlatformFeaturesModule::Get().GetSaveGameSystem();
+		SaveSystemJson->SetBoolField(TEXT("available"), SaveSystem != nullptr);
+		if (SaveSystem)
+		{
+			SaveSystemJson->SetBoolField(TEXT("platform_has_native_ui"), SaveSystem->PlatformHasNativeUI());
+			SaveSystemJson->SetBoolField(TEXT("supports_multiple_users"), SaveSystem->DoesSaveSystemSupportMultipleUsers());
+
+			if (!SaveSlotName.IsEmpty())
+			{
+				const ISaveGameSystem::ESaveExistsResult ExistsResult = SaveSystem->DoesSaveGameExistWithResult(*SaveSlotName, SaveUserIndex);
+				TSharedPtr<FJsonObject> SlotProbeJson = MakeShared<FJsonObject>();
+				SlotProbeJson->SetStringField(TEXT("slot_name"), SaveSlotName);
+				SlotProbeJson->SetNumberField(TEXT("user_index"), SaveUserIndex);
+				SlotProbeJson->SetStringField(TEXT("exists_result"), SaveExistsResultToString(ExistsResult));
+				SlotProbeJson->SetBoolField(TEXT("exists"), ExistsResult == ISaveGameSystem::ESaveExistsResult::OK);
+				SaveSystemJson->SetObjectField(TEXT("slot_probe"), SlotProbeJson);
+			}
+
+			if (bIncludeSaveNames)
+			{
+				TArray<FString> FoundSaves;
+				const bool bNamesSupported = SaveSystem->GetSaveGameNames(FoundSaves, SaveUserIndex);
+				TArray<TSharedPtr<FJsonValue>> SaveNamesJson;
+				for (const FString& SaveName : FoundSaves)
+				{
+					if (SaveNamesJson.Num() >= SaveNameLimit)
+					{
+						break;
+					}
+					SaveNamesJson.Add(MakeShared<FJsonValueString>(SaveName));
+				}
+				SaveSystemJson->SetBoolField(TEXT("save_names_supported"), bNamesSupported);
+				SaveSystemJson->SetNumberField(TEXT("save_name_count"), FoundSaves.Num());
+				SaveSystemJson->SetNumberField(TEXT("returned_save_name_count"), SaveNamesJson.Num());
+				SaveSystemJson->SetBoolField(TEXT("save_names_truncated"), FoundSaves.Num() > SaveNamesJson.Num());
+				SaveSystemJson->SetArrayField(TEXT("save_names"), SaveNamesJson);
+			}
+		}
+		else
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("Save game system is unavailable")));
+		}
+		Data->SetObjectField(TEXT("save_game_system"), SaveSystemJson);
+
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime game instance diagnostics timed out"));
 	return Future.Get();
 }
 

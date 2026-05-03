@@ -1901,6 +1901,41 @@ def runtime_asset_streaming_diagnostics(
 
 
 @mcp.tool()
+def runtime_game_instance_diagnostics(
+    world: str = "auto",
+    include_local_players: bool = True,
+    include_subsystems: bool = True,
+    include_save_names: bool = False,
+    save_slot_name: str = "",
+    save_user_index: int = 0,
+    local_player_limit: int = 16,
+    subsystem_limit: int = 100,
+    save_name_limit: int = 100,
+) -> str:
+    """
+    Inspect runtime GameInstance, local-player, subsystem, and save-game system state.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        include_local_players: Include local player summaries attached to the GameInstance.
+        include_subsystems: Include GameInstance and LocalPlayer subsystem summaries.
+        include_save_names: Ask the platform save system for known save names when supported.
+        save_slot_name: Optional slot name to probe with DoesSaveGameExistWithResult.
+        save_user_index: User index used for save slot/name probes.
+        local_player_limit: Maximum local player records returned.
+        subsystem_limit: Maximum subsystem records returned per owner.
+        save_name_limit: Maximum save names returned when include_save_names is enabled.
+
+    Returns:
+        JSON with selected world metadata, GameInstance availability/details,
+        LocalPlayer topology, subsystem summaries, save-game system status,
+        optional save slot/name probe results, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_game_instance_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

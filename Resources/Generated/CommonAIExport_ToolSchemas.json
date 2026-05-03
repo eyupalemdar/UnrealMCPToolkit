@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T16:31:53.176950Z",
-  "tool_count": 133,
+  "generated_at_utc": "2026-05-03T16:45:01.932171Z",
+  "tool_count": 134,
   "tools": {
     "ping": {
       "type": "object",
@@ -1027,6 +1027,64 @@
           "default": true
         },
         "level_limit": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_game_instance_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "include_local_players": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_subsystems": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_save_names": {
+          "type": "boolean",
+          "default": false
+        },
+        "save_slot_name": {
+          "type": "string",
+          "default": ""
+        },
+        "save_user_index": {
+          "type": "integer",
+          "default": 0
+        },
+        "local_player_limit": {
+          "type": "integer",
+          "default": 16
+        },
+        "subsystem_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "save_name_limit": {
           "type": "integer",
           "default": 100
         }
