@@ -542,6 +542,22 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         first_actor = ability_system_diagnostics["actors"][0]
         _assert(isinstance(first_actor, dict) and isinstance(first_actor.get("ability_system_components"), list), "runtime ability system diagnostics missing component array")
 
+    ai_perception_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_ai_perception_diagnostics",
+            {"world": "auto", "listener_limit": 10, "target_limit": 5, "stimulus_limit": 5},
+        ),
+        "runtime_ai_perception_diagnostics",
+    )
+    _assert(ai_perception_diagnostics.get("world_available") is True, "runtime AI perception diagnostics did not report an available world")
+    _assert(isinstance(ai_perception_diagnostics.get("world"), dict), "runtime AI perception diagnostics missing world summary")
+    _assert(isinstance(ai_perception_diagnostics.get("listeners"), list), "runtime AI perception diagnostics missing listener array")
+    _assert(isinstance(ai_perception_diagnostics.get("matched_listener_count"), int), "runtime AI perception diagnostics missing listener count")
+    if ai_perception_diagnostics.get("listeners"):
+        first_listener = ai_perception_diagnostics["listeners"][0]
+        _assert(isinstance(first_listener, dict) and isinstance(first_listener.get("targets"), list), "runtime AI perception diagnostics missing target array")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -601,6 +617,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_input_routing_checked": True,
         "runtime_replication_diagnostics_checked": True,
         "runtime_ability_system_diagnostics_checked": True,
+        "runtime_ai_perception_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),

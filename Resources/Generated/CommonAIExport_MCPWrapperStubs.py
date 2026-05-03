@@ -258,6 +258,24 @@ def runtime_ability_system_diagnostics(world: str = 'auto', actor_path: str = ''
     return _format_response(_send_command("runtime_ability_system_diagnostics", params))
 
 
+def runtime_ai_perception_diagnostics(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', class_filter: str = '', target_name_filter: str = '', include_stimuli: bool = True, listener_limit: int = 100, target_limit: int = 100, stimulus_limit: int = 100) -> str:
+    """Generated stub for TCP command `runtime_ai_perception_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "name_filter": name_filter,
+        "class_filter": class_filter,
+        "target_name_filter": target_name_filter,
+        "include_stimuli": include_stimuli,
+        "listener_limit": listener_limit,
+        "target_limit": target_limit,
+        "stimulus_limit": stimulus_limit,
+    }
+    return _format_response(_send_command("runtime_ai_perception_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

@@ -107,6 +107,12 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerInput.h"
 #include "GameFramework/PlayerState.h"
+#include "GenericTeamAgentInterface.h"
+#include "Perception/AIPerceptionComponent.h"
+#include "Perception/AIPerceptionSystem.h"
+#include "Perception/AIPerceptionTypes.h"
+#include "Perception/AISense.h"
+#include "Perception/AISenseConfig.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
 #include "GameplayAbilitySpec.h"
@@ -370,6 +376,15 @@ TSharedPtr<FJsonObject> BuildPIEStateJson()
 	return Data;
 }
 
+TSharedPtr<FJsonObject> BuildVectorJson(const FVector& Vector)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetNumberField(TEXT("x"), Vector.X);
+	Data->SetNumberField(TEXT("y"), Vector.Y);
+	Data->SetNumberField(TEXT("z"), Vector.Z);
+	return Data;
+}
+
 TSharedPtr<FJsonObject> BuildRuntimeActorJson(AActor* Actor)
 {
 	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
@@ -383,11 +398,7 @@ TSharedPtr<FJsonObject> BuildRuntimeActorJson(AActor* Actor)
 	Data->SetStringField(TEXT("path"), Actor->GetPathName());
 	Data->SetStringField(TEXT("class"), Actor->GetClass() ? Actor->GetClass()->GetPathName() : TEXT(""));
 
-	TSharedPtr<FJsonObject> Location = MakeShared<FJsonObject>();
-	Location->SetNumberField(TEXT("x"), Actor->GetActorLocation().X);
-	Location->SetNumberField(TEXT("y"), Actor->GetActorLocation().Y);
-	Location->SetNumberField(TEXT("z"), Actor->GetActorLocation().Z);
-	Data->SetObjectField(TEXT("location"), Location);
+	Data->SetObjectField(TEXT("location"), BuildVectorJson(Actor->GetActorLocation()));
 
 	TSharedPtr<FJsonObject> Rotation = MakeShared<FJsonObject>();
 	Rotation->SetNumberField(TEXT("pitch"), Actor->GetActorRotation().Pitch);
@@ -640,6 +651,275 @@ TSharedPtr<FJsonObject> BuildRuntimeObjectReferenceJson(const UObject* Object)
 	Data->SetStringField(TEXT("name"), Object->GetName());
 	Data->SetStringField(TEXT("path"), Object->GetPathName());
 	Data->SetStringField(TEXT("class"), Object->GetClass() ? Object->GetClass()->GetPathName() : TEXT(""));
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildColorJson(const FColor& Color)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetNumberField(TEXT("r"), Color.R);
+	Data->SetNumberField(TEXT("g"), Color.G);
+	Data->SetNumberField(TEXT("b"), Color.B);
+	Data->SetNumberField(TEXT("a"), Color.A);
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildAISenseIDJson(const FAISenseID& SenseID, const UAIPerceptionComponent* Perception)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetBoolField(TEXT("valid"), SenseID.IsValid());
+	Data->SetNumberField(TEXT("index"), SenseID.IsValid() ? static_cast<int32>(SenseID.Index) : -1);
+	Data->SetStringField(TEXT("name"), SenseID.Name.ToString());
+	if (Perception && SenseID.IsValid())
+	{
+		if (const UAISenseConfig* SenseConfig = Perception->GetSenseConfig(SenseID))
+		{
+			Data->SetStringField(TEXT("config_name"), SenseConfig->GetSenseName());
+			Data->SetObjectField(TEXT("config"), BuildRuntimeObjectReferenceJson(SenseConfig));
+			if (UClass* SenseClass = SenseConfig->GetSenseImplementation().Get())
+			{
+				Data->SetObjectField(TEXT("sense_class"), BuildRuntimeObjectReferenceJson(SenseClass));
+			}
+		}
+	}
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildAISenseConfigJson(const UAISenseConfig* SenseConfig, const UAIPerceptionComponent* Perception)
+{
+	TSharedPtr<FJsonObject> Data = BuildRuntimeObjectReferenceJson(SenseConfig);
+	if (!SenseConfig)
+	{
+		return Data;
+	}
+
+	const FAISenseID SenseID = SenseConfig->GetSenseID();
+	Data->SetStringField(TEXT("sense_name"), SenseConfig->GetSenseName());
+	Data->SetObjectField(TEXT("sense_id"), BuildAISenseIDJson(SenseID, Perception));
+	Data->SetNumberField(TEXT("max_age"), SenseConfig->GetMaxAge());
+	Data->SetBoolField(TEXT("starts_enabled"), SenseConfig->GetStartsEnabled());
+	Data->SetObjectField(TEXT("debug_color"), BuildColorJson(SenseConfig->GetDebugColor()));
+	if (UClass* SenseClass = SenseConfig->GetSenseImplementation().Get())
+	{
+		Data->SetObjectField(TEXT("sense_class"), BuildRuntimeObjectReferenceJson(SenseClass));
+	}
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildAIStimulusJson(const FAIStimulus& Stimulus, const UAIPerceptionComponent* Perception)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetBoolField(TEXT("valid"), Stimulus.IsValid());
+	Data->SetBoolField(TEXT("active"), Stimulus.IsActive());
+	Data->SetBoolField(TEXT("expired"), Stimulus.IsExpired());
+	Data->SetBoolField(TEXT("successfully_sensed"), Stimulus.WasSuccessfullySensed());
+	Data->SetNumberField(TEXT("age"), Stimulus.GetAge());
+	Data->SetNumberField(TEXT("strength"), Stimulus.Strength);
+	Data->SetStringField(TEXT("tag"), Stimulus.Tag.ToString());
+	Data->SetObjectField(TEXT("sense_id"), BuildAISenseIDJson(Stimulus.Type, Perception));
+	if (Perception)
+	{
+		if (UClass* SenseClass = UAIPerceptionSystem::GetSenseClassForStimulus(const_cast<UAIPerceptionComponent*>(Perception), Stimulus).Get())
+		{
+			Data->SetObjectField(TEXT("sense_class"), BuildRuntimeObjectReferenceJson(SenseClass));
+		}
+	}
+	Data->SetObjectField(TEXT("stimulus_location"), BuildVectorJson(Stimulus.StimulusLocation));
+	Data->SetObjectField(TEXT("receiver_location"), BuildVectorJson(Stimulus.ReceiverLocation));
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildActorPerceptionInfoJson(
+	const FActorPerceptionInfo& Info,
+	const UAIPerceptionComponent* Perception,
+	bool bIncludeStimuli,
+	int32 StimulusLimit)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	AActor* Target = Info.Target.Get();
+	Data->SetBoolField(TEXT("target_valid"), Target != nullptr);
+	if (Target)
+	{
+		Data->SetObjectField(TEXT("target"), BuildRuntimeActorJson(Target));
+	}
+	else
+	{
+		Data->SetObjectField(TEXT("target"), BuildRuntimeObjectReferenceJson(nullptr));
+	}
+
+	Data->SetBoolField(TEXT("hostile"), Info.bIsHostile != 0);
+	Data->SetBoolField(TEXT("friendly"), Info.bIsFriendly != 0);
+	Data->SetBoolField(TEXT("has_any_known_stimulus"), Info.HasAnyKnownStimulus());
+	Data->SetBoolField(TEXT("has_any_current_stimulus"), Info.HasAnyCurrentStimulus());
+	Data->SetObjectField(TEXT("dominant_sense"), BuildAISenseIDJson(Info.DominantSense, Perception));
+
+	float LastStimulusAge = 0.0f;
+	const FVector LastStimulusLocation = Info.GetLastStimulusLocation(&LastStimulusAge);
+	Data->SetNumberField(TEXT("last_stimulus_age"), LastStimulusAge);
+	Data->SetObjectField(TEXT("last_stimulus_location"), BuildVectorJson(LastStimulusLocation));
+
+	int32 ValidStimulusCount = 0;
+	int32 ActiveStimulusCount = 0;
+	int32 SuccessfulStimulusCount = 0;
+	int32 ExpiredStimulusCount = 0;
+	TArray<TSharedPtr<FJsonValue>> StimuliJson;
+	for (const FAIStimulus& Stimulus : Info.LastSensedStimuli)
+	{
+		if (!Stimulus.IsValid())
+		{
+			continue;
+		}
+
+		++ValidStimulusCount;
+		if (Stimulus.IsActive())
+		{
+			++ActiveStimulusCount;
+		}
+		if (Stimulus.WasSuccessfullySensed())
+		{
+			++SuccessfulStimulusCount;
+		}
+		if (Stimulus.IsExpired())
+		{
+			++ExpiredStimulusCount;
+		}
+		if (bIncludeStimuli && StimuliJson.Num() < StimulusLimit)
+		{
+			StimuliJson.Add(MakeShared<FJsonValueObject>(BuildAIStimulusJson(Stimulus, Perception)));
+		}
+	}
+
+	Data->SetNumberField(TEXT("stored_stimulus_slot_count"), Info.LastSensedStimuli.Num());
+	Data->SetNumberField(TEXT("valid_stimulus_count"), ValidStimulusCount);
+	Data->SetNumberField(TEXT("active_stimulus_count"), ActiveStimulusCount);
+	Data->SetNumberField(TEXT("successful_stimulus_count"), SuccessfulStimulusCount);
+	Data->SetNumberField(TEXT("expired_stimulus_count"), ExpiredStimulusCount);
+	Data->SetBoolField(TEXT("include_stimuli"), bIncludeStimuli);
+	if (bIncludeStimuli)
+	{
+		Data->SetNumberField(TEXT("returned_stimulus_count"), StimuliJson.Num());
+		Data->SetBoolField(TEXT("stimuli_truncated"), ValidStimulusCount > StimuliJson.Num());
+		Data->SetArrayField(TEXT("stimuli"), StimuliJson);
+	}
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildAIPerceptionComponentJson(
+	UAIPerceptionComponent* Perception,
+	const FString& TargetNameFilter,
+	bool bIncludeStimuli,
+	int32 TargetLimit,
+	int32 StimulusLimit)
+{
+	TSharedPtr<FJsonObject> Data = BuildRuntimeComponentJson(Perception);
+	if (!Perception)
+	{
+		return Data;
+	}
+
+	const FPerceptionListenerID ListenerId = Perception->GetListenerId();
+	Data->SetNumberField(TEXT("listener_id"), ListenerId.IsValid() ? static_cast<int32>(ListenerId.Index) : -1);
+	Data->SetNumberField(TEXT("team_id"), Perception->GetTeamIdentifier().GetId());
+	Data->SetObjectField(TEXT("dominant_sense"), BuildAISenseIDJson(Perception->GetDominantSenseID(), Perception));
+	Data->SetObjectField(TEXT("body_actor"), BuildRuntimeObjectReferenceJson(Perception->GetBodyActor()));
+
+	TArray<AActor*> CurrentlyPerceivedActors;
+	Perception->GetCurrentlyPerceivedActors(nullptr, CurrentlyPerceivedActors);
+	TArray<AActor*> KnownPerceivedActors;
+	Perception->GetKnownPerceivedActors(nullptr, KnownPerceivedActors);
+	TArray<AActor*> HostileActors;
+	Perception->GetHostileActors(HostileActors);
+	Data->SetNumberField(TEXT("currently_perceived_actor_count"), CurrentlyPerceivedActors.Num());
+	Data->SetNumberField(TEXT("known_perceived_actor_count"), KnownPerceivedActors.Num());
+	Data->SetNumberField(TEXT("hostile_actor_count"), HostileActors.Num());
+
+	TArray<TSharedPtr<FJsonValue>> SenseConfigsJson;
+	for (UAIPerceptionComponent::TAISenseConfigConstIterator It = Perception->GetSensesConfigIterator(); It; ++It)
+	{
+		const UAISenseConfig* SenseConfig = *It;
+		if (!SenseConfig)
+		{
+			continue;
+		}
+		SenseConfigsJson.Add(MakeShared<FJsonValueObject>(BuildAISenseConfigJson(SenseConfig, Perception)));
+	}
+	Data->SetNumberField(TEXT("sense_config_count"), SenseConfigsJson.Num());
+	Data->SetArrayField(TEXT("sense_configs"), SenseConfigsJson);
+
+	auto TargetMatchesFilter = [&TargetNameFilter](AActor* Target)
+	{
+		if (TargetNameFilter.IsEmpty())
+		{
+			return true;
+		}
+		if (!Target)
+		{
+			return false;
+		}
+		return Target->GetName().Contains(TargetNameFilter) || Target->GetActorLabel().Contains(TargetNameFilter);
+	};
+
+	int32 MatchedTargetCount = 0;
+	int32 ActiveTargetCount = 0;
+	int32 KnownTargetCount = 0;
+	int32 ValidStimulusCount = 0;
+	int32 ActiveStimulusCount = 0;
+	int32 ExpiredStimulusCount = 0;
+	TArray<TSharedPtr<FJsonValue>> TargetsJson;
+	for (UAIPerceptionComponent::FActorPerceptionContainer::TConstIterator It = Perception->GetPerceptualDataConstIterator(); It; ++It)
+	{
+		const FActorPerceptionInfo& Info = It->Value;
+		AActor* Target = Info.Target.Get();
+		if (!TargetMatchesFilter(Target))
+		{
+			continue;
+		}
+
+		++MatchedTargetCount;
+		if (Info.HasAnyKnownStimulus())
+		{
+			++KnownTargetCount;
+		}
+		if (Info.HasAnyCurrentStimulus())
+		{
+			++ActiveTargetCount;
+		}
+		for (const FAIStimulus& Stimulus : Info.LastSensedStimuli)
+		{
+			if (!Stimulus.IsValid())
+			{
+				continue;
+			}
+			++ValidStimulusCount;
+			if (Stimulus.IsActive())
+			{
+				++ActiveStimulusCount;
+			}
+			if (Stimulus.IsExpired())
+			{
+				++ExpiredStimulusCount;
+			}
+		}
+
+		if (TargetsJson.Num() < TargetLimit)
+		{
+			TargetsJson.Add(MakeShared<FJsonValueObject>(BuildActorPerceptionInfoJson(Info, Perception, bIncludeStimuli, StimulusLimit)));
+		}
+	}
+
+	Data->SetStringField(TEXT("target_name_filter"), TargetNameFilter);
+	Data->SetBoolField(TEXT("include_stimuli"), bIncludeStimuli);
+	Data->SetNumberField(TEXT("target_limit"), TargetLimit);
+	Data->SetNumberField(TEXT("stimulus_limit"), StimulusLimit);
+	Data->SetNumberField(TEXT("matched_target_count"), MatchedTargetCount);
+	Data->SetNumberField(TEXT("returned_target_count"), TargetsJson.Num());
+	Data->SetBoolField(TEXT("targets_truncated"), MatchedTargetCount > TargetsJson.Num());
+	Data->SetNumberField(TEXT("known_target_count"), KnownTargetCount);
+	Data->SetNumberField(TEXT("active_target_count"), ActiveTargetCount);
+	Data->SetNumberField(TEXT("valid_stimulus_count"), ValidStimulusCount);
+	Data->SetNumberField(TEXT("active_stimulus_count"), ActiveStimulusCount);
+	Data->SetNumberField(TEXT("expired_stimulus_count"), ExpiredStimulusCount);
+	Data->SetArrayField(TEXT("targets"), TargetsJson);
 	return Data;
 }
 
@@ -1271,6 +1551,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_input_routing", "RuntimeInspector", false, 60, HandleRuntimeInputRouting),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_replication_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeReplicationDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_ability_system_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAbilitySystemDiagnostics),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_ai_perception_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAIPerceptionDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
 		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
 		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
@@ -4971,6 +5252,241 @@ FString FAIExportTCPServer::HandleRuntimeAbilitySystemDiagnostics(TSharedPtr<FJs
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime ability system diagnostics timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeAIPerceptionDiagnostics(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+	FString ActorPath;
+	FString ActorLabel;
+	FString ActorName;
+	FString NameFilter;
+	FString ClassFilter;
+	FString TargetNameFilter;
+	bool bIncludeStimuli = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("actor_path"), ActorPath);
+		Params->TryGetStringField(TEXT("actor_label"), ActorLabel);
+		Params->TryGetStringField(TEXT("actor_name"), ActorName);
+		Params->TryGetStringField(TEXT("name_filter"), NameFilter);
+		Params->TryGetStringField(TEXT("class_filter"), ClassFilter);
+		Params->TryGetStringField(TEXT("target_name_filter"), TargetNameFilter);
+		Params->TryGetBoolField(TEXT("include_stimuli"), bIncludeStimuli);
+	}
+	ActorPath.TrimStartAndEndInline();
+	ActorLabel.TrimStartAndEndInline();
+	ActorName.TrimStartAndEndInline();
+	NameFilter.TrimStartAndEndInline();
+	ClassFilter.TrimStartAndEndInline();
+	TargetNameFilter.TrimStartAndEndInline();
+	const int32 ListenerLimit = ReadClampedIntField(Params, TEXT("listener_limit"), 100, 1, 1000);
+	const int32 TargetLimit = ReadClampedIntField(Params, TEXT("target_limit"), 100, 0, 1000);
+	const int32 StimulusLimit = ReadClampedIntField(Params, TEXT("stimulus_limit"), 100, 0, 1000);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, ActorPath, ActorLabel, ActorName, NameFilter, ClassFilter, TargetNameFilter, bIncludeStimuli, ListenerLimit, TargetLimit, StimulusLimit, Promise, this]()
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("requested_world"), WorldSelector);
+		Data->SetObjectField(TEXT("pie"), BuildPIEStateJson());
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetBoolField(TEXT("world_available"), World != nullptr);
+		if (!World)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			Data->SetArrayField(TEXT("warnings"), Warnings);
+			Promise->SetValue(CreateSuccessResponse(Data));
+			return;
+		}
+
+		if (WorldSource == TEXT("editor") && (WorldSelector == TEXT("auto") || WorldSelector == TEXT("pie") || WorldSelector == TEXT("runtime") || WorldSelector == TEXT("play")))
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE is inactive; AI perception diagnostics reflect the editor world")));
+		}
+
+		Data->SetObjectField(TEXT("world"), BuildRuntimeWorldJson(World, WorldSource));
+		Data->SetBoolField(TEXT("include_stimuli"), bIncludeStimuli);
+		Data->SetNumberField(TEXT("listener_limit"), ListenerLimit);
+		Data->SetNumberField(TEXT("target_limit"), TargetLimit);
+		Data->SetNumberField(TEXT("stimulus_limit"), StimulusLimit);
+		Data->SetStringField(TEXT("target_name_filter"), TargetNameFilter);
+
+		const bool bSpecificActorRequested = !ActorPath.IsEmpty() || !ActorLabel.IsEmpty() || !ActorName.IsEmpty();
+		TArray<UAIPerceptionComponent*> ComponentsToInspect;
+		int32 MatchedListenerCount = 0;
+		int32 PerceptionOwnerActorCount = 0;
+		int32 TotalKnownTargetCount = 0;
+		int32 TotalCurrentlyPerceivedTargetCount = 0;
+		int32 TotalHostileTargetCount = 0;
+		int32 TotalValidStimulusCount = 0;
+		int32 TotalActiveStimulusCount = 0;
+		int32 TotalExpiredStimulusCount = 0;
+
+		auto AccumulatePerceptionCounters = [&PerceptionOwnerActorCount, &TotalKnownTargetCount, &TotalCurrentlyPerceivedTargetCount, &TotalHostileTargetCount, &TotalValidStimulusCount, &TotalActiveStimulusCount, &TotalExpiredStimulusCount](AActor* Actor)
+		{
+			if (!Actor)
+			{
+				return 0;
+			}
+
+			TArray<UAIPerceptionComponent*> PerceptionComponents;
+			Actor->GetComponents<UAIPerceptionComponent>(PerceptionComponents);
+			if (PerceptionComponents.IsEmpty())
+			{
+				return 0;
+			}
+
+			++PerceptionOwnerActorCount;
+			for (UAIPerceptionComponent* Perception : PerceptionComponents)
+			{
+				if (!Perception)
+				{
+					continue;
+				}
+
+				TArray<AActor*> KnownActors;
+				Perception->GetKnownPerceivedActors(nullptr, KnownActors);
+				TotalKnownTargetCount += KnownActors.Num();
+
+				TArray<AActor*> CurrentActors;
+				Perception->GetCurrentlyPerceivedActors(nullptr, CurrentActors);
+				TotalCurrentlyPerceivedTargetCount += CurrentActors.Num();
+
+				TArray<AActor*> HostileActors;
+				Perception->GetHostileActors(HostileActors);
+				TotalHostileTargetCount += HostileActors.Num();
+
+				for (UAIPerceptionComponent::FActorPerceptionContainer::TConstIterator It = Perception->GetPerceptualDataConstIterator(); It; ++It)
+				{
+					const FActorPerceptionInfo& Info = It->Value;
+					for (const FAIStimulus& Stimulus : Info.LastSensedStimuli)
+					{
+						if (!Stimulus.IsValid())
+						{
+							continue;
+						}
+						++TotalValidStimulusCount;
+						if (Stimulus.IsActive())
+						{
+							++TotalActiveStimulusCount;
+						}
+						if (Stimulus.IsExpired())
+						{
+							++TotalExpiredStimulusCount;
+						}
+					}
+				}
+			}
+
+			return PerceptionComponents.Num();
+		};
+
+		if (bSpecificActorRequested)
+		{
+			AActor* Actor = FindRuntimeActorForAI(World, ActorPath, ActorLabel, ActorName);
+			Data->SetBoolField(TEXT("selected_actor_requested"), true);
+			Data->SetBoolField(TEXT("selected_actor_found"), Actor != nullptr);
+			if (Actor)
+			{
+				MatchedListenerCount = AccumulatePerceptionCounters(Actor);
+				Actor->GetComponents<UAIPerceptionComponent>(ComponentsToInspect);
+				if (MatchedListenerCount == 0)
+				{
+					Warnings.Add(MakeShared<FJsonValueString>(TEXT("Selected actor has no AIPerceptionComponent")));
+				}
+			}
+			else
+			{
+				Warnings.Add(MakeShared<FJsonValueString>(TEXT("Selected actor was not found in the selected world")));
+			}
+		}
+		else
+		{
+			Data->SetBoolField(TEXT("selected_actor_requested"), false);
+			for (TActorIterator<AActor> It(World); It; ++It)
+			{
+				AActor* Actor = *It;
+				if (!Actor)
+				{
+					continue;
+				}
+
+				const FString Label = Actor->GetActorLabel();
+				const FString Name = Actor->GetName();
+				const FString ActorClassPath = Actor->GetClass() ? Actor->GetClass()->GetPathName() : TEXT("");
+				if (!NameFilter.IsEmpty() && !Name.Contains(NameFilter) && !Label.Contains(NameFilter))
+				{
+					continue;
+				}
+				if (!ClassFilter.IsEmpty() && !ActorClassPath.Contains(ClassFilter))
+				{
+					continue;
+				}
+
+				TArray<UAIPerceptionComponent*> PerceptionComponents;
+				Actor->GetComponents<UAIPerceptionComponent>(PerceptionComponents);
+				if (PerceptionComponents.IsEmpty())
+				{
+					continue;
+				}
+
+				MatchedListenerCount += PerceptionComponents.Num();
+				AccumulatePerceptionCounters(Actor);
+				for (UAIPerceptionComponent* Perception : PerceptionComponents)
+				{
+					if (!Perception)
+					{
+						continue;
+					}
+
+					const FString ComponentClassPath = Perception->GetClass() ? Perception->GetClass()->GetPathName() : TEXT("");
+					if (!ClassFilter.IsEmpty() && !ComponentClassPath.Contains(ClassFilter) && !ActorClassPath.Contains(ClassFilter))
+					{
+						continue;
+					}
+					if (ComponentsToInspect.Num() < ListenerLimit)
+					{
+						ComponentsToInspect.Add(Perception);
+					}
+				}
+			}
+		}
+
+		TArray<TSharedPtr<FJsonValue>> ListenersJson;
+		for (UAIPerceptionComponent* Perception : ComponentsToInspect)
+		{
+			if (!Perception)
+			{
+				continue;
+			}
+			ListenersJson.Add(MakeShared<FJsonValueObject>(BuildAIPerceptionComponentJson(Perception, TargetNameFilter, bIncludeStimuli, TargetLimit, StimulusLimit)));
+		}
+
+		Data->SetNumberField(TEXT("matched_listener_count"), MatchedListenerCount);
+		Data->SetNumberField(TEXT("returned_listener_count"), ListenersJson.Num());
+		Data->SetBoolField(TEXT("listeners_truncated"), MatchedListenerCount > ListenersJson.Num());
+		Data->SetNumberField(TEXT("perception_owner_actor_count"), PerceptionOwnerActorCount);
+		Data->SetNumberField(TEXT("total_known_target_count"), TotalKnownTargetCount);
+		Data->SetNumberField(TEXT("total_currently_perceived_target_count"), TotalCurrentlyPerceivedTargetCount);
+		Data->SetNumberField(TEXT("total_hostile_target_count"), TotalHostileTargetCount);
+		Data->SetNumberField(TEXT("total_valid_stimulus_count"), TotalValidStimulusCount);
+		Data->SetNumberField(TEXT("total_active_stimulus_count"), TotalActiveStimulusCount);
+		Data->SetNumberField(TEXT("total_expired_stimulus_count"), TotalExpiredStimulusCount);
+		Data->SetArrayField(TEXT("listeners"), ListenersJson);
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime AI perception diagnostics timed out"));
 	return Future.Get();
 }
 

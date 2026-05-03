@@ -320,6 +320,7 @@ private:
 	FString HandleRuntimeInputRouting(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeReplicationDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeAbilitySystemDiagnostics(TSharedPtr<class FJsonObject> Params);
+	FString HandleRuntimeAIPerceptionDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorList(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSpawn(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSetTransform(TSharedPtr<class FJsonObject> Params);

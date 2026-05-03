@@ -31,6 +31,7 @@ public class CommonAIExport : ModuleRules
 			"BlueprintGraph",
 			"EnhancedInput",
 			"InputCore",  // For FKey
+			"AIModule",
 			"GameplayAbilities",
 			"GameplayTags",
 			"DeveloperSettings",

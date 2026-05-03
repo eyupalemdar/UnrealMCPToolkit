@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T16:04:30.435634Z",
-  "tool_count": 130,
+  "generated_at_utc": "2026-05-03T16:15:19.524125Z",
+  "tool_count": 131,
   "tools": {
     "ping": {
       "type": "object",
@@ -869,6 +869,72 @@
           "default": 100
         },
         "attribute_limit": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_ai_perception_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "class_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "target_name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "include_stimuli": {
+          "type": "boolean",
+          "default": true
+        },
+        "listener_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "target_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "stimulus_limit": {
           "type": "integer",
           "default": 100
         }

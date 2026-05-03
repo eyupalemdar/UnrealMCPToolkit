@@ -1807,6 +1807,44 @@ def runtime_ability_system_diagnostics(
 
 
 @mcp.tool()
+def runtime_ai_perception_diagnostics(
+    world: str = "auto",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    name_filter: str = "",
+    class_filter: str = "",
+    target_name_filter: str = "",
+    include_stimuli: bool = True,
+    listener_limit: int = 100,
+    target_limit: int = 100,
+    stimulus_limit: int = 100,
+) -> str:
+    """
+    Inspect runtime AI Perception listener and stimulus state without mutating gameplay.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        actor_path: Optional exact listener owner actor UObject path to inspect.
+        actor_label: Optional exact listener owner actor label to inspect.
+        actor_name: Optional exact listener owner actor object name to inspect.
+        name_filter: Optional substring matched against listener owner actor name or label.
+        class_filter: Optional substring matched against listener owner actor class path.
+        target_name_filter: Optional substring matched against perceived target name or label.
+        include_stimuli: Include per-target FAIStimulus summaries.
+        listener_limit: Maximum perception listener components returned.
+        target_limit: Maximum perceived target records returned per listener.
+        stimulus_limit: Maximum stimulus records returned per target.
+
+    Returns:
+        JSON with AIPerceptionComponent listener config, known/current target
+        counts, hostile target counts, stimulus summaries, aggregates, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_ai_perception_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",
