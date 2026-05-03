@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 102
-- MCP tools: 118
-- Categories: 23
+- TCP commands: 108
+- MCP tools: 124
+- Categories: 24
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 
 ## Categories
@@ -30,10 +30,11 @@
 | `Input` | 3 |
 | `Material` | 15 |
 | `PIE` | 3 |
+| `RuntimeInspector` | 3 |
 | `Utility` | 5 |
 | `Widget` | 11 |
 | `WidgetPreview` | 1 |
-| `Workflow` | 3 |
+| `Workflow` | 6 |
 
 ## TCP Commands
 
@@ -46,6 +47,9 @@
 | `command_manifest_export` | `Utility` | `read` | false | false | false | 30 |
 | `project_status` | `Workflow` | `read` | false | false | false | 0 |
 | `source_control_status` | `Workflow` | `read` | false | false | false | 30 |
+| `source_control_log` | `Workflow` | `read` | false | false | false | 30 |
+| `source_control_show` | `Workflow` | `read` | false | false | false | 30 |
+| `source_control_diff` | `Workflow` | `read` | false | false | false | 30 |
 | `task_submit` | `AsyncJob` | `read` | false | false | false | 0 |
 | `task_status` | `AsyncJob` | `read` | false | false | false | 0 |
 | `task_result` | `AsyncJob` | `read` | false | false | false | 0 |
@@ -54,6 +58,9 @@
 | `export_blueprint` | `Export` | `read` | false | false | false | 60 |
 | `list_supported_types` | `Export` | `read` | false | false | false | 0 |
 | `editor_world_info` | `Editor` | `read` | false | false | false | 0 |
+| `runtime_world_info` | `RuntimeInspector` | `read` | false | false | false | 30 |
+| `runtime_player_list` | `RuntimeInspector` | `read` | false | false | false | 30 |
+| `runtime_component_list` | `RuntimeInspector` | `read` | false | false | false | 60 |
 | `actor_list` | `EditorActor` | `read` | false | false | false | 60 |
 | `actor_spawn` | `EditorActor` | `write` | true | true | false | 60 |
 | `actor_set_transform` | `EditorActor` | `write` | true | true | false | 60 |

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T11:33:02.464124Z",
-  "tool_count": 118,
+  "generated_at_utc": "2026-05-03T12:42:05.494584Z",
+  "tool_count": 124,
   "tools": {
     "ping": {
       "type": "object",
@@ -141,6 +141,156 @@
         "provider": {
           "type": "string",
           "default": "auto"
+        },
+        "repo_path": {
+          "type": "string",
+          "default": ""
+        },
+        "path": {
+          "type": "string",
+          "default": ""
+        },
+        "no_limit": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Workflow",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 30
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "source_control_log": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "default": "auto"
+        },
+        "repo_path": {
+          "type": "string",
+          "default": ""
+        },
+        "path": {
+          "type": "string",
+          "default": ""
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20
+        },
+        "oneline": {
+          "type": "boolean",
+          "default": true
+        },
+        "since": {
+          "type": "string",
+          "default": ""
+        },
+        "until": {
+          "type": "string",
+          "default": ""
+        },
+        "ref": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Workflow",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 30
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "source_control_show": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "default": "auto"
+        },
+        "repo_path": {
+          "type": "string",
+          "default": ""
+        },
+        "ref": {
+          "type": "string",
+          "default": ""
+        },
+        "name_status": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Workflow",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 30
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "source_control_diff": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "default": "auto"
+        },
+        "repo_path": {
+          "type": "string",
+          "default": ""
+        },
+        "path": {
+          "type": "string",
+          "default": ""
+        },
+        "base": {
+          "type": "string",
+          "default": ""
+        },
+        "compare": {
+          "type": "string",
+          "default": ""
+        },
+        "name_status": {
+          "type": "boolean",
+          "default": true
         }
       },
       "required": [],
@@ -390,6 +540,112 @@
         "supports_dry_run": false,
         "async_candidate": false,
         "timeout_seconds": 0
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_world_info": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 30
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_player_list": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 30
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_component_list": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_class_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "component_class_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "limit": {
+          "type": "integer",
+          "default": 500
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
       },
       "annotations": {
         "readOnlyHint": true,

@@ -1048,19 +1048,132 @@ def project_status() -> str:
 
 
 @mcp.tool()
-def source_control_status(provider: str = "auto") -> str:
+def source_control_status(
+    provider: str = "auto",
+    repo_path: str = "",
+    path: str = "",
+    no_limit: bool = False,
+) -> str:
     """
     Read source-control status from the editor process.
 
     Args:
         provider: "auto", "dv"/"diversion", or "git". Auto prefers Diversion
-                  when a .diversion folder exists.
+                  when a .diversion folder exists in repo_path.
+        repo_path: Optional project-relative or absolute directory under the
+                   project. Use "Plugins/CommonAIExport" for the GitHub repo.
+        path: Optional repo-relative file or directory path.
+        no_limit: For Diversion, request full status output.
 
     Returns:
         JSON with provider, return_code, stdout, and stderr. This is read-only.
     """
-    return _format_response(_send_command("source_control_status", {
+    params = {
         "provider": provider,
+        "repo_path": repo_path,
+        "path": path,
+        "no_limit": no_limit,
+    }
+    return _format_response(_send_command("source_control_status", params))
+
+
+@mcp.tool()
+def source_control_log(
+    provider: str = "auto",
+    repo_path: str = "",
+    path: str = "",
+    limit: int = 20,
+    oneline: bool = True,
+    since: str = "",
+    until: str = "",
+    ref: str = "",
+) -> str:
+    """
+    Read recent source-control history from the editor process.
+
+    Args:
+        provider: "auto", "dv"/"diversion", or "git".
+        repo_path: Optional project-relative repo directory. Use
+                   "Plugins/CommonAIExport" for the plugin GitHub repo.
+        path: Optional repo-relative file or directory path.
+        limit: Maximum commits returned. The TCP server clamps this value.
+        oneline: Request compact one-line history when supported.
+        since: Optional date or relative date filter.
+        until: Optional date or relative date filter.
+        ref: Optional Git revision/range. Not supported by Diversion.
+
+    Returns:
+        JSON with provider, command arguments, return_code, stdout, and stderr.
+    """
+    return _format_response(_send_command("source_control_log", {
+        "provider": provider,
+        "repo_path": repo_path,
+        "path": path,
+        "limit": limit,
+        "oneline": oneline,
+        "since": since,
+        "until": until,
+        "ref": ref,
+    }))
+
+
+@mcp.tool()
+def source_control_show(
+    provider: str = "auto",
+    repo_path: str = "",
+    ref: str = "",
+    name_status: bool = True,
+) -> str:
+    """
+    Show a source-control commit or current repo revision from the editor process.
+
+    Args:
+        provider: "auto", "dv"/"diversion", or "git".
+        repo_path: Optional project-relative repo directory.
+        ref: Commit/branch/tag reference. Empty means the provider default.
+        name_status: Include changed file names and statuses when supported.
+
+    Returns:
+        JSON with provider, command arguments, return_code, stdout, and stderr.
+    """
+    return _format_response(_send_command("source_control_show", {
+        "provider": provider,
+        "repo_path": repo_path,
+        "ref": ref,
+        "name_status": name_status,
+    }))
+
+
+@mcp.tool()
+def source_control_diff(
+    provider: str = "auto",
+    repo_path: str = "",
+    path: str = "",
+    base: str = "",
+    compare: str = "",
+    name_status: bool = True,
+) -> str:
+    """
+    Read source-control diff output from the editor process.
+
+    Args:
+        provider: "auto", "dv"/"diversion", or "git".
+        repo_path: Optional project-relative repo directory.
+        path: Optional repo-relative file or directory path.
+        base: Optional base revision.
+        compare: Optional compare revision.
+        name_status: Return names/statuses instead of full patch when supported.
+
+    Returns:
+        JSON with provider, command arguments, return_code, stdout, and stderr.
+    """
+    return _format_response(_send_command("source_control_diff", {
+        "provider": provider,
+        "repo_path": repo_path,
+        "path": path,
+        "base": base,
+        "compare": compare,
+        "name_status": name_status,
     }))
 
 
@@ -1376,6 +1489,87 @@ def editor_world_info() -> str:
         PIE activity state.
     """
     return _format_response(_send_command("editor_world_info"))
+
+
+@mcp.tool()
+def runtime_world_info(world: str = "auto") -> str:
+    """
+    Inspect the active runtime or editor world.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+
+    Returns:
+        JSON with world type, net mode, time, actor/level/player counts, PIE
+        state, and GameInstance/GameMode/GameState class metadata when present.
+    """
+    return _format_response(_send_command("runtime_world_info", {
+        "world": world,
+    }))
+
+
+@mcp.tool()
+def runtime_player_list(world: str = "auto") -> str:
+    """
+    List runtime player controllers, local players, and possessed pawns.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor".
+
+    Returns:
+        JSON with world metadata plus controller/local-player arrays.
+    """
+    return _format_response(_send_command("runtime_player_list", {
+        "world": world,
+    }))
+
+
+@mcp.tool()
+def runtime_component_list(
+    world: str = "auto",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    name_filter: str = "",
+    actor_class_filter: str = "",
+    component_class_filter: str = "",
+    limit: int = 500,
+) -> str:
+    """
+    List actor components from the selected runtime or editor world.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor".
+        actor_path: Optional exact actor UObject path.
+        actor_label: Optional exact actor label.
+        actor_name: Optional exact actor object name.
+        name_filter: Optional substring matched against actor name or label.
+        actor_class_filter: Optional substring matched against actor class path.
+        component_class_filter: Optional substring matched against component class path.
+        limit: Maximum component records returned. The TCP server clamps this.
+
+    Returns:
+        JSON with component records, owner metadata, matched count, and
+        truncation state.
+    """
+    params = {
+        "world": world,
+        "limit": limit,
+    }
+    if actor_path:
+        params["actor_path"] = actor_path
+    if actor_label:
+        params["actor_label"] = actor_label
+    if actor_name:
+        params["actor_name"] = actor_name
+    if name_filter:
+        params["name_filter"] = name_filter
+    if actor_class_filter:
+        params["actor_class_filter"] = actor_class_filter
+    if component_class_filter:
+        params["component_class_filter"] = component_class_filter
+    return _format_response(_send_command("runtime_component_list", params))
 
 
 @mcp.tool()

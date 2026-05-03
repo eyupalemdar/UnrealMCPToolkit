@@ -272,6 +272,9 @@ private:
 	FString HandleCommandManifestExport(TSharedPtr<class FJsonObject> Params);
 	FString HandleProjectStatus();
 	FString HandleSourceControlStatus(TSharedPtr<class FJsonObject> Params);
+	FString HandleSourceControlLog(TSharedPtr<class FJsonObject> Params);
+	FString HandleSourceControlShow(TSharedPtr<class FJsonObject> Params);
+	FString HandleSourceControlDiff(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskSubmit(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskStatus(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskResult(TSharedPtr<class FJsonObject> Params);
@@ -282,6 +285,9 @@ private:
 
 	/** Command handlers - Editor / Level / Actor */
 	FString HandleEditorWorldInfo();
+	FString HandleRuntimeWorldInfo(TSharedPtr<class FJsonObject> Params);
+	FString HandleRuntimePlayerList(TSharedPtr<class FJsonObject> Params);
+	FString HandleRuntimeComponentList(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorList(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSpawn(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSetTransform(TSharedPtr<class FJsonObject> Params);

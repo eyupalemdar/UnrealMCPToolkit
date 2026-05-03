@@ -92,6 +92,14 @@
 #include "ScopedTransaction.h"
 #include "UnrealClient.h"
 #include "UObject/UnrealType.h"
+#include "Engine/GameInstance.h"
+#include "Engine/LocalPlayer.h"
+#include "Components/ActorComponent.h"
+#include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameStateBase.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
 
 // Asset Lifecycle includes (for HandleReloadAsset)
 #include "Subsystems/AssetEditorSubsystem.h"
@@ -111,6 +119,346 @@ FString CommonAIExportHttpVerbToString(EHttpServerRequestVerbs Verb)
 	if (Verb == EHttpServerRequestVerbs::VERB_PUT) return TEXT("PUT");
 	if (Verb == EHttpServerRequestVerbs::VERB_PATCH) return TEXT("PATCH");
 	return TEXT("UNKNOWN");
+}
+
+FString QuoteProcessArgument(const FString& Argument)
+{
+	FString Escaped = Argument;
+	Escaped.ReplaceInline(TEXT("\""), TEXT("\\\""));
+	return FString::Printf(TEXT("\"%s\""), *Escaped);
+}
+
+bool ResolveProjectScopedDirectory(const FString& RequestedPath, FString& OutDirectory, FString& OutError)
+{
+	FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+	FPaths::NormalizeDirectoryName(ProjectDir);
+
+	FString Candidate = RequestedPath;
+	Candidate.TrimStartAndEndInline();
+	if (Candidate.IsEmpty())
+	{
+		Candidate = ProjectDir;
+	}
+	else if (FPaths::IsRelative(Candidate))
+	{
+		Candidate = FPaths::Combine(ProjectDir, Candidate);
+	}
+
+	Candidate = FPaths::ConvertRelativePathToFull(Candidate);
+	FPaths::NormalizeDirectoryName(Candidate);
+
+	if (!Candidate.Equals(ProjectDir, ESearchCase::IgnoreCase) && !FPaths::IsUnderDirectory(Candidate, ProjectDir))
+	{
+		OutError = TEXT("repo_path must resolve under the project directory");
+		return false;
+	}
+	if (!IFileManager::Get().DirectoryExists(*Candidate))
+	{
+		OutError = FString::Printf(TEXT("repo_path does not exist or is not a directory: %s"), *Candidate);
+		return false;
+	}
+
+	OutDirectory = Candidate;
+	return true;
+}
+
+struct FSourceControlCommandContext
+{
+	FString Provider = TEXT("auto");
+	FString Executable;
+	FString RepoDir;
+	bool bHasDiversion = false;
+	bool bHasGit = false;
+};
+
+bool ResolveSourceControlCommandContext(TSharedPtr<FJsonObject> Params, FSourceControlCommandContext& OutContext, FString& OutError)
+{
+	FString Provider = TEXT("auto");
+	FString RepoPath;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("provider"), Provider);
+		Params->TryGetStringField(TEXT("repo_path"), RepoPath);
+	}
+
+	Provider.TrimStartAndEndInline();
+	Provider = Provider.IsEmpty() ? TEXT("auto") : Provider.ToLower();
+
+	if (!ResolveProjectScopedDirectory(RepoPath, OutContext.RepoDir, OutError))
+	{
+		return false;
+	}
+
+	OutContext.bHasDiversion = IFileManager::Get().DirectoryExists(*FPaths::Combine(OutContext.RepoDir, TEXT(".diversion")));
+	OutContext.bHasGit = IFileManager::Get().DirectoryExists(*FPaths::Combine(OutContext.RepoDir, TEXT(".git")));
+
+	if ((Provider == TEXT("auto") && OutContext.bHasDiversion) || Provider == TEXT("dv") || Provider == TEXT("diversion"))
+	{
+		OutContext.Provider = TEXT("diversion");
+		OutContext.Executable = TEXT("dv");
+	}
+	else if ((Provider == TEXT("auto") && OutContext.bHasGit) || Provider == TEXT("git"))
+	{
+		OutContext.Provider = TEXT("git");
+		OutContext.Executable = TEXT("git");
+	}
+	else if (Provider == TEXT("auto"))
+	{
+		OutContext.Provider = TEXT("auto");
+	}
+	else
+	{
+		OutError = FString::Printf(TEXT("Unsupported source-control provider: %s"), *Provider);
+		return false;
+	}
+
+	return true;
+}
+
+void AddSourceControlContextJson(TSharedPtr<FJsonObject> Data, const FSourceControlCommandContext& Context)
+{
+	Data->SetStringField(TEXT("provider"), Context.Provider);
+	Data->SetStringField(TEXT("project_dir"), FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
+	Data->SetStringField(TEXT("repo_dir"), Context.RepoDir);
+	Data->SetBoolField(TEXT("diversion_repo"), Context.bHasDiversion);
+	Data->SetBoolField(TEXT("git_repo"), Context.bHasGit);
+}
+
+void AddSourceControlProcessResult(TSharedPtr<FJsonObject> Data, const FSourceControlCommandContext& Context, const FString& Arguments)
+{
+	int32 ReturnCode = -1;
+	FString StdOut;
+	FString StdErr;
+	const bool bLaunched = FPlatformProcess::ExecProcess(*Context.Executable, *Arguments, &ReturnCode, &StdOut, &StdErr, *Context.RepoDir);
+	Data->SetBoolField(TEXT("available"), bLaunched);
+	Data->SetStringField(TEXT("executable"), Context.Executable);
+	Data->SetStringField(TEXT("arguments"), Arguments);
+	Data->SetNumberField(TEXT("return_code"), ReturnCode);
+	Data->SetStringField(TEXT("stdout"), StdOut);
+	Data->SetStringField(TEXT("stderr"), StdErr);
+	Data->SetStringField(TEXT("status"), (bLaunched && ReturnCode == 0) ? TEXT("ok") : TEXT("failed"));
+}
+
+int32 ReadClampedIntField(TSharedPtr<FJsonObject> Params, const TCHAR* FieldName, int32 DefaultValue, int32 MinValue, int32 MaxValue)
+{
+	if (!Params.IsValid())
+	{
+		return DefaultValue;
+	}
+
+	double NumberValue = 0.0;
+	if (!Params->TryGetNumberField(FieldName, NumberValue))
+	{
+		return DefaultValue;
+	}
+	return FMath::Clamp(static_cast<int32>(NumberValue), MinValue, MaxValue);
+}
+
+FString ReadLowerStringField(TSharedPtr<FJsonObject> Params, const TCHAR* FieldName, const FString& DefaultValue)
+{
+	FString Value = DefaultValue;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(FieldName, Value);
+	}
+	Value.TrimStartAndEndInline();
+	return Value.ToLower();
+}
+
+FString NetModeToString(ENetMode NetMode)
+{
+	switch (NetMode)
+	{
+	case NM_Standalone:
+		return TEXT("Standalone");
+	case NM_DedicatedServer:
+		return TEXT("DedicatedServer");
+	case NM_ListenServer:
+		return TEXT("ListenServer");
+	case NM_Client:
+		return TEXT("Client");
+	default:
+		return TEXT("Unknown");
+	}
+}
+
+UWorld* SelectAIWorld(const FString& RequestedWorld, FString& OutWorldSource)
+{
+	if (!GEditor)
+	{
+		OutWorldSource = TEXT("none");
+		return nullptr;
+	}
+
+	const FString Selector = RequestedWorld.IsEmpty() ? TEXT("auto") : RequestedWorld.ToLower();
+	if (Selector == TEXT("editor"))
+	{
+		OutWorldSource = TEXT("editor");
+		return GEditor->GetEditorWorldContext().World();
+	}
+	if (Selector == TEXT("pie") || Selector == TEXT("runtime") || Selector == TEXT("play"))
+	{
+		OutWorldSource = TEXT("pie");
+		return GEditor->PlayWorld;
+	}
+
+	if (GEditor->PlayWorld)
+	{
+		OutWorldSource = TEXT("pie");
+		return GEditor->PlayWorld;
+	}
+
+	OutWorldSource = TEXT("editor");
+	return GEditor->GetEditorWorldContext().World();
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeActorJson(AActor* Actor)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	if (!Actor)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("name"), Actor->GetName());
+	Data->SetStringField(TEXT("label"), Actor->GetActorLabel());
+	Data->SetStringField(TEXT("path"), Actor->GetPathName());
+	Data->SetStringField(TEXT("class"), Actor->GetClass() ? Actor->GetClass()->GetPathName() : TEXT(""));
+
+	TSharedPtr<FJsonObject> Location = MakeShared<FJsonObject>();
+	Location->SetNumberField(TEXT("x"), Actor->GetActorLocation().X);
+	Location->SetNumberField(TEXT("y"), Actor->GetActorLocation().Y);
+	Location->SetNumberField(TEXT("z"), Actor->GetActorLocation().Z);
+	Data->SetObjectField(TEXT("location"), Location);
+
+	TSharedPtr<FJsonObject> Rotation = MakeShared<FJsonObject>();
+	Rotation->SetNumberField(TEXT("pitch"), Actor->GetActorRotation().Pitch);
+	Rotation->SetNumberField(TEXT("yaw"), Actor->GetActorRotation().Yaw);
+	Rotation->SetNumberField(TEXT("roll"), Actor->GetActorRotation().Roll);
+	Data->SetObjectField(TEXT("rotation"), Rotation);
+
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeWorldJson(UWorld* World, const FString& WorldSource)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	if (!World)
+	{
+		return Data;
+	}
+
+	int32 ActorCount = 0;
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		++ActorCount;
+	}
+
+	int32 PlayerControllerCount = 0;
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		++PlayerControllerCount;
+	}
+
+	int32 LocalPlayerCount = 0;
+	if (UGameInstance* GameInstance = World->GetGameInstance())
+	{
+		LocalPlayerCount = GameInstance->GetLocalPlayers().Num();
+	}
+
+	TArray<TSharedPtr<FJsonValue>> Levels;
+	for (ULevel* Level : World->GetLevels())
+	{
+		if (!Level)
+		{
+			continue;
+		}
+		TSharedPtr<FJsonObject> LevelJson = MakeShared<FJsonObject>();
+		LevelJson->SetStringField(TEXT("name"), Level->GetName());
+		LevelJson->SetStringField(TEXT("package_name"), Level->GetOutermost() ? Level->GetOutermost()->GetName() : TEXT(""));
+		LevelJson->SetBoolField(TEXT("is_persistent"), Level == World->PersistentLevel);
+		Levels.Add(MakeShared<FJsonValueObject>(LevelJson));
+	}
+
+	Data->SetStringField(TEXT("world_source"), WorldSource);
+	Data->SetStringField(TEXT("world_name"), World->GetName());
+	Data->SetStringField(TEXT("package_name"), World->GetOutermost() ? World->GetOutermost()->GetName() : TEXT(""));
+	Data->SetStringField(TEXT("world_type"), LexToString(World->WorldType));
+	Data->SetStringField(TEXT("net_mode"), NetModeToString(World->GetNetMode()));
+	Data->SetNumberField(TEXT("time_seconds"), World->GetTimeSeconds());
+	Data->SetNumberField(TEXT("actor_count"), ActorCount);
+	Data->SetNumberField(TEXT("level_count"), Levels.Num());
+	Data->SetNumberField(TEXT("player_controller_count"), PlayerControllerCount);
+	Data->SetNumberField(TEXT("local_player_count"), LocalPlayerCount);
+	Data->SetArrayField(TEXT("levels"), Levels);
+	Data->SetBoolField(TEXT("pie_active"), GEditor && GEditor->PlayWorld != nullptr);
+	Data->SetBoolField(TEXT("simulating"), GEditor && GEditor->bIsSimulatingInEditor);
+
+	if (UGameInstance* GameInstance = World->GetGameInstance())
+	{
+		Data->SetStringField(TEXT("game_instance_class"), GameInstance->GetClass() ? GameInstance->GetClass()->GetPathName() : TEXT(""));
+	}
+	if (AGameModeBase* GameMode = World->GetAuthGameMode())
+	{
+		Data->SetStringField(TEXT("auth_game_mode_class"), GameMode->GetClass() ? GameMode->GetClass()->GetPathName() : TEXT(""));
+	}
+	if (AGameStateBase* GameState = World->GetGameState())
+	{
+		Data->SetStringField(TEXT("game_state_class"), GameState->GetClass() ? GameState->GetClass()->GetPathName() : TEXT(""));
+	}
+
+	return Data;
+}
+
+AActor* FindRuntimeActorForAI(UWorld* World, const FString& ActorPath, const FString& ActorLabel, const FString& ActorName)
+{
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		AActor* Actor = *It;
+		if (!Actor)
+		{
+			continue;
+		}
+		if (!ActorPath.IsEmpty() && Actor->GetPathName() == ActorPath) return Actor;
+		if (!ActorLabel.IsEmpty() && Actor->GetActorLabel() == ActorLabel) return Actor;
+		if (!ActorName.IsEmpty() && Actor->GetName() == ActorName) return Actor;
+	}
+	return nullptr;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeComponentJson(UActorComponent* Component)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	if (!Component)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("name"), Component->GetName());
+	Data->SetStringField(TEXT("path"), Component->GetPathName());
+	Data->SetStringField(TEXT("class"), Component->GetClass() ? Component->GetClass()->GetPathName() : TEXT(""));
+	Data->SetBoolField(TEXT("registered"), Component->IsRegistered());
+	Data->SetBoolField(TEXT("active"), Component->IsActive());
+
+	if (AActor* Owner = Component->GetOwner())
+	{
+		Data->SetStringField(TEXT("owner_name"), Owner->GetName());
+		Data->SetStringField(TEXT("owner_label"), Owner->GetActorLabel());
+		Data->SetStringField(TEXT("owner_path"), Owner->GetPathName());
+	}
+
+	TArray<TSharedPtr<FJsonValue>> Tags;
+	for (const FName& Tag : Component->ComponentTags)
+	{
+		Tags.Add(MakeShared<FJsonValueString>(Tag.ToString()));
+	}
+	Data->SetArrayField(TEXT("tags"), Tags);
+	return Data;
 }
 }
 
@@ -260,6 +608,9 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("command_manifest_export", "Utility", false, 30, HandleCommandManifestExport),
 		AI_COMMAND_NO_PARAMS("project_status", "Workflow", 0, HandleProjectStatus),
 		AI_COMMAND_OPTIONAL_PARAMS("source_control_status", "Workflow", false, 30, HandleSourceControlStatus),
+		AI_COMMAND_OPTIONAL_PARAMS("source_control_log", "Workflow", false, 30, HandleSourceControlLog),
+		AI_COMMAND_OPTIONAL_PARAMS("source_control_show", "Workflow", false, 30, HandleSourceControlShow),
+		AI_COMMAND_OPTIONAL_PARAMS("source_control_diff", "Workflow", false, 30, HandleSourceControlDiff),
 		AI_COMMAND_PARAMS("task_submit", "AsyncJob", false, 0, HandleTaskSubmit),
 		AI_COMMAND_OPTIONAL_PARAMS("task_status", "AsyncJob", false, 0, HandleTaskStatus),
 		AI_COMMAND_OPTIONAL_PARAMS("task_result", "AsyncJob", false, 0, HandleTaskResult),
@@ -269,6 +620,9 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_NO_PARAMS("list_supported_types", "Export", 0, HandleListSupportedTypes),
 
 		AI_COMMAND_NO_PARAMS("editor_world_info", "Editor", 0, HandleEditorWorldInfo),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_world_info", "RuntimeInspector", false, 30, HandleRuntimeWorldInfo),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_player_list", "RuntimeInspector", false, 30, HandleRuntimePlayerList),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_component_list", "RuntimeInspector", false, 60, HandleRuntimeComponentList),
 		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
 		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
 		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
@@ -1999,53 +2353,289 @@ FString FAIExportTCPServer::HandleProjectStatus()
 
 FString FAIExportTCPServer::HandleSourceControlStatus(TSharedPtr<FJsonObject> Params)
 {
-	FString Provider = TEXT("auto");
+	FSourceControlCommandContext Context;
+	FString Error;
+	if (!ResolveSourceControlCommandContext(Params, Context, Error))
+	{
+		return CreateErrorResponse(Error);
+	}
+
+	FString Path;
+	bool bNoLimit = false;
 	if (Params.IsValid())
 	{
-		Params->TryGetStringField(TEXT("provider"), Provider);
+		Params->TryGetStringField(TEXT("path"), Path);
+		Params->TryGetBoolField(TEXT("no_limit"), bNoLimit);
 	}
-	Provider = Provider.ToLower();
+	Path.TrimStartAndEndInline();
 
-	const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-	const bool bHasDiversion = IFileManager::Get().DirectoryExists(*FPaths::Combine(ProjectDir, TEXT(".diversion")));
-	const bool bHasGit = IFileManager::Get().DirectoryExists(*FPaths::Combine(ProjectDir, TEXT(".git")));
-
-	FString Executable;
 	FString Arguments;
-	if ((Provider == TEXT("auto") && bHasDiversion) || Provider == TEXT("dv") || Provider == TEXT("diversion"))
+	if (Context.Provider == TEXT("diversion"))
 	{
-		Executable = TEXT("dv");
 		Arguments = TEXT("status");
-		Provider = TEXT("diversion");
+		if (!Path.IsEmpty())
+		{
+			Arguments += TEXT(" ") + QuoteProcessArgument(Path);
+		}
+		if (bNoLimit)
+		{
+			Arguments += TEXT(" --no-limit");
+		}
 	}
-	else if ((Provider == TEXT("auto") && bHasGit) || Provider == TEXT("git"))
+	else if (Context.Provider == TEXT("git"))
 	{
-		Executable = TEXT("git");
 		Arguments = TEXT("status --short");
-		Provider = TEXT("git");
+		if (!Path.IsEmpty())
+		{
+			Arguments += TEXT(" -- ") + QuoteProcessArgument(Path);
+		}
 	}
 
 	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
-	Data->SetStringField(TEXT("provider"), Provider);
-	Data->SetStringField(TEXT("project_dir"), ProjectDir);
-	Data->SetBoolField(TEXT("diversion_repo"), bHasDiversion);
-	Data->SetBoolField(TEXT("git_repo"), bHasGit);
-	if (Executable.IsEmpty())
+	AddSourceControlContextJson(Data, Context);
+	Data->SetStringField(TEXT("path"), Path);
+	if (Context.Executable.IsEmpty())
 	{
 		Data->SetBoolField(TEXT("available"), false);
 		Data->SetStringField(TEXT("status"), TEXT("not_configured"));
 		return CreateSuccessResponse(Data);
 	}
 
-	int32 ReturnCode = -1;
-	FString StdOut;
-	FString StdErr;
-	const bool bLaunched = FPlatformProcess::ExecProcess(*Executable, *Arguments, &ReturnCode, &StdOut, &StdErr, *ProjectDir);
-	Data->SetBoolField(TEXT("available"), bLaunched);
-	Data->SetNumberField(TEXT("return_code"), ReturnCode);
-	Data->SetStringField(TEXT("stdout"), StdOut);
-	Data->SetStringField(TEXT("stderr"), StdErr);
-	Data->SetStringField(TEXT("status"), (bLaunched && ReturnCode == 0) ? TEXT("ok") : TEXT("failed"));
+	AddSourceControlProcessResult(Data, Context, Arguments);
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleSourceControlLog(TSharedPtr<FJsonObject> Params)
+{
+	FSourceControlCommandContext Context;
+	FString Error;
+	if (!ResolveSourceControlCommandContext(Params, Context, Error))
+	{
+		return CreateErrorResponse(Error);
+	}
+
+	FString Path;
+	FString Since;
+	FString Until;
+	FString Ref;
+	bool bOneline = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("path"), Path);
+		Params->TryGetStringField(TEXT("since"), Since);
+		Params->TryGetStringField(TEXT("until"), Until);
+		Params->TryGetStringField(TEXT("ref"), Ref);
+		Params->TryGetBoolField(TEXT("oneline"), bOneline);
+	}
+	Path.TrimStartAndEndInline();
+	Since.TrimStartAndEndInline();
+	Until.TrimStartAndEndInline();
+	Ref.TrimStartAndEndInline();
+	const int32 Limit = ReadClampedIntField(Params, TEXT("limit"), 20, 1, 200);
+
+	FString Arguments;
+	if (Context.Provider == TEXT("diversion"))
+	{
+		if (!Ref.IsEmpty())
+		{
+			return CreateErrorResponse(TEXT("source_control_log ref is only supported for git"));
+		}
+		Arguments = FString::Printf(TEXT("log %s -n %d --date iso"), *(Path.IsEmpty() ? QuoteProcessArgument(TEXT(".")) : QuoteProcessArgument(Path)), Limit);
+		if (bOneline)
+		{
+			Arguments += TEXT(" --oneline");
+		}
+		if (!Since.IsEmpty())
+		{
+			Arguments += TEXT(" --since ") + QuoteProcessArgument(Since);
+		}
+		if (!Until.IsEmpty())
+		{
+			Arguments += TEXT(" --until ") + QuoteProcessArgument(Until);
+		}
+	}
+	else if (Context.Provider == TEXT("git"))
+	{
+		Arguments = FString::Printf(TEXT("log --max-count=%d --date=iso --color=never"), Limit);
+		if (bOneline)
+		{
+			Arguments += TEXT(" --oneline");
+		}
+		if (!Since.IsEmpty())
+		{
+			Arguments += TEXT(" --since=") + QuoteProcessArgument(Since);
+		}
+		if (!Until.IsEmpty())
+		{
+			Arguments += TEXT(" --until=") + QuoteProcessArgument(Until);
+		}
+		if (!Ref.IsEmpty())
+		{
+			Arguments += TEXT(" ") + QuoteProcessArgument(Ref);
+		}
+		if (!Path.IsEmpty())
+		{
+			Arguments += TEXT(" -- ") + QuoteProcessArgument(Path);
+		}
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	AddSourceControlContextJson(Data, Context);
+	Data->SetStringField(TEXT("path"), Path);
+	Data->SetNumberField(TEXT("limit"), Limit);
+	Data->SetBoolField(TEXT("oneline"), bOneline);
+	if (Context.Executable.IsEmpty())
+	{
+		Data->SetBoolField(TEXT("available"), false);
+		Data->SetStringField(TEXT("status"), TEXT("not_configured"));
+		return CreateSuccessResponse(Data);
+	}
+
+	AddSourceControlProcessResult(Data, Context, Arguments);
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleSourceControlShow(TSharedPtr<FJsonObject> Params)
+{
+	FSourceControlCommandContext Context;
+	FString Error;
+	if (!ResolveSourceControlCommandContext(Params, Context, Error))
+	{
+		return CreateErrorResponse(Error);
+	}
+
+	FString Ref;
+	bool bNameStatus = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("ref"), Ref);
+		Params->TryGetBoolField(TEXT("name_status"), bNameStatus);
+	}
+	Ref.TrimStartAndEndInline();
+
+	FString Arguments;
+	if (Context.Provider == TEXT("diversion"))
+	{
+		Arguments = TEXT("show");
+		if (!Ref.IsEmpty())
+		{
+			Arguments += TEXT(" ") + QuoteProcessArgument(Ref);
+		}
+		if (bNameStatus)
+		{
+			Arguments += TEXT(" --name-status");
+		}
+		Arguments += TEXT(" --date iso --color never");
+	}
+	else if (Context.Provider == TEXT("git"))
+	{
+		Arguments = TEXT("show --date=iso --color=never");
+		if (bNameStatus)
+		{
+			Arguments += TEXT(" --name-status --format=fuller");
+		}
+		if (!Ref.IsEmpty())
+		{
+			Arguments += TEXT(" ") + QuoteProcessArgument(Ref);
+		}
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	AddSourceControlContextJson(Data, Context);
+	Data->SetStringField(TEXT("ref"), Ref);
+	Data->SetBoolField(TEXT("name_status"), bNameStatus);
+	if (Context.Executable.IsEmpty())
+	{
+		Data->SetBoolField(TEXT("available"), false);
+		Data->SetStringField(TEXT("status"), TEXT("not_configured"));
+		return CreateSuccessResponse(Data);
+	}
+
+	AddSourceControlProcessResult(Data, Context, Arguments);
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleSourceControlDiff(TSharedPtr<FJsonObject> Params)
+{
+	FSourceControlCommandContext Context;
+	FString Error;
+	if (!ResolveSourceControlCommandContext(Params, Context, Error))
+	{
+		return CreateErrorResponse(Error);
+	}
+
+	FString Path;
+	FString Base;
+	FString Compare;
+	bool bNameStatus = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("path"), Path);
+		Params->TryGetStringField(TEXT("base"), Base);
+		Params->TryGetStringField(TEXT("compare"), Compare);
+		Params->TryGetBoolField(TEXT("name_status"), bNameStatus);
+	}
+	Path.TrimStartAndEndInline();
+	Base.TrimStartAndEndInline();
+	Compare.TrimStartAndEndInline();
+
+	FString Arguments;
+	if (Context.Provider == TEXT("diversion"))
+	{
+		Arguments = TEXT("diff");
+		if (!Path.IsEmpty())
+		{
+			Arguments += TEXT(" ") + QuoteProcessArgument(Path);
+		}
+		if (!Base.IsEmpty())
+		{
+			Arguments += TEXT(" --base ") + QuoteProcessArgument(Base);
+		}
+		if (!Compare.IsEmpty())
+		{
+			Arguments += TEXT(" --compare ") + QuoteProcessArgument(Compare);
+		}
+		Arguments += TEXT(" --color never");
+		if (bNameStatus)
+		{
+			Arguments += TEXT(" --name-status");
+		}
+	}
+	else if (Context.Provider == TEXT("git"))
+	{
+		Arguments = TEXT("diff --color=never");
+		if (bNameStatus)
+		{
+			Arguments += TEXT(" --name-status");
+		}
+		if (!Base.IsEmpty())
+		{
+			Arguments += TEXT(" ") + QuoteProcessArgument(Base);
+		}
+		if (!Compare.IsEmpty())
+		{
+			Arguments += TEXT(" ") + QuoteProcessArgument(Compare);
+		}
+		if (!Path.IsEmpty())
+		{
+			Arguments += TEXT(" -- ") + QuoteProcessArgument(Path);
+		}
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	AddSourceControlContextJson(Data, Context);
+	Data->SetStringField(TEXT("path"), Path);
+	Data->SetStringField(TEXT("base"), Base);
+	Data->SetStringField(TEXT("compare"), Compare);
+	Data->SetBoolField(TEXT("name_status"), bNameStatus);
+	if (Context.Executable.IsEmpty())
+	{
+		Data->SetBoolField(TEXT("available"), false);
+		Data->SetStringField(TEXT("status"), TEXT("not_configured"));
+		return CreateSuccessResponse(Data);
+	}
+
+	AddSourceControlProcessResult(Data, Context, Arguments);
 	return CreateSuccessResponse(Data);
 }
 
@@ -2672,6 +3262,234 @@ FString FAIExportTCPServer::HandleEditorWorldInfo()
 
 	Future.WaitFor(FTimespan::FromSeconds(30.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Editor world info timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeWorldInfo(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, Promise, this]()
+	{
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		if (!World)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			return;
+		}
+
+		Promise->SetValue(CreateSuccessResponse(BuildRuntimeWorldJson(World, WorldSource)));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime world info timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimePlayerList(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, Promise, this]()
+	{
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		if (!World)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			return;
+		}
+
+		TArray<TSharedPtr<FJsonValue>> Controllers;
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* Controller = It->Get();
+			if (!Controller)
+			{
+				continue;
+			}
+
+			TSharedPtr<FJsonObject> ControllerJson = MakeShared<FJsonObject>();
+			ControllerJson->SetStringField(TEXT("name"), Controller->GetName());
+			ControllerJson->SetStringField(TEXT("path"), Controller->GetPathName());
+			ControllerJson->SetStringField(TEXT("class"), Controller->GetClass() ? Controller->GetClass()->GetPathName() : TEXT(""));
+			ControllerJson->SetBoolField(TEXT("is_local_controller"), Controller->IsLocalController());
+			if (Controller->PlayerState)
+			{
+				ControllerJson->SetStringField(TEXT("player_state_name"), Controller->PlayerState->GetPlayerName());
+				ControllerJson->SetStringField(TEXT("player_state_class"), Controller->PlayerState->GetClass() ? Controller->PlayerState->GetClass()->GetPathName() : TEXT(""));
+			}
+			if (APawn* Pawn = Controller->GetPawn())
+			{
+				ControllerJson->SetObjectField(TEXT("pawn"), BuildRuntimeActorJson(Pawn));
+			}
+			Controllers.Add(MakeShared<FJsonValueObject>(ControllerJson));
+		}
+
+		TArray<TSharedPtr<FJsonValue>> LocalPlayers;
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			for (ULocalPlayer* LocalPlayer : GameInstance->GetLocalPlayers())
+			{
+				if (!LocalPlayer)
+				{
+					continue;
+				}
+
+				TSharedPtr<FJsonObject> LocalPlayerJson = MakeShared<FJsonObject>();
+				LocalPlayerJson->SetStringField(TEXT("name"), LocalPlayer->GetName());
+				LocalPlayerJson->SetStringField(TEXT("class"), LocalPlayer->GetClass() ? LocalPlayer->GetClass()->GetPathName() : TEXT(""));
+				if (APlayerController* Controller = LocalPlayer->GetPlayerController(World))
+				{
+					LocalPlayerJson->SetStringField(TEXT("player_controller_path"), Controller->GetPathName());
+				}
+				LocalPlayers.Add(MakeShared<FJsonValueObject>(LocalPlayerJson));
+			}
+		}
+
+		TSharedPtr<FJsonObject> Data = BuildRuntimeWorldJson(World, WorldSource);
+		Data->SetArrayField(TEXT("controllers"), Controllers);
+		Data->SetArrayField(TEXT("local_players"), LocalPlayers);
+		Data->SetNumberField(TEXT("controller_count"), Controllers.Num());
+		Data->SetNumberField(TEXT("local_player_count"), LocalPlayers.Num());
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime player list timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeComponentList(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+	FString ActorPath;
+	FString ActorLabel;
+	FString ActorName;
+	FString NameFilter;
+	FString ActorClassFilter;
+	FString ComponentClassFilter;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("actor_path"), ActorPath);
+		Params->TryGetStringField(TEXT("actor_label"), ActorLabel);
+		Params->TryGetStringField(TEXT("actor_name"), ActorName);
+		Params->TryGetStringField(TEXT("name_filter"), NameFilter);
+		Params->TryGetStringField(TEXT("actor_class_filter"), ActorClassFilter);
+		Params->TryGetStringField(TEXT("component_class_filter"), ComponentClassFilter);
+	}
+	ActorPath.TrimStartAndEndInline();
+	ActorLabel.TrimStartAndEndInline();
+	ActorName.TrimStartAndEndInline();
+	NameFilter.TrimStartAndEndInline();
+	ActorClassFilter.TrimStartAndEndInline();
+	ComponentClassFilter.TrimStartAndEndInline();
+	const int32 Limit = ReadClampedIntField(Params, TEXT("limit"), 500, 1, 5000);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, ActorPath, ActorLabel, ActorName, NameFilter, ActorClassFilter, ComponentClassFilter, Limit, Promise, this]()
+	{
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		if (!World)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			return;
+		}
+
+		TArray<AActor*> ActorsToInspect;
+		const bool bHasSpecificActor = !ActorPath.IsEmpty() || !ActorLabel.IsEmpty() || !ActorName.IsEmpty();
+		if (bHasSpecificActor)
+		{
+			AActor* Actor = FindRuntimeActorForAI(World, ActorPath, ActorLabel, ActorName);
+			if (!Actor)
+			{
+				Promise->SetValue(CreateErrorResponse(TEXT("Actor not found")));
+				return;
+			}
+			ActorsToInspect.Add(Actor);
+		}
+		else
+		{
+			for (TActorIterator<AActor> It(World); It; ++It)
+			{
+				AActor* Actor = *It;
+				if (!Actor)
+				{
+					continue;
+				}
+
+				const FString Label = Actor->GetActorLabel();
+				const FString Name = Actor->GetName();
+				const FString ClassPath = Actor->GetClass() ? Actor->GetClass()->GetPathName() : TEXT("");
+				if (!NameFilter.IsEmpty() && !Name.Contains(NameFilter) && !Label.Contains(NameFilter))
+				{
+					continue;
+				}
+				if (!ActorClassFilter.IsEmpty() && !ClassPath.Contains(ActorClassFilter))
+				{
+					continue;
+				}
+				ActorsToInspect.Add(Actor);
+			}
+		}
+
+		TArray<TSharedPtr<FJsonValue>> ComponentsJson;
+		int32 MatchedComponentCount = 0;
+		int32 InspectedActorCount = 0;
+		for (AActor* Actor : ActorsToInspect)
+		{
+			if (!Actor)
+			{
+				continue;
+			}
+			++InspectedActorCount;
+
+			TArray<UActorComponent*> Components;
+			Actor->GetComponents(Components);
+			for (UActorComponent* Component : Components)
+			{
+				if (!Component)
+				{
+					continue;
+				}
+
+				const FString ComponentClassPath = Component->GetClass() ? Component->GetClass()->GetPathName() : TEXT("");
+				if (!ComponentClassFilter.IsEmpty() && !ComponentClassPath.Contains(ComponentClassFilter))
+				{
+					continue;
+				}
+
+				++MatchedComponentCount;
+				if (ComponentsJson.Num() < Limit)
+				{
+					ComponentsJson.Add(MakeShared<FJsonValueObject>(BuildRuntimeComponentJson(Component)));
+				}
+			}
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetStringField(TEXT("world_name"), World->GetName());
+		Data->SetNumberField(TEXT("inspected_actor_count"), InspectedActorCount);
+		Data->SetNumberField(TEXT("matched_component_count"), MatchedComponentCount);
+		Data->SetNumberField(TEXT("count"), ComponentsJson.Num());
+		Data->SetBoolField(TEXT("truncated"), MatchedComponentCount > ComponentsJson.Num());
+		Data->SetArrayField(TEXT("components"), ComponentsJson);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime component list timed out"));
 	return Future.Get();
 }
 

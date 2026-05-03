@@ -1,7 +1,7 @@
 # CommonAIExport — Claude Reference Guide
 
 > **Read this file to understand ALL plugin capabilities in one place.**
-> 118 MCP tools across 23 TCP command categories plus client-only tools. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
+> 124 MCP tools across 24 TCP command categories plus client-only tools. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
 
 ## Architecture
 
@@ -33,7 +33,10 @@ Claude Code ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE E
 | `editor_identity()` | Identity metadata for the default editor: editor_id, project path, engine/plugin version, port, registry file |
 | `command_manifest_export(output_path?)` | Export machine-readable command manifest JSON under the project |
 | `project_status()` | Read project/editor workflow status, repo markers, log/build state, world/PIE summary |
-| `source_control_status(provider?)` | Read-only Diversion/Git status through the editor process |
+| `source_control_status(provider?, repo_path?, path?, no_limit?)` | Read-only Diversion/Git status through the editor process |
+| `source_control_log(provider?, repo_path?, path?, limit?, oneline?, since?, until?, ref?)` | Read recent Diversion/Git history from the editor process |
+| `source_control_show(provider?, repo_path?, ref?, name_status?)` | Show a Diversion/Git revision summary |
+| `source_control_diff(provider?, repo_path?, path?, base?, compare?, name_status?)` | Read read-only Diversion/Git diff output |
 | `editors_list(include_stale?)` | List live Unreal Editor instances with CommonAIExport loaded |
 | `editor_call(command, params?, editor_id?, project_dir?, port?, scope?, dry_run?)` | Route any CommonAIExport command to a selected editor |
 | `asset_transfer_plan(source_asset_path, source_editor_id?, target_editor_id?, ...)` | Read-only cross-project asset transfer plan with dependencies, target existence, and collision analysis |
@@ -523,6 +526,9 @@ inherit the same scope/dry-run model exposed through `list_commands`.
 | Tool | Purpose |
 |------|---------|
 | `editor_world_info()` | Inspect current editor world, package/map filename, level list, actor count, and PIE state |
+| `runtime_world_info(world?)` | Inspect PIE/runtime world metadata, falling back to editor world in auto mode |
+| `runtime_player_list(world?)` | List runtime player controllers, local players, and possessed pawns |
+| `runtime_component_list(world?, actor_path?, actor_label?, actor_name?, name_filter?, actor_class_filter?, component_class_filter?, limit?)` | List actor components in PIE/runtime or editor worlds |
 | `actor_list(name_filter?, class_filter?, limit?)` | List actors with class path and transform metadata |
 | `actor_spawn(class_path, actor_label?, location?, rotation?, scale?, scope?, dry_run?)` | Spawn an actor with transaction support |
 | `actor_set_transform(actor_path?, actor_label?, actor_name?, location?, rotation?, scale?, scope?, dry_run?)` | Move/rotate/scale an actor identified by path, label, or name |
@@ -539,6 +545,9 @@ inherit the same scope/dry-run model exposed through `list_commands`.
 
 ```python
 editor_world_info()
+runtime_world_info()
+runtime_player_list()
+runtime_component_list(limit=25)
 actor_list(limit=10)
 
 actor_spawn(
@@ -697,7 +706,10 @@ task_result("...")
 | Tool | Purpose |
 |------|---------|
 | `project_status()` | Read editor/project status including repo markers, log count, build-log presence, and world/PIE state |
-| `source_control_status(provider?)` | Run read-only Diversion/Git status from the editor process |
+| `source_control_status(provider?, repo_path?, path?, no_limit?)` | Run read-only Diversion/Git status from the editor process |
+| `source_control_log(provider?, repo_path?, path?, limit?, oneline?, since?, until?, ref?)` | Read recent Diversion/Git history; use `repo_path="Plugins/CommonAIExport"` for the plugin Git repo |
+| `source_control_show(provider?, repo_path?, ref?, name_status?)` | Show a Diversion/Git commit or current revision summary |
+| `source_control_diff(provider?, repo_path?, path?, base?, compare?, name_status?)` | Read read-only Diversion/Git diff output |
 | `editor_log_read(max_lines?, filter?, log_name?)` | Read recent project log lines from `Saved/Logs`, optionally filtered |
 | `guarded_build_status(tail_lines?)` | Parse latest `Saved/Logs/LastBuild.log` result and return a bounded tail |
 
@@ -746,6 +758,7 @@ python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py --runtime-smoke
 ```python
 project_status()
 source_control_status()
+source_control_status(provider="git", repo_path="Plugins/CommonAIExport")
 guarded_build_status()
 editor_log_read(max_lines=500, filter="Error")
 commonai_resource_read("commonai://commands/manifest")
@@ -809,10 +822,10 @@ First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets
 <!-- BEGIN COMMONAI GENERATED TOOL SUMMARY -->
 > Generated by `Resources/Scripts/generate_mcp_artifacts.py`; do not edit this block by hand.
 
-- TCP commands: `102`
+- TCP commands: `108`
 - Client-only MCP tools: `16`
-- Total MCP tools: `118`
-- Categories: `23`
+- Total MCP tools: `124`
+- Categories: `24`
 - Full generated catalog: `Resources/Generated/CommonAIExport_ToolCatalog.md`
 
 | Category | Count |
@@ -836,11 +849,12 @@ First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets
 | `Input` | 3 |
 | `Material` | 15 |
 | `PIE` | 3 |
+| `RuntimeInspector` | 3 |
 | `Utility` | 5 |
 | `Widget` | 11 |
 | `WidgetPreview` | 1 |
-| `Workflow` | 3 |
-| **Total** | **118** |
+| `Workflow` | 6 |
+| **Total** | **124** |
 
 <!-- END COMMONAI GENERATED TOOL SUMMARY -->
 
@@ -882,4 +896,4 @@ Exports go to `Dev/AIExports/` mirroring the Content folder structure:
 ---
 
 *Version: 5.1.0 - Last Updated: 2026-05-03*
-*118 MCP tools, covering Widget, Material, BP Graph, CDO, Asset, Import, Preview, editor/level/actor/PIE, logs/workflow status, resources/prompts, native HTTP/MCP probe, registry metadata, multi-editor routing, code transfer, async job, and contract introspection workflows*
+*124 MCP tools, covering Widget, Material, BP Graph, CDO, Asset, Import, Preview, editor/level/actor/PIE/runtime inspector, logs/workflow source-control status/history/diff, resources/prompts, native HTTP/MCP probe, registry metadata, multi-editor routing, code transfer, async job, and contract introspection workflows*
