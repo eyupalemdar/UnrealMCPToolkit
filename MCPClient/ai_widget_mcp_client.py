@@ -1922,6 +1922,42 @@ def runtime_commonui_diagnostics(
 
 
 @mcp.tool()
+def runtime_audio_diagnostics(
+    world: str = "auto",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    name_filter: str = "",
+    class_filter: str = "",
+    component_class_filter: str = "",
+    sound_filter: str = "",
+    include_inactive: bool = True,
+    component_limit: int = 200,
+) -> str:
+    """
+    Inspect runtime audio device state and AudioComponent playback metadata.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        actor_path: Optional exact actor object path to inspect.
+        actor_label: Optional exact actor label to inspect.
+        actor_name: Optional exact actor object name to inspect.
+        name_filter: Optional substring matched against actor/component names and paths.
+        class_filter: Optional substring matched against actor class paths.
+        component_class_filter: Optional substring matched against AudioComponent class paths.
+        sound_filter: Optional substring matched against assigned sound names/paths.
+        include_inactive: Include inactive and stopped audio components.
+        component_limit: Maximum AudioComponent records returned.
+
+    Returns:
+        JSON with world audio device/manager state, AudioComponent playback
+        state, assigned sounds, attenuation/source-effect references, and counts.
+    """
+    return _send_generated_tcp_tool("runtime_audio_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_asset_streaming_diagnostics(
     world: str = "auto",
     include_levels: bool = True,

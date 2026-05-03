@@ -596,6 +596,20 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         first_local_player = commonui_diagnostics["local_players"][0]
         _assert(isinstance(first_local_player, dict) and isinstance(first_local_player.get("action_router"), dict), "runtime CommonUI diagnostics missing action router object")
 
+    audio_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_audio_diagnostics",
+            {"world": "auto", "include_inactive": True, "component_limit": 20},
+        ),
+        "runtime_audio_diagnostics",
+    )
+    _assert(audio_diagnostics.get("world_available") is True, "runtime audio diagnostics did not report an available world")
+    _assert(isinstance(audio_diagnostics.get("world"), dict), "runtime audio diagnostics missing world summary")
+    _assert(isinstance(audio_diagnostics.get("audio_device"), dict), "runtime audio diagnostics missing audio device object")
+    _assert(isinstance(audio_diagnostics.get("audio_components"), list), "runtime audio diagnostics missing audio component array")
+    _assert(isinstance(audio_diagnostics.get("audio_component_count"), int), "runtime audio diagnostics missing audio component count")
+
     asset_streaming_diagnostics = _assert_tcp_success(
         _tcp_command(
             tcp_port,
@@ -837,6 +851,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_ai_perception_diagnostics_checked": True,
         "runtime_gameplay_tags_diagnostics_checked": True,
         "runtime_commonui_diagnostics_checked": True,
+        "runtime_audio_diagnostics_checked": True,
         "runtime_asset_streaming_diagnostics_checked": True,
         "runtime_async_load_diagnostics_checked": True,
         "runtime_game_instance_diagnostics_checked": True,

@@ -326,6 +326,23 @@ def runtime_commonui_diagnostics(world: str = 'auto', name_filter: str = '', cla
     return _format_response(_send_command("runtime_commonui_diagnostics", params))
 
 
+def runtime_audio_diagnostics(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', class_filter: str = '', component_class_filter: str = '', sound_filter: str = '', include_inactive: bool = True, component_limit: int = 200) -> str:
+    """Generated stub for TCP command `runtime_audio_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "name_filter": name_filter,
+        "class_filter": class_filter,
+        "component_class_filter": component_class_filter,
+        "sound_filter": sound_filter,
+        "include_inactive": include_inactive,
+        "component_limit": component_limit,
+    }
+    return _format_response(_send_command("runtime_audio_diagnostics", params))
+
+
 def runtime_asset_streaming_diagnostics(world: str = 'auto', include_levels: bool = True, level_limit: int = 100) -> str:
     """Generated stub for TCP command `runtime_asset_streaming_diagnostics` (RuntimeInspector)."""
     params = {
