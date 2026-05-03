@@ -627,14 +627,14 @@ def list_widget_classes() -> str:
     return _format_response(_send_command("list_widget_classes"))
 
 
-def set_cdo_property(asset_path: str, property_name: str, value: str) -> str:
+def set_cdo_property(asset_path: str, property_name: str, value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_cdo_property` (CDO)."""
     params = {
         "asset_path": asset_path,
         "property_name": property_name,
         "value": value,
     }
-    return _format_response(_send_command("set_cdo_property", params))
+    return _format_response(_send_command("set_cdo_property", params, _request_meta(scope, dry_run)))
 
 
 def get_cdo_properties(asset_path: str) -> str:
@@ -645,7 +645,7 @@ def get_cdo_properties(asset_path: str) -> str:
     return _format_response(_send_command("get_cdo_properties", params))
 
 
-def add_cdo_array_element(asset_path: str, array_name: str, element_values: str = '{}', class_name: str = '') -> str:
+def add_cdo_array_element(asset_path: str, array_name: str, element_values: str = '{}', class_name: str = '', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_cdo_array_element` (CDOArray)."""
     params = {
         "asset_path": asset_path,
@@ -653,10 +653,10 @@ def add_cdo_array_element(asset_path: str, array_name: str, element_values: str 
         "element_values": element_values,
         "class_name": class_name,
     }
-    return _format_response(_send_command("add_cdo_array_element", params))
+    return _format_response(_send_command("add_cdo_array_element", params, _request_meta(scope, dry_run)))
 
 
-def set_cdo_array_element_property(asset_path: str, array_name: str, index: int, property_name: str, value: str) -> str:
+def set_cdo_array_element_property(asset_path: str, array_name: str, index: int, property_name: str, value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_cdo_array_element_property` (CDOArray)."""
     params = {
         "asset_path": asset_path,
@@ -665,17 +665,17 @@ def set_cdo_array_element_property(asset_path: str, array_name: str, index: int,
         "property_name": property_name,
         "value": value,
     }
-    return _format_response(_send_command("set_cdo_array_element_property", params))
+    return _format_response(_send_command("set_cdo_array_element_property", params, _request_meta(scope, dry_run)))
 
 
-def remove_cdo_array_element(asset_path: str, array_name: str, index: int) -> str:
+def remove_cdo_array_element(asset_path: str, array_name: str, index: int, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `remove_cdo_array_element` (CDOArray)."""
     params = {
         "asset_path": asset_path,
         "array_name": array_name,
         "index": index,
     }
-    return _format_response(_send_command("remove_cdo_array_element", params))
+    return _format_response(_send_command("remove_cdo_array_element", params, _request_meta(scope, dry_run)))
 
 
 def get_cdo_array_length(asset_path: str, array_name: str) -> str:

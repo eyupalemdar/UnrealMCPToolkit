@@ -173,6 +173,7 @@ def _failures() -> list[str]:
         for expected_name in (
             "actor_set_transform",
             "actor_spawn",
+            "add_cdo_array_element",
             "add_input_mapping",
             "create_anim_blueprint",
             "create_asset",
@@ -185,8 +186,11 @@ def _failures() -> list[str]:
             "pie_stop",
             "remove_input_mapping",
             "rename_asset",
+            "remove_cdo_array_element",
             "save_asset",
             "save_data_asset",
+            "set_cdo_array_element_property",
+            "set_cdo_property",
             "set_asset_property",
             "viewport_capture",
         ):
@@ -342,6 +346,64 @@ def _failures() -> list[str]:
             )
             if anim_blueprint_call.get("params") != {"package_path": "/Game/Characters/Animations", "asset_name": "ABP_Test", "skeleton_path": "/Game/Characters/SK_Test"} or anim_blueprint_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed create_anim_blueprint default payload/meta mapping")
+            set_cdo_call = build_tcp_call(
+                "set_cdo_property",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "property_name": "bIsFocusable",
+                    "value": "true",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if set_cdo_call.get("params") != {"asset_path": "/Game/UI/W_Test", "property_name": "bIsFocusable", "value": "true"} or set_cdo_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed set_cdo_property payload/meta mapping")
+            add_cdo_array_call = build_tcp_call(
+                "add_cdo_array_element",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "array_name": "PreregisteredTabInfoArray",
+                    "element_values": "{}",
+                    "class_name": "",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if add_cdo_array_call.get("params") != {"asset_path": "/Game/UI/W_Test", "array_name": "PreregisteredTabInfoArray"} or add_cdo_array_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed add_cdo_array_element default payload/meta mapping")
+            set_cdo_array_call = build_tcp_call(
+                "set_cdo_array_element_property",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "array_name": "PreregisteredTabInfoArray",
+                    "index": 0,
+                    "property_name": "TabNameID",
+                    "value": "Play",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            expected_cdo_array_params = {
+                "asset_path": "/Game/UI/W_Test",
+                "array_name": "PreregisteredTabInfoArray",
+                "index": 0,
+                "property_name": "TabNameID",
+                "value": "Play",
+            }
+            if set_cdo_array_call.get("params") != expected_cdo_array_params or set_cdo_array_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed set_cdo_array_element_property payload/meta mapping")
+            remove_cdo_array_call = build_tcp_call(
+                "remove_cdo_array_element",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "array_name": "PreregisteredTabInfoArray",
+                    "index": 0,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if remove_cdo_array_call.get("params") != {"asset_path": "/Game/UI/W_Test", "array_name": "PreregisteredTabInfoArray", "index": 0} or remove_cdo_array_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed remove_cdo_array_element payload/meta mapping")
             spawn_call = build_tcp_call(
                 "actor_spawn",
                 {

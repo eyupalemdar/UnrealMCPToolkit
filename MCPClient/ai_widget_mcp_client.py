@@ -4239,7 +4239,9 @@ def import_font(
 def set_cdo_property(
     asset_path: str,
     property_name: str,
-    value: str
+    value: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a Class Default Object property on a Blueprint.
@@ -4251,15 +4253,13 @@ def set_cdo_property(
         asset_path: Asset path of the Widget Blueprint
         property_name: CDO property name (supports dot-notation for structs)
         value: Value in ImportText format
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without changing the CDO.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_cdo_property", {
-        "asset_path": asset_path,
-        "property_name": property_name,
-        "value": value,
-    }))
+    return _send_generated_tcp_tool("set_cdo_property", locals())
 
 
 @mcp.tool()
@@ -4282,7 +4282,9 @@ def add_cdo_array_element(
     asset_path: str,
     array_name: str,
     element_values: str = "{}",
-    class_name: str = ""
+    class_name: str = "",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add an element to a CDO array property.
@@ -4303,16 +4305,13 @@ def add_cdo_array_element(
                        Example: '{"TabNameID": "Play", "TabText": "NSLOCTEXT(\\"\\", \\"\\", \\"PLAY\\")"}'
         class_name: Full class path for instanced UObject arrays (e.g. "/Script/OkeyGame.OkeyAction_ConfigureGameInstance").
                    Leave empty for struct/simple type arrays.
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without adding an element.
 
     Returns:
         JSON with the index of the newly added element.
     """
-    return _format_response(_send_command("add_cdo_array_element", {
-        "asset_path": asset_path,
-        "array_name": array_name,
-        "element_values": element_values,
-        "class_name": class_name,
-    }))
+    return _send_generated_tcp_tool("add_cdo_array_element", locals())
 
 
 @mcp.tool()
@@ -4321,7 +4320,9 @@ def set_cdo_array_element_property(
     array_name: str,
     index: int,
     property_name: str,
-    value: str
+    value: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a sub-property on a specific CDO array element.
@@ -4332,24 +4333,22 @@ def set_cdo_array_element_property(
         index: Element index (0-based)
         property_name: Sub-property name within the element (supports dot-notation)
         value: Value in ImportText format
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without changing the element.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_cdo_array_element_property", {
-        "asset_path": asset_path,
-        "array_name": array_name,
-        "index": index,
-        "property_name": property_name,
-        "value": value,
-    }))
+    return _send_generated_tcp_tool("set_cdo_array_element_property", locals())
 
 
 @mcp.tool()
 def remove_cdo_array_element(
     asset_path: str,
     array_name: str,
-    index: int
+    index: int,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Remove an element from a CDO array property by index.
@@ -4358,15 +4357,13 @@ def remove_cdo_array_element(
         asset_path: Asset path of the Widget Blueprint
         array_name: Name of the TArray property
         index: Element index to remove (0-based)
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without removing an element.
 
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("remove_cdo_array_element", {
-        "asset_path": asset_path,
-        "array_name": array_name,
-        "index": index,
-    }))
+    return _send_generated_tcp_tool("remove_cdo_array_element", locals())
 
 
 @mcp.tool()

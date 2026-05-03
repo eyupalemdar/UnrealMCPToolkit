@@ -161,7 +161,7 @@ set_slot_property: property_name="VerticalAlignment"  value="VAlign_Bottom"
 
 | Tool | Purpose |
 |------|---------|
-| `set_cdo_property(asset_path, property_name, value)` | Set CDO property (bSelectable, MinWidth, Style, etc.) |
+| `set_cdo_property(asset_path, property_name, value, scope?, dry_run?)` | Set CDO property (bSelectable, MinWidth, Style, etc.) |
 | `get_cdo_properties(asset_path)` | Get all CDO properties as JSON |
 
 ### Example: Button CDO
@@ -177,9 +177,9 @@ set_cdo_property("/Game/UI/W_MyButton", "Style", "/Script/Engine.BlueprintGenera
 
 | Tool | Purpose |
 |------|---------|
-| `add_cdo_array_element(asset_path, array_name, element_values?)` | Add element. element_values = JSON object of sub-properties |
-| `set_cdo_array_element_property(asset_path, array_name, index, property_name, value)` | Set sub-property on element |
-| `remove_cdo_array_element(asset_path, array_name, index)` | Remove by index |
+| `add_cdo_array_element(asset_path, array_name, element_values?, class_name?, scope?, dry_run?)` | Add element. element_values = JSON object of sub-properties |
+| `set_cdo_array_element_property(asset_path, array_name, index, property_name, value, scope?, dry_run?)` | Set sub-property on element |
+| `remove_cdo_array_element(asset_path, array_name, index, scope?, dry_run?)` | Remove by index |
 | `get_cdo_array_length(asset_path, array_name)` | Get array length |
 
 ### Example: Tab Registration Array
@@ -770,14 +770,15 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 `CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
-now covers 81 wrappers: read-only payload wrappers, the safe write-scope set
+now covers 85 wrappers: read-only payload wrappers, the safe write-scope set
 (`actor_spawn`, `actor_set_transform`, `level_open`, `level_save_current`,
 `pie_start`, `pie_stop`, `viewport_capture`, `save_data_asset`,
 `create_asset`, `set_asset_property`, `save_asset`, `rename_asset`,
 `fixup_redirectors`, `add_input_mapping`, `remove_input_mapping`,
-`create_anim_blueprint`, `import_texture`, and `import_font`), and the current
-destructive dry-run set (`actor_delete`, `delete_asset`, and
-`editor_console_command`).
+`create_anim_blueprint`, `import_texture`, `import_font`, `set_cdo_property`,
+`add_cdo_array_element`, `set_cdo_array_element_property`, and
+`remove_cdo_array_element`), and the current destructive dry-run set
+(`actor_delete`, `delete_asset`, and `editor_console_command`).
 Payload fields, optional dict transform values, `scope`, and `dry_run` request
 meta are encoded explicitly so destructive tools keep their existing
 client/server scope gates. Payload inclusion rules now include explicit

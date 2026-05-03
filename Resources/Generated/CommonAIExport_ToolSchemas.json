@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T18:39:40.833440Z",
+  "generated_at_utc": "2026-05-03T18:45:46.692699Z",
   "tool_count": 140,
   "tools": {
     "ping": {
@@ -2343,6 +2343,14 @@
         },
         "value": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2410,6 +2418,14 @@
         "class_name": {
           "type": "string",
           "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2450,6 +2466,14 @@
         },
         "value": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2487,6 +2511,14 @@
         },
         "index": {
           "type": "integer"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
