@@ -1731,6 +1731,40 @@ def runtime_input_routing(world: str = "auto") -> str:
 
 
 @mcp.tool()
+def runtime_replication_diagnostics(
+    world: str = "auto",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    name_filter: str = "",
+    class_filter: str = "",
+    include_components: bool = True,
+    actor_limit: int = 100,
+    component_limit: int = 100,
+) -> str:
+    """
+    Inspect runtime actor replication and network relevancy state.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        actor_path: Optional exact actor UObject path to inspect.
+        actor_label: Optional exact actor label to inspect.
+        actor_name: Optional exact actor object name to inspect.
+        name_filter: Optional substring matched against actor name or label.
+        class_filter: Optional substring matched against actor class path.
+        include_components: Include replicated/ready component summaries.
+        actor_limit: Maximum actor records returned.
+        component_limit: Maximum replicated/ready component records per actor.
+
+    Returns:
+        JSON with world net mode, actor role/dormancy/relevancy flags,
+        replicated component summaries, aggregate counts, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_replication_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

@@ -289,6 +289,42 @@ FString NetModeToString(ENetMode NetMode)
 	}
 }
 
+FString NetRoleToString(ENetRole Role)
+{
+	switch (Role)
+	{
+	case ROLE_None:
+		return TEXT("None");
+	case ROLE_SimulatedProxy:
+		return TEXT("SimulatedProxy");
+	case ROLE_AutonomousProxy:
+		return TEXT("AutonomousProxy");
+	case ROLE_Authority:
+		return TEXT("Authority");
+	default:
+		return TEXT("Unknown");
+	}
+}
+
+FString NetDormancyToString(ENetDormancy Dormancy)
+{
+	switch (Dormancy)
+	{
+	case DORM_Never:
+		return TEXT("Never");
+	case DORM_Awake:
+		return TEXT("Awake");
+	case DORM_DormantAll:
+		return TEXT("DormantAll");
+	case DORM_DormantPartial:
+		return TEXT("DormantPartial");
+	case DORM_Initial:
+		return TEXT("Initial");
+	default:
+		return TEXT("Unknown");
+	}
+}
+
 UWorld* SelectAIWorld(const FString& RequestedWorld, FString& OutWorldSource)
 {
 	if (!GEditor)
@@ -474,6 +510,115 @@ TSharedPtr<FJsonObject> BuildRuntimeComponentJson(UActorComponent* Component)
 		Tags.Add(MakeShared<FJsonValueString>(Tag.ToString()));
 	}
 	Data->SetArrayField(TEXT("tags"), Tags);
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeReplicationComponentJson(UActorComponent* Component)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	if (!Component)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("name"), Component->GetName());
+	Data->SetStringField(TEXT("path"), Component->GetPathName());
+	Data->SetStringField(TEXT("class"), Component->GetClass() ? Component->GetClass()->GetPathName() : TEXT(""));
+	Data->SetBoolField(TEXT("registered"), Component->IsRegistered());
+	Data->SetBoolField(TEXT("active"), Component->IsActive());
+	Data->SetBoolField(TEXT("replicated"), Component->GetIsReplicated());
+	Data->SetBoolField(TEXT("ready_for_replication"), Component->IsReadyForReplication());
+	Data->SetStringField(TEXT("owner_role"), NetRoleToString(Component->GetOwnerRole()));
+	Data->SetStringField(TEXT("net_mode"), NetModeToString(Component->GetNetMode()));
+	if (AActor* Owner = Component->GetOwner())
+	{
+		Data->SetStringField(TEXT("owner_name"), Owner->GetName());
+		Data->SetStringField(TEXT("owner_path"), Owner->GetPathName());
+	}
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeActorReplicationJson(AActor* Actor, bool bIncludeComponents, int32 ComponentLimit)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	if (!Actor)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("net_mode"), NetModeToString(Actor->GetNetMode()));
+	Data->SetStringField(TEXT("local_role"), NetRoleToString(Actor->GetLocalRole()));
+	Data->SetStringField(TEXT("remote_role"), NetRoleToString(Actor->GetRemoteRole()));
+	Data->SetBoolField(TEXT("has_authority"), Actor->HasAuthority());
+	Data->SetBoolField(TEXT("replicated"), Actor->GetIsReplicated());
+	Data->SetBoolField(TEXT("replicates_movement"), Actor->IsReplicatingMovement());
+	Data->SetBoolField(TEXT("tear_off"), Actor->GetTearOff());
+	Data->SetBoolField(TEXT("net_temporary"), Actor->bNetTemporary != 0);
+	Data->SetBoolField(TEXT("net_startup"), Actor->IsNetStartupActor());
+	Data->SetBoolField(TEXT("net_load_on_client"), Actor->bNetLoadOnClient != 0);
+	Data->SetBoolField(TEXT("always_relevant"), Actor->bAlwaysRelevant != 0);
+	Data->SetBoolField(TEXT("only_relevant_to_owner"), Actor->bOnlyRelevantToOwner != 0);
+	Data->SetBoolField(TEXT("net_use_owner_relevancy"), Actor->bNetUseOwnerRelevancy != 0);
+	Data->SetBoolField(TEXT("relevant_for_network_replays"), Actor->bRelevantForNetworkReplays != 0);
+	Data->SetStringField(TEXT("net_dormancy"), NetDormancyToString(Actor->NetDormancy));
+	Data->SetNumberField(TEXT("net_update_frequency"), Actor->GetNetUpdateFrequency());
+	Data->SetNumberField(TEXT("min_net_update_frequency"), Actor->GetMinNetUpdateFrequency());
+	Data->SetNumberField(TEXT("net_priority"), Actor->NetPriority);
+	Data->SetNumberField(TEXT("net_cull_distance_squared"), Actor->GetNetCullDistanceSquared());
+	Data->SetBoolField(TEXT("net_connection_present"), Actor->GetNetConnection() != nullptr);
+	Data->SetBoolField(TEXT("net_owning_player_present"), Actor->GetNetOwningPlayerAnyRole() != nullptr);
+
+	if (AActor* Owner = Actor->GetOwner())
+	{
+		Data->SetStringField(TEXT("owner_name"), Owner->GetName());
+		Data->SetStringField(TEXT("owner_label"), Owner->GetActorLabel());
+		Data->SetStringField(TEXT("owner_path"), Owner->GetPathName());
+		Data->SetStringField(TEXT("owner_class"), Owner->GetClass() ? Owner->GetClass()->GetPathName() : TEXT(""));
+	}
+
+	TArray<UActorComponent*> Components;
+	Actor->GetComponents(Components);
+	int32 ReplicatedComponentCount = 0;
+	int32 ReadyComponentCount = 0;
+	int32 MatchedReplicationComponentCount = 0;
+	TArray<TSharedPtr<FJsonValue>> ComponentJson;
+	for (UActorComponent* Component : Components)
+	{
+		if (!Component)
+		{
+			continue;
+		}
+
+		const bool bReplicatedComponent = Component->GetIsReplicated();
+		const bool bReadyComponent = Component->IsReadyForReplication();
+		if (bReplicatedComponent)
+		{
+			++ReplicatedComponentCount;
+		}
+		if (bReadyComponent)
+		{
+			++ReadyComponentCount;
+		}
+		if (bReplicatedComponent || bReadyComponent)
+		{
+			++MatchedReplicationComponentCount;
+		}
+		if (bIncludeComponents && (bReplicatedComponent || bReadyComponent) && ComponentJson.Num() < ComponentLimit)
+		{
+			ComponentJson.Add(MakeShared<FJsonValueObject>(BuildRuntimeReplicationComponentJson(Component)));
+		}
+	}
+
+	Data->SetNumberField(TEXT("component_count"), Components.Num());
+	Data->SetNumberField(TEXT("replicated_component_count"), ReplicatedComponentCount);
+	Data->SetNumberField(TEXT("ready_component_count"), ReadyComponentCount);
+	Data->SetNumberField(TEXT("matched_replication_component_count"), MatchedReplicationComponentCount);
+	Data->SetNumberField(TEXT("returned_component_count"), ComponentJson.Num());
+	Data->SetBoolField(TEXT("components_truncated"), bIncludeComponents && MatchedReplicationComponentCount > ComponentJson.Num());
+	if (bIncludeComponents)
+	{
+		Data->SetArrayField(TEXT("components"), ComponentJson);
+	}
 	return Data;
 }
 
@@ -797,6 +942,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_component_list", "RuntimeInspector", false, 60, HandleRuntimeComponentList),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_input_routing", "RuntimeInspector", false, 60, HandleRuntimeInputRouting),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_replication_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeReplicationDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
 		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
 		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
@@ -4109,6 +4255,174 @@ FString FAIExportTCPServer::HandleRuntimeInputRouting(TSharedPtr<FJsonObject> Pa
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime input routing timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeReplicationDiagnostics(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+	FString ActorPath;
+	FString ActorLabel;
+	FString ActorName;
+	FString NameFilter;
+	FString ClassFilter;
+	bool bIncludeComponents = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("actor_path"), ActorPath);
+		Params->TryGetStringField(TEXT("actor_label"), ActorLabel);
+		Params->TryGetStringField(TEXT("actor_name"), ActorName);
+		Params->TryGetStringField(TEXT("name_filter"), NameFilter);
+		Params->TryGetStringField(TEXT("class_filter"), ClassFilter);
+		Params->TryGetBoolField(TEXT("include_components"), bIncludeComponents);
+	}
+	ActorPath.TrimStartAndEndInline();
+	ActorLabel.TrimStartAndEndInline();
+	ActorName.TrimStartAndEndInline();
+	NameFilter.TrimStartAndEndInline();
+	ClassFilter.TrimStartAndEndInline();
+	const int32 ActorLimit = ReadClampedIntField(Params, TEXT("actor_limit"), 100, 1, 1000);
+	const int32 ComponentLimit = ReadClampedIntField(Params, TEXT("component_limit"), 100, 0, 1000);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, ActorPath, ActorLabel, ActorName, NameFilter, ClassFilter, bIncludeComponents, ActorLimit, ComponentLimit, Promise, this]()
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("requested_world"), WorldSelector);
+		Data->SetObjectField(TEXT("pie"), BuildPIEStateJson());
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetBoolField(TEXT("world_available"), World != nullptr);
+		if (!World)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			Data->SetArrayField(TEXT("warnings"), Warnings);
+			Promise->SetValue(CreateSuccessResponse(Data));
+			return;
+		}
+
+		if (WorldSource == TEXT("editor") && (WorldSelector == TEXT("auto") || WorldSelector == TEXT("pie") || WorldSelector == TEXT("runtime") || WorldSelector == TEXT("play")))
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE is inactive; replication diagnostics reflect the editor world")));
+		}
+
+		Data->SetObjectField(TEXT("world"), BuildRuntimeWorldJson(World, WorldSource));
+		Data->SetStringField(TEXT("world_net_mode"), NetModeToString(World->GetNetMode()));
+		Data->SetBoolField(TEXT("include_components"), bIncludeComponents);
+		Data->SetNumberField(TEXT("actor_limit"), ActorLimit);
+		Data->SetNumberField(TEXT("component_limit"), ComponentLimit);
+
+		const bool bSpecificActorRequested = !ActorPath.IsEmpty() || !ActorLabel.IsEmpty() || !ActorName.IsEmpty();
+		TArray<AActor*> ActorsToInspect;
+		int32 MatchedActorCount = 0;
+		int32 ReplicatedActorCount = 0;
+		int32 ReplicatingMovementCount = 0;
+		int32 DormantActorCount = 0;
+		int32 AuthorityActorCount = 0;
+		auto AddReplicationCounters = [&ReplicatedActorCount, &ReplicatingMovementCount, &DormantActorCount, &AuthorityActorCount](AActor* Actor)
+		{
+			if (!Actor)
+			{
+				return;
+			}
+			if (Actor->GetIsReplicated())
+			{
+				++ReplicatedActorCount;
+			}
+			if (Actor->IsReplicatingMovement())
+			{
+				++ReplicatingMovementCount;
+			}
+			if (Actor->NetDormancy == DORM_DormantAll || Actor->NetDormancy == DORM_DormantPartial || Actor->NetDormancy == DORM_Initial)
+			{
+				++DormantActorCount;
+			}
+			if (Actor->HasAuthority())
+			{
+				++AuthorityActorCount;
+			}
+		};
+
+		if (bSpecificActorRequested)
+		{
+			AActor* Actor = FindRuntimeActorForAI(World, ActorPath, ActorLabel, ActorName);
+			Data->SetBoolField(TEXT("selected_actor_requested"), true);
+			Data->SetBoolField(TEXT("selected_actor_found"), Actor != nullptr);
+			if (Actor)
+			{
+				MatchedActorCount = 1;
+				AddReplicationCounters(Actor);
+				ActorsToInspect.Add(Actor);
+			}
+			else
+			{
+				Warnings.Add(MakeShared<FJsonValueString>(TEXT("Selected actor was not found in the selected world")));
+			}
+		}
+		else
+		{
+			Data->SetBoolField(TEXT("selected_actor_requested"), false);
+			for (TActorIterator<AActor> It(World); It; ++It)
+			{
+				AActor* Actor = *It;
+				if (!Actor)
+				{
+					continue;
+				}
+
+				const FString Label = Actor->GetActorLabel();
+				const FString Name = Actor->GetName();
+				const FString ClassPath = Actor->GetClass() ? Actor->GetClass()->GetPathName() : TEXT("");
+				if (!NameFilter.IsEmpty() && !Name.Contains(NameFilter) && !Label.Contains(NameFilter))
+				{
+					continue;
+				}
+				if (!ClassFilter.IsEmpty() && !ClassPath.Contains(ClassFilter))
+				{
+					continue;
+				}
+
+				++MatchedActorCount;
+				AddReplicationCounters(Actor);
+				if (ActorsToInspect.Num() < ActorLimit)
+				{
+					ActorsToInspect.Add(Actor);
+				}
+			}
+		}
+
+		TArray<TSharedPtr<FJsonValue>> ActorsJson;
+		for (AActor* Actor : ActorsToInspect)
+		{
+			if (!Actor)
+			{
+				continue;
+			}
+
+			TSharedPtr<FJsonObject> ActorJson = BuildRuntimeActorJson(Actor);
+			ActorJson->SetObjectField(TEXT("replication"), BuildRuntimeActorReplicationJson(Actor, bIncludeComponents, ComponentLimit));
+			ActorsJson.Add(MakeShared<FJsonValueObject>(ActorJson));
+		}
+
+		Data->SetNumberField(TEXT("matched_actor_count"), MatchedActorCount);
+		Data->SetNumberField(TEXT("returned_actor_count"), ActorsJson.Num());
+		Data->SetBoolField(TEXT("actors_truncated"), MatchedActorCount > ActorsJson.Num());
+		Data->SetNumberField(TEXT("replicated_actor_count"), ReplicatedActorCount);
+		Data->SetNumberField(TEXT("replicating_movement_count"), ReplicatingMovementCount);
+		Data->SetNumberField(TEXT("dormant_actor_count"), DormantActorCount);
+		Data->SetNumberField(TEXT("authority_actor_count"), AuthorityActorCount);
+		Data->SetArrayField(TEXT("actors"), ActorsJson);
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime replication diagnostics timed out"));
 	return Future.Get();
 }
 

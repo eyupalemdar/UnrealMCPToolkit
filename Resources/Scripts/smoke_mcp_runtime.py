@@ -502,6 +502,30 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     _assert(isinstance(runtime_diagnostics.get("pie"), dict), "runtime diagnostics missing PIE state")
     _assert(isinstance(runtime_diagnostics.get("players"), dict), "runtime diagnostics missing player summary")
 
+    input_routing = _assert_tcp_success(
+        _tcp_command(tcp_port, "runtime_input_routing", {"world": "auto"}),
+        "runtime_input_routing",
+    )
+    _assert(input_routing.get("world_available") is True, "runtime input routing did not report an available world")
+    _assert(isinstance(input_routing.get("pie"), dict), "runtime input routing missing PIE state")
+    _assert(isinstance(input_routing.get("controllers"), list), "runtime input routing missing controller array")
+    _assert(isinstance(input_routing.get("local_players"), list), "runtime input routing missing local player array")
+
+    replication_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_replication_diagnostics",
+            {"world": "auto", "actor_limit": 10, "component_limit": 5},
+        ),
+        "runtime_replication_diagnostics",
+    )
+    _assert(replication_diagnostics.get("world_available") is True, "runtime replication diagnostics did not report an available world")
+    _assert(isinstance(replication_diagnostics.get("world"), dict), "runtime replication diagnostics missing world summary")
+    _assert(isinstance(replication_diagnostics.get("actors"), list), "runtime replication diagnostics missing actor array")
+    if replication_diagnostics.get("actors"):
+        first_actor = replication_diagnostics["actors"][0]
+        _assert(isinstance(first_actor, dict) and isinstance(first_actor.get("replication"), dict), "runtime replication diagnostics missing actor replication object")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -558,6 +582,8 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "dry_run_scope_gate": True,
         "destructive_scope_gate": True,
         "runtime_diagnostics_checked": True,
+        "runtime_input_routing_checked": True,
+        "runtime_replication_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),

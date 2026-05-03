@@ -222,6 +222,22 @@ def runtime_input_routing(world: str = 'auto') -> str:
     return _format_response(_send_command("runtime_input_routing", params))
 
 
+def runtime_replication_diagnostics(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', class_filter: str = '', include_components: bool = True, actor_limit: int = 100, component_limit: int = 100) -> str:
+    """Generated stub for TCP command `runtime_replication_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "name_filter": name_filter,
+        "class_filter": class_filter,
+        "include_components": include_components,
+        "actor_limit": actor_limit,
+        "component_limit": component_limit,
+    }
+    return _format_response(_send_command("runtime_replication_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

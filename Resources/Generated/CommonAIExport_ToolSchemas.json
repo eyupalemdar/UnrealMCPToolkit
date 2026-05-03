@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T15:23:55.115468Z",
-  "tool_count": 128,
+  "generated_at_utc": "2026-05-03T15:37:28.585909Z",
+  "tool_count": 129,
   "tools": {
     "ping": {
       "type": "object",
@@ -739,6 +739,64 @@
         "world": {
           "type": "string",
           "default": "auto"
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_replication_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "class_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "include_components": {
+          "type": "boolean",
+          "default": true
+        },
+        "actor_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "component_limit": {
+          "type": "integer",
+          "default": 100
         }
       },
       "required": [],
