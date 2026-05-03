@@ -1715,6 +1715,22 @@ def runtime_player_list(world: str = "auto") -> str:
 
 
 @mcp.tool()
+def runtime_input_routing(world: str = "auto") -> str:
+    """
+    Inspect runtime input routing for player controllers and local players.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+
+    Returns:
+        JSON with controller input components, PlayerInput/EnhancedInput
+        subsystem state, local-player CommonInput state, and routing warnings.
+    """
+    return _send_generated_tcp_tool("runtime_input_routing", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

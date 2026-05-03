@@ -214,6 +214,14 @@ def runtime_diagnostics(world: str = 'auto', actor_path: str = '', actor_label: 
     return _format_response(_send_command("runtime_diagnostics", params))
 
 
+def runtime_input_routing(world: str = 'auto') -> str:
+    """Generated stub for TCP command `runtime_input_routing` (RuntimeInspector)."""
+    params = {
+        "world": world,
+    }
+    return _format_response(_send_command("runtime_input_routing", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

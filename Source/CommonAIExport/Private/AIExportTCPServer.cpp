@@ -94,11 +94,18 @@
 #include "UObject/UnrealType.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedPlayerInput.h"
+#include "InputMappingContext.h"
+#include "CommonInputSubsystem.h"
+#include "Components/InputComponent.h"
 #include "Components/ActorComponent.h"
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerInput.h"
 #include "GameFramework/PlayerState.h"
 
 // Asset Lifecycle includes (for HandleReloadAsset)
@@ -469,6 +476,161 @@ TSharedPtr<FJsonObject> BuildRuntimeComponentJson(UActorComponent* Component)
 	Data->SetArrayField(TEXT("tags"), Tags);
 	return Data;
 }
+
+FString CommonInputTypeToString(ECommonInputType InputType)
+{
+	switch (InputType)
+	{
+	case ECommonInputType::MouseAndKeyboard:
+		return TEXT("MouseAndKeyboard");
+	case ECommonInputType::Gamepad:
+		return TEXT("Gamepad");
+	case ECommonInputType::Touch:
+		return TEXT("Touch");
+	default:
+		return TEXT("Unknown");
+	}
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeInputComponentJson(UInputComponent* InputComponent)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetBoolField(TEXT("present"), InputComponent != nullptr);
+	if (!InputComponent)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("name"), InputComponent->GetName());
+	Data->SetStringField(TEXT("path"), InputComponent->GetPathName());
+	Data->SetStringField(TEXT("class"), InputComponent->GetClass() ? InputComponent->GetClass()->GetPathName() : TEXT(""));
+	Data->SetBoolField(TEXT("registered"), InputComponent->IsRegistered());
+	Data->SetBoolField(TEXT("active"), InputComponent->IsActive());
+	Data->SetNumberField(TEXT("priority"), InputComponent->Priority);
+	Data->SetBoolField(TEXT("block_input"), InputComponent->bBlockInput != 0);
+	Data->SetNumberField(TEXT("action_binding_count"), InputComponent->GetNumActionBindings());
+	Data->SetNumberField(TEXT("key_binding_count"), InputComponent->KeyBindings.Num());
+	Data->SetNumberField(TEXT("axis_binding_count"), InputComponent->AxisBindings.Num());
+	Data->SetNumberField(TEXT("axis_key_binding_count"), InputComponent->AxisKeyBindings.Num());
+	Data->SetNumberField(TEXT("vector_axis_binding_count"), InputComponent->VectorAxisBindings.Num());
+	Data->SetNumberField(TEXT("touch_binding_count"), InputComponent->TouchBindings.Num());
+	Data->SetNumberField(TEXT("gesture_binding_count"), InputComponent->GestureBindings.Num());
+
+	if (AActor* Owner = InputComponent->GetOwner())
+	{
+		Data->SetStringField(TEXT("owner_name"), Owner->GetName());
+		Data->SetStringField(TEXT("owner_label"), Owner->GetActorLabel());
+		Data->SetStringField(TEXT("owner_path"), Owner->GetPathName());
+		Data->SetStringField(TEXT("owner_class"), Owner->GetClass() ? Owner->GetClass()->GetPathName() : TEXT(""));
+	}
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		TSharedPtr<FJsonObject> EnhancedJson = MakeShared<FJsonObject>();
+		EnhancedJson->SetNumberField(TEXT("action_event_binding_count"), EnhancedInputComponent->GetActionEventBindings().Num());
+		EnhancedJson->SetNumberField(TEXT("action_value_binding_count"), EnhancedInputComponent->GetActionValueBindings().Num());
+		EnhancedJson->SetNumberField(TEXT("debug_key_binding_count"), EnhancedInputComponent->GetDebugKeyBindings().Num());
+		EnhancedJson->SetBoolField(TEXT("fire_delegates_in_editor"), EnhancedInputComponent->ShouldFireDelegatesInEditor());
+		Data->SetObjectField(TEXT("enhanced_input"), EnhancedJson);
+	}
+
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimePlayerInputJson(APlayerController* Controller)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	UPlayerInput* PlayerInput = Controller ? Controller->PlayerInput : nullptr;
+	Data->SetBoolField(TEXT("present"), PlayerInput != nullptr);
+	if (!PlayerInput)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("name"), PlayerInput->GetName());
+	Data->SetStringField(TEXT("path"), PlayerInput->GetPathName());
+	Data->SetStringField(TEXT("class"), PlayerInput->GetClass() ? PlayerInput->GetClass()->GetPathName() : TEXT(""));
+	Data->SetBoolField(TEXT("is_enhanced_player_input"), PlayerInput->IsA<UEnhancedPlayerInput>());
+
+	if (UEnhancedPlayerInput* EnhancedPlayerInput = Cast<UEnhancedPlayerInput>(PlayerInput))
+	{
+		Data->SetBoolField(TEXT("enhanced_player_input_available"), EnhancedPlayerInput != nullptr);
+	}
+
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeEnhancedInputSubsystemJson(ULocalPlayer* LocalPlayer)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	UEnhancedInputLocalPlayerSubsystem* EnhancedSubsystem = LocalPlayer ? LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
+	Data->SetBoolField(TEXT("subsystem_present"), EnhancedSubsystem != nullptr);
+	if (!EnhancedSubsystem)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("input_mode_tags"), EnhancedSubsystem->GetInputMode().ToStringSimple());
+	Data->SetNumberField(TEXT("player_mappable_action_key_mapping_count"), EnhancedSubsystem->GetAllPlayerMappableActionKeyMappings().Num());
+
+	UEnhancedPlayerInput* PlayerInput = EnhancedSubsystem->GetPlayerInput();
+	Data->SetBoolField(TEXT("player_input_present"), PlayerInput != nullptr);
+	if (PlayerInput)
+	{
+		Data->SetStringField(TEXT("player_input_name"), PlayerInput->GetName());
+		Data->SetStringField(TEXT("player_input_path"), PlayerInput->GetPathName());
+		Data->SetStringField(TEXT("player_input_class"), PlayerInput->GetClass() ? PlayerInput->GetClass()->GetPathName() : TEXT(""));
+	}
+
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeCommonInputJson(ULocalPlayer* LocalPlayer)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	UCommonInputSubsystem* CommonInputSubsystem = UCommonInputSubsystem::Get(LocalPlayer);
+	Data->SetBoolField(TEXT("subsystem_present"), CommonInputSubsystem != nullptr);
+	if (!CommonInputSubsystem)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("current_input_type"), CommonInputTypeToString(CommonInputSubsystem->GetCurrentInputType()));
+	Data->SetStringField(TEXT("default_input_type"), CommonInputTypeToString(CommonInputSubsystem->GetDefaultInputType()));
+	Data->SetStringField(TEXT("current_gamepad_name"), CommonInputSubsystem->GetCurrentGamepadName().ToString());
+	Data->SetBoolField(TEXT("using_pointer_input"), CommonInputSubsystem->IsUsingPointerInput());
+	Data->SetBoolField(TEXT("should_show_input_keys"), CommonInputSubsystem->ShouldShowInputKeys());
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeControllerInputRouteJson(APlayerController* Controller)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	if (!Controller)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("name"), Controller->GetName());
+	Data->SetStringField(TEXT("path"), Controller->GetPathName());
+	Data->SetStringField(TEXT("class"), Controller->GetClass() ? Controller->GetClass()->GetPathName() : TEXT(""));
+	Data->SetBoolField(TEXT("is_local_controller"), Controller->IsLocalController());
+	Data->SetObjectField(TEXT("input_component"), BuildRuntimeInputComponentJson(Controller->InputComponent));
+	Data->SetObjectField(TEXT("player_input"), BuildRuntimePlayerInputJson(Controller));
+
+	if (APawn* Pawn = Controller->GetPawn())
+	{
+		TSharedPtr<FJsonObject> PawnJson = BuildRuntimeActorJson(Pawn);
+		PawnJson->SetObjectField(TEXT("input_component"), BuildRuntimeInputComponentJson(Pawn->InputComponent));
+		Data->SetObjectField(TEXT("pawn"), PawnJson);
+	}
+	else
+	{
+		Data->SetBoolField(TEXT("pawn_present"), false);
+	}
+
+	return Data;
+}
 }
 
 // Static instance
@@ -634,6 +796,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_player_list", "RuntimeInspector", false, 30, HandleRuntimePlayerList),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_component_list", "RuntimeInspector", false, 60, HandleRuntimeComponentList),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeDiagnostics),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_input_routing", "RuntimeInspector", false, 60, HandleRuntimeInputRouting),
 		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
 		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
 		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
@@ -3854,6 +4017,98 @@ FString FAIExportTCPServer::HandleRuntimeDiagnostics(TSharedPtr<FJsonObject> Par
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime diagnostics timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeInputRouting(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, Promise, this]()
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("requested_world"), WorldSelector);
+		Data->SetObjectField(TEXT("pie"), BuildPIEStateJson());
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetBoolField(TEXT("world_available"), World != nullptr);
+		if (!World)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			Data->SetArrayField(TEXT("warnings"), Warnings);
+			Promise->SetValue(CreateSuccessResponse(Data));
+			return;
+		}
+
+		if (WorldSource == TEXT("editor") && (WorldSelector == TEXT("auto") || WorldSelector == TEXT("pie") || WorldSelector == TEXT("runtime") || WorldSelector == TEXT("play")))
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE is inactive; input routing reflects the editor world")));
+		}
+
+		Data->SetObjectField(TEXT("world"), BuildRuntimeWorldJson(World, WorldSource));
+
+		TArray<TSharedPtr<FJsonValue>> Controllers;
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* Controller = It->Get();
+			if (!Controller)
+			{
+				continue;
+			}
+			Controllers.Add(MakeShared<FJsonValueObject>(BuildRuntimeControllerInputRouteJson(Controller)));
+		}
+		Data->SetArrayField(TEXT("controllers"), Controllers);
+		Data->SetNumberField(TEXT("controller_count"), Controllers.Num());
+		if (Controllers.Num() == 0 && WorldSource == TEXT("pie"))
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE world has no player controllers for input routing")));
+		}
+
+		TArray<TSharedPtr<FJsonValue>> LocalPlayers;
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			for (ULocalPlayer* LocalPlayer : GameInstance->GetLocalPlayers())
+			{
+				if (!LocalPlayer)
+				{
+					continue;
+				}
+
+				TSharedPtr<FJsonObject> LocalPlayerJson = MakeShared<FJsonObject>();
+				LocalPlayerJson->SetStringField(TEXT("name"), LocalPlayer->GetName());
+				LocalPlayerJson->SetStringField(TEXT("path"), LocalPlayer->GetPathName());
+				LocalPlayerJson->SetStringField(TEXT("class"), LocalPlayer->GetClass() ? LocalPlayer->GetClass()->GetPathName() : TEXT(""));
+				LocalPlayerJson->SetNumberField(TEXT("controller_id"), LocalPlayer->GetControllerId());
+				LocalPlayerJson->SetObjectField(TEXT("common_input"), BuildRuntimeCommonInputJson(LocalPlayer));
+				LocalPlayerJson->SetObjectField(TEXT("enhanced_input"), BuildRuntimeEnhancedInputSubsystemJson(LocalPlayer));
+
+				if (APlayerController* Controller = LocalPlayer->GetPlayerController(World))
+				{
+					LocalPlayerJson->SetStringField(TEXT("player_controller_path"), Controller->GetPathName());
+					LocalPlayerJson->SetObjectField(TEXT("player_input"), BuildRuntimePlayerInputJson(Controller));
+				}
+				else
+				{
+					LocalPlayerJson->SetBoolField(TEXT("player_controller_present"), false);
+				}
+
+				LocalPlayers.Add(MakeShared<FJsonValueObject>(LocalPlayerJson));
+			}
+		}
+		Data->SetArrayField(TEXT("local_players"), LocalPlayers);
+		Data->SetNumberField(TEXT("local_player_count"), LocalPlayers.Num());
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime input routing timed out"));
 	return Future.Get();
 }
 
