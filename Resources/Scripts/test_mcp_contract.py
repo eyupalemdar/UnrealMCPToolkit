@@ -11,8 +11,12 @@ from generate_mcp_artifacts import (
     CLIENT_ONLY_TOOLS,
     COMMAND_MANIFEST_PATH,
     TOOL_SCHEMAS_PATH,
+    WRAPPER_SPEC_PATH,
+    WRAPPER_STUBS_PATH,
     build_ai_reference_tool_summary,
     build_command_manifest,
+    build_wrapper_spec,
+    build_wrapper_stubs,
     build_tool_schemas,
     read_mcp_tool_signatures,
 )
@@ -25,6 +29,7 @@ def _failures() -> list[str]:
     failures: list[str] = []
     manifest = build_command_manifest()
     schemas = build_tool_schemas(manifest)
+    wrapper_spec = build_wrapper_spec(manifest, schemas)
     commands = manifest["commands"]
     signatures = read_mcp_tool_signatures()
 
@@ -67,6 +72,11 @@ def _failures() -> list[str]:
         commonai = schema.get("x-commonai", {})
         if commonai.get("required_scope") != scope:
             failures.append(f"{name}: schema required_scope mismatch")
+        wrapper_item = wrapper_spec.get("tools", {}).get(name, {})
+        if not wrapper_item.get("wrapper_present"):
+            failures.append(f"{name}: missing Python MCP wrapper metadata")
+        if not wrapper_item.get("calls_expected_tcp_command"):
+            failures.append(f"{name}: Python MCP wrapper does not call the matching TCP command")
 
     for tool_name in CLIENT_ONLY_TOOLS:
         schema = schemas["tools"].get(tool_name)
@@ -102,6 +112,26 @@ def _failures() -> list[str]:
             failures.append("generated tool schemas are not strict: " + ", ".join(sorted(broad_tools)[:10]))
     else:
         failures.append(f"missing generated schemas: {TOOL_SCHEMAS_PATH}")
+
+    if WRAPPER_SPEC_PATH.exists():
+        generated_wrapper_spec = json.loads(WRAPPER_SPEC_PATH.read_text(encoding="utf-8"))
+        stable_generated = dict(generated_wrapper_spec)
+        stable_generated.pop("generated_at_utc", None)
+        stable_current = dict(wrapper_spec)
+        stable_current.pop("generated_at_utc", None)
+        if stable_generated != stable_current:
+            failures.append("generated wrapper spec is stale")
+        if generated_wrapper_spec.get("wrapper_drift"):
+            failures.append("generated wrapper spec reports wrapper drift")
+    else:
+        failures.append(f"missing generated wrapper spec: {WRAPPER_SPEC_PATH}")
+
+    if WRAPPER_STUBS_PATH.exists():
+        expected_stubs = build_wrapper_stubs(manifest, wrapper_spec)
+        if WRAPPER_STUBS_PATH.read_text(encoding="utf-8") != expected_stubs:
+            failures.append("generated wrapper stubs are stale")
+    else:
+        failures.append(f"missing generated wrapper stubs: {WRAPPER_STUBS_PATH}")
 
     if AI_REFERENCE_PATH.exists():
         ai_reference = AI_REFERENCE_PATH.read_text(encoding="utf-8")

@@ -3,9 +3,11 @@
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
 - TCP commands: 108
-- MCP tools: 124
+- MCP tools: 125
 - Categories: 24
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
+- Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
+- Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
 
 ## Categories
 
@@ -154,6 +156,7 @@
 - `asset_transfer_execute`
 - `asset_transfer_plan`
 - `asset_transfer_verify`
+- `client_scope_policy`
 - `code_transfer_execute`
 - `code_transfer_plan`
 - `code_transfer_verify`

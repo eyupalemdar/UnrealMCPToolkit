@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T12:42:05.494584Z",
-  "tool_count": 124,
+  "generated_at_utc": "2026-05-03T13:12:31.510011Z",
+  "tool_count": 125,
   "tools": {
     "ping": {
       "type": "object",
@@ -4136,6 +4136,26 @@
       "required": [
         "source_asset_path"
       ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "python_client_only",
+        "schema_source": "python_mcp_signature",
+        "category": "Client",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "client_scope_policy": {
+      "type": "object",
+      "properties": {},
+      "required": [],
       "additionalProperties": false,
       "x-commonai": {
         "source": "python_client_only",

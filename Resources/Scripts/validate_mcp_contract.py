@@ -16,8 +16,12 @@ from generate_mcp_artifacts import (
     SERVER_METADATA_PATH,
     TOOL_CATALOG_PATH,
     TOOL_SCHEMAS_PATH,
+    WRAPPER_SPEC_PATH,
+    WRAPPER_STUBS_PATH,
     build_ai_reference_tool_summary,
     build_command_manifest,
+    build_wrapper_spec,
+    build_wrapper_stubs,
     build_tool_schemas,
 )
 
@@ -78,9 +82,22 @@ def _read_doc_counts() -> list[int]:
     return counts
 
 
+def _stable_wrapper_spec(spec: dict) -> dict:
+    stable = dict(spec)
+    stable.pop("generated_at_utc", None)
+    return stable
+
+
 def _validate_generated_artifacts(expected_tcp_commands: list[str], expected_mcp_count: int) -> list[str]:
     errors: list[str] = []
-    required_paths = [COMMAND_MANIFEST_PATH, TOOL_SCHEMAS_PATH, SERVER_METADATA_PATH, TOOL_CATALOG_PATH]
+    required_paths = [
+        COMMAND_MANIFEST_PATH,
+        TOOL_SCHEMAS_PATH,
+        SERVER_METADATA_PATH,
+        TOOL_CATALOG_PATH,
+        WRAPPER_SPEC_PATH,
+        WRAPPER_STUBS_PATH,
+    ]
     missing = [path for path in required_paths if not path.exists()]
     if missing:
         return ["Generated MCP artifacts are missing; run generate_mcp_artifacts.py: " + ", ".join(str(path) for path in missing)]
@@ -89,11 +106,13 @@ def _validate_generated_artifacts(expected_tcp_commands: list[str], expected_mcp
         generated_manifest = json.loads(COMMAND_MANIFEST_PATH.read_text(encoding="utf-8"))
         generated_schemas = json.loads(TOOL_SCHEMAS_PATH.read_text(encoding="utf-8"))
         generated_server = json.loads(SERVER_METADATA_PATH.read_text(encoding="utf-8"))
+        generated_wrapper_spec = json.loads(WRAPPER_SPEC_PATH.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         return [f"Generated MCP artifact is invalid JSON: {exc}"]
 
     current_manifest = build_command_manifest()
     current_schemas = build_tool_schemas(current_manifest)
+    current_wrapper_spec = build_wrapper_spec(current_manifest, current_schemas)
 
     generated_names = [command.get("name") for command in generated_manifest.get("commands", [])]
     current_names = [command.get("name") for command in current_manifest.get("commands", [])]
@@ -135,10 +154,27 @@ def _validate_generated_artifacts(expected_tcp_commands: list[str], expected_mcp
             f"Generated server metadata tool count mismatch: {generated_server.get('tools', {}).get('total')} "
             f"(expected {expected_mcp_count})"
         )
+    if generated_server.get("tools", {}).get("wrapper_drift_checked") is not True:
+        errors.append("Generated server metadata is missing wrapper_drift_checked=true; run generate_mcp_artifacts.py")
+
+    if _stable_wrapper_spec(generated_wrapper_spec) != _stable_wrapper_spec(current_wrapper_spec):
+        errors.append("Generated wrapper spec is stale; run generate_mcp_artifacts.py")
+    if generated_wrapper_spec.get("wrapper_drift"):
+        errors.append("Generated wrapper spec reports TCP wrapper drift")
+    if generated_wrapper_spec.get("missing_tcp_wrappers"):
+        errors.append("Generated wrapper spec reports missing TCP wrappers")
+    if generated_wrapper_spec.get("extra_tcp_wrappers"):
+        errors.append("Generated wrapper spec reports extra TCP wrappers")
+
+    current_wrapper_stubs = build_wrapper_stubs(current_manifest, current_wrapper_spec)
+    if WRAPPER_STUBS_PATH.read_text(encoding="utf-8") != current_wrapper_stubs:
+        errors.append("Generated wrapper stubs are stale; run generate_mcp_artifacts.py")
 
     catalog_text = TOOL_CATALOG_PATH.read_text(encoding="utf-8")
     if f"- TCP commands: {len(expected_tcp_commands)}" not in catalog_text or f"- MCP tools: {expected_mcp_count}" not in catalog_text:
         errors.append("Generated tool catalog count summary is stale; run generate_mcp_artifacts.py")
+    if "CommonAIExport_WrapperSpec.json" not in catalog_text or "CommonAIExport_MCPWrapperStubs.py" not in catalog_text:
+        errors.append("Generated tool catalog wrapper summary is stale; run generate_mcp_artifacts.py")
 
     ai_reference_text = AI_REFERENCE.read_text(encoding="utf-8")
     if AI_REFERENCE_SUMMARY_BEGIN not in ai_reference_text or AI_REFERENCE_SUMMARY_END not in ai_reference_text:

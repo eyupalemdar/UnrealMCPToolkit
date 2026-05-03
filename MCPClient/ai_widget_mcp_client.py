@@ -26,6 +26,7 @@ import os
 import time
 import hashlib
 import subprocess
+import shlex
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -100,10 +101,143 @@ CLIENT_ONLY_TOOLS = {
     "commonai_prompts_list",
     "commonai_prompt_get",
     "guarded_build_status",
+    "client_scope_policy",
     "mcp_server_metadata_export",
     "native_http_status",
     "native_mcp_probe",
 }
+
+SCOPE_RANK = {"read": 0, "write": 1, "destructive": 2}
+_TOOL_METADATA_CACHE: dict[str, dict] | None = None
+
+
+def _truthy_env(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _scope_rank(scope: str) -> int:
+    return SCOPE_RANK.get((scope or "read").lower(), SCOPE_RANK["read"])
+
+
+def _load_tool_metadata() -> dict[str, dict]:
+    """Load generated per-tool policy metadata for client-side scope checks."""
+    global _TOOL_METADATA_CACHE
+    if _TOOL_METADATA_CACHE is not None:
+        return _TOOL_METADATA_CACHE
+
+    path = _SCRIPT_DIR.parent / "Resources" / "Generated" / "CommonAIExport_ToolSchemas.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        _TOOL_METADATA_CACHE = {}
+        return _TOOL_METADATA_CACHE
+
+    metadata: dict[str, dict] = {}
+    for name, schema in payload.get("tools", {}).items():
+        if isinstance(schema, dict):
+            metadata[name] = schema.get("x-commonai", {})
+    _TOOL_METADATA_CACHE = metadata
+    return metadata
+
+
+def _client_scope_policy_state() -> dict:
+    """Return effective client-side scope and approval settings."""
+    metadata = _load_tool_metadata()
+    max_scope = os.environ.get("COMMONAI_MCP_CLIENT_MAX_SCOPE", "destructive").strip().lower() or "destructive"
+    approval_min_scope = os.environ.get("COMMONAI_MCP_APPROVAL_MIN_SCOPE", "write").strip().lower() or "write"
+    return {
+        "max_scope": max_scope if max_scope in SCOPE_RANK else "destructive",
+        "require_explicit_scope": _truthy_env("COMMONAI_MCP_REQUIRE_EXPLICIT_SCOPE", False),
+        "approval_command": os.environ.get("COMMONAI_MCP_APPROVAL_COMMAND", "").strip(),
+        "approval_min_scope": approval_min_scope if approval_min_scope in SCOPE_RANK else "write",
+        "known_tool_count": len(metadata),
+        "metadata_source": "Resources/Generated/CommonAIExport_ToolSchemas.json" if metadata else "",
+    }
+
+
+def _split_approval_command(command: str) -> list[str]:
+    args = shlex.split(command, posix=(os.name != "nt"))
+    if os.name == "nt":
+        args = [arg[1:-1] if len(arg) >= 2 and arg[0] == arg[-1] and arg[0] in {"'", '"'} else arg for arg in args]
+    return args
+
+
+def _run_approval_hook(command_name: str, params: dict | None, meta: dict | None, required_scope: str) -> dict | None:
+    """Run an optional approval hook. Non-zero exit blocks the command."""
+    policy = _client_scope_policy_state()
+    approval_command = policy["approval_command"]
+    if not approval_command:
+        return None
+
+    request = {
+        "command": command_name,
+        "required_scope": required_scope,
+        "params": params or {},
+        "meta": meta or {},
+        "project_dir": PROJECT_DIR,
+    }
+    try:
+        completed = subprocess.run(
+            _split_approval_command(approval_command),
+            input=json.dumps(request, ensure_ascii=False),
+            text=True,
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+    except Exception as exc:
+        return {
+            "success": False,
+            "error": f"Client approval hook failed: {exc}",
+            "data": {"client_policy": policy},
+        }
+
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or f"exit code {completed.returncode}"
+        return {
+            "success": False,
+            "error": f"Client approval hook rejected {command_name}: {detail}",
+            "data": {"client_policy": policy},
+        }
+    return None
+
+
+def _check_client_scope_policy(command_name: str, params: dict | None, meta: dict | None) -> dict | None:
+    """Apply optional process-local client policy before sending a TCP command."""
+    metadata = _load_tool_metadata().get(command_name, {})
+    required_scope = str(metadata.get("required_scope", "read"))
+    mutating = bool(metadata.get("mutating", False))
+    dry_run = bool((meta or {}).get("dry_run"))
+    if not mutating or dry_run:
+        return None
+
+    policy = _client_scope_policy_state()
+    max_scope = policy["max_scope"]
+    if _scope_rank(required_scope) > _scope_rank(max_scope):
+        return {
+            "success": False,
+            "error": f"Client policy blocks {command_name}: required scope '{required_scope}' exceeds max '{max_scope}'",
+            "data": {"client_policy": policy, "required_scope": required_scope},
+        }
+
+    if policy["require_explicit_scope"]:
+        requested_scope = str((meta or {}).get("scope", ""))
+        if _scope_rank(requested_scope) < _scope_rank(required_scope):
+            return {
+                "success": False,
+                "error": f"Client policy requires explicit scope '{required_scope}' for {command_name}",
+                "data": {"client_policy": policy, "required_scope": required_scope, "requested_scope": requested_scope},
+            }
+
+    if _scope_rank(required_scope) >= _scope_rank(policy["approval_min_scope"]):
+        approval_error = _run_approval_hook(command_name, params, meta, required_scope)
+        if approval_error:
+            return approval_error
+
+    return None
 
 
 def _registry_dirs() -> list[Path]:
@@ -223,6 +357,10 @@ def _build_command(cmd_type: str, params: dict | None = None, meta: dict | None 
 
 def _send_command_to_port(port: int, cmd_type: str, params: dict | None = None, meta: dict | None = None) -> dict:
     """Send a TCP command to a specific CommonAIExport editor port."""
+    policy_error = _check_client_scope_policy(cmd_type, params, meta)
+    if policy_error:
+        return policy_error
+
     command = _build_command(cmd_type, params, meta)
 
     try:
@@ -1280,6 +1418,26 @@ def guarded_build_status(tail_lines: int = 120) -> str:
         "build_failed": build_failed,
         "tail_line_count": len(tail),
         "tail": tail,
+    })
+
+
+@mcp.tool()
+def client_scope_policy() -> str:
+    """
+    Inspect process-local CommonAIExport MCP client scope policy.
+
+    Configure with environment variables:
+    COMMONAI_MCP_CLIENT_MAX_SCOPE, COMMONAI_MCP_REQUIRE_EXPLICIT_SCOPE,
+    COMMONAI_MCP_APPROVAL_COMMAND, and COMMONAI_MCP_APPROVAL_MIN_SCOPE.
+
+    Returns:
+        JSON with effective max scope, explicit-scope setting, approval hook
+        setting, and generated metadata availability.
+    """
+    return _format_response({
+        "success": True,
+        "client_policy": _client_scope_policy_state(),
+        "scope_rank": SCOPE_RANK,
     })
 
 
