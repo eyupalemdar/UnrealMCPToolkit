@@ -1901,6 +1901,47 @@ def runtime_asset_streaming_diagnostics(
 
 
 @mcp.tool()
+def runtime_async_load_diagnostics(
+    world: str = "auto",
+    asset_path: str = "",
+    package_name: str = "",
+    asset_paths: list[str] | None = None,
+    package_names: list[str] | None = None,
+    include_package_probes: bool = True,
+    include_streamable_handles: bool = True,
+    include_streaming_manager: bool = True,
+    probe_limit: int = 50,
+    asset_data_limit: int = 10,
+    handle_limit: int = 10,
+    requested_asset_limit: int = 10,
+) -> str:
+    """
+    Inspect async package loading, asset registry scan, and StreamableManager state.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        asset_path: Optional single object/package path to probe without loading.
+        package_name: Optional single long package name to probe without loading.
+        asset_paths: Optional object/package paths to probe without loading.
+        package_names: Optional long package names to probe without loading.
+        include_package_probes: Include per-package async load and asset registry probes.
+        include_streamable_handles: Include active StreamableManager handle summaries for probes.
+        include_streaming_manager: Include global streaming manager counters.
+        probe_limit: Maximum probe records returned.
+        asset_data_limit: Maximum AssetRegistry records returned per probe.
+        handle_limit: Maximum active streamable handles returned per probe.
+        requested_asset_limit: Maximum requested soft object paths returned per handle.
+
+    Returns:
+        JSON with async loading flags/counts, AssetRegistry scan state,
+        StreamableManager state, optional package probes, public-API
+        limitations, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_async_load_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_game_instance_diagnostics(
     world: str = "auto",
     include_local_players: bool = True,

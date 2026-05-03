@@ -302,6 +302,25 @@ def runtime_asset_streaming_diagnostics(world: str = 'auto', include_levels: boo
     return _format_response(_send_command("runtime_asset_streaming_diagnostics", params))
 
 
+def runtime_async_load_diagnostics(world: str = 'auto', asset_path: str = '', package_name: str = '', asset_paths: list[str] | None = None, package_names: list[str] | None = None, include_package_probes: bool = True, include_streamable_handles: bool = True, include_streaming_manager: bool = True, probe_limit: int = 50, asset_data_limit: int = 10, handle_limit: int = 10, requested_asset_limit: int = 10) -> str:
+    """Generated stub for TCP command `runtime_async_load_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "asset_path": asset_path,
+        "package_name": package_name,
+        "asset_paths": asset_paths,
+        "package_names": package_names,
+        "include_package_probes": include_package_probes,
+        "include_streamable_handles": include_streamable_handles,
+        "include_streaming_manager": include_streaming_manager,
+        "probe_limit": probe_limit,
+        "asset_data_limit": asset_data_limit,
+        "handle_limit": handle_limit,
+        "requested_asset_limit": requested_asset_limit,
+    }
+    return _format_response(_send_command("runtime_async_load_diagnostics", params))
+
+
 def runtime_game_instance_diagnostics(world: str = 'auto', include_local_players: bool = True, include_subsystems: bool = True, include_save_names: bool = False, save_slot_name: str = '', save_user_index: int = 0, local_player_limit: int = 16, subsystem_limit: int = 100, save_name_limit: int = 100) -> str:
     """Generated stub for TCP command `runtime_game_instance_diagnostics` (RuntimeInspector)."""
     params = {

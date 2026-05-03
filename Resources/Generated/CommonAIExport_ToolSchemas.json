@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T17:34:49.153758Z",
-  "tool_count": 138,
+  "generated_at_utc": "2026-05-03T17:52:37.360548Z",
+  "tool_count": 139,
   "tools": {
     "ping": {
       "type": "object",
@@ -1029,6 +1029,94 @@
         "level_limit": {
           "type": "integer",
           "default": 100
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_async_load_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "asset_path": {
+          "type": "string",
+          "default": ""
+        },
+        "package_name": {
+          "type": "string",
+          "default": ""
+        },
+        "asset_paths": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "package_names": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "include_package_probes": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_streamable_handles": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_streaming_manager": {
+          "type": "boolean",
+          "default": true
+        },
+        "probe_limit": {
+          "type": "integer",
+          "default": 50
+        },
+        "asset_data_limit": {
+          "type": "integer",
+          "default": 10
+        },
+        "handle_limit": {
+          "type": "integer",
+          "default": 10
+        },
+        "requested_asset_limit": {
+          "type": "integer",
+          "default": 10
         }
       },
       "required": [],

@@ -588,6 +588,30 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     _assert(isinstance(asset_streaming_diagnostics.get("streaming_level_count"), int), "runtime asset streaming diagnostics missing streaming level count")
     _assert(isinstance(asset_streaming_diagnostics.get("streaming_levels"), list), "runtime asset streaming diagnostics missing streaming level array")
 
+    async_load_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_async_load_diagnostics",
+            {
+                "world": "auto",
+                "asset_path": "/Game/Maps/L_OkeyFrontEnd",
+                "include_package_probes": True,
+                "include_streamable_handles": True,
+                "include_streaming_manager": True,
+                "probe_limit": 10,
+                "asset_data_limit": 5,
+                "handle_limit": 5,
+                "requested_asset_limit": 5,
+            },
+        ),
+        "runtime_async_load_diagnostics",
+    )
+    _assert(async_load_diagnostics.get("world_available") is True, "runtime async load diagnostics did not report an available world")
+    _assert(isinstance(async_load_diagnostics.get("async_loading"), dict), "runtime async load diagnostics missing async loading object")
+    _assert(isinstance(async_load_diagnostics.get("asset_registry"), dict), "runtime async load diagnostics missing AssetRegistry object")
+    _assert(isinstance(async_load_diagnostics.get("streamable_manager"), dict), "runtime async load diagnostics missing StreamableManager object")
+    _assert(isinstance(async_load_diagnostics.get("package_probes"), list), "runtime async load diagnostics missing package probes array")
+
     game_instance_diagnostics = _assert_tcp_success(
         _tcp_command(
             tcp_port,
@@ -752,6 +776,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_ai_perception_diagnostics_checked": True,
         "runtime_commonui_diagnostics_checked": True,
         "runtime_asset_streaming_diagnostics_checked": True,
+        "runtime_async_load_diagnostics_checked": True,
         "runtime_game_instance_diagnostics_checked": True,
         "runtime_level_travel_diagnostics_checked": True,
         "runtime_multiplayer_connection_diagnostics_checked": True,
