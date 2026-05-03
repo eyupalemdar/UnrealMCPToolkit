@@ -688,9 +688,13 @@ and scope but does not attempt tool-specific previews yet.
 command on the server thread pool. The initial call returns immediately with a
 `task_id`; use `task_status`, `task_events`, and `task_result` to poll.
 `task_events` returns ordered lifecycle events and `latest_sequence` for
-cursor-style progress polling. Cancellation is cooperative: queued work can be
-cancelled before dispatch, but already-running game-thread work may finish
-before cancellation is observed.
+cursor-style progress polling. Native HTTP also exposes the same data as JSON at
+`/commonai/tasks/events` and as an SSE-formatted snapshot at
+`/commonai/tasks/events/sse`. UE's built-in HTTPServer response API writes one
+complete response body, so the SSE endpoint is compatibility formatting over
+the event store rather than an infinite live socket stream. Cancellation is
+cooperative: queued work can be cancelled before dispatch, but already-running
+game-thread work may finish before cancellation is observed.
 
 ### Example: Async Preview Capture
 ```python

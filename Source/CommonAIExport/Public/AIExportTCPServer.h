@@ -255,6 +255,7 @@ private:
 	void PruneExpiredMcpSessionsLocked(const FDateTime& NowUtc);
 	void AppendHttpAuditEvent(const FHttpServerRequest& Request, const FString& Route, int32 ResponseCode, bool bAllowed, const FString& Detail, const FString& McpSessionId = FString()) const;
 	TUniquePtr<FHttpServerResponse> MakeHttpJsonResponse(const FString& Json, int32 ResponseCode = 200, const FString& McpSessionId = FString()) const;
+	TUniquePtr<FHttpServerResponse> MakeHttpTextResponse(const FString& Text, const FString& ContentType, int32 ResponseCode = 200, const FString& McpSessionId = FString()) const;
 	FString HandleMcpJsonRpc(const FString& RequestJson, const FString& RequestSessionId, FString& OutSessionId);
 
 	/** Write this editor instance to the global discovery registry */
@@ -268,6 +269,15 @@ private:
 
 	/** Convert async job event state to JSON */
 	TSharedPtr<class FJsonObject> BuildTaskEventJson(const FAsyncCommandEvent& Event) const;
+
+	/** Build async task event query payload */
+	TSharedPtr<class FJsonObject> BuildTaskEventsJson(TSharedPtr<class FJsonObject> Params) const;
+
+	/** Build async task events as Server-Sent Events formatted text */
+	FString BuildTaskEventsSse(TSharedPtr<class FJsonObject> Params) const;
+
+	/** Build task event params from HTTP query parameters */
+	TSharedPtr<class FJsonObject> BuildTaskEventParamsFromHttpRequest(const FHttpServerRequest& Request) const;
 
 	/** Append an async job lifecycle event while AsyncJobsCriticalSection is held */
 	void AppendTaskEventLocked(const FAsyncCommandJob& Job, const FString& EventType, const FString& Message);

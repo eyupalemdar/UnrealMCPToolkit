@@ -90,11 +90,17 @@ def _http_request(port: int, path: str, payload: dict | None = None, headers: di
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             body = response.read().decode("utf-8")
+            parsed_body: dict | str = {}
+            if body:
+                try:
+                    parsed_body = json.loads(body)
+                except json.JSONDecodeError:
+                    parsed_body = body
             return {
                 "success": True,
                 "status": response.status,
                 "headers": dict(response.headers.items()),
-                "body": json.loads(body) if body else {},
+                "body": parsed_body,
             }
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
@@ -504,6 +510,12 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     )
     event_text = json.dumps(task_events, ensure_ascii=False)
     _assert(task_events.get("returned_count", 0) >= 2 and "queued" in event_text and "completed" in event_text, "async task events missing queued/completed lifecycle")
+    sse_events = _http_request(http_port, f"/commonai/tasks/events/sse?task_id={task_id}&limit=20")
+    sse_body = str(sse_events.get("body", ""))
+    sse_headers = {str(key).lower(): str(value) for key, value in sse_events.get("headers", {}).items()}
+    sse_content_type = sse_headers.get("content-type", "")
+    _assert(bool(sse_events.get("success") and "text/event-stream" in sse_content_type), "task events SSE endpoint failed")
+    _assert("event: queued" in sse_body and "event: completed" in sse_body and "data:" in sse_body, "task events SSE body missing lifecycle events")
 
     delete_session = _http_request(http_port, "/mcp", headers={"Mcp-Session-Id": session_id}, method="DELETE")
     _assert(bool(delete_session.get("success") and delete_session.get("body", {}).get("success")), "MCP session delete failed")
@@ -540,6 +552,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),
+        "task_events_sse_checked": True,
         "session_delete_success": True,
         "mutating_widget_smoke": mutating_widget_result,
         "mutating_material_smoke": mutating_material_result,

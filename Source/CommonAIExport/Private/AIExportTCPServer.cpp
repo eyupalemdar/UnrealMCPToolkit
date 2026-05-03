@@ -1195,14 +1195,23 @@ void FAIExportTCPServer::AppendHttpAuditEvent(const FHttpServerRequest& Request,
 
 TUniquePtr<FHttpServerResponse> FAIExportTCPServer::MakeHttpJsonResponse(const FString& Json, int32 ResponseCode, const FString& McpSessionId) const
 {
-	TUniquePtr<FHttpServerResponse> Response = FHttpServerResponse::Create(Json, TEXT("application/json; charset=utf-8"));
+	return MakeHttpTextResponse(Json, TEXT("application/json"), ResponseCode, McpSessionId);
+}
+
+TUniquePtr<FHttpServerResponse> FAIExportTCPServer::MakeHttpTextResponse(const FString& Text, const FString& ContentType, int32 ResponseCode, const FString& McpSessionId) const
+{
+	TUniquePtr<FHttpServerResponse> Response = FHttpServerResponse::Create(Text, ContentType);
 	Response->Code = static_cast<EHttpServerResponseCodes>(ResponseCode);
 	Response->Headers.Add(TEXT("Access-Control-Allow-Origin"), { TEXT("http://localhost") });
-	Response->Headers.Add(TEXT("Access-Control-Allow-Headers"), { TEXT("Content-Type, MCP-Protocol-Version, Authorization, Mcp-Session-Id") });
+	Response->Headers.Add(TEXT("Access-Control-Allow-Headers"), { TEXT("Content-Type, Accept, MCP-Protocol-Version, Authorization, Mcp-Session-Id") });
 	Response->Headers.Add(TEXT("Access-Control-Allow-Methods"), { TEXT("GET, POST, DELETE, OPTIONS") });
 	Response->Headers.Add(TEXT("MCP-Protocol-Version"), { TEXT("2025-06-18") });
 	Response->Headers.Add(TEXT("Cache-Control"), { TEXT("no-store") });
 	Response->Headers.Add(TEXT("X-Content-Type-Options"), { TEXT("nosniff") });
+	if (ContentType.StartsWith(TEXT("text/event-stream")))
+	{
+		Response->Headers.Add(TEXT("X-Accel-Buffering"), { TEXT("no") });
+	}
 	if (!McpSessionId.IsEmpty())
 	{
 		Response->Headers.Add(TEXT("Mcp-Session-Id"), { McpSessionId });
@@ -1320,6 +1329,40 @@ void FAIExportTCPServer::StartHttpServer()
 		}
 	};
 
+	auto BindTextRoute = [this](const TCHAR* Path, EHttpServerRequestVerbs Verbs, const FString& ContentType, TFunction<FString(const FHttpServerRequest&)> Handler)
+	{
+		const FString Route(Path);
+		FHttpRouteHandle Handle = HttpRouter->BindRoute(
+			FHttpPath(Path),
+			Verbs,
+			FHttpRequestHandler::CreateLambda([this, Handler, Route, ContentType](const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete)
+			{
+				HttpRequestCount.Increment();
+				if (Request.Verb == EHttpServerRequestVerbs::VERB_OPTIONS)
+				{
+					AppendHttpAuditEvent(Request, Route, 200, true, TEXT("preflight"));
+					OnComplete(MakeHttpTextResponse(TEXT(""), ContentType));
+					return true;
+				}
+				if (!IsHttpRequestAllowed(Request))
+				{
+					HttpRejectedRequestCount.Increment();
+					UE_LOG(LogAIExport, Warning, TEXT("Rejected CommonAIExport HTTP text request for non-MCP route"));
+					AppendHttpAuditEvent(Request, Route, 403, false, TEXT("forbidden"));
+					OnComplete(MakeHttpTextResponse(TEXT("Forbidden origin, peer address, or authorization"), TEXT("text/plain"), 403));
+					return true;
+				}
+				const FString ResponseText = Handler(Request);
+				AppendHttpAuditEvent(Request, Route, 200, true, TEXT("ok"));
+				OnComplete(MakeHttpTextResponse(ResponseText, ContentType));
+				return true;
+			}));
+		if (Handle.IsValid())
+		{
+			HttpRouteHandles.Add(Handle);
+		}
+	};
+
 	BindRoute(TEXT("/commonai/health"), EHttpServerRequestVerbs::VERB_GET | EHttpServerRequestVerbs::VERB_OPTIONS, [this](const FHttpServerRequest&)
 	{
 		return HandlePing();
@@ -1333,11 +1376,13 @@ void FAIExportTCPServer::StartHttpServer()
 		FUTF8ToTCHAR BodyText(reinterpret_cast<const ANSICHAR*>(Request.Body.GetData()), Request.Body.Num());
 		return ProcessCommand(FString(BodyText.Length(), BodyText.Get()));
 	});
-	BindRoute(TEXT("/commonai/tasks/events"), EHttpServerRequestVerbs::VERB_GET | EHttpServerRequestVerbs::VERB_OPTIONS, [this](const FHttpServerRequest&)
+	BindRoute(TEXT("/commonai/tasks/events"), EHttpServerRequestVerbs::VERB_GET | EHttpServerRequestVerbs::VERB_OPTIONS, [this](const FHttpServerRequest& Request)
 	{
-		TSharedPtr<FJsonObject> Params = MakeShared<FJsonObject>();
-		Params->SetNumberField(TEXT("limit"), 200);
-		return HandleTaskEvents(Params);
+		return HandleTaskEvents(BuildTaskEventParamsFromHttpRequest(Request));
+	});
+	BindTextRoute(TEXT("/commonai/tasks/events/sse"), EHttpServerRequestVerbs::VERB_GET | EHttpServerRequestVerbs::VERB_OPTIONS, TEXT("text/event-stream"), [this](const FHttpServerRequest& Request)
+	{
+		return BuildTaskEventsSse(BuildTaskEventParamsFromHttpRequest(Request));
 	});
 
 	FHttpRouteHandle McpRouteHandle = HttpRouter->BindRoute(
@@ -1967,6 +2012,114 @@ TSharedPtr<FJsonObject> FAIExportTCPServer::BuildTaskEventJson(const FAsyncComma
 		Data->SetStringField(TEXT("message"), Event.Message);
 	}
 	return Data;
+}
+
+TSharedPtr<FJsonObject> FAIExportTCPServer::BuildTaskEventsJson(TSharedPtr<FJsonObject> Params) const
+{
+	FString TaskId;
+	double AfterSequenceNumber = 0.0;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("task_id"), TaskId);
+		Params->TryGetNumberField(TEXT("after_sequence"), AfterSequenceNumber);
+	}
+	TaskId.TrimStartAndEndInline();
+	const int64 AfterSequence = FMath::Max<int64>(0, static_cast<int64>(AfterSequenceNumber));
+	const int32 Limit = ReadClampedIntField(Params, TEXT("limit"), 100, 1, 1000);
+
+	TArray<TSharedPtr<FJsonValue>> Events;
+	int32 MatchedCount = 0;
+	int64 LatestSequence = 0;
+	{
+		FScopeLock Lock(&AsyncJobsCriticalSection);
+		LatestSequence = AsyncJobEventSequence;
+		for (const FAsyncCommandEvent& Event : AsyncJobEvents)
+		{
+			if (!TaskId.IsEmpty() && Event.TaskId != TaskId)
+			{
+				continue;
+			}
+			if (Event.Sequence <= AfterSequence)
+			{
+				continue;
+			}
+
+			++MatchedCount;
+			if (Events.Num() < Limit)
+			{
+				Events.Add(MakeShared<FJsonValueObject>(BuildTaskEventJson(Event)));
+			}
+		}
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("task_id"), TaskId);
+	Data->SetNumberField(TEXT("after_sequence"), static_cast<double>(AfterSequence));
+	Data->SetNumberField(TEXT("latest_sequence"), static_cast<double>(LatestSequence));
+	Data->SetNumberField(TEXT("matched_count"), MatchedCount);
+	Data->SetNumberField(TEXT("returned_count"), Events.Num());
+	Data->SetNumberField(TEXT("limit"), Limit);
+	Data->SetBoolField(TEXT("has_more"), MatchedCount > Events.Num());
+	Data->SetArrayField(TEXT("events"), Events);
+	return Data;
+}
+
+FString FAIExportTCPServer::BuildTaskEventsSse(TSharedPtr<FJsonObject> Params) const
+{
+	TSharedPtr<FJsonObject> Data = BuildTaskEventsJson(Params);
+	FString Output = TEXT(": CommonAIExport async task events\nretry: 1000\n\n");
+
+	FString WatermarkJson;
+	{
+		TSharedPtr<FJsonObject> Watermark = MakeShared<FJsonObject>();
+		Watermark->SetNumberField(TEXT("latest_sequence"), Data->GetNumberField(TEXT("latest_sequence")));
+		Watermark->SetNumberField(TEXT("returned_count"), Data->GetNumberField(TEXT("returned_count")));
+		TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> Writer = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&WatermarkJson);
+		FJsonSerializer::Serialize(Watermark.ToSharedRef(), Writer);
+	}
+	Output += FString::Printf(TEXT("event: watermark\ndata: %s\n\n"), *WatermarkJson);
+
+	const TArray<TSharedPtr<FJsonValue>>* Events = nullptr;
+	if (!Data->TryGetArrayField(TEXT("events"), Events) || !Events)
+	{
+		return Output;
+	}
+
+	for (const TSharedPtr<FJsonValue>& EventValue : *Events)
+	{
+		const TSharedPtr<FJsonObject> EventObject = EventValue.IsValid() ? EventValue->AsObject() : nullptr;
+		if (!EventObject.IsValid())
+		{
+			continue;
+		}
+
+		const int64 Sequence = static_cast<int64>(EventObject->GetNumberField(TEXT("sequence")));
+		const FString EventName = EventObject->GetStringField(TEXT("event"));
+		FString EventJson;
+		TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> Writer = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&EventJson);
+		FJsonSerializer::Serialize(EventObject.ToSharedRef(), Writer);
+		Output += FString::Printf(TEXT("id: %lld\nevent: %s\ndata: %s\n\n"), Sequence, *EventName, *EventJson);
+	}
+
+	return Output;
+}
+
+TSharedPtr<FJsonObject> FAIExportTCPServer::BuildTaskEventParamsFromHttpRequest(const FHttpServerRequest& Request) const
+{
+	TSharedPtr<FJsonObject> Params = MakeShared<FJsonObject>();
+	if (const FString* TaskId = Request.QueryParams.Find(TEXT("task_id")))
+	{
+		Params->SetStringField(TEXT("task_id"), *TaskId);
+	}
+	if (const FString* AfterSequence = Request.QueryParams.Find(TEXT("after_sequence")))
+	{
+		Params->SetNumberField(TEXT("after_sequence"), FCString::Atod(**AfterSequence));
+	}
+	if (const FString* Limit = Request.QueryParams.Find(TEXT("limit")))
+	{
+		Params->SetNumberField(TEXT("limit"), FCString::Atod(**Limit));
+	}
+	return Params;
 }
 
 void FAIExportTCPServer::AppendTaskEventLocked(const FAsyncCommandJob& Job, const FString& EventType, const FString& Message)
@@ -2919,52 +3072,7 @@ FString FAIExportTCPServer::HandleTaskResult(TSharedPtr<FJsonObject> Params)
 
 FString FAIExportTCPServer::HandleTaskEvents(TSharedPtr<FJsonObject> Params)
 {
-	FString TaskId;
-	double AfterSequenceNumber = 0.0;
-	if (Params.IsValid())
-	{
-		Params->TryGetStringField(TEXT("task_id"), TaskId);
-		Params->TryGetNumberField(TEXT("after_sequence"), AfterSequenceNumber);
-	}
-	TaskId.TrimStartAndEndInline();
-	const int64 AfterSequence = FMath::Max<int64>(0, static_cast<int64>(AfterSequenceNumber));
-	const int32 Limit = ReadClampedIntField(Params, TEXT("limit"), 100, 1, 1000);
-
-	TArray<TSharedPtr<FJsonValue>> Events;
-	int32 MatchedCount = 0;
-	int64 LatestSequence = 0;
-	{
-		FScopeLock Lock(&AsyncJobsCriticalSection);
-		LatestSequence = AsyncJobEventSequence;
-		for (const FAsyncCommandEvent& Event : AsyncJobEvents)
-		{
-			if (!TaskId.IsEmpty() && Event.TaskId != TaskId)
-			{
-				continue;
-			}
-			if (Event.Sequence <= AfterSequence)
-			{
-				continue;
-			}
-
-			++MatchedCount;
-			if (Events.Num() < Limit)
-			{
-				Events.Add(MakeShared<FJsonValueObject>(BuildTaskEventJson(Event)));
-			}
-		}
-	}
-
-	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
-	Data->SetStringField(TEXT("task_id"), TaskId);
-	Data->SetNumberField(TEXT("after_sequence"), static_cast<double>(AfterSequence));
-	Data->SetNumberField(TEXT("latest_sequence"), static_cast<double>(LatestSequence));
-	Data->SetNumberField(TEXT("matched_count"), MatchedCount);
-	Data->SetNumberField(TEXT("returned_count"), Events.Num());
-	Data->SetNumberField(TEXT("limit"), Limit);
-	Data->SetBoolField(TEXT("has_more"), MatchedCount > Events.Num());
-	Data->SetArrayField(TEXT("events"), Events);
-	return CreateSuccessResponse(Data);
+	return CreateSuccessResponse(BuildTaskEventsJson(Params));
 }
 
 FString FAIExportTCPServer::HandleTaskCancel(TSharedPtr<FJsonObject> Params)
