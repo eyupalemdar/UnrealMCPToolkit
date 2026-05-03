@@ -1845,6 +1845,49 @@ def runtime_ai_perception_diagnostics(
 
 
 @mcp.tool()
+def runtime_gameplay_tags_diagnostics(
+    world: str = "auto",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    name_filter: str = "",
+    class_filter: str = "",
+    component_class_filter: str = "",
+    tag_filter: str = "",
+    include_dictionary: bool = True,
+    include_components: bool = True,
+    actor_limit: int = 100,
+    component_limit: int = 200,
+    tag_limit: int = 500,
+) -> str:
+    """
+    Inspect runtime Gameplay Tags dictionary and tagged actor/component state.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        actor_path: Optional exact actor object path to inspect.
+        actor_label: Optional exact actor label to inspect.
+        actor_name: Optional exact actor object name to inspect.
+        name_filter: Optional substring matched against actor/component names and paths.
+        class_filter: Optional substring matched against actor class paths.
+        component_class_filter: Optional substring matched against component class paths.
+        tag_filter: Optional substring matched against owned/dictionary tag strings.
+        include_dictionary: Include global Gameplay Tags dictionary summary.
+        include_components: Include component objects implementing GameplayTagAssetInterface.
+        actor_limit: Maximum tagged actor records returned.
+        component_limit: Maximum tagged component records returned.
+        tag_limit: Maximum dictionary tags returned.
+
+    Returns:
+        JSON with GameplayTagsManager dictionary metadata, tag replication flags,
+        source search paths, and runtime IGameplayTagAssetInterface actor/component
+        owned-tag summaries.
+    """
+    return _send_generated_tcp_tool("runtime_gameplay_tags_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_commonui_diagnostics(
     world: str = "auto",
     name_filter: str = "",

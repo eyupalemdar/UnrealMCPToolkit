@@ -290,6 +290,26 @@ def runtime_ai_perception_diagnostics(world: str = 'auto', actor_path: str = '',
     return _format_response(_send_command("runtime_ai_perception_diagnostics", params))
 
 
+def runtime_gameplay_tags_diagnostics(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', class_filter: str = '', component_class_filter: str = '', tag_filter: str = '', include_dictionary: bool = True, include_components: bool = True, actor_limit: int = 100, component_limit: int = 200, tag_limit: int = 500) -> str:
+    """Generated stub for TCP command `runtime_gameplay_tags_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "name_filter": name_filter,
+        "class_filter": class_filter,
+        "component_class_filter": component_class_filter,
+        "tag_filter": tag_filter,
+        "include_dictionary": include_dictionary,
+        "include_components": include_components,
+        "actor_limit": actor_limit,
+        "component_limit": component_limit,
+        "tag_limit": tag_limit,
+    }
+    return _format_response(_send_command("runtime_gameplay_tags_diagnostics", params))
+
+
 def runtime_commonui_diagnostics(world: str = 'auto', name_filter: str = '', class_filter: str = '', include_widgets: bool = True, include_bindings: bool = True, local_player_limit: int = 8, widget_limit: int = 100, container_limit: int = 100, binding_limit: int = 100) -> str:
     """Generated stub for TCP command `runtime_commonui_diagnostics` (RuntimeInspector)."""
     params = {

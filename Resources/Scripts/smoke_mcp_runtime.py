@@ -558,6 +558,28 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         first_listener = ai_perception_diagnostics["listeners"][0]
         _assert(isinstance(first_listener, dict) and isinstance(first_listener.get("targets"), list), "runtime AI perception diagnostics missing target array")
 
+    gameplay_tags_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_gameplay_tags_diagnostics",
+            {
+                "world": "auto",
+                "include_dictionary": True,
+                "include_components": True,
+                "actor_limit": 10,
+                "component_limit": 10,
+                "tag_limit": 25,
+            },
+        ),
+        "runtime_gameplay_tags_diagnostics",
+    )
+    _assert(gameplay_tags_diagnostics.get("world_available") is True, "runtime Gameplay Tags diagnostics did not report an available world")
+    _assert(isinstance(gameplay_tags_diagnostics.get("world"), dict), "runtime Gameplay Tags diagnostics missing world summary")
+    _assert(isinstance(gameplay_tags_diagnostics.get("tag_manager"), dict), "runtime Gameplay Tags diagnostics missing tag manager object")
+    _assert(isinstance(gameplay_tags_diagnostics["tag_manager"].get("dictionary_tag_count"), int), "runtime Gameplay Tags diagnostics missing dictionary tag count")
+    _assert(isinstance(gameplay_tags_diagnostics.get("tag_assets"), dict), "runtime Gameplay Tags diagnostics missing tag assets object")
+    _assert(isinstance(gameplay_tags_diagnostics["tag_assets"].get("actor_interface_count"), int), "runtime Gameplay Tags diagnostics missing actor interface count")
+
     commonui_diagnostics = _assert_tcp_success(
         _tcp_command(
             tcp_port,
@@ -813,6 +835,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_replication_diagnostics_checked": True,
         "runtime_ability_system_diagnostics_checked": True,
         "runtime_ai_perception_diagnostics_checked": True,
+        "runtime_gameplay_tags_diagnostics_checked": True,
         "runtime_commonui_diagnostics_checked": True,
         "runtime_asset_streaming_diagnostics_checked": True,
         "runtime_async_load_diagnostics_checked": True,

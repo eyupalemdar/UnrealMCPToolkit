@@ -144,7 +144,9 @@
 #include "GameplayAbilitySpec.h"
 #include "GameplayEffect.h"
 #include "Abilities/GameplayAbility.h"
+#include "GameplayTagAssetInterface.h"
 #include "GameplayTagContainer.h"
+#include "GameplayTagsManager.h"
 #include "PhysicsEngine/BodyInstance.h"
 #include "PhysicsEngine/PhysicsSettings.h"
 #include "TimerManager.h"
@@ -2042,6 +2044,105 @@ TSharedPtr<FJsonObject> BuildGameplayTagContainerJson(const FGameplayTagContaine
 	return Data;
 }
 
+bool GameplayTagContainerMatchesFilter(const FGameplayTagContainer& Tags, const FString& TagFilter)
+{
+	if (TagFilter.IsEmpty())
+	{
+		return true;
+	}
+
+	TArray<FGameplayTag> TagArray;
+	Tags.GetGameplayTagArray(TagArray);
+	for (const FGameplayTag& Tag : TagArray)
+	{
+		if (Tag.ToString().Contains(TagFilter))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+TSharedPtr<FJsonObject> BuildGameplayTagDictionaryJson(const FString& TagFilter, int32 TagLimit)
+{
+	UGameplayTagsManager& Manager = UGameplayTagsManager::Get();
+
+	FGameplayTagContainer DictionaryTags;
+	Manager.RequestAllGameplayTags(DictionaryTags, true);
+
+	TArray<FGameplayTag> TagArray;
+	DictionaryTags.GetGameplayTagArray(TagArray);
+	TagArray.Sort([](const FGameplayTag& Left, const FGameplayTag& Right)
+	{
+		return Left.ToString() < Right.ToString();
+	});
+
+	TArray<TSharedPtr<FJsonValue>> TagsJson;
+	int32 MatchedTagCount = 0;
+	for (const FGameplayTag& Tag : TagArray)
+	{
+		const FString TagText = Tag.ToString();
+		if (!TagFilter.IsEmpty() && !TagText.Contains(TagFilter))
+		{
+			continue;
+		}
+
+		++MatchedTagCount;
+		if (TagsJson.Num() < TagLimit)
+		{
+			TagsJson.Add(MakeShared<FJsonValueString>(TagText));
+		}
+	}
+
+	TArray<FString> SourceSearchPaths;
+	Manager.GetTagSourceSearchPaths(SourceSearchPaths);
+	TArray<TSharedPtr<FJsonValue>> SourceSearchPathsJson;
+	for (const FString& SourceSearchPath : SourceSearchPaths)
+	{
+		SourceSearchPathsJson.Add(MakeShared<FJsonValueString>(SourceSearchPath));
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("tag_filter"), TagFilter);
+	Data->SetNumberField(TEXT("dictionary_tag_count"), TagArray.Num());
+	Data->SetNumberField(TEXT("matched_dictionary_tag_count"), MatchedTagCount);
+	Data->SetNumberField(TEXT("returned_dictionary_tag_count"), TagsJson.Num());
+	Data->SetNumberField(TEXT("tag_limit"), TagLimit);
+	Data->SetBoolField(TEXT("dictionary_tags_truncated"), MatchedTagCount > TagsJson.Num());
+	Data->SetArrayField(TEXT("dictionary_tags"), TagsJson);
+	Data->SetNumberField(TEXT("tag_node_count"), Manager.GetNumGameplayTagNodes());
+	Data->SetNumberField(TEXT("source_search_path_count"), SourceSearchPaths.Num());
+	Data->SetArrayField(TEXT("source_search_paths"), SourceSearchPathsJson);
+	Data->SetBoolField(TEXT("import_tags_from_ini"), Manager.ShouldImportTagsFromINI());
+	Data->SetBoolField(TEXT("warn_on_invalid_tags"), Manager.ShouldWarnOnInvalidTags());
+	Data->SetBoolField(TEXT("fast_replication"), Manager.ShouldUseFastReplication());
+	Data->SetBoolField(TEXT("dynamic_replication"), Manager.ShouldUseDynamicReplication());
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildGameplayTagInterfaceObjectJson(UObject* Object, const FGameplayTagContainer& OwnedTags, const FString& ObjectType)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("object_type"), ObjectType);
+	Data->SetObjectField(TEXT("object"), BuildRuntimeObjectReferenceJson(Object));
+	Data->SetObjectField(TEXT("owned_tags"), BuildGameplayTagContainerJson(OwnedTags));
+
+	if (AActor* Actor = Cast<AActor>(Object))
+	{
+		Data->SetObjectField(TEXT("actor"), BuildRuntimeActorJson(Actor));
+	}
+	else if (UActorComponent* Component = Cast<UActorComponent>(Object))
+	{
+		Data->SetObjectField(TEXT("component"), BuildRuntimeComponentJson(Component));
+		if (AActor* Owner = Component->GetOwner())
+		{
+			Data->SetObjectField(TEXT("owner_actor"), BuildRuntimeActorJson(Owner));
+		}
+	}
+
+	return Data;
+}
+
 FString GameplayEffectReplicationModeToString(EGameplayEffectReplicationMode Mode)
 {
 	switch (Mode)
@@ -2872,6 +2973,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_replication_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeReplicationDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_ability_system_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAbilitySystemDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_ai_perception_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAIPerceptionDiagnostics),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_gameplay_tags_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeGameplayTagsDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_commonui_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeCommonUIDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_asset_streaming_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAssetStreamingDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_async_load_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAsyncLoadDiagnostics),
@@ -6268,6 +6370,225 @@ FString FAIExportTCPServer::HandleRuntimeInputRouting(TSharedPtr<FJsonObject> Pa
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime input routing timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeGameplayTagsDiagnostics(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+	FString ActorPath;
+	FString ActorLabel;
+	FString ActorName;
+	FString NameFilter;
+	FString ClassFilter;
+	FString ComponentClassFilter;
+	FString TagFilter;
+	bool bIncludeDictionary = true;
+	bool bIncludeComponents = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("actor_path"), ActorPath);
+		Params->TryGetStringField(TEXT("actor_label"), ActorLabel);
+		Params->TryGetStringField(TEXT("actor_name"), ActorName);
+		Params->TryGetStringField(TEXT("name_filter"), NameFilter);
+		Params->TryGetStringField(TEXT("class_filter"), ClassFilter);
+		Params->TryGetStringField(TEXT("component_class_filter"), ComponentClassFilter);
+		Params->TryGetStringField(TEXT("tag_filter"), TagFilter);
+		Params->TryGetBoolField(TEXT("include_dictionary"), bIncludeDictionary);
+		Params->TryGetBoolField(TEXT("include_components"), bIncludeComponents);
+	}
+	ActorPath.TrimStartAndEndInline();
+	ActorLabel.TrimStartAndEndInline();
+	ActorName.TrimStartAndEndInline();
+	NameFilter.TrimStartAndEndInline();
+	ClassFilter.TrimStartAndEndInline();
+	ComponentClassFilter.TrimStartAndEndInline();
+	TagFilter.TrimStartAndEndInline();
+	const int32 ActorLimit = ReadClampedIntField(Params, TEXT("actor_limit"), 100, 0, 1000);
+	const int32 ComponentLimit = ReadClampedIntField(Params, TEXT("component_limit"), 200, 0, 2000);
+	const int32 TagLimit = ReadClampedIntField(Params, TEXT("tag_limit"), 500, 0, 5000);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, ActorPath, ActorLabel, ActorName, NameFilter, ClassFilter, ComponentClassFilter, TagFilter, bIncludeDictionary, bIncludeComponents, ActorLimit, ComponentLimit, TagLimit, Promise, this]()
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("requested_world"), WorldSelector);
+		Data->SetObjectField(TEXT("pie"), BuildPIEStateJson());
+		Data->SetStringField(TEXT("tag_filter"), TagFilter);
+		Data->SetBoolField(TEXT("include_dictionary"), bIncludeDictionary);
+		Data->SetBoolField(TEXT("include_components"), bIncludeComponents);
+		Data->SetNumberField(TEXT("actor_limit"), ActorLimit);
+		Data->SetNumberField(TEXT("component_limit"), ComponentLimit);
+		Data->SetNumberField(TEXT("tag_limit"), TagLimit);
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetBoolField(TEXT("world_available"), World != nullptr);
+		if (!World)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			Data->SetArrayField(TEXT("warnings"), Warnings);
+			Promise->SetValue(CreateSuccessResponse(Data));
+			return;
+		}
+
+		if (WorldSource == TEXT("editor") && (WorldSelector == TEXT("auto") || WorldSelector == TEXT("pie") || WorldSelector == TEXT("runtime") || WorldSelector == TEXT("play")))
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE is inactive; gameplay tag diagnostics reflect the editor world")));
+		}
+
+		Data->SetObjectField(TEXT("world"), BuildRuntimeWorldJson(World, WorldSource));
+		if (bIncludeDictionary)
+		{
+			Data->SetObjectField(TEXT("tag_manager"), BuildGameplayTagDictionaryJson(TagFilter, TagLimit));
+		}
+
+		auto ActorMatchesFilters = [&NameFilter, &ClassFilter](AActor* Actor)
+		{
+			if (!Actor)
+			{
+				return false;
+			}
+			if (!NameFilter.IsEmpty()
+				&& !Actor->GetName().Contains(NameFilter)
+				&& !Actor->GetActorLabel().Contains(NameFilter)
+				&& !Actor->GetPathName().Contains(NameFilter))
+			{
+				return false;
+			}
+			const FString ActorClassPath = Actor->GetClass() ? Actor->GetClass()->GetPathName() : TEXT("");
+			if (!ClassFilter.IsEmpty() && !ActorClassPath.Contains(ClassFilter))
+			{
+				return false;
+			}
+			return true;
+		};
+
+		auto ComponentMatchesFilters = [&NameFilter, &ComponentClassFilter](UActorComponent* Component)
+		{
+			if (!Component)
+			{
+				return false;
+			}
+			if (!NameFilter.IsEmpty()
+				&& !Component->GetName().Contains(NameFilter)
+				&& !Component->GetPathName().Contains(NameFilter))
+			{
+				return false;
+			}
+			const FString ComponentClassPath = Component->GetClass() ? Component->GetClass()->GetPathName() : TEXT("");
+			if (!ComponentClassFilter.IsEmpty() && !ComponentClassPath.Contains(ComponentClassFilter))
+			{
+				return false;
+			}
+			return true;
+		};
+
+		TArray<AActor*> ActorsToInspect;
+		const bool bActorTargetRequested = !ActorPath.IsEmpty() || !ActorLabel.IsEmpty() || !ActorName.IsEmpty();
+		if (bActorTargetRequested)
+		{
+			if (AActor* Actor = FindRuntimeActorForAI(World, ActorPath, ActorLabel, ActorName))
+			{
+				ActorsToInspect.Add(Actor);
+			}
+			else
+			{
+				Warnings.Add(MakeShared<FJsonValueString>(TEXT("Selected actor was not found in the selected world")));
+			}
+		}
+		else
+		{
+			for (TActorIterator<AActor> It(World); It; ++It)
+			{
+				ActorsToInspect.Add(*It);
+			}
+		}
+
+		int32 InspectedActorCount = 0;
+		int32 ActorInterfaceCount = 0;
+		int32 MatchedActorInterfaceCount = 0;
+		int32 ComponentInterfaceCount = 0;
+		int32 MatchedComponentInterfaceCount = 0;
+		TArray<TSharedPtr<FJsonValue>> ActorsJson;
+		TArray<TSharedPtr<FJsonValue>> ComponentsJson;
+
+		for (AActor* Actor : ActorsToInspect)
+		{
+			if (!Actor)
+			{
+				continue;
+			}
+			++InspectedActorCount;
+
+			if (IGameplayTagAssetInterface* TagInterface = Cast<IGameplayTagAssetInterface>(Actor))
+			{
+				++ActorInterfaceCount;
+				FGameplayTagContainer OwnedTags;
+				TagInterface->GetOwnedGameplayTags(OwnedTags);
+				if (ActorMatchesFilters(Actor) && GameplayTagContainerMatchesFilter(OwnedTags, TagFilter))
+				{
+					++MatchedActorInterfaceCount;
+					if (ActorsJson.Num() < ActorLimit)
+					{
+						ActorsJson.Add(MakeShared<FJsonValueObject>(BuildGameplayTagInterfaceObjectJson(Actor, OwnedTags, TEXT("actor"))));
+					}
+				}
+			}
+
+			if (!bIncludeComponents)
+			{
+				continue;
+			}
+
+			TArray<UActorComponent*> Components;
+			Actor->GetComponents(Components);
+			for (UActorComponent* Component : Components)
+			{
+				if (!Component)
+				{
+					continue;
+				}
+				if (IGameplayTagAssetInterface* TagInterface = Cast<IGameplayTagAssetInterface>(Component))
+				{
+					++ComponentInterfaceCount;
+					FGameplayTagContainer OwnedTags;
+					TagInterface->GetOwnedGameplayTags(OwnedTags);
+					if (ComponentMatchesFilters(Component) && GameplayTagContainerMatchesFilter(OwnedTags, TagFilter))
+					{
+						++MatchedComponentInterfaceCount;
+						if (ComponentsJson.Num() < ComponentLimit)
+						{
+							ComponentsJson.Add(MakeShared<FJsonValueObject>(BuildGameplayTagInterfaceObjectJson(Component, OwnedTags, TEXT("component"))));
+						}
+					}
+				}
+			}
+		}
+
+		TSharedPtr<FJsonObject> TagAssets = MakeShared<FJsonObject>();
+		TagAssets->SetNumberField(TEXT("inspected_actor_count"), InspectedActorCount);
+		TagAssets->SetNumberField(TEXT("actor_interface_count"), ActorInterfaceCount);
+		TagAssets->SetNumberField(TEXT("matched_actor_interface_count"), MatchedActorInterfaceCount);
+		TagAssets->SetNumberField(TEXT("returned_actor_count"), ActorsJson.Num());
+		TagAssets->SetBoolField(TEXT("actors_truncated"), MatchedActorInterfaceCount > ActorsJson.Num());
+		TagAssets->SetArrayField(TEXT("actors"), ActorsJson);
+		TagAssets->SetNumberField(TEXT("component_interface_count"), ComponentInterfaceCount);
+		TagAssets->SetNumberField(TEXT("matched_component_interface_count"), MatchedComponentInterfaceCount);
+		TagAssets->SetNumberField(TEXT("returned_component_count"), ComponentsJson.Num());
+		TagAssets->SetBoolField(TEXT("components_truncated"), MatchedComponentInterfaceCount > ComponentsJson.Num());
+		TagAssets->SetArrayField(TEXT("components"), ComponentsJson);
+		Data->SetObjectField(TEXT("tag_assets"), TagAssets);
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime gameplay tags diagnostics timed out"));
 	return Future.Get();
 }
 
