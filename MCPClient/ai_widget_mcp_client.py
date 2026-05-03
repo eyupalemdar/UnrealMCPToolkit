@@ -1996,6 +1996,37 @@ def runtime_multiplayer_connection_diagnostics(
 
 
 @mcp.tool()
+def runtime_tick_timer_latent_diagnostics(
+    world: str = "auto",
+    object_path: str = "",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    include_latent_actions: bool = True,
+    latent_action_limit: int = 50,
+) -> str:
+    """
+    Inspect runtime tick/time, timer manager, and targeted latent-action state.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        object_path: Optional exact UObject path for latent action lookup.
+        actor_path: Optional exact actor UObject path for latent action lookup.
+        actor_label: Optional exact actor label for latent action lookup.
+        actor_name: Optional exact actor object name for latent action lookup.
+        include_latent_actions: Include target latent UUID/description records when available.
+        latent_action_limit: Maximum latent action records returned for the target.
+
+    Returns:
+        JSON with selected world time fields, WorldSettings time dilation,
+        TimerManager public tick state, targeted latent action count/details,
+        API limitations, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_tick_timer_latent_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

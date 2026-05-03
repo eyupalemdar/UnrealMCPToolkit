@@ -102,6 +102,7 @@
 #include "UnrealClient.h"
 #include "UObject/UnrealType.h"
 #include "Engine/GameInstance.h"
+#include "Engine/LatentActionManager.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/NetConnection.h"
 #include "Engine/NetDriver.h"
@@ -123,6 +124,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerInput.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/WorldSettings.h"
 #include "GenericTeamAgentInterface.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AIPerceptionSystem.h"
@@ -135,6 +137,7 @@
 #include "GameplayEffect.h"
 #include "Abilities/GameplayAbility.h"
 #include "GameplayTagContainer.h"
+#include "TimerManager.h"
 
 // Asset Lifecycle includes (for HandleReloadAsset)
 #include "Subsystems/AssetEditorSubsystem.h"
@@ -572,6 +575,68 @@ TSharedPtr<FJsonObject> BuildRuntimeWorldJson(UWorld* World, const FString& Worl
 	return Data;
 }
 
+TSharedPtr<FJsonObject> BuildRuntimeWorldTimeJson(UWorld* World)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetBoolField(TEXT("present"), World != nullptr);
+	if (!World)
+	{
+		return Data;
+	}
+
+	Data->SetNumberField(TEXT("time_seconds"), World->TimeSeconds);
+	Data->SetNumberField(TEXT("unpaused_time_seconds"), World->UnpausedTimeSeconds);
+	Data->SetNumberField(TEXT("real_time_seconds"), World->RealTimeSeconds);
+	Data->SetNumberField(TEXT("audio_time_seconds"), World->AudioTimeSeconds);
+	Data->SetNumberField(TEXT("delta_time_seconds"), World->DeltaTimeSeconds);
+	Data->SetNumberField(TEXT("delta_real_time_seconds"), World->DeltaRealTimeSeconds);
+	Data->SetNumberField(TEXT("delta_seconds"), World->GetDeltaSeconds());
+	Data->SetNumberField(TEXT("pause_delay"), World->PauseDelay);
+	Data->SetBoolField(TEXT("paused"), World->IsPaused());
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeWorldSettingsTimeJson(AWorldSettings* WorldSettings)
+{
+	TSharedPtr<FJsonObject> Data = BuildRuntimeObjectReferenceJson(WorldSettings);
+	if (!WorldSettings)
+	{
+		return Data;
+	}
+
+	Data->SetBoolField(TEXT("allow_time_dilation"), WorldSettings->bAllowTimeDilation != 0);
+	Data->SetNumberField(TEXT("time_dilation"), WorldSettings->TimeDilation);
+	Data->SetNumberField(TEXT("cinematic_time_dilation"), WorldSettings->CinematicTimeDilation);
+	Data->SetNumberField(TEXT("demo_play_time_dilation"), WorldSettings->DemoPlayTimeDilation);
+	Data->SetNumberField(TEXT("effective_time_dilation"), WorldSettings->GetEffectiveTimeDilation());
+	Data->SetNumberField(TEXT("min_global_time_dilation"), WorldSettings->MinGlobalTimeDilation);
+	Data->SetNumberField(TEXT("max_global_time_dilation"), WorldSettings->MaxGlobalTimeDilation);
+	Data->SetNumberField(TEXT("min_cinematic_time_dilation"), WorldSettings->MinCinematicTimeDilation);
+	Data->SetNumberField(TEXT("max_cinematic_time_dilation"), WorldSettings->MaxCinematicTimeDilation);
+	Data->SetObjectField(TEXT("pauser_player_state"), BuildRuntimeObjectReferenceJson(WorldSettings->GetPauserPlayerState()));
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildRuntimeTimerManagerJson(UWorld* World)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetBoolField(TEXT("present"), World != nullptr);
+	Data->SetBoolField(TEXT("active_timer_enumeration_available"), false);
+
+	TArray<TSharedPtr<FJsonValue>> Limitations;
+	Limitations.Add(MakeShared<FJsonValueString>(TEXT("FTimerManager does not expose active/paused/pending timer enumeration through public runtime API")));
+	Data->SetArrayField(TEXT("limitations"), Limitations);
+
+	if (!World)
+	{
+		return Data;
+	}
+
+	FTimerManager& TimerManager = World->GetTimerManager();
+	Data->SetBoolField(TEXT("has_been_ticked_this_frame"), TimerManager.HasBeenTickedThisFrame());
+	return Data;
+}
+
 TSharedPtr<FJsonObject> BuildStreamingManagerJson()
 {
 	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
@@ -666,6 +731,35 @@ AActor* FindRuntimeActorForAI(UWorld* World, const FString& ActorPath, const FSt
 		if (!ActorLabel.IsEmpty() && Actor->GetActorLabel() == ActorLabel) return Actor;
 		if (!ActorName.IsEmpty() && Actor->GetName() == ActorName) return Actor;
 	}
+	return nullptr;
+}
+
+UObject* FindRuntimeObjectForLatentDiagnostics(
+	UWorld* World,
+	const FString& ObjectPath,
+	const FString& ActorPath,
+	const FString& ActorLabel,
+	const FString& ActorName)
+{
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	const bool bActorTargetRequested = !ActorPath.IsEmpty() || !ActorLabel.IsEmpty() || !ActorName.IsEmpty();
+	if (bActorTargetRequested)
+	{
+		if (AActor* Actor = FindRuntimeActorForAI(World, ActorPath, ActorLabel, ActorName))
+		{
+			return Actor;
+		}
+	}
+
+	if (!ObjectPath.IsEmpty())
+	{
+		return FindObject<UObject>(nullptr, *ObjectPath);
+	}
+
 	return nullptr;
 }
 
@@ -2129,6 +2223,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_game_instance_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeGameInstanceDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_level_travel_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeLevelTravelDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_multiplayer_connection_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeMultiplayerConnectionDiagnostics),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_tick_timer_latent_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeTickTimerLatentDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
 		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
 		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
@@ -6202,6 +6297,164 @@ FString FAIExportTCPServer::HandleRuntimeMultiplayerConnectionDiagnostics(TShare
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime multiplayer connection diagnostics timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeTickTimerLatentDiagnostics(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+	FString ObjectPath;
+	FString ActorPath;
+	FString ActorLabel;
+	FString ActorName;
+	bool bIncludeLatentActions = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("object_path"), ObjectPath);
+		Params->TryGetStringField(TEXT("actor_path"), ActorPath);
+		Params->TryGetStringField(TEXT("actor_label"), ActorLabel);
+		Params->TryGetStringField(TEXT("actor_name"), ActorName);
+		Params->TryGetBoolField(TEXT("include_latent_actions"), bIncludeLatentActions);
+	}
+	ObjectPath.TrimStartAndEndInline();
+	ActorPath.TrimStartAndEndInline();
+	ActorLabel.TrimStartAndEndInline();
+	ActorName.TrimStartAndEndInline();
+	const int32 LatentActionLimit = ReadClampedIntField(Params, TEXT("latent_action_limit"), 50, 0, 500);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, ObjectPath, ActorPath, ActorLabel, ActorName, bIncludeLatentActions, LatentActionLimit, Promise, this]()
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("requested_world"), WorldSelector);
+		Data->SetObjectField(TEXT("pie"), BuildPIEStateJson());
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetBoolField(TEXT("world_available"), World != nullptr);
+		if (!World)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			Data->SetArrayField(TEXT("warnings"), Warnings);
+			Promise->SetValue(CreateSuccessResponse(Data));
+			return;
+		}
+
+		if (WorldSource == TEXT("editor") && (WorldSelector == TEXT("auto") || WorldSelector == TEXT("pie") || WorldSelector == TEXT("runtime") || WorldSelector == TEXT("play")))
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE is inactive; tick/timer/latent diagnostics reflect the editor world")));
+		}
+
+		Data->SetObjectField(TEXT("world"), BuildRuntimeWorldJson(World, WorldSource));
+		Data->SetObjectField(TEXT("time"), BuildRuntimeWorldTimeJson(World));
+		Data->SetObjectField(TEXT("world_settings"), BuildRuntimeWorldSettingsTimeJson(World->GetWorldSettings(false, false)));
+		Data->SetObjectField(TEXT("timer_manager"), BuildRuntimeTimerManagerJson(World));
+
+		TArray<TSharedPtr<FJsonValue>> Limitations;
+		Limitations.Add(MakeShared<FJsonValueString>(TEXT("FTimerManager public API only exposes whether it has ticked this frame; active timer lists are private")));
+		Limitations.Add(MakeShared<FJsonValueString>(TEXT("FLatentActionManager public API can query a specific target object but does not expose global latent action enumeration")));
+		Data->SetArrayField(TEXT("limitations"), Limitations);
+
+		const bool bTargetRequested = !ObjectPath.IsEmpty() || !ActorPath.IsEmpty() || !ActorLabel.IsEmpty() || !ActorName.IsEmpty();
+		UObject* TargetObject = FindRuntimeObjectForLatentDiagnostics(World, ObjectPath, ActorPath, ActorLabel, ActorName);
+
+		TSharedPtr<FJsonObject> LatentJson = MakeShared<FJsonObject>();
+		LatentJson->SetBoolField(TEXT("include_latent_actions"), bIncludeLatentActions);
+		LatentJson->SetNumberField(TEXT("latent_action_limit"), LatentActionLimit);
+		LatentJson->SetStringField(TEXT("object_path"), ObjectPath);
+		LatentJson->SetStringField(TEXT("actor_path"), ActorPath);
+		LatentJson->SetStringField(TEXT("actor_label"), ActorLabel);
+		LatentJson->SetStringField(TEXT("actor_name"), ActorName);
+		LatentJson->SetBoolField(TEXT("target_requested"), bTargetRequested);
+		LatentJson->SetBoolField(TEXT("target_found"), TargetObject != nullptr);
+		LatentJson->SetBoolField(TEXT("global_enumeration_available"), false);
+#if WITH_EDITOR
+		LatentJson->SetBoolField(TEXT("editor_descriptions_available"), true);
+#else
+		LatentJson->SetBoolField(TEXT("editor_descriptions_available"), false);
+#endif
+
+		if (!bTargetRequested)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("No latent action target specified; Unreal does not expose global latent action enumeration through public API")));
+		}
+		else if (!TargetObject)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("No latent action target matched the requested object or actor fields")));
+		}
+
+		TArray<TSharedPtr<FJsonValue>> LatentActionsJson;
+		if (TargetObject)
+		{
+			LatentJson->SetObjectField(TEXT("target"), BuildRuntimeObjectReferenceJson(TargetObject));
+			const bool bTargetWorldMatches = TargetObject == World || TargetObject->GetWorld() == World || TargetObject->IsIn(World);
+			LatentJson->SetBoolField(TEXT("target_world_matches"), bTargetWorldMatches);
+			if (!bTargetWorldMatches)
+			{
+				Warnings.Add(MakeShared<FJsonValueString>(TEXT("Latent action target was found but is not owned by the selected world")));
+			}
+
+			FLatentActionManager& LatentActionManager = World->GetLatentActionManager();
+			const int32 ActionCount = LatentActionManager.GetNumActionsForObject(TWeakObjectPtr<UObject>(TargetObject));
+			LatentJson->SetNumberField(TEXT("action_count"), ActionCount);
+
+			if (bIncludeLatentActions)
+			{
+#if WITH_EDITOR
+				TSet<int32> UUIDSet;
+				LatentActionManager.GetActiveUUIDs(TargetObject, UUIDSet);
+				TArray<int32> UUIDs = UUIDSet.Array();
+				UUIDs.Sort();
+				for (const int32 UUID : UUIDs)
+				{
+					if (LatentActionsJson.Num() >= LatentActionLimit)
+					{
+						break;
+					}
+					TSharedPtr<FJsonObject> ActionJson = MakeShared<FJsonObject>();
+					ActionJson->SetNumberField(TEXT("uuid"), UUID);
+					ActionJson->SetStringField(TEXT("description"), LatentActionManager.GetDescription(TargetObject, UUID));
+					LatentActionsJson.Add(MakeShared<FJsonValueObject>(ActionJson));
+				}
+				LatentJson->SetNumberField(TEXT("active_uuid_count"), UUIDs.Num());
+				LatentJson->SetBoolField(TEXT("actions_truncated"), UUIDs.Num() > LatentActionsJson.Num());
+#else
+				LatentJson->SetNumberField(TEXT("active_uuid_count"), ActionCount);
+				LatentJson->SetBoolField(TEXT("actions_truncated"), ActionCount > 0);
+				if (ActionCount > 0)
+				{
+					Warnings.Add(MakeShared<FJsonValueString>(TEXT("Latent action UUID descriptions are editor-only and unavailable in this build")));
+				}
+#endif
+			}
+			else
+			{
+				LatentJson->SetNumberField(TEXT("active_uuid_count"), ActionCount);
+				LatentJson->SetBoolField(TEXT("actions_truncated"), false);
+			}
+		}
+		else
+		{
+			LatentJson->SetObjectField(TEXT("target"), BuildRuntimeObjectReferenceJson(nullptr));
+			LatentJson->SetBoolField(TEXT("target_world_matches"), false);
+			LatentJson->SetNumberField(TEXT("action_count"), 0);
+			LatentJson->SetNumberField(TEXT("active_uuid_count"), 0);
+			LatentJson->SetBoolField(TEXT("actions_truncated"), false);
+		}
+		LatentJson->SetNumberField(TEXT("returned_action_count"), LatentActionsJson.Num());
+		LatentJson->SetArrayField(TEXT("actions"), LatentActionsJson);
+		Data->SetObjectField(TEXT("latent_actions"), LatentJson);
+
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime tick/timer/latent diagnostics timed out"));
 	return Future.Get();
 }
 

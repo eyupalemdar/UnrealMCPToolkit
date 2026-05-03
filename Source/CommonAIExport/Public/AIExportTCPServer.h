@@ -326,6 +326,7 @@ private:
 	FString HandleRuntimeGameInstanceDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeLevelTravelDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeMultiplayerConnectionDiagnostics(TSharedPtr<class FJsonObject> Params);
+	FString HandleRuntimeTickTimerLatentDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorList(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSpawn(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSetTransform(TSharedPtr<class FJsonObject> Params);

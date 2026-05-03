@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T17:08:16.642776Z",
-  "tool_count": 136,
+  "generated_at_utc": "2026-05-03T17:19:25.796732Z",
+  "tool_count": 137,
   "tools": {
     "ping": {
       "type": "object",
@@ -1181,6 +1181,56 @@
           "default": 64
         },
         "url_option_limit": {
+          "type": "integer",
+          "default": 50
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_tick_timer_latent_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "object_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "include_latent_actions": {
+          "type": "boolean",
+          "default": true
+        },
+        "latent_action_limit": {
           "type": "integer",
           "default": 50
         }

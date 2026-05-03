@@ -345,6 +345,20 @@ def runtime_multiplayer_connection_diagnostics(world: str = 'auto', include_conn
     return _format_response(_send_command("runtime_multiplayer_connection_diagnostics", params))
 
 
+def runtime_tick_timer_latent_diagnostics(world: str = 'auto', object_path: str = '', actor_path: str = '', actor_label: str = '', actor_name: str = '', include_latent_actions: bool = True, latent_action_limit: int = 50) -> str:
+    """Generated stub for TCP command `runtime_tick_timer_latent_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "object_path": object_path,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "include_latent_actions": include_latent_actions,
+        "latent_action_limit": latent_action_limit,
+    }
+    return _format_response(_send_command("runtime_tick_timer_latent_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

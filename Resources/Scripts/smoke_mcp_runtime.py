@@ -651,6 +651,24 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     _assert(isinstance(multiplayer_diagnostics.get("world_context"), dict), "runtime multiplayer diagnostics missing world context object")
     _assert(isinstance(multiplayer_diagnostics.get("player_controllers"), list), "runtime multiplayer diagnostics missing player controller array")
 
+    tick_timer_latent_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_tick_timer_latent_diagnostics",
+            {
+                "world": "auto",
+                "include_latent_actions": True,
+                "latent_action_limit": 10,
+            },
+        ),
+        "runtime_tick_timer_latent_diagnostics",
+    )
+    _assert(tick_timer_latent_diagnostics.get("world_available") is True, "runtime tick/timer/latent diagnostics did not report an available world")
+    _assert(isinstance(tick_timer_latent_diagnostics.get("time"), dict), "runtime tick/timer/latent diagnostics missing time object")
+    _assert(isinstance(tick_timer_latent_diagnostics.get("world_settings"), dict), "runtime tick/timer/latent diagnostics missing world settings object")
+    _assert(isinstance(tick_timer_latent_diagnostics.get("timer_manager"), dict), "runtime tick/timer/latent diagnostics missing TimerManager object")
+    _assert(isinstance(tick_timer_latent_diagnostics.get("latent_actions"), dict), "runtime tick/timer/latent diagnostics missing latent actions object")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -716,6 +734,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_game_instance_diagnostics_checked": True,
         "runtime_level_travel_diagnostics_checked": True,
         "runtime_multiplayer_connection_diagnostics_checked": True,
+        "runtime_tick_timer_latent_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),
