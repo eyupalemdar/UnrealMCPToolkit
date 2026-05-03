@@ -5,11 +5,11 @@
 ### 1. MCP Tools (Recommended for Claude Code)
 
 CommonAIExport includes a **Python MCP server** that wraps the TCP protocol.
-When configured in Claude Code's MCP settings, 55 tools become available with `mcp__widget-builder__` prefix.
+When configured in Claude Code's MCP settings, 118 tools become available with `mcp__widget-builder__` prefix.
 
 **MCP Client**: `Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py`
 
-For full tool reference: **[CLAUDE_REFERENCE.md](CLAUDE_REFERENCE.md)**
+For full tool reference: **[AI_REFERENCE.md](AI_REFERENCE.md)**
 
 ### 2. Direct TCP (For scripts, other AI tools)
 
@@ -19,12 +19,23 @@ Raw TCP JSON protocol on `127.0.0.1` — port from `{ProjectDir}/Intermediate/AI
 {"type": "command_name", "params": {"key": "value"}}
 ```
 
+The native C++ HTTP/MCP endpoint is also available on `127.0.0.1`; its port is
+written to `{ProjectDir}/Intermediate/AIExport_http_port.txt`. Set
+`COMMONAI_MCP_HTTP_TOKEN` before launching the editor to require bearer auth on
+HTTP requests. `/mcp initialize` returns a `Mcp-Session-Id` header and
+`tools/list` supports cursor pagination. `DELETE /mcp` releases a session;
+`COMMONAI_MCP_SESSION_TTL_SECONDS` controls expiry and
+`COMMONAI_MCP_HTTP_ALLOWED_ORIGINS` controls the local CORS allow-list.
+HTTP audit events are written to `Saved/Logs/CommonAIExport_HTTP_Audit.jsonl`;
+set `COMMONAI_MCP_HTTP_AUDIT=0` to disable that log.
+
 ---
 
 ## Prerequisites
 
 1. **Unreal Editor must be running** — TCP server runs inside the Editor
 2. **Port file exists**: `{ProjectDir}/Intermediate/AIExport_port.txt`
+3. **Multi-editor discovery**: each editor with the plugin writes `%LOCALAPPDATA%/CommonAIExport/Editors/*.json`
 
 ---
 
@@ -36,6 +47,35 @@ ping  # Returns "pong"
 
 # Via TCP (Python)
 python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py ping
+python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py list_commands
+
+# Regenerate and validate manifest/schema/docs artifacts
+python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py
+
+# Optional live-editor runtime smoke
+python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py
+```
+
+```bash
+# Via MCP, when multiple editors are open
+editors_list
+editor_call(command="server_status", editor_id="<editor_id from editors_list>")
+editor_world_info
+actor_list(limit=10)
+pie_status
+project_status
+source_control_status
+commonai_resources_list
+commonai_prompt_get(name="build_fix_test")
+commonai_resource_read(uri="commonai://audit/http")
+commonai_prompt_get(name="runtime_debug_triage")
+native_http_status
+native_mcp_probe
+asset_search(path="/Game/UI", limit=20)
+editor_log_read(max_lines=200, filter="Error")
+asset_transfer_plan(source_asset_path="/Game/UI/Hud/W_MainMenu", source_editor_id="<source>", target_editor_id="<target>")
+asset_transfer_execute(source_asset_path="/Game/UI/Hud/W_MainMenu", source_editor_id="<source>", target_editor_id="<target>", scope="write", dry_run=False)
+code_transfer_plan(source_paths=["Source/OkeyGame/Public/MyClass.h"], source_editor_id="<source>", target_editor_id="<target>")
 ```
 
 ---
@@ -50,6 +90,12 @@ python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py ping
 | **Create Materials** | Materials, material instances, expression graphs |
 | **Import Assets** | Textures, fonts from disk |
 | **Export Assets** | Widget BP, Blueprint, AnimBP, DataAsset, Material, World, Audio, Texture |
+| **Control Editor Worlds** | Inspect editor world, list/spawn/move/delete actors, open/save levels, PIE status/start/stop |
+| **Inspect Project Health** | Search assets, run light asset validation, read editor logs, source-control status, guarded build status |
+| **Use Context Resources** | Read CommonAI resources/prompts and export MCP metadata/command manifests |
+| **Probe Native HTTP/MCP** | Check C++ localhost HTTP health and JSON-RPC MCP tools/list |
+| **Multi-Editor** | Discover open UE projects and route CommonAIExport commands to a selected editor |
+| **Transfer Code** | Plan, copy, and verify C++/config files with hash/collision checks |
 
 ---
 
@@ -75,4 +121,4 @@ Generated class:  WidgetBlueprintGeneratedClass'/Game/UI/Path/W_Widget.W_Widget_
 
 ---
 
-For comprehensive documentation: **[CLAUDE_REFERENCE.md](CLAUDE_REFERENCE.md)** | **[README.md](README.md)**
+For comprehensive documentation: **[AI_REFERENCE.md](AI_REFERENCE.md)** | **[README.md](README.md)**

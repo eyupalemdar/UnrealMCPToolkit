@@ -1,7 +1,7 @@
 # CommonAIExport — Claude Reference Guide
 
 > **Read this file to understand ALL plugin capabilities in one place.**
-> 57 MCP tools across 11 categories. UE 5.7, TCP port auto-discovery.
+> 118 MCP tools across 29 categories. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
 
 ## Architecture
 
@@ -16,8 +16,36 @@ Claude Code ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE E
 
 - **MCP Client**: `Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py`
 - **TCP Server**: Runs inside UE Editor, port 55560-55600 (auto-discovery via `Intermediate/AIExport_port.txt`)
+- **Multi-editor registry**: each editor writes identity to `%LOCALAPPDATA%/CommonAIExport/Editors/*.json`
 - **All tools use `mcp__widget-builder__` prefix** when called from Claude Code
 - **Property values use UE ImportText format** (same format the export system produces)
+- **Contract validation**: `python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py`
+
+---
+
+## 0. Connection / Introspection
+
+| Tool | Purpose |
+|------|---------|
+| `ping()` | Check if the editor TCP server is responsive |
+| `list_commands()` | List registered TCP commands with category, params, mutation, timeout, scope, dry-run, and async metadata |
+| `server_status()` | Runtime status: port, command count, scope model, transport summary, and async task counters |
+| `editor_identity()` | Identity metadata for the default editor: editor_id, project path, engine/plugin version, port, registry file |
+| `command_manifest_export(output_path?)` | Export machine-readable command manifest JSON under the project |
+| `project_status()` | Read project/editor workflow status, repo markers, log/build state, world/PIE summary |
+| `source_control_status(provider?)` | Read-only Diversion/Git status through the editor process |
+| `editors_list(include_stale?)` | List live Unreal Editor instances with CommonAIExport loaded |
+| `editor_call(command, params?, editor_id?, project_dir?, port?, scope?, dry_run?)` | Route any CommonAIExport command to a selected editor |
+| `asset_transfer_plan(source_asset_path, source_editor_id?, target_editor_id?, ...)` | Read-only cross-project asset transfer plan with dependencies, target existence, and collision analysis |
+| `asset_transfer_execute(source_asset_path, ..., scope?, dry_run?, overwrite?)` | Copy planned package files between project Content folders, then scan/verify target |
+| `asset_transfer_verify(source_asset_path, source_editor_id?, target_editor_id?, ...)` | Read-only verification that planned packages exist in target |
+| `code_transfer_plan(source_paths, source_editor_id?, target_editor_id?, ...)` | Read-only cross-project C++/config file transfer plan |
+| `code_transfer_execute(source_paths, ..., scope?, dry_run?, overwrite?)` | Guarded code/config file copy between project folders |
+| `code_transfer_verify(source_paths, source_editor_id?, target_editor_id?, ...)` | Hash-based verification for planned code/config transfer |
+| `commonai_resources_list()` / `commonai_resource_read(uri)` | Resource-style project status, command manifest, editor registry, and log context |
+| `commonai_prompts_list()` / `commonai_prompt_get(name, asset_path?)` | Reusable workflow prompt templates |
+| `guarded_build_status(tail_lines?)` | Parse the latest guarded build log |
+| `mcp_server_metadata_export(output_path?)` | Export registry-style server metadata JSON |
 
 ---
 
@@ -331,7 +359,55 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 9. Asset Import
+## 9. Data Asset
+
+| Tool | Purpose |
+|------|---------|
+| `save_data_asset(asset_path)` | Save a Data Asset to disk without compiling |
+
+---
+
+## 10. Generic Asset Factory
+
+| Tool | Purpose |
+|------|---------|
+| `create_asset(package_path, asset_name, asset_type, properties?)` | Create InputAction, InputMappingContext, Sound*, PhysicalMaterial |
+| `set_asset_property(asset_path, property_path, value)` | Set a reflected property on any loaded asset |
+| `get_asset_properties(asset_path)` | Get all reflected asset properties as JSON |
+| `asset_search(path?, name_filter?, class_filter?, recursive?, offset?, limit?)` | Search Asset Registry with pagination |
+| `asset_validate_light(asset_path)` | Lightweight existence/dependency/redirector health check |
+| `asset_exists(asset_path)` | Check Asset Registry/on-disk package existence without loading full properties |
+| `scan_asset_paths(paths?, path?, force_rescan?)` | Rescan Content paths after external package file copies |
+| `save_asset(asset_path)` | Save any loaded asset to disk |
+| `rename_asset(asset_path, new_package_path?, new_asset_name?)` | Rename or move an asset using AssetTools |
+| `get_referencers(asset_path)` | List packages that reference the asset |
+| `get_dependencies(asset_path)` | List packages referenced by the asset |
+| `delete_asset(asset_path, force?, scope?, dry_run?)` | Delete an asset after reference checks, or force delete when explicitly requested. Requires `scope="destructive"` |
+| `list_redirectors(folder_path, recursive?)` | List redirectors under a folder |
+| `fixup_redirectors(folder_path, recursive?)` | Fix redirector referencers under a folder |
+
+---
+
+## 11. Input Mapping Context
+
+| Tool | Purpose |
+|------|---------|
+| `add_input_mapping(asset_path, input_action_path, key, triggers?, modifiers?)` | Add a key mapping to an IMC |
+| `remove_input_mapping(asset_path, mapping_index)` | Remove a mapping by index |
+| `get_input_mappings(asset_path)` | Get all mappings as JSON |
+
+---
+
+## 12. AnimBlueprint
+
+| Tool | Purpose |
+|------|---------|
+| `create_anim_blueprint(package_path, asset_name, skeleton_path, parent_class?)` | Create an Animation Blueprint |
+| `get_anim_blueprint_info(asset_path)` | Get AnimBlueprint skeleton, parent, graphs, and variables as JSON |
+
+---
+
+## 13. Asset Import
 
 | Tool | Purpose |
 |------|---------|
@@ -340,7 +416,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 10. Widget Preview Capture (IFTP verify loop)
+## 14. Widget Preview Capture (IFTP verify loop)
 
 Renders a Widget Blueprint to a PNG file (or files, one per ratio) so Claude can
 visually compare UE output with the Pencil source across multiple screen ratios.
@@ -400,7 +476,7 @@ capture_widget_preview(
 
 ---
 
-## 11. Asset Lifecycle
+## 15. Asset Lifecycle
 
 | Tool | Purpose |
 |------|---------|
@@ -436,15 +512,261 @@ reload_asset("/Game/UI/Menu/W_MainMenu_HF03d")
 | `reloaded` | Did the hard package reload succeed? |
 | `reopened` | Was the editor tab reopened after reload? |
 
-### Example: Import Font
+---
+
+## 16. Editor, Level, Actor and PIE
+
+These tools provide the first general editor automation package outside
+Widget/Material-specific workflows. They operate on the current editor world and
+inherit the same scope/dry-run model exposed through `list_commands`.
+
+| Tool | Purpose |
+|------|---------|
+| `editor_world_info()` | Inspect current editor world, package/map filename, level list, actor count, and PIE state |
+| `actor_list(name_filter?, class_filter?, limit?)` | List actors with class path and transform metadata |
+| `actor_spawn(class_path, actor_label?, location?, rotation?, scale?, scope?, dry_run?)` | Spawn an actor with transaction support |
+| `actor_set_transform(actor_path?, actor_label?, actor_name?, location?, rotation?, scale?, scope?, dry_run?)` | Move/rotate/scale an actor identified by path, label, or name |
+| `actor_delete(actor_path?, actor_label?, actor_name?, scope?, dry_run?)` | Delete an actor; requires `scope="destructive"` |
+| `level_open(map_path, scope?, dry_run?)` | Open a map by long package path or filename |
+| `level_save_current(scope?, dry_run?)` | Save the current persistent level |
+| `pie_status()` | Read Play-In-Editor active/simulating state |
+| `pie_start(scope?, dry_run?)` | Request PIE start |
+| `pie_stop(scope?, dry_run?)` | Request PIE stop |
+| `editor_console_command(command, scope?, dry_run?)` | Execute editor console command; requires `scope="destructive"` |
+| `viewport_capture(output_path?, show_ui?, add_filename_suffix?, scope?, dry_run?)` | Request an editor viewport screenshot |
+
+### Example: Inspect and dry-run editor actions
+
 ```python
-import_font(
-    '["/path/to/Inter-Regular.ttf", "/path/to/Inter-Bold.ttf", "/path/to/Inter-Medium.ttf"]',
-    "/Game/UI/Kale/Fonts/Inter",
-    "Inter",
-    13
+editor_world_info()
+actor_list(limit=10)
+
+actor_spawn(
+    class_path="/Script/Engine.StaticMeshActor",
+    actor_label="AI_TestActor",
+    location={"x": 0, "y": 0, "z": 120},
+    scope="write",
+    dry_run=True
+)
+
+actor_delete(
+    actor_label="AI_TestActor",
+    scope="destructive",
+    dry_run=True
+)
+
+pie_status()
+editor_console_command(command="stat fps", scope="destructive", dry_run=True)
+viewport_capture(scope="write", dry_run=True)
+```
+
+Actor spawn, transform, and delete handlers wrap editor changes in
+`FScopedTransaction`, so successful mutations participate in Undo. Dry-run is
+generic at this stage: it verifies command identity/scope and exits before the
+handler touches the editor.
+
+---
+
+## 17. Multi-Editor Routing
+
+When the same CommonAIExport plugin is loaded in multiple Unreal Editor
+projects, each editor writes a global registry entry. The Python MCP server can
+discover those entries and route commands to a selected target without changing
+the existing TCP protocol.
+
+| Tool | Purpose |
+|------|---------|
+| `editors_list(include_stale?)` | Discover live editor instances and their project path, port, PID, engine/plugin version, and capabilities |
+| `editor_call(command, params?, editor_id?, project_dir?, port?, scope?, dry_run?)` | Execute any CommonAIExport command against a selected editor |
+| `asset_transfer_plan(source_asset_path, source_editor_id?, target_editor_id?, source_project_dir?, target_project_dir?, source_port?, target_port?, target_asset_path?, max_depth?, max_assets?)` | Build a read-only transfer plan before any copy/import work |
+| `asset_transfer_execute(source_asset_path, ..., scope?, dry_run?, overwrite?, allow_same_editor?)` | Copy planned package files, scan target asset paths, and run verify |
+| `asset_transfer_verify(source_asset_path, source_editor_id?, target_editor_id?, ...)` | Verify planned packages exist in the target project |
+
+### Example: Inspect two open projects
+
+```python
+editors_list()
+# -> [{"editor_id": "ProjectA-1234-55560", ...}, {"editor_id": "ProjectB-5678-55561", ...}]
+
+editor_call(
+    command="get_dependencies",
+    editor_id="ProjectA-1234-55560",
+    params={"asset_path": "/Game/UI/Hud/W_MainMenu"}
+)
+
+editor_call(
+    command="get_asset_properties",
+    editor_id="ProjectB-5678-55561",
+    params={"asset_path": "/Game/UI/Hud/W_MainMenu"}
+)
+
+asset_transfer_plan(
+    source_asset_path="/Game/UI/Hud/W_MainMenu",
+    source_editor_id="ProjectA-1234-55560",
+    target_editor_id="ProjectB-5678-55561",
+    max_depth=2
+)
+
+asset_transfer_execute(
+    source_asset_path="/Game/UI/Hud/W_MainMenu",
+    source_editor_id="ProjectA-1234-55560",
+    target_editor_id="ProjectB-5678-55561",
+    scope="write",
+    dry_run=False
 )
 ```
+
+This is a routing layer, not a full asset migration engine yet. Cross-project
+asset/code transfer begins with read-only inspection and dry-run planning so
+dependency closure, missing classes/plugins, path collisions, source-control
+state, and build risk are explicit before mutations.
+`asset_transfer_execute` copies Unreal package files only (`.uasset`, `.umap`,
+`.uexp`, `.ubulk`, `.uptnl`) under project `Content`; it does not migrate C++
+modules, plugin binaries, config, source-control changelists, or dependency path
+rewrites yet. Actual copy requires `scope="write"`. Overwrite requires
+`scope="destructive"`.
+
+---
+
+## 18. Code Transfer
+
+| Tool | Purpose |
+|------|---------|
+| `code_transfer_plan(source_paths, source_editor_id?, target_editor_id?, target_subdir?, preserve_relative_paths?, include_companions?, max_files?)` | Read-only plan for source/config file transfer |
+| `code_transfer_execute(source_paths, ..., scope?, dry_run?, overwrite?, allow_same_editor?)` | Copy planned text/code files between projects |
+| `code_transfer_verify(source_paths, source_editor_id?, target_editor_id?, ...)` | Verify target file hashes match the source plan |
+
+Code transfer is intentionally conservative. It blocks project cache/build
+folders such as `Binaries`, `Intermediate`, `Saved`, `.vs`, and only allows
+text/code-like extensions such as `.h`, `.cpp`, `.cs`, `.ini`, `.json`,
+`.uplugin`, `.uproject`, `.usf`, and `.ush`. Actual copy requires
+`scope="write"`. Overwrite requires `scope="destructive"`. C++ transfers should
+be followed by Build.cs/module/API macro review and the guarded build workflow.
+
+---
+
+## 19. Async Jobs and Safety Metadata
+
+| Tool | Purpose |
+|------|---------|
+| `task_submit(command, params?, scope?, dry_run?)` | Submit any non-task command for background execution |
+| `task_status(task_id?)` | Check one task, or list all known tasks when omitted |
+| `task_result(task_id?)` | Read a completed task response, or list completed task summaries when omitted |
+| `task_cancel(task_id?)` | Request cooperative cancellation, or list cancellable tasks when omitted |
+
+### Scope model
+
+CommonAIExport now exposes command safety metadata through `list_commands`.
+Scopes are ordered as `read < write < destructive`. Legacy TCP calls without
+metadata keep implicit `write` scope for backward compatibility, but
+`destructive` commands require an explicit top-level `meta.scope="destructive"`.
+The Python MCP wrapper exposes this on destructive tools such as
+`delete_asset(..., scope="destructive")` and
+`actor_delete(..., scope="destructive")`.
+
+### Dry-run model
+
+Pass `dry_run=True` through the MCP wrapper, or top-level `meta.dry_run=true`
+over raw TCP. Mutating commands return a generic dry-run response before any
+handler runs. This is intentionally conservative: it validates command identity
+and scope but does not attempt tool-specific previews yet.
+
+### Async model
+
+`task_submit` stores task state in the editor process and runs the selected
+command on the server thread pool. The initial call returns immediately with a
+`task_id`; use `task_status` and `task_result` to poll. Cancellation is
+cooperative: queued work can be cancelled before dispatch, but already-running
+game-thread work may finish before cancellation is observed.
+
+### Example: Async Preview Capture
+```python
+task_submit(
+    command="capture_widget_preview",
+    params={"asset_path": "/Game/UI/Menu/W_MainMenu", "width": 1920, "height": 1080}
+)
+# -> {"task_id": "...", "status": "queued"}
+task_status("...")
+task_result("...")
+```
+
+---
+
+## 20. Workflow and Logs
+
+| Tool | Purpose |
+|------|---------|
+| `project_status()` | Read editor/project status including repo markers, log count, build-log presence, and world/PIE state |
+| `source_control_status(provider?)` | Run read-only Diversion/Git status from the editor process |
+| `editor_log_read(max_lines?, filter?, log_name?)` | Read recent project log lines from `Saved/Logs`, optionally filtered |
+| `guarded_build_status(tail_lines?)` | Parse latest `Saved/Logs/LastBuild.log` result and return a bounded tail |
+
+---
+
+## 21. MCP Resources, Prompts, and Metadata
+
+| Tool | Purpose |
+|------|---------|
+| `commonai_resources_list()` | List resource URIs exposed by the MCP wrapper |
+| `commonai_resource_read(uri)` | Read `commonai://project/status`, `commonai://commands/manifest`, `commonai://editors/list`, `commonai://logs/latest`, or `commonai://audit/http` |
+| `commonai_prompts_list()` | List reusable workflow prompt templates |
+| `commonai_prompt_get(name, asset_path?)` | Read a prompt template such as `build_fix_test`, `asset_safety_review`, `multi_editor_transfer`, `ui_transfer_validation`, `blueprint_graph_inspection`, or `runtime_debug_triage` |
+| `command_manifest_export(output_path?)` | Write the active command descriptor manifest to JSON under the project |
+| `mcp_server_metadata_export(output_path?)` | Write registry-style CommonAIExport MCP metadata under the project |
+| `native_http_status()` | Probe native C++ HTTP `/commonai/health` endpoint |
+| `native_mcp_probe()` | Probe native C++ `/mcp` JSON-RPC initialize and paginated tools/list using MCP session headers |
+
+Generated artifacts are checked by the contract validator and live under
+`Plugins/CommonAIExport/Resources/Generated/`:
+
+- `CommonAIExport_CommandManifest.json`
+- `CommonAIExport_ToolSchemas.json`
+- `CommonAIExport_ToolCatalog.md`
+- `CommonAIExport_server.json`
+
+Regenerate them with:
+
+```powershell
+python Plugins/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py
+python Plugins/CommonAIExport/Resources/Scripts/validate_mcp_contract.py
+python Plugins/CommonAIExport/Resources/Scripts/test_mcp_contract.py
+python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py
+```
+
+For the non-runtime preflight, use the wrapper:
+
+```powershell
+python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py
+```
+
+### Example: Read recent errors
+
+```python
+project_status()
+source_control_status()
+guarded_build_status()
+editor_log_read(max_lines=500, filter="Error")
+commonai_resource_read("commonai://commands/manifest")
+commonai_prompt_get("asset_safety_review", asset_path="/Game/UI/Hud/W_Background")
+native_http_status()
+native_mcp_probe()
+```
+
+The native HTTP/MCP endpoint is localhost-only by default. Set
+`COMMONAI_MCP_HTTP_TOKEN` before launching the editor to require
+`Authorization: Bearer <token>` for HTTP requests. The Python probe tools read
+the same environment variable automatically. `/mcp initialize` returns a
+`Mcp-Session-Id` response header and `tools/list` supports `nextCursor`
+pagination. `DELETE /mcp` with the same session header releases the session;
+sessions expire after `COMMONAI_MCP_SESSION_TTL_SECONDS` seconds, defaulting to
+3600. Set `COMMONAI_MCP_HTTP_ALLOWED_ORIGINS` to a comma-separated origin list
+when a browser-based local client needs something beyond the default localhost
+origins. HTTP/MCP requests are written as token-safe JSONL audit events to
+`Saved/Logs/CommonAIExport_HTTP_Audit.jsonl`; set `COMMONAI_MCP_HTTP_AUDIT=0`
+before launching the editor to disable audit logging.
+
+`editor_log_read` only resolves `log_name` under the project log directory; arbitrary
+filesystem reads are intentionally not exposed through this command.
 
 ---
 
@@ -491,12 +813,28 @@ First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets
 | CDO Arrays | 4 | add_element, set_element_property, remove_element, get_length |
 | Blueprint Graph | 14 | add_event, add_custom_event, ensure_function_graph, add_function_call, add_var_get, add_var_set, add_make_struct, add_branch, add_call_parent_function, connect_pins, set_pin_default, remove_node, get_graph, list_graphs |
 | Blueprint Variables | 4 | add, set_default, remove, get_variables |
-| Material System | 14 | create, set_property, add_expr, set_expr_property, connect_exprs, connect_to_root, disconnect, remove_expr, compile, get_graph, list_classes, create_instance, set_param, save_instance, get_info |
+| Material System | 15 | create, set_property, add_expr, set_expr_property, connect_exprs, connect_to_root, disconnect, remove_expr, compile, get_graph, list_classes, create_instance, set_param, save_instance, get_info |
+| Data Asset | 1 | save_data_asset |
+| Generic Assets | 14 | create_asset, set_asset_property, get_asset_properties, asset_search, asset_validate_light, asset_exists, scan_asset_paths, save_asset, rename_asset, get_referencers, get_dependencies, delete_asset, list_redirectors, fixup_redirectors |
+| Input Mapping | 3 | add_input_mapping, remove_input_mapping, get_input_mappings |
+| AnimBlueprint | 2 | create_anim_blueprint, get_anim_blueprint_info |
 | Asset Import | 2 | import_texture, import_font |
 | Widget Preview Capture | 1 | capture_widget_preview (IFTP verify loop) |
 | Asset Lifecycle | 1 | reload_asset (clear cached editor tab after compile) |
-| Utility | 1 | ping |
-| **Total** | **57** | |
+| Editor World | 2 | editor_world_info, editor_console_command |
+| Editor Actor | 4 | actor_list, actor_spawn, actor_set_transform, actor_delete |
+| Editor Level | 2 | level_open, level_save_current |
+| Editor Viewport | 1 | viewport_capture |
+| PIE | 3 | pie_status, pie_start, pie_stop |
+| Workflow Status | 4 | project_status, source_control_status, editor_log_read, guarded_build_status |
+| MCP Resources/Prompts | 4 | commonai_resources_list, commonai_resource_read, commonai_prompts_list, commonai_prompt_get |
+| MCP Registry Metadata | 1 | mcp_server_metadata_export |
+| Native HTTP/MCP | 2 | native_http_status, native_mcp_probe |
+| Multi-Editor Router | 5 | editors_list, editor_call, asset_transfer_plan, asset_transfer_execute, asset_transfer_verify |
+| Code Transfer | 3 | code_transfer_plan, code_transfer_execute, code_transfer_verify |
+| Async Jobs | 4 | task_submit, task_status, task_result, task_cancel |
+| Utility | 5 | ping, list_commands, server_status, editor_identity, command_manifest_export |
+| **Total** | **118** | |
 
 ---
 
@@ -535,5 +873,5 @@ Exports go to `Dev/AIExports/` mirroring the Content folder structure:
 
 ---
 
-*Version: 5.0.0 — Last Updated: 2026-03-05*
-*55 MCP tools, covering Widget Builder, Material Builder, BP Graph, CDO, Array, Import, Export*
+*Version: 5.1.0 - Last Updated: 2026-05-03*
+*118 MCP tools, covering Widget, Material, BP Graph, CDO, Asset, Import, Preview, editor/level/actor/PIE, logs/workflow status, resources/prompts, native HTTP/MCP probe, registry metadata, multi-editor routing, code transfer, async job, and contract introspection workflows*

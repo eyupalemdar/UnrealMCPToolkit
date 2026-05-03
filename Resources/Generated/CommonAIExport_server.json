@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "name": "commonai-export",
+  "display_name": "CommonAIExport",
+  "description": "Project-local Unreal Editor automation MCP bridge for ProjectOkey.",
+  "version": "0.4.1",
+  "generated_at_utc": "2026-05-03T11:28:00.100444Z",
+  "transports": {
+    "stdio": {
+      "command": "python",
+      "args": [
+        "Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py"
+      ]
+    },
+    "native_http_mcp": {
+      "discovery_file": "Intermediate/AIExport_http_port.txt",
+      "path": "/mcp",
+      "bind": "127.0.0.1",
+      "protocol_version": "2025-06-18",
+      "supports_sessions": true,
+      "supports_pagination": true,
+      "optional_bearer_token_env": "COMMONAI_MCP_HTTP_TOKEN"
+    }
+  },
+  "tools": {
+    "total": 118,
+    "tcp_commands": 102,
+    "client_only": [
+      "asset_transfer_execute",
+      "asset_transfer_plan",
+      "asset_transfer_verify",
+      "code_transfer_execute",
+      "code_transfer_plan",
+      "code_transfer_verify",
+      "commonai_prompt_get",
+      "commonai_prompts_list",
+      "commonai_resource_read",
+      "commonai_resources_list",
+      "editor_call",
+      "editors_list",
+      "guarded_build_status",
+      "mcp_server_metadata_export",
+      "native_http_status",
+      "native_mcp_probe"
+    ],
+    "schemas": "Resources/Generated/CommonAIExport_ToolSchemas.json",
+    "schema_source": "Python MCP wrapper signatures",
+    "strict_parameter_schemas": true
+  },
+  "resources": [
+    "commonai://project/status",
+    "commonai://commands/manifest",
+    "commonai://editors/list",
+    "commonai://logs/latest",
+    "commonai://audit/http"
+  ],
+  "prompts": [
+    "asset_safety_review",
+    "blueprint_graph_inspection",
+    "build_fix_test",
+    "multi_editor_transfer",
+    "runtime_debug_triage",
+    "ui_transfer_validation"
+  ],
+  "security": {
+    "localhost_only": true,
+    "scopes": [
+      "read",
+      "write",
+      "destructive"
+    ],
+    "dry_run": true,
+    "destructive_requires_explicit_scope": true,
+    "allowed_origins_env": "COMMONAI_MCP_HTTP_ALLOWED_ORIGINS"
+  }
+}
