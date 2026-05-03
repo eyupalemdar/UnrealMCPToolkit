@@ -2027,6 +2027,41 @@ def runtime_tick_timer_latent_diagnostics(
 
 
 @mcp.tool()
+def runtime_scheduler_performance_diagnostics(
+    world: str = "auto",
+    name_filter: str = "",
+    class_filter: str = "",
+    component_class_filter: str = "",
+    include_actor_ticks: bool = True,
+    include_component_ticks: bool = True,
+    actor_limit: int = 100,
+    component_limit: int = 200,
+    hitch_threshold_ms: float = 33.333,
+) -> str:
+    """
+    Inspect runtime scheduler, frame timing, TaskGraph, and tick-function state.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        name_filter: Optional substring matched against actor/component names and actor labels.
+        class_filter: Optional substring matched against owner actor class paths.
+        component_class_filter: Optional substring matched against component class paths.
+        include_actor_ticks: Include sampled actor PrimaryActorTick records.
+        include_component_ticks: Include sampled component PrimaryComponentTick records.
+        actor_limit: Maximum actor tick records returned.
+        component_limit: Maximum component tick records returned.
+        hitch_threshold_ms: Delta threshold used to flag the latest app/world frame as a hitch.
+
+    Returns:
+        JSON with app frame timing, threading and TaskGraph state, selected
+        world timing, actor/component tick summaries, sampled tick records,
+        public-API limitations, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_scheduler_performance_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

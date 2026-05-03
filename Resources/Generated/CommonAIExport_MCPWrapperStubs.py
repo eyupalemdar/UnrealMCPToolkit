@@ -359,6 +359,22 @@ def runtime_tick_timer_latent_diagnostics(world: str = 'auto', object_path: str 
     return _format_response(_send_command("runtime_tick_timer_latent_diagnostics", params))
 
 
+def runtime_scheduler_performance_diagnostics(world: str = 'auto', name_filter: str = '', class_filter: str = '', component_class_filter: str = '', include_actor_ticks: bool = True, include_component_ticks: bool = True, actor_limit: int = 100, component_limit: int = 200, hitch_threshold_ms: float = 33.333) -> str:
+    """Generated stub for TCP command `runtime_scheduler_performance_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "name_filter": name_filter,
+        "class_filter": class_filter,
+        "component_class_filter": component_class_filter,
+        "include_actor_ticks": include_actor_ticks,
+        "include_component_ticks": include_component_ticks,
+        "actor_limit": actor_limit,
+        "component_limit": component_limit,
+        "hitch_threshold_ms": hitch_threshold_ms,
+    }
+    return _format_response(_send_command("runtime_scheduler_performance_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

@@ -669,6 +669,27 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     _assert(isinstance(tick_timer_latent_diagnostics.get("timer_manager"), dict), "runtime tick/timer/latent diagnostics missing TimerManager object")
     _assert(isinstance(tick_timer_latent_diagnostics.get("latent_actions"), dict), "runtime tick/timer/latent diagnostics missing latent actions object")
 
+    scheduler_performance_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_scheduler_performance_diagnostics",
+            {
+                "world": "auto",
+                "include_actor_ticks": True,
+                "include_component_ticks": True,
+                "actor_limit": 8,
+                "component_limit": 16,
+                "hitch_threshold_ms": 33.333,
+            },
+        ),
+        "runtime_scheduler_performance_diagnostics",
+    )
+    _assert(scheduler_performance_diagnostics.get("world_available") is True, "runtime scheduler/performance diagnostics did not report an available world")
+    _assert(isinstance(scheduler_performance_diagnostics.get("app_frame"), dict), "runtime scheduler/performance diagnostics missing app frame object")
+    _assert(isinstance(scheduler_performance_diagnostics.get("task_graph"), dict), "runtime scheduler/performance diagnostics missing TaskGraph object")
+    _assert(isinstance(scheduler_performance_diagnostics.get("threading"), dict), "runtime scheduler/performance diagnostics missing threading object")
+    _assert(isinstance(scheduler_performance_diagnostics.get("tick_summary"), dict), "runtime scheduler/performance diagnostics missing tick summary object")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -735,6 +756,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_level_travel_diagnostics_checked": True,
         "runtime_multiplayer_connection_diagnostics_checked": True,
         "runtime_tick_timer_latent_diagnostics_checked": True,
+        "runtime_scheduler_performance_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),
