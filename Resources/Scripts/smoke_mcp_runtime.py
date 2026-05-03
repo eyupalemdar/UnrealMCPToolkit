@@ -574,6 +574,20 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         first_local_player = commonui_diagnostics["local_players"][0]
         _assert(isinstance(first_local_player, dict) and isinstance(first_local_player.get("action_router"), dict), "runtime CommonUI diagnostics missing action router object")
 
+    asset_streaming_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_asset_streaming_diagnostics",
+            {"world": "auto", "include_levels": True, "level_limit": 10},
+        ),
+        "runtime_asset_streaming_diagnostics",
+    )
+    _assert(asset_streaming_diagnostics.get("world_available") is True, "runtime asset streaming diagnostics did not report an available world")
+    _assert(isinstance(asset_streaming_diagnostics.get("world"), dict), "runtime asset streaming diagnostics missing world summary")
+    _assert(isinstance(asset_streaming_diagnostics.get("streaming_manager"), dict), "runtime asset streaming diagnostics missing streaming manager object")
+    _assert(isinstance(asset_streaming_diagnostics.get("streaming_level_count"), int), "runtime asset streaming diagnostics missing streaming level count")
+    _assert(isinstance(asset_streaming_diagnostics.get("streaming_levels"), list), "runtime asset streaming diagnostics missing streaming level array")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -635,6 +649,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_ability_system_diagnostics_checked": True,
         "runtime_ai_perception_diagnostics_checked": True,
         "runtime_commonui_diagnostics_checked": True,
+        "runtime_asset_streaming_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),

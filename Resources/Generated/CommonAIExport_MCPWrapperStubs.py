@@ -292,6 +292,16 @@ def runtime_commonui_diagnostics(world: str = 'auto', name_filter: str = '', cla
     return _format_response(_send_command("runtime_commonui_diagnostics", params))
 
 
+def runtime_asset_streaming_diagnostics(world: str = 'auto', include_levels: bool = True, level_limit: int = 100) -> str:
+    """Generated stub for TCP command `runtime_asset_streaming_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "include_levels": include_levels,
+        "level_limit": level_limit,
+    }
+    return _format_response(_send_command("runtime_asset_streaming_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

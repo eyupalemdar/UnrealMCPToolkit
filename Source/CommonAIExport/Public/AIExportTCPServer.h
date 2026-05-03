@@ -322,6 +322,7 @@ private:
 	FString HandleRuntimeAbilitySystemDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeAIPerceptionDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeCommonUIDiagnostics(TSharedPtr<class FJsonObject> Params);
+	FString HandleRuntimeAssetStreamingDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorList(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSpawn(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSetTransform(TSharedPtr<class FJsonObject> Params);

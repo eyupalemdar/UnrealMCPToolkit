@@ -1879,6 +1879,28 @@ def runtime_commonui_diagnostics(
 
 
 @mcp.tool()
+def runtime_asset_streaming_diagnostics(
+    world: str = "auto",
+    include_levels: bool = True,
+    level_limit: int = 100,
+) -> str:
+    """
+    Inspect runtime asset and level streaming state without triggering streaming work.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        include_levels: Include per-ULevelStreaming state summaries.
+        level_limit: Maximum streaming level records returned.
+
+    Returns:
+        JSON with global streaming manager counters, render asset streaming pool
+        summary, world streaming level counts, per-level state, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_asset_streaming_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",

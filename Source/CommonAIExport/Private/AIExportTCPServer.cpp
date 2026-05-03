@@ -93,6 +93,8 @@
 #include "PlayInEditorDataTypes.h"
 #include "RenderingThread.h"
 #include "Engine/Engine.h"
+#include "Engine/LevelStreaming.h"
+#include "Engine/StreamableRenderAsset.h"
 #include "RenderAssetUpdate.h"
 #include "Misc/Base64.h"
 #include "ScopedTransaction.h"
@@ -391,6 +393,8 @@ TSharedPtr<FJsonObject> BuildVectorJson(const FVector& Vector)
 	return Data;
 }
 
+TSharedPtr<FJsonObject> BuildRuntimeObjectReferenceJson(const UObject* Object);
+
 TSharedPtr<FJsonObject> BuildRuntimeActorJson(AActor* Actor)
 {
 	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
@@ -480,6 +484,82 @@ TSharedPtr<FJsonObject> BuildRuntimeWorldJson(UWorld* World, const FString& Worl
 	if (AGameStateBase* GameState = World->GetGameState())
 	{
 		Data->SetStringField(TEXT("game_state_class"), GameState->GetClass() ? GameState->GetClass()->GetPathName() : TEXT(""));
+	}
+
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildStreamingManagerJson()
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetBoolField(TEXT("streaming_manager_shutdown"), IStreamingManager::HasShutdown());
+	if (IStreamingManager::HasShutdown())
+	{
+		return Data;
+	}
+
+	FStreamingManagerCollection& StreamingManager = IStreamingManager::Get();
+	Data->SetBoolField(TEXT("streaming_enabled"), StreamingManager.IsStreamingEnabled());
+	Data->SetBoolField(TEXT("texture_streaming_enabled"), StreamingManager.IsTextureStreamingEnabled());
+	Data->SetBoolField(TEXT("render_asset_texture_streaming_enabled"), StreamingManager.IsRenderAssetStreamingEnabled(EStreamableRenderAssetType::Texture));
+	Data->SetBoolField(TEXT("render_asset_static_mesh_streaming_enabled"), StreamingManager.IsRenderAssetStreamingEnabled(EStreamableRenderAssetType::StaticMesh));
+	Data->SetBoolField(TEXT("render_asset_skeletal_mesh_streaming_enabled"), StreamingManager.IsRenderAssetStreamingEnabled(EStreamableRenderAssetType::SkeletalMesh));
+	Data->SetNumberField(TEXT("wanting_resource_count"), StreamingManager.GetNumWantingResources());
+	Data->SetNumberField(TEXT("wanting_resource_id"), StreamingManager.GetNumWantingResourcesID());
+	Data->SetNumberField(TEXT("streaming_view_count"), StreamingManager.GetNumViews());
+
+	IRenderAssetStreamingManager& RenderAssetStreaming = StreamingManager.GetRenderAssetStreamingManager();
+	TSharedPtr<FJsonObject> RenderAssetsJson = MakeShared<FJsonObject>();
+	RenderAssetsJson->SetNumberField(TEXT("wanting_resource_count"), RenderAssetStreaming.GetNumWantingResources());
+	RenderAssetsJson->SetNumberField(TEXT("wanting_resource_id"), RenderAssetStreaming.GetNumWantingResourcesID());
+	RenderAssetsJson->SetNumberField(TEXT("pool_size_bytes"), static_cast<double>(RenderAssetStreaming.GetPoolSize()));
+	RenderAssetsJson->SetNumberField(TEXT("required_pool_size_bytes"), static_cast<double>(RenderAssetStreaming.GetRequiredPoolSize()));
+	RenderAssetsJson->SetNumberField(TEXT("memory_over_budget_bytes"), static_cast<double>(RenderAssetStreaming.GetMemoryOverBudget()));
+	RenderAssetsJson->SetNumberField(TEXT("max_ever_required_bytes"), static_cast<double>(RenderAssetStreaming.GetMaxEverRequired()));
+	RenderAssetsJson->SetNumberField(TEXT("cached_mips"), RenderAssetStreaming.GetCachedMips());
+	Data->SetObjectField(TEXT("render_asset_streaming"), RenderAssetsJson);
+
+	return Data;
+}
+
+TSharedPtr<FJsonObject> BuildLevelStreamingJson(ULevelStreaming* StreamingLevel)
+{
+	TSharedPtr<FJsonObject> Data = BuildRuntimeObjectReferenceJson(StreamingLevel);
+	if (!StreamingLevel)
+	{
+		return Data;
+	}
+
+	Data->SetStringField(TEXT("world_asset_package"), StreamingLevel->GetWorldAssetPackageName());
+	Data->SetStringField(TEXT("world_asset_package_name"), StreamingLevel->GetWorldAssetPackageFName().ToString());
+	Data->SetStringField(TEXT("package_name_to_load"), StreamingLevel->PackageNameToLoad.ToString());
+	Data->SetStringField(TEXT("state"), EnumToString(StreamingLevel->GetLevelStreamingState()));
+	Data->SetBoolField(TEXT("should_be_loaded"), StreamingLevel->ShouldBeLoaded());
+	Data->SetBoolField(TEXT("should_be_visible"), StreamingLevel->ShouldBeVisible());
+	Data->SetBoolField(TEXT("should_be_visible_flag"), StreamingLevel->GetShouldBeVisibleFlag());
+	Data->SetBoolField(TEXT("should_block_on_load"), StreamingLevel->bShouldBlockOnLoad != 0);
+	Data->SetBoolField(TEXT("should_block_on_unload"), StreamingLevel->ShouldBlockOnUnload());
+	Data->SetBoolField(TEXT("should_be_always_loaded"), StreamingLevel->ShouldBeAlwaysLoaded());
+	Data->SetBoolField(TEXT("has_loaded_level"), StreamingLevel->HasLoadedLevel());
+	Data->SetBoolField(TEXT("load_request_pending"), StreamingLevel->HasLoadRequestPending());
+	Data->SetBoolField(TEXT("requesting_unload_and_removal"), StreamingLevel->GetIsRequestingUnloadAndRemoval());
+	Data->SetBoolField(TEXT("waiting_net_visibility_ack_visible"), StreamingLevel->IsWaitingForNetVisibilityTransactionAck(ENetLevelVisibilityRequest::MakingVisible));
+	Data->SetBoolField(TEXT("waiting_net_visibility_ack_invisible"), StreamingLevel->IsWaitingForNetVisibilityTransactionAck(ENetLevelVisibilityRequest::MakingInvisible));
+	Data->SetNumberField(TEXT("priority"), StreamingLevel->GetPriority());
+	Data->SetNumberField(TEXT("level_lod_index"), StreamingLevel->GetLevelLODIndex());
+	Data->SetNumberField(TEXT("async_request_count"), StreamingLevel->GetAsyncRequestIDs().Num());
+	Data->SetNumberField(TEXT("lod_package_count"), StreamingLevel->LODPackageNames.Num());
+
+	if (ULevel* LoadedLevel = StreamingLevel->GetLoadedLevel())
+	{
+		TSharedPtr<FJsonObject> LoadedLevelJson = BuildRuntimeObjectReferenceJson(LoadedLevel);
+		LoadedLevelJson->SetStringField(TEXT("package_name"), LoadedLevel->GetOutermost() ? LoadedLevel->GetOutermost()->GetName() : TEXT(""));
+		LoadedLevelJson->SetNumberField(TEXT("actor_slot_count"), LoadedLevel->Actors.Num());
+		Data->SetObjectField(TEXT("loaded_level"), LoadedLevelJson);
+	}
+	else
+	{
+		Data->SetObjectField(TEXT("loaded_level"), BuildRuntimeObjectReferenceJson(nullptr));
 	}
 
 	return Data;
@@ -1781,6 +1861,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_ability_system_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAbilitySystemDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_ai_perception_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAIPerceptionDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("runtime_commonui_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeCommonUIDiagnostics),
+		AI_COMMAND_OPTIONAL_PARAMS("runtime_asset_streaming_diagnostics", "RuntimeInspector", false, 60, HandleRuntimeAssetStreamingDiagnostics),
 		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
 		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
 		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
@@ -5302,6 +5383,112 @@ FString FAIExportTCPServer::HandleRuntimeCommonUIDiagnostics(TSharedPtr<FJsonObj
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime CommonUI diagnostics timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleRuntimeAssetStreamingDiagnostics(TSharedPtr<FJsonObject> Params)
+{
+	const FString WorldSelector = ReadLowerStringField(Params, TEXT("world"), TEXT("auto"));
+	bool bIncludeLevels = true;
+	if (Params.IsValid())
+	{
+		Params->TryGetBoolField(TEXT("include_levels"), bIncludeLevels);
+	}
+	const int32 LevelLimit = ReadClampedIntField(Params, TEXT("level_limit"), 100, 0, 1000);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [WorldSelector, bIncludeLevels, LevelLimit, Promise, this]()
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("requested_world"), WorldSelector);
+		Data->SetObjectField(TEXT("pie"), BuildPIEStateJson());
+		Data->SetObjectField(TEXT("streaming_manager"), BuildStreamingManagerJson());
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		FString WorldSource;
+		UWorld* World = SelectAIWorld(WorldSelector, WorldSource);
+		Data->SetStringField(TEXT("world_source"), WorldSource);
+		Data->SetBoolField(TEXT("world_available"), World != nullptr);
+		if (!World)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(FString::Printf(TEXT("No %s world is available"), *WorldSelector)));
+			Data->SetArrayField(TEXT("warnings"), Warnings);
+			Promise->SetValue(CreateSuccessResponse(Data));
+			return;
+		}
+
+		if (WorldSource == TEXT("editor") && (WorldSelector == TEXT("auto") || WorldSelector == TEXT("pie") || WorldSelector == TEXT("runtime") || WorldSelector == TEXT("play")))
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("PIE is inactive; asset streaming diagnostics reflect the editor world")));
+		}
+
+		Data->SetObjectField(TEXT("world"), BuildRuntimeWorldJson(World, WorldSource));
+		Data->SetBoolField(TEXT("include_levels"), bIncludeLevels);
+		Data->SetNumberField(TEXT("level_limit"), LevelLimit);
+
+		const TArray<ULevelStreaming*>& StreamingLevels = World->GetStreamingLevels();
+		int32 LoadedStreamingLevelCount = 0;
+		int32 VisibleStreamingLevelCount = 0;
+		int32 PendingLoadRequestCount = 0;
+		int32 RequestingUnloadAndRemovalCount = 0;
+		for (ULevelStreaming* StreamingLevel : StreamingLevels)
+		{
+			if (!StreamingLevel)
+			{
+				continue;
+			}
+			if (StreamingLevel->HasLoadedLevel())
+			{
+				++LoadedStreamingLevelCount;
+			}
+			if (StreamingLevel->GetLevelStreamingState() == ELevelStreamingState::LoadedVisible || StreamingLevel->GetLevelStreamingState() == ELevelStreamingState::MakingVisible)
+			{
+				++VisibleStreamingLevelCount;
+			}
+			if (StreamingLevel->HasLoadRequestPending())
+			{
+				++PendingLoadRequestCount;
+			}
+			if (StreamingLevel->GetIsRequestingUnloadAndRemoval())
+			{
+				++RequestingUnloadAndRemovalCount;
+			}
+		}
+
+		Data->SetNumberField(TEXT("streaming_level_count"), StreamingLevels.Num());
+		Data->SetNumberField(TEXT("loaded_streaming_level_count"), LoadedStreamingLevelCount);
+		Data->SetNumberField(TEXT("visible_streaming_level_count"), VisibleStreamingLevelCount);
+		Data->SetNumberField(TEXT("pending_load_request_count"), PendingLoadRequestCount);
+		Data->SetNumberField(TEXT("requesting_unload_and_removal_count"), RequestingUnloadAndRemovalCount);
+
+		if (bIncludeLevels)
+		{
+			TArray<TSharedPtr<FJsonValue>> LevelsJson;
+			for (ULevelStreaming* StreamingLevel : StreamingLevels)
+			{
+				if (!StreamingLevel)
+				{
+					continue;
+				}
+				if (LevelsJson.Num() >= LevelLimit)
+				{
+					break;
+				}
+				LevelsJson.Add(MakeShared<FJsonValueObject>(BuildLevelStreamingJson(StreamingLevel)));
+			}
+			Data->SetNumberField(TEXT("returned_streaming_level_count"), LevelsJson.Num());
+			Data->SetBoolField(TEXT("streaming_levels_truncated"), StreamingLevels.Num() > LevelsJson.Num());
+			Data->SetArrayField(TEXT("streaming_levels"), LevelsJson);
+		}
+
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Runtime asset streaming diagnostics timed out"));
 	return Future.Get();
 }
 
