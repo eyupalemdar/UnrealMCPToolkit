@@ -3334,6 +3334,30 @@ def task_events(task_id: str = "", after_sequence: int = 0, limit: int = 100) ->
 
 
 @mcp.tool()
+def task_events_wait(
+    task_id: str = "",
+    after_sequence: int = 0,
+    limit: int = 100,
+    timeout_ms: int = 5000,
+    poll_interval_ms: int = 50,
+) -> str:
+    """
+    Wait briefly for async task lifecycle events.
+
+    Args:
+        task_id: Optional task id filter.
+        after_sequence: Return events with sequence greater than this value.
+        limit: Maximum number of events to return, clamped by the editor.
+        timeout_ms: Maximum time to wait for a matching event.
+        poll_interval_ms: Sleep interval between event checks.
+
+    Returns:
+        JSON with the task_events payload plus waited_ms and timed_out fields.
+    """
+    return _send_generated_tcp_tool("task_events_wait", locals())
+
+
+@mcp.tool()
 def task_cancel(task_id: str = "") -> str:
     """
     Request cooperative cancellation for an async task.

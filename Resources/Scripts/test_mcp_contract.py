@@ -181,7 +181,7 @@ def _failures() -> list[str]:
         ]
         if len(parameterized_wrappers) < 20:
             failures.append("generated wrapper runtime did not promote parameterized read-only wrappers")
-        for expected_name in ("asset_exists", "get_widget_tree", "task_events", "task_submit"):
+        for expected_name in ("asset_exists", "get_widget_tree", "task_events", "task_events_wait", "task_submit"):
             if expected_name not in generated_wrappers:
                 failures.append(f"generated wrapper runtime missing {expected_name}")
         for expected_name in (
@@ -270,6 +270,24 @@ def _failures() -> list[str]:
             task_call = build_tcp_call("task_events", {"task_id": "", "after_sequence": 0, "limit": 100})
             if task_call.get("params") != {"limit": 100}:
                 failures.append("generated wrapper runtime failed optional parameter omission mapping")
+            task_wait_call = build_tcp_call(
+                "task_events_wait",
+                {
+                    "task_id": "task-1",
+                    "after_sequence": 5,
+                    "limit": 20,
+                    "timeout_ms": 250,
+                    "poll_interval_ms": 25,
+                },
+            )
+            if task_wait_call.get("params") != {
+                "task_id": "task-1",
+                "after_sequence": 5,
+                "limit": 20,
+                "timeout_ms": 250,
+                "poll_interval_ms": 25,
+            }:
+                failures.append("generated wrapper runtime failed task_events_wait payload mapping")
             task_submit_call = build_tcp_call(
                 "task_submit",
                 {

@@ -273,6 +273,9 @@ private:
 	/** Build async task event query payload */
 	TSharedPtr<class FJsonObject> BuildTaskEventsJson(TSharedPtr<class FJsonObject> Params) const;
 
+	/** Build async task event query payload after waiting for new events */
+	TSharedPtr<class FJsonObject> BuildTaskEventsWaitJson(TSharedPtr<class FJsonObject> Params) const;
+
 	/** Build async task events as Server-Sent Events formatted text */
 	FString BuildTaskEventsSse(TSharedPtr<class FJsonObject> Params) const;
 
@@ -307,6 +310,7 @@ private:
 	FString HandleTaskResult(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskCancel(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskEvents(TSharedPtr<class FJsonObject> Params);
+	FString HandleTaskEventsWait(TSharedPtr<class FJsonObject> Params);
 	FString HandleExportWidget(TSharedPtr<class FJsonObject> Params);
 	FString HandleExportBlueprint(TSharedPtr<class FJsonObject> Params);
 	FString HandleListSupportedTypes();

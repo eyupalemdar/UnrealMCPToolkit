@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T19:23:11.654600Z",
-  "tool_count": 140,
+  "generated_at_utc": "2026-05-03T19:30:39.263897Z",
+  "tool_count": 141,
   "tools": {
     "ping": {
       "type": "object",
@@ -462,6 +462,48 @@
         "supports_dry_run": false,
         "async_candidate": false,
         "timeout_seconds": 0
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "task_events_wait": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "default": ""
+        },
+        "after_sequence": {
+          "type": "integer",
+          "default": 0
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "default": 5000
+        },
+        "poll_interval_ms": {
+          "type": "integer",
+          "default": 50
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "AsyncJob",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 30
       },
       "annotations": {
         "readOnlyHint": true,

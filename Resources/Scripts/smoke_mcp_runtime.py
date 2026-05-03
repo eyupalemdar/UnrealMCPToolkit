@@ -736,6 +736,21 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
+    task_wait = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "task_events_wait",
+            {
+                "task_id": task_id,
+                "limit": 20,
+                "timeout_ms": 2000,
+                "poll_interval_ms": 25,
+            },
+            timeout=5,
+        ),
+        "task_events_wait",
+    )
+    _assert(task_wait.get("returned_count", 0) >= 1 and task_wait.get("waited") is True and task_wait.get("timed_out") is False, "task_events_wait did not return queued lifecycle event")
     task_result = None
     for _ in range(20):
         time.sleep(0.2)
@@ -749,6 +764,11 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     )
     event_text = json.dumps(task_events, ensure_ascii=False)
     _assert(task_events.get("returned_count", 0) >= 2 and "queued" in event_text and "completed" in event_text, "async task events missing queued/completed lifecycle")
+    latest_sequence = int(task_events.get("latest_sequence", 0))
+    http_wait = _http_request(http_port, f"/commonai/tasks/events/wait?task_id={task_id}&after_sequence={latest_sequence}&limit=20&timeout_ms=25&poll_interval_ms=10")
+    http_wait_body = http_wait.get("body", {}) if isinstance(http_wait.get("body"), dict) else {}
+    http_wait_data = http_wait_body.get("data", {}) if isinstance(http_wait_body.get("data"), dict) else {}
+    _assert(bool(http_wait.get("success") and http_wait_body.get("success") and http_wait_data.get("timed_out") is True and http_wait_data.get("returned_count") == 0), "task events HTTP wait endpoint did not report an empty timeout")
     sse_events = _http_request(http_port, f"/commonai/tasks/events/sse?task_id={task_id}&limit=20")
     sse_body = str(sse_events.get("body", ""))
     sse_headers = {str(key).lower(): str(value) for key, value in sse_events.get("headers", {}).items()}
@@ -805,6 +825,8 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),
+        "task_events_wait_checked": True,
+        "task_events_http_wait_checked": True,
         "task_events_sse_checked": True,
         "session_delete_success": True,
         "mutating_widget_smoke": mutating_widget_result,

@@ -2858,6 +2858,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("task_result", "AsyncJob", false, 0, HandleTaskResult),
 		AI_COMMAND_OPTIONAL_PARAMS("task_cancel", "AsyncJob", false, 0, HandleTaskCancel),
 		AI_COMMAND_OPTIONAL_PARAMS("task_events", "AsyncJob", false, 0, HandleTaskEvents),
+		AI_COMMAND_OPTIONAL_PARAMS("task_events_wait", "AsyncJob", false, 30, HandleTaskEventsWait),
 		AI_COMMAND_PARAMS("export_widget", "Export", false, 60, HandleExportWidget),
 		AI_COMMAND_PARAMS("export_blueprint", "Export", false, 60, HandleExportBlueprint),
 		AI_COMMAND_NO_PARAMS("list_supported_types", "Export", 0, HandleListSupportedTypes),
@@ -3636,6 +3637,10 @@ void FAIExportTCPServer::StartHttpServer()
 	{
 		return HandleTaskEvents(BuildTaskEventParamsFromHttpRequest(Request));
 	});
+	BindRoute(TEXT("/commonai/tasks/events/wait"), EHttpServerRequestVerbs::VERB_GET | EHttpServerRequestVerbs::VERB_OPTIONS, [this](const FHttpServerRequest& Request)
+	{
+		return HandleTaskEventsWait(BuildTaskEventParamsFromHttpRequest(Request));
+	});
 	BindTextRoute(TEXT("/commonai/tasks/events/sse"), EHttpServerRequestVerbs::VERB_GET | EHttpServerRequestVerbs::VERB_OPTIONS, TEXT("text/event-stream"), [this](const FHttpServerRequest& Request)
 	{
 		return BuildTaskEventsSse(BuildTaskEventParamsFromHttpRequest(Request));
@@ -4320,6 +4325,64 @@ TSharedPtr<FJsonObject> FAIExportTCPServer::BuildTaskEventsJson(TSharedPtr<FJson
 	return Data;
 }
 
+TSharedPtr<FJsonObject> FAIExportTCPServer::BuildTaskEventsWaitJson(TSharedPtr<FJsonObject> Params) const
+{
+	const int32 TimeoutMs = ReadClampedIntField(Params, TEXT("timeout_ms"), 5000, 0, 30000);
+	const int32 PollIntervalMs = ReadClampedIntField(Params, TEXT("poll_interval_ms"), 50, 10, 1000);
+	const double StartSeconds = FPlatformTime::Seconds();
+	const double DeadlineSeconds = StartSeconds + (static_cast<double>(TimeoutMs) / 1000.0);
+
+	TSharedPtr<FJsonObject> Data;
+	bool bTimedOut = false;
+	bool bStopped = false;
+
+	while (true)
+	{
+		Data = BuildTaskEventsJson(Params);
+		const int32 ReturnedCount = Data.IsValid() ? static_cast<int32>(Data->GetNumberField(TEXT("returned_count"))) : 0;
+		if (ReturnedCount > 0 || TimeoutMs <= 0)
+		{
+			break;
+		}
+
+		if (bStopRequested)
+		{
+			bStopped = true;
+			break;
+		}
+
+		const double RemainingSeconds = DeadlineSeconds - FPlatformTime::Seconds();
+		if (RemainingSeconds <= 0.0)
+		{
+			bTimedOut = true;
+			break;
+		}
+
+		const double SleepSeconds = FMath::Min(RemainingSeconds, static_cast<double>(PollIntervalMs) / 1000.0);
+		FPlatformProcess::Sleep(static_cast<float>(SleepSeconds));
+	}
+
+	if (!Data.IsValid())
+	{
+		Data = BuildTaskEventsJson(Params);
+	}
+
+	const int32 ReturnedCount = Data.IsValid() ? static_cast<int32>(Data->GetNumberField(TEXT("returned_count"))) : 0;
+	if (ReturnedCount <= 0 && TimeoutMs > 0 && !bStopped && FPlatformTime::Seconds() >= DeadlineSeconds)
+	{
+		bTimedOut = true;
+	}
+
+	const double WaitedMs = FMath::Max(0.0, (FPlatformTime::Seconds() - StartSeconds) * 1000.0);
+	Data->SetBoolField(TEXT("waited"), true);
+	Data->SetNumberField(TEXT("timeout_ms"), TimeoutMs);
+	Data->SetNumberField(TEXT("poll_interval_ms"), PollIntervalMs);
+	Data->SetNumberField(TEXT("waited_ms"), WaitedMs);
+	Data->SetBoolField(TEXT("timed_out"), bTimedOut && ReturnedCount <= 0);
+	Data->SetBoolField(TEXT("server_stopping"), bStopped);
+	return Data;
+}
+
 FString FAIExportTCPServer::BuildTaskEventsSse(TSharedPtr<FJsonObject> Params) const
 {
 	TSharedPtr<FJsonObject> Data = BuildTaskEventsJson(Params);
@@ -4374,6 +4437,14 @@ TSharedPtr<FJsonObject> FAIExportTCPServer::BuildTaskEventParamsFromHttpRequest(
 	if (const FString* Limit = Request.QueryParams.Find(TEXT("limit")))
 	{
 		Params->SetNumberField(TEXT("limit"), FCString::Atod(**Limit));
+	}
+	if (const FString* TimeoutMs = Request.QueryParams.Find(TEXT("timeout_ms")))
+	{
+		Params->SetNumberField(TEXT("timeout_ms"), FCString::Atod(**TimeoutMs));
+	}
+	if (const FString* PollIntervalMs = Request.QueryParams.Find(TEXT("poll_interval_ms")))
+	{
+		Params->SetNumberField(TEXT("poll_interval_ms"), FCString::Atod(**PollIntervalMs));
 	}
 	return Params;
 }
@@ -5329,6 +5400,11 @@ FString FAIExportTCPServer::HandleTaskResult(TSharedPtr<FJsonObject> Params)
 FString FAIExportTCPServer::HandleTaskEvents(TSharedPtr<FJsonObject> Params)
 {
 	return CreateSuccessResponse(BuildTaskEventsJson(Params));
+}
+
+FString FAIExportTCPServer::HandleTaskEventsWait(TSharedPtr<FJsonObject> Params)
+{
+	return CreateSuccessResponse(BuildTaskEventsWaitJson(Params));
 }
 
 FString FAIExportTCPServer::HandleTaskCancel(TSharedPtr<FJsonObject> Params)

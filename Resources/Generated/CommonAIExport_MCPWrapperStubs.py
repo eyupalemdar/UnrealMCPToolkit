@@ -140,6 +140,18 @@ def task_events(task_id: str = '', after_sequence: int = 0, limit: int = 100) ->
     return _format_response(_send_command("task_events", params))
 
 
+def task_events_wait(task_id: str = '', after_sequence: int = 0, limit: int = 100, timeout_ms: int = 5000, poll_interval_ms: int = 50) -> str:
+    """Generated stub for TCP command `task_events_wait` (AsyncJob)."""
+    params = {
+        "task_id": task_id,
+        "after_sequence": after_sequence,
+        "limit": limit,
+        "timeout_ms": timeout_ms,
+        "poll_interval_ms": poll_interval_ms,
+    }
+    return _format_response(_send_command("task_events_wait", params))
+
+
 def export_widget(asset_path: str, output_directory: str = '', both_formats: bool = True) -> str:
     """Generated stub for TCP command `export_widget` (Export)."""
     params = {
