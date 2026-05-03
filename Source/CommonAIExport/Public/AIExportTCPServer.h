@@ -3,15 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CommandHandlers/AIExportAsyncJobStore.h"
+#include "CommandHandlers/AIExportUtilityCommands.h"
+#include "HttpMcp/AIExportHttpMcpServer.h"
+#include "Transport/AIExportTcpTransport.h"
 #include "HAL/CriticalSection.h"
 #include "HAL/Runnable.h"
 #include "HAL/ThreadSafeCounter.h"
-#include "HttpRouteHandle.h"
 
-class FSocket;
-class IHttpRouter;
-struct FHttpServerRequest;
-struct FHttpServerResponse;
 
 /**
  * TCP Server Runnable for AI Export commands.
@@ -183,38 +182,6 @@ private:
 		bool bCancellationRequested = false;
 	};
 
-	struct FAsyncCommandJob
-	{
-		FString TaskId;
-		FString CommandName;
-		FString Status;
-		FString SubmittedAt;
-		FString StartedAt;
-		FString FinishedAt;
-		FString ResultJson;
-		FString ErrorMessage;
-		bool bCancelRequested = false;
-	};
-
-	struct FAsyncCommandEvent
-	{
-		int64 Sequence = 0;
-		FString TaskId;
-		FString CommandName;
-		FString Status;
-		FString EventType;
-		FString TimestampUtc;
-		FString Message;
-	};
-
-	struct FMcpHttpSession
-	{
-		FString SessionId;
-		FString ClientName;
-		FString CreatedAtUtc;
-		FDateTime LastSeenUtc;
-	};
-
 	/** Registered TCP command descriptors used for dispatch and introspection */
 	static const TArray<FCommandDescriptor>& GetCommandDescriptors();
 
@@ -233,63 +200,18 @@ private:
 	/** Create a generic dry-run response for mutating commands */
 	FString CreateDryRunResponse(const FCommandDescriptor& Descriptor, const FAICommandContext& Context);
 
-	/** Add one command descriptor to a JSON object */
-	void WriteCommandDescriptorJson(const FCommandDescriptor& Descriptor, TSharedPtr<class FJsonObject> OutObject) const;
-
-	/** Build editor identity JSON used by status, registry, and discovery */
-	TSharedPtr<class FJsonObject> BuildEditorIdentityJson() const;
-
-	/** Build a machine-readable command manifest JSON object */
-	TSharedPtr<class FJsonObject> BuildCommandManifestJson() const;
+	/** Build utility/status context passed to the utility command module */
+	CommonAIExport::CommandHandlers::Utility::FAIExportUtilityContext BuildUtilityContext() const;
 
 	/** Start/stop native localhost HTTP/MCP compatibility routes */
 	void StartHttpServer();
 	void StopHttpServer();
-
-	/** HTTP/MCP helpers */
-	const TArray<FString>* FindHttpHeaderValues(const FHttpServerRequest& Request, const FString& HeaderName) const;
-	FString GetHttpHeaderValue(const FHttpServerRequest& Request, const FString& HeaderName) const;
-	bool IsHttpOriginAllowed(const FString& Origin) const;
-	bool IsHttpRequestAllowed(const FHttpServerRequest& Request) const;
-	bool IsMcpProtocolVersionAllowed(const FHttpServerRequest& Request, FString& OutError) const;
-	void PruneExpiredMcpSessionsLocked(const FDateTime& NowUtc);
-	void AppendHttpAuditEvent(const FHttpServerRequest& Request, const FString& Route, int32 ResponseCode, bool bAllowed, const FString& Detail, const FString& McpSessionId = FString()) const;
-	TUniquePtr<FHttpServerResponse> MakeHttpJsonResponse(const FString& Json, int32 ResponseCode = 200, const FString& McpSessionId = FString()) const;
-	TUniquePtr<FHttpServerResponse> MakeHttpTextResponse(const FString& Text, const FString& ContentType, int32 ResponseCode = 200, const FString& McpSessionId = FString()) const;
-	FString HandleMcpJsonRpc(const FString& RequestJson, const FString& RequestSessionId, FString& OutSessionId);
 
 	/** Write this editor instance to the global discovery registry */
 	void WriteEditorRegistryFile();
 
 	/** Remove this editor instance from the global discovery registry */
 	void RemoveEditorRegistryFile();
-
-	/** Convert async job state to JSON */
-	TSharedPtr<class FJsonObject> BuildTaskJson(const FAsyncCommandJob& Job, bool bIncludeResult) const;
-
-	/** Convert async job event state to JSON */
-	TSharedPtr<class FJsonObject> BuildTaskEventJson(const FAsyncCommandEvent& Event) const;
-
-	/** Build async task event query payload */
-	TSharedPtr<class FJsonObject> BuildTaskEventsJson(TSharedPtr<class FJsonObject> Params) const;
-
-	/** Build async task event query payload after waiting for new events */
-	TSharedPtr<class FJsonObject> BuildTaskEventsWaitJson(TSharedPtr<class FJsonObject> Params) const;
-
-	/** Build async task events as Server-Sent Events formatted text */
-	FString BuildTaskEventsSse(TSharedPtr<class FJsonObject> Params) const;
-
-	/** Build task event params from HTTP query parameters */
-	TSharedPtr<class FJsonObject> BuildTaskEventParamsFromHttpRequest(const FHttpServerRequest& Request) const;
-
-	/** Append an async job lifecycle event while AsyncJobsCriticalSection is held */
-	void AppendTaskEventLocked(const FAsyncCommandJob& Job, const FString& EventType, const FString& Message);
-
-	/** Find a task by id under lock and return a copy of its state */
-	bool TryCopyTask(const FString& TaskId, FAsyncCommandJob& OutJob) const;
-
-	/** Process a single client connection */
-	void HandleClientConnection(FSocket* ClientSocket);
 
 	/** Process a JSON command and return JSON response */
 	FString ProcessCommand(const FString& JsonCommand);
@@ -477,27 +399,11 @@ private:
 	/** Server start time in UTC ISO-8601 */
 	FString ServerStartedAtUtc;
 
-	/** Listener socket */
-	FSocket* ListenerSocket = nullptr;
+	/** Native HTTP/MCP compatibility routes */
+	CommonAIExport::HttpMcp::FAIExportHttpMcpServer HttpMcpServer;
 
-	/** Native HTTP/MCP router and route handles */
-	TSharedPtr<IHttpRouter> HttpRouter;
-	TArray<FHttpRouteHandle> HttpRouteHandles;
-	bool bHttpServerRunning = false;
-	FString HttpAuthToken;
-	TArray<FString> HttpAllowedOrigins;
-	FString HttpAllowedOriginsConfig;
-	FString HttpAuditLogPath;
-	bool bHttpAuditEnabled = true;
-	int32 McpSessionTtlSeconds = 3600;
-	TMap<FString, FMcpHttpSession> ActiveMcpSessions;
-	mutable FCriticalSection ActiveMcpSessionsCriticalSection;
-	mutable FCriticalSection HttpAuditCriticalSection;
-	mutable FThreadSafeCounter HttpRequestCount;
-	mutable FThreadSafeCounter HttpRejectedRequestCount;
-	mutable FThreadSafeCounter McpRequestCount;
-	mutable FThreadSafeCounter McpRejectedRequestCount;
-	mutable FThreadSafeCounter McpSessionExpiredCount;
+	/** TCP socket transport */
+	CommonAIExport::Transport::FAIExportTcpTransport TcpTransport;
 
 	/** Server thread */
 	FRunnableThread* ServerThread = nullptr;
@@ -508,15 +414,8 @@ private:
 	/** Stop requested flag */
 	TAtomic<bool> bStopRequested;
 
-	/** Active client tasks running on the thread pool */
-	FThreadSafeCounter ActiveClientConnections;
-
 	/** Async job registry for long-running commands */
-	mutable FCriticalSection AsyncJobsCriticalSection;
-	TMap<FString, TSharedPtr<FAsyncCommandJob>> AsyncJobs;
-	TArray<FAsyncCommandEvent> AsyncJobEvents;
-	int64 AsyncJobEventSequence = 0;
-	static constexpr int32 MaxAsyncJobEvents = 1000;
+	CommonAIExport::CommandHandlers::FAIExportAsyncJobStore AsyncJobStore;
 };
 
 /**
