@@ -174,8 +174,11 @@ def _failures() -> list[str]:
             "actor_set_transform",
             "actor_spawn",
             "add_input_mapping",
+            "create_anim_blueprint",
             "create_asset",
             "fixup_redirectors",
+            "import_font",
+            "import_texture",
             "level_open",
             "level_save_current",
             "pie_start",
@@ -297,6 +300,48 @@ def _failures() -> list[str]:
             )
             if remove_mapping_call.get("params") != {"asset_path": "/Game/Input/IMC_Default", "mapping_index": 0} or remove_mapping_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed remove_input_mapping payload/meta mapping")
+            import_texture_call = build_tcp_call(
+                "import_texture",
+                {
+                    "source_path": "D:/Temp/T_Test.png",
+                    "package_path": "/Game/UI",
+                    "asset_name": "",
+                    "compression": "UserInterface2D",
+                    "srgb": True,
+                    "mip_gen": "NoMipmaps",
+                    "lod_group": "UI",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if import_texture_call.get("params") != {"source_path": "D:/Temp/T_Test.png", "package_path": "/Game/UI"} or import_texture_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed import_texture default payload/meta mapping")
+            import_font_call = build_tcp_call(
+                "import_font",
+                {
+                    "package_path": "/Game/UI/Fonts",
+                    "font_name": "Inter",
+                    "faces": [{"source_path": "D:/Temp/Inter-Regular.ttf", "name": "Regular"}],
+                    "hinting": "AutoLight",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if import_font_call.get("params") != {"package_path": "/Game/UI/Fonts", "font_name": "Inter", "faces": [{"source_path": "D:/Temp/Inter-Regular.ttf", "name": "Regular"}], "hinting": "AutoLight"} or import_font_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed import_font payload/meta mapping")
+            anim_blueprint_call = build_tcp_call(
+                "create_anim_blueprint",
+                {
+                    "package_path": "/Game/Characters/Animations",
+                    "asset_name": "ABP_Test",
+                    "skeleton_path": "/Game/Characters/SK_Test",
+                    "parent_class": "AnimInstance",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if anim_blueprint_call.get("params") != {"package_path": "/Game/Characters/Animations", "asset_name": "ABP_Test", "skeleton_path": "/Game/Characters/SK_Test"} or anim_blueprint_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed create_anim_blueprint default payload/meta mapping")
             spawn_call = build_tcp_call(
                 "actor_spawn",
                 {

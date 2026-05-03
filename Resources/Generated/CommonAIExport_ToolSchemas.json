@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T18:34:54.601368Z",
+  "generated_at_utc": "2026-05-03T18:39:40.833440Z",
   "tool_count": 140,
   "tools": {
     "ping": {
@@ -4547,6 +4547,14 @@
         "parent_class": {
           "type": "string",
           "default": "AnimInstance"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -4626,6 +4634,14 @@
         "lod_group": {
           "type": "string",
           "default": "UI"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -4668,6 +4684,14 @@
         "hinting": {
           "type": "string",
           "default": "Auto"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [

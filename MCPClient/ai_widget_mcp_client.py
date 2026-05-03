@@ -4155,7 +4155,9 @@ def import_texture(
     compression: str = "UserInterface2D",
     srgb: bool = True,
     mip_gen: str = "NoMipmaps",
-    lod_group: str = "UI"
+    lod_group: str = "UI",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Import a texture file from disk into the Unreal project.
@@ -4185,20 +4187,13 @@ def import_texture(
                   "Effects" - Effect textures
                   "Lightmap" - Lightmaps
                   "Shadowmap" - Shadowmaps
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without importing.
 
     Returns:
         JSON with asset_path, asset_name, width, height, format, and saved status.
     """
-    params = {
-        "source_path": source_path,
-        "package_path": package_path,
-        "asset_name": asset_name,
-        "compression": compression,
-        "srgb": srgb,
-        "mip_gen": mip_gen,
-        "lod_group": lod_group,
-    }
-    return _format_response(_send_command("import_texture", params))
+    return _send_generated_tcp_tool("import_texture", locals())
 
 
 @mcp.tool()
@@ -4206,7 +4201,9 @@ def import_font(
     package_path: str,
     font_name: str,
     faces: list[dict],
-    hinting: str = "Auto"
+    hinting: str = "Auto",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Import font files (TTF/OTF) and create a Composite Font asset.
@@ -4225,17 +4222,13 @@ def import_font(
                   {"source_path": "/path/to/Inter-Bold.ttf", "name": "Bold"}
               ]
         hinting: Font hinting mode: "Auto" (default), "AutoLight", "None"
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without importing.
 
     Returns:
         JSON with font_asset_path, font_name, face_count, and individual face asset paths.
     """
-    params = {
-        "package_path": package_path,
-        "font_name": font_name,
-        "faces": faces,
-        "hinting": hinting,
-    }
-    return _format_response(_send_command("import_font", params))
+    return _send_generated_tcp_tool("import_font", locals())
 
 
 # =============================================================================
@@ -5386,7 +5379,9 @@ def create_anim_blueprint(
     package_path: str,
     asset_name: str,
     skeleton_path: str,
-    parent_class: str = "AnimInstance"
+    parent_class: str = "AnimInstance",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Create a new AnimBlueprint asset.
@@ -5397,16 +5392,13 @@ def create_anim_blueprint(
         skeleton_path: Path to USkeleton, e.g. "/Game/Characters/SK_Mannequin"
         parent_class: Optional parent class. Defaults to "AnimInstance".
                      Can also be a full class path.
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without creating the asset.
 
     Returns:
         JSON with asset_path, asset_name, skeleton, parent_class.
     """
-    return _format_response(_send_command("create_anim_blueprint", {
-        "package_path": package_path,
-        "asset_name": asset_name,
-        "skeleton_path": skeleton_path,
-        "parent_class": parent_class,
-    }))
+    return _send_generated_tcp_tool("create_anim_blueprint", locals())
 
 
 @mcp.tool()

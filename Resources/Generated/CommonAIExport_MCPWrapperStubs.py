@@ -1218,7 +1218,7 @@ def get_input_mappings(asset_path: str) -> str:
     return _format_response(_send_command("get_input_mappings", params))
 
 
-def create_anim_blueprint(package_path: str, asset_name: str, skeleton_path: str, parent_class: str = 'AnimInstance') -> str:
+def create_anim_blueprint(package_path: str, asset_name: str, skeleton_path: str, parent_class: str = 'AnimInstance', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `create_anim_blueprint` (AnimBlueprint)."""
     params = {
         "package_path": package_path,
@@ -1226,7 +1226,7 @@ def create_anim_blueprint(package_path: str, asset_name: str, skeleton_path: str
         "skeleton_path": skeleton_path,
         "parent_class": parent_class,
     }
-    return _format_response(_send_command("create_anim_blueprint", params))
+    return _format_response(_send_command("create_anim_blueprint", params, _request_meta(scope, dry_run)))
 
 
 def get_anim_blueprint_info(asset_path: str) -> str:
@@ -1237,7 +1237,7 @@ def get_anim_blueprint_info(asset_path: str) -> str:
     return _format_response(_send_command("get_anim_blueprint_info", params))
 
 
-def import_texture(source_path: str, package_path: str, asset_name: str = '', compression: str = 'UserInterface2D', srgb: bool = True, mip_gen: str = 'NoMipmaps', lod_group: str = 'UI') -> str:
+def import_texture(source_path: str, package_path: str, asset_name: str = '', compression: str = 'UserInterface2D', srgb: bool = True, mip_gen: str = 'NoMipmaps', lod_group: str = 'UI', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `import_texture` (Import)."""
     params = {
         "source_path": source_path,
@@ -1248,10 +1248,10 @@ def import_texture(source_path: str, package_path: str, asset_name: str = '', co
         "mip_gen": mip_gen,
         "lod_group": lod_group,
     }
-    return _format_response(_send_command("import_texture", params))
+    return _format_response(_send_command("import_texture", params, _request_meta(scope, dry_run)))
 
 
-def import_font(package_path: str, font_name: str, faces: list[dict], hinting: str = 'Auto') -> str:
+def import_font(package_path: str, font_name: str, faces: list[dict], hinting: str = 'Auto', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `import_font` (Import)."""
     params = {
         "package_path": package_path,
@@ -1259,7 +1259,7 @@ def import_font(package_path: str, font_name: str, faces: list[dict], hinting: s
         "faces": faces,
         "hinting": hinting,
     }
-    return _format_response(_send_command("import_font", params))
+    return _format_response(_send_command("import_font", params, _request_meta(scope, dry_run)))
 
 
 def capture_widget_preview(asset_path: str, width: int = 1920, height: int = 1080, output_path: str = '', warmup_frames: int = 3, transparent_bg: bool = False, return_base64: bool = False, dpi_scale: float = 1.0, preview_mode: str = 'runtime', preview_function_calls: list[dict] | None = None, ratios: list[dict] | None = None) -> str:

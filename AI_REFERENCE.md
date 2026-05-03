@@ -367,7 +367,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 | Tool | Purpose |
 |------|---------|
-| `save_data_asset(asset_path)` | Save a Data Asset to disk without compiling |
+| `save_data_asset(asset_path, scope?, dry_run?)` | Save a Data Asset to disk without compiling |
 
 ---
 
@@ -375,20 +375,20 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 | Tool | Purpose |
 |------|---------|
-| `create_asset(package_path, asset_name, asset_type, properties?)` | Create InputAction, InputMappingContext, Sound*, PhysicalMaterial |
-| `set_asset_property(asset_path, property_path, value)` | Set a reflected property on any loaded asset |
+| `create_asset(package_path, asset_name, asset_type, properties?, scope?, dry_run?)` | Create InputAction, InputMappingContext, Sound*, PhysicalMaterial |
+| `set_asset_property(asset_path, property_path, value, scope?, dry_run?)` | Set a reflected property on any loaded asset |
 | `get_asset_properties(asset_path)` | Get all reflected asset properties as JSON |
 | `asset_search(path?, name_filter?, class_filter?, recursive?, offset?, limit?)` | Search Asset Registry with pagination |
 | `asset_validate_light(asset_path)` | Lightweight existence/dependency/redirector health check |
 | `asset_exists(asset_path)` | Check Asset Registry/on-disk package existence without loading full properties |
 | `scan_asset_paths(paths?, path?, force_rescan?)` | Rescan Content paths after external package file copies |
-| `save_asset(asset_path)` | Save any loaded asset to disk |
-| `rename_asset(asset_path, new_package_path?, new_asset_name?)` | Rename or move an asset using AssetTools |
+| `save_asset(asset_path, scope?, dry_run?)` | Save any loaded asset to disk |
+| `rename_asset(asset_path, new_package_path?, new_asset_name?, scope?, dry_run?)` | Rename or move an asset using AssetTools |
 | `get_referencers(asset_path)` | List packages that reference the asset |
 | `get_dependencies(asset_path)` | List packages referenced by the asset |
 | `delete_asset(asset_path, force?, scope?, dry_run?)` | Delete an asset after reference checks, or force delete when explicitly requested. Requires `scope="destructive"` |
 | `list_redirectors(folder_path, recursive?)` | List redirectors under a folder |
-| `fixup_redirectors(folder_path, recursive?)` | Fix redirector referencers under a folder |
+| `fixup_redirectors(folder_path, recursive?, scope?, dry_run?)` | Fix redirector referencers under a folder |
 
 ---
 
@@ -396,8 +396,8 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 | Tool | Purpose |
 |------|---------|
-| `add_input_mapping(asset_path, input_action_path, key, triggers?, modifiers?)` | Add a key mapping to an IMC |
-| `remove_input_mapping(asset_path, mapping_index)` | Remove a mapping by index |
+| `add_input_mapping(asset_path, input_action_path, key, triggers?, modifiers?, scope?, dry_run?)` | Add a key mapping to an IMC |
+| `remove_input_mapping(asset_path, mapping_index, scope?, dry_run?)` | Remove a mapping by index |
 | `get_input_mappings(asset_path)` | Get all mappings as JSON |
 
 ---
@@ -406,7 +406,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 | Tool | Purpose |
 |------|---------|
-| `create_anim_blueprint(package_path, asset_name, skeleton_path, parent_class?)` | Create an Animation Blueprint |
+| `create_anim_blueprint(package_path, asset_name, skeleton_path, parent_class?, scope?, dry_run?)` | Create an Animation Blueprint |
 | `get_anim_blueprint_info(asset_path)` | Get AnimBlueprint skeleton, parent, graphs, and variables as JSON |
 
 ---
@@ -415,8 +415,8 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 | Tool | Purpose |
 |------|---------|
-| `import_texture(source_path, destination_path, asset_name, compression?)` | Import texture from disk |
-| `import_font(font_paths_json, destination_path, asset_name, default_size?)` | Import TTF/OTF → Composite Font |
+| `import_texture(source_path, package_path, asset_name?, compression?, srgb?, mip_gen?, lod_group?, scope?, dry_run?)` | Import texture from disk |
+| `import_font(package_path, font_name, faces, hinting?, scope?, dry_run?)` | Import TTF/OTF into a Composite Font |
 
 ---
 
@@ -770,12 +770,13 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 `CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
-now covers 78 wrappers: read-only payload wrappers, the safe write-scope set
+now covers 81 wrappers: read-only payload wrappers, the safe write-scope set
 (`actor_spawn`, `actor_set_transform`, `level_open`, `level_save_current`,
 `pie_start`, `pie_stop`, `viewport_capture`, `save_data_asset`,
 `create_asset`, `set_asset_property`, `save_asset`, `rename_asset`,
-`fixup_redirectors`, `add_input_mapping`, and `remove_input_mapping`), and the
-current destructive dry-run set (`actor_delete`, `delete_asset`, and
+`fixup_redirectors`, `add_input_mapping`, `remove_input_mapping`,
+`create_anim_blueprint`, `import_texture`, and `import_font`), and the current
+destructive dry-run set (`actor_delete`, `delete_asset`, and
 `editor_console_command`).
 Payload fields, optional dict transform values, `scope`, and `dry_run` request
 meta are encoded explicitly so destructive tools keep their existing
