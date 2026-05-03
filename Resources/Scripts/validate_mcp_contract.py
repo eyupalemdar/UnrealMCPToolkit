@@ -17,9 +17,11 @@ from generate_mcp_artifacts import (
     TOOL_CATALOG_PATH,
     TOOL_SCHEMAS_PATH,
     WRAPPER_SPEC_PATH,
+    WRAPPER_RUNTIME_PATH,
     WRAPPER_STUBS_PATH,
     build_ai_reference_tool_summary,
     build_command_manifest,
+    build_wrapper_runtime,
     build_wrapper_spec,
     build_wrapper_stubs,
     build_tool_schemas,
@@ -97,6 +99,7 @@ def _validate_generated_artifacts(expected_tcp_commands: list[str], expected_mcp
         TOOL_CATALOG_PATH,
         WRAPPER_SPEC_PATH,
         WRAPPER_STUBS_PATH,
+        WRAPPER_RUNTIME_PATH,
     ]
     missing = [path for path in required_paths if not path.exists()]
     if missing:
@@ -170,10 +173,18 @@ def _validate_generated_artifacts(expected_tcp_commands: list[str], expected_mcp
     if WRAPPER_STUBS_PATH.read_text(encoding="utf-8") != current_wrapper_stubs:
         errors.append("Generated wrapper stubs are stale; run generate_mcp_artifacts.py")
 
+    current_wrapper_runtime = build_wrapper_runtime(current_manifest, current_wrapper_spec)
+    if WRAPPER_RUNTIME_PATH.read_text(encoding="utf-8") != current_wrapper_runtime:
+        errors.append("Generated wrapper runtime is stale; run generate_mcp_artifacts.py")
+
     catalog_text = TOOL_CATALOG_PATH.read_text(encoding="utf-8")
     if f"- TCP commands: {len(expected_tcp_commands)}" not in catalog_text or f"- MCP tools: {expected_mcp_count}" not in catalog_text:
         errors.append("Generated tool catalog count summary is stale; run generate_mcp_artifacts.py")
-    if "CommonAIExport_WrapperSpec.json" not in catalog_text or "CommonAIExport_MCPWrapperStubs.py" not in catalog_text:
+    if (
+        "CommonAIExport_WrapperSpec.json" not in catalog_text
+        or "CommonAIExport_MCPWrapperStubs.py" not in catalog_text
+        or "CommonAIExport_MCPWrapperRuntime.py" not in catalog_text
+    ):
         errors.append("Generated tool catalog wrapper summary is stale; run generate_mcp_artifacts.py")
 
     ai_reference_text = AI_REFERENCE.read_text(encoding="utf-8")

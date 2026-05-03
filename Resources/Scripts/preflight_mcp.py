@@ -19,6 +19,7 @@ STATIC_TESTS = SCRIPT_DIR / "test_mcp_contract.py"
 RUNTIME_SMOKE = SCRIPT_DIR / "smoke_mcp_runtime.py"
 MCP_CLIENT = PLUGIN_ROOT / "MCPClient" / "ai_widget_mcp_client.py"
 GENERATED_WRAPPER_STUBS = PLUGIN_ROOT / "Resources" / "Generated" / "CommonAIExport_MCPWrapperStubs.py"
+GENERATED_WRAPPER_RUNTIME = PLUGIN_ROOT / "Resources" / "Generated" / "CommonAIExport_MCPWrapperRuntime.py"
 
 PY_COMPILE_TARGETS = [
     MCP_CLIENT,
@@ -27,6 +28,7 @@ PY_COMPILE_TARGETS = [
     STATIC_TESTS,
     RUNTIME_SMOKE,
     GENERATED_WRAPPER_STUBS,
+    GENERATED_WRAPPER_RUNTIME,
 ]
 
 

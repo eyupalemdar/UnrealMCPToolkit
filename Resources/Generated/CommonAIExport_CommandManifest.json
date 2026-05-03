@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T13:12:31.490651Z",
+  "generated_at_utc": "2026-05-03T13:24:12.491092Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "Plugins/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "command_count": 108,

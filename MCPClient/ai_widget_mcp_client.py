@@ -27,6 +27,7 @@ import time
 import hashlib
 import subprocess
 import shlex
+import sys
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -87,6 +88,15 @@ TIMEOUT = 60
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _DEFAULT_PROJECT_DIR = str(_SCRIPT_DIR.parent.parent.parent)
 PROJECT_DIR = os.environ.get("UE_PROJECT_DIR", _DEFAULT_PROJECT_DIR)
+_GENERATED_DIR = _SCRIPT_DIR.parent / "Resources" / "Generated"
+if str(_GENERATED_DIR) not in sys.path:
+    sys.path.insert(0, str(_GENERATED_DIR))
+try:
+    from CommonAIExport_MCPWrapperRuntime import GENERATED_TCP_WRAPPERS as _GENERATED_TCP_WRAPPERS
+    from CommonAIExport_MCPWrapperRuntime import build_tcp_call as _build_generated_tcp_call
+except Exception:
+    _GENERATED_TCP_WRAPPERS = {}
+    _build_generated_tcp_call = None
 CLIENT_ONLY_TOOLS = {
     "editors_list",
     "editor_call",
@@ -406,6 +416,16 @@ def _send_command(cmd_type: str, params: dict | None = None, meta: dict | None =
 def _format_response(result: dict) -> str:
     """Format a TCP response as a readable string."""
     return json.dumps(result, indent=2, ensure_ascii=False)
+
+
+def _send_generated_tcp_tool(tool_name: str, arguments: dict | None = None) -> str:
+    """Send a selected generated pass-through TCP wrapper."""
+    if tool_name in _GENERATED_TCP_WRAPPERS and _build_generated_tcp_call is not None:
+        generated = _build_generated_tcp_call(tool_name, arguments or {})
+        if not generated.get("success"):
+            return _format_response(generated)
+        return _format_response(_send_command(generated["command"], generated.get("params"), generated.get("meta")))
+    return _format_response(_send_command(tool_name, arguments or None))
 
 
 def _request_meta(scope: str = "", dry_run: bool = False) -> dict | None:
@@ -1030,6 +1050,10 @@ def _server_metadata() -> dict:
             "tcp_manifest": "commonai://commands/manifest",
             "client_only": sorted(CLIENT_ONLY_TOOLS),
             "generated_schemas": "Plugins/CommonAIExport/Resources/Generated/CommonAIExport_ToolSchemas.json",
+            "wrapper_spec": "Plugins/CommonAIExport/Resources/Generated/CommonAIExport_WrapperSpec.json",
+            "wrapper_stubs": "Plugins/CommonAIExport/Resources/Generated/CommonAIExport_MCPWrapperStubs.py",
+            "wrapper_runtime": "Plugins/CommonAIExport/Resources/Generated/CommonAIExport_MCPWrapperRuntime.py",
+            "generated_runtime_wrapper_count": len(_GENERATED_TCP_WRAPPERS),
         },
         "resources": list(COMMONAI_RESOURCES.keys()),
         "prompts": sorted(COMMONAI_PROMPTS.keys()),
@@ -1116,7 +1140,7 @@ def runtime_debug_triage_prompt() -> str:
 @mcp.tool()
 def ping() -> str:
     """Check if the Unreal Editor TCP server is running and responsive."""
-    return _format_response(_send_command("ping"))
+    return _send_generated_tcp_tool("ping")
 
 
 @mcp.tool()
@@ -1128,7 +1152,7 @@ def list_commands() -> str:
         JSON with command names, categories, parameter requirements, mutation
         flags, and nominal timeout seconds.
     """
-    return _format_response(_send_command("list_commands"))
+    return _send_generated_tcp_tool("list_commands")
 
 
 @mcp.tool()
@@ -1140,7 +1164,7 @@ def server_status() -> str:
         JSON with server identity, port, command count, scope model, transport
         summary, and async task counters.
     """
-    return _format_response(_send_command("server_status"))
+    return _send_generated_tcp_tool("server_status")
 
 
 @mcp.tool()
@@ -1152,7 +1176,7 @@ def editor_identity() -> str:
         JSON with editor_id, project path, engine/plugin version, TCP port,
         registry file, transport summary, and capability flags.
     """
-    return _format_response(_send_command("editor_identity"))
+    return _send_generated_tcp_tool("editor_identity")
 
 
 @mcp.tool()
@@ -1182,7 +1206,7 @@ def project_status() -> str:
         JSON with editor identity, command count, repo markers, last build log
         presence, log file count, and current editor world/PIE state.
     """
-    return _format_response(_send_command("project_status"))
+    return _send_generated_tcp_tool("project_status")
 
 
 @mcp.tool()
@@ -1646,7 +1670,7 @@ def editor_world_info() -> str:
         JSON with current world/map, level list, actor count, world type, and
         PIE activity state.
     """
-    return _format_response(_send_command("editor_world_info"))
+    return _send_generated_tcp_tool("editor_world_info")
 
 
 @mcp.tool()
@@ -1925,7 +1949,7 @@ def pie_status() -> str:
     Returns:
         JSON with pie_active, simulating, and play_world fields.
     """
-    return _format_response(_send_command("pie_status"))
+    return _send_generated_tcp_tool("pie_status")
 
 
 @mcp.tool()
@@ -3241,13 +3265,13 @@ def list_widget_classes() -> str:
     Returns:
         JSON with array of classes (name and is_panel flag).
     """
-    return _format_response(_send_command("list_widget_classes"))
+    return _send_generated_tcp_tool("list_widget_classes")
 
 
 @mcp.tool()
 def list_supported_types() -> str:
     """List all asset types supported for export."""
-    return _format_response(_send_command("list_supported_types"))
+    return _send_generated_tcp_tool("list_supported_types")
 
 
 # =============================================================================
@@ -3569,7 +3593,7 @@ def list_expression_classes() -> str:
     Returns:
         JSON with array of class names.
     """
-    return _format_response(_send_command("list_expression_classes"))
+    return _send_generated_tcp_tool("list_expression_classes")
 
 
 # =============================================================================

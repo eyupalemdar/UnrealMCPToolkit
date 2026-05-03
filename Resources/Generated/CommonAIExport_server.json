@@ -4,7 +4,7 @@
   "display_name": "CommonAIExport",
   "description": "Project-local Unreal Editor automation MCP bridge for ProjectOkey.",
   "version": "0.4.1",
-  "generated_at_utc": "2026-05-03T13:12:31.554491Z",
+  "generated_at_utc": "2026-05-03T13:24:12.555572Z",
   "transports": {
     "stdio": {
       "command": "python",
@@ -47,9 +47,11 @@
     "schemas": "Resources/Generated/CommonAIExport_ToolSchemas.json",
     "wrapper_spec": "Resources/Generated/CommonAIExport_WrapperSpec.json",
     "wrapper_stubs": "Resources/Generated/CommonAIExport_MCPWrapperStubs.py",
+    "wrapper_runtime": "Resources/Generated/CommonAIExport_MCPWrapperRuntime.py",
     "schema_source": "Python MCP wrapper signatures",
     "strict_parameter_schemas": true,
-    "wrapper_drift_checked": true
+    "wrapper_drift_checked": true,
+    "generated_runtime_imported": true
   },
   "resources": [
     "commonai://project/status",

@@ -12,9 +12,11 @@ from generate_mcp_artifacts import (
     COMMAND_MANIFEST_PATH,
     TOOL_SCHEMAS_PATH,
     WRAPPER_SPEC_PATH,
+    WRAPPER_RUNTIME_PATH,
     WRAPPER_STUBS_PATH,
     build_ai_reference_tool_summary,
     build_command_manifest,
+    build_wrapper_runtime,
     build_wrapper_spec,
     build_wrapper_stubs,
     build_tool_schemas,
@@ -132,6 +134,13 @@ def _failures() -> list[str]:
             failures.append("generated wrapper stubs are stale")
     else:
         failures.append(f"missing generated wrapper stubs: {WRAPPER_STUBS_PATH}")
+
+    if WRAPPER_RUNTIME_PATH.exists():
+        expected_runtime = build_wrapper_runtime(manifest, wrapper_spec)
+        if WRAPPER_RUNTIME_PATH.read_text(encoding="utf-8") != expected_runtime:
+            failures.append("generated wrapper runtime is stale")
+    else:
+        failures.append(f"missing generated wrapper runtime: {WRAPPER_RUNTIME_PATH}")
 
     if AI_REFERENCE_PATH.exists():
         ai_reference = AI_REFERENCE_PATH.read_text(encoding="utf-8")

@@ -8,6 +8,7 @@
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
+- Wrapper runtime: `Resources/Generated/CommonAIExport_MCPWrapperRuntime.py`
 
 ## Categories
 
