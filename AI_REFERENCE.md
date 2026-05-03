@@ -756,9 +756,11 @@ wrapper function, records the wrapper signature and payload inclusion rules,
 and fails validation when a wrapper is missing or calls the wrong TCP command.
 `CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
-the MCP client for selected read-only pass-through wrappers, including safe
-parameterized wrappers whose required/default/omitted payload fields are encoded
-in generated metadata.
+the MCP client for selected pass-through wrappers. Generated runtime metadata
+now covers read-only payload wrappers and a small safe write-scope set
+(`level_open`, `level_save_current`, `pie_start`, `pie_stop`, and
+`viewport_capture`) where payload fields, `scope`, and `dry_run` request meta are
+encoded explicitly.
 
 Regenerate them with:
 

@@ -1951,9 +1951,7 @@ def level_open(
     Returns:
         JSON with requested map path and resolved filename.
     """
-    return _format_response(_send_command("level_open", {
-        "map_path": map_path,
-    }, _request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("level_open", locals())
 
 
 @mcp.tool()
@@ -1972,7 +1970,7 @@ def level_save_current(
     Returns:
         JSON with save status, package name, and filename.
     """
-    return _format_response(_send_command("level_save_current", meta=_request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("level_save_current", locals())
 
 
 @mcp.tool()
@@ -2002,7 +2000,7 @@ def pie_start(
     Returns:
         JSON with request status.
     """
-    return _format_response(_send_command("pie_start", meta=_request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("pie_start", locals())
 
 
 @mcp.tool()
@@ -2021,7 +2019,7 @@ def pie_stop(
     Returns:
         JSON with request status.
     """
-    return _format_response(_send_command("pie_stop", meta=_request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("pie_stop", locals())
 
 
 @mcp.tool()
@@ -2101,13 +2099,7 @@ def viewport_capture(
     Returns:
         JSON with screenshot_requested and output_path.
     """
-    params: dict = {
-        "show_ui": show_ui,
-        "add_filename_suffix": add_filename_suffix,
-    }
-    if output_path:
-        params["output_path"] = output_path
-    return _format_response(_send_command("viewport_capture", params, _request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("viewport_capture", locals())
 
 
 @mcp.tool()

@@ -150,6 +150,12 @@ def _failures() -> list[str]:
         for expected_name in ("asset_exists", "get_widget_tree", "task_events"):
             if expected_name not in generated_wrappers:
                 failures.append(f"generated wrapper runtime missing {expected_name}")
+        for expected_name in ("level_open", "level_save_current", "pie_start", "pie_stop", "viewport_capture"):
+            spec = generated_wrappers.get(expected_name)
+            if not spec:
+                failures.append(f"generated wrapper runtime missing write-scope {expected_name}")
+            elif not spec.get("meta_params"):
+                failures.append(f"generated wrapper runtime missing meta params for {expected_name}")
         build_tcp_call = runtime_namespace.get("build_tcp_call")
         if callable(build_tcp_call):
             asset_call = build_tcp_call("asset_exists", {"asset_path": "/Game/Example"})
@@ -164,6 +170,24 @@ def _failures() -> list[str]:
             unexpected_call = build_tcp_call("asset_exists", {"asset_path": "/Game/Example", "extra": True})
             if unexpected_call.get("success") is not False:
                 failures.append("generated wrapper runtime did not reject unexpected parameters")
+            pie_call = build_tcp_call("pie_start", {"scope": "write", "dry_run": True})
+            if pie_call.get("params") is not None or pie_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed write-scope meta-only mapping")
+            level_call = build_tcp_call("level_open", {"map_path": "/Game/Maps/L_Main", "scope": "", "dry_run": True})
+            if level_call.get("params") != {"map_path": "/Game/Maps/L_Main"} or level_call.get("meta") != {"dry_run": True}:
+                failures.append("generated wrapper runtime failed write-scope payload/meta mapping")
+            viewport_call = build_tcp_call(
+                "viewport_capture",
+                {
+                    "output_path": "",
+                    "show_ui": False,
+                    "add_filename_suffix": True,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if viewport_call.get("params") != {"show_ui": False, "add_filename_suffix": True} or viewport_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed write-scope optional payload mapping")
         else:
             failures.append("generated wrapper runtime missing build_tcp_call")
     else:
