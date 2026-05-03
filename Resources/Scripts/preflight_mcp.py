@@ -49,6 +49,11 @@ def main() -> int:
         action="store_true",
         help="Also run smoke_mcp_runtime.py against a live editor.",
     )
+    parser.add_argument(
+        "--mutating-smoke",
+        action="store_true",
+        help="When used with --runtime-smoke, run the isolated mutating WBP smoke.",
+    )
     args = parser.parse_args()
 
     steps: list[tuple[str, list[str]]] = []
@@ -65,7 +70,10 @@ def main() -> int:
         ]
     )
     if args.runtime_smoke:
-        steps.append(("Run MCP runtime smoke", [sys.executable, str(RUNTIME_SMOKE)]))
+        runtime_command = [sys.executable, str(RUNTIME_SMOKE)]
+        if args.mutating_smoke:
+            runtime_command.append("--mutating-smoke")
+        steps.append(("Run MCP runtime smoke", runtime_command))
 
     for label, command in steps:
         exit_code = _run(label, command)

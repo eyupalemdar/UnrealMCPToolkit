@@ -21,7 +21,10 @@ def _project_root() -> Path:
     env_root = os.environ.get("UE_PROJECT_DIR")
     if env_root:
         return Path(env_root).resolve()
-    return Path.cwd().resolve()
+    cwd = Path.cwd().resolve()
+    if (cwd / "Intermediate" / "AIExport_port.txt").exists():
+        return cwd
+    return Path(__file__).resolve().parents[3]
 
 
 PROJECT_ROOT = _project_root()
@@ -39,22 +42,31 @@ def _read_port(filename: str, default: int = 0) -> int:
 
 def _send_tcp(port: int, payload: dict, timeout: int = 30) -> dict:
     data = json.dumps(payload).encode("utf-8")
-    with socket.create_connection(("127.0.0.1", port), timeout=timeout) as sock:
-        sock.settimeout(timeout)
-        sock.sendall(data)
-        chunks: list[bytes] = []
-        while True:
-            try:
+    command_type = str(payload.get("type", "<missing>"))
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=timeout) as sock:
+            sock.settimeout(timeout)
+            sock.sendall(data)
+            chunks: list[bytes] = []
+            while True:
                 chunk = sock.recv(65536)
-            except TimeoutError:
-                break
-            if not chunk:
-                break
-            chunks.append(chunk)
-            if len(chunk) < 65536:
-                break
-    raw = b"".join(chunks).decode("utf-8")
-    return json.loads(raw)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                if len(chunk) < 65536:
+                    break
+    except TimeoutError as exc:
+        raise RuntimeError(f"TCP command '{command_type}' timed out after {timeout}s") from exc
+    except OSError as exc:
+        raise RuntimeError(f"TCP command '{command_type}' failed: {exc}") from exc
+
+    raw = b"".join(chunks).decode("utf-8", errors="replace")
+    if not raw.strip():
+        raise RuntimeError(f"TCP command '{command_type}' returned an empty response")
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"TCP command '{command_type}' returned non-JSON response: {raw[:500]}") from exc
 
 
 def _http_request(port: int, path: str, payload: dict | None = None, headers: dict | None = None, method: str | None = None) -> dict:
@@ -109,7 +121,128 @@ def _assert(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def run_smoke() -> dict:
+def _tcp_command(tcp_port: int, command_type: str, params: dict | None = None, meta: dict | None = None, timeout: int = 30) -> dict:
+    payload = {"type": command_type}
+    if params is not None:
+        payload["params"] = params
+    if meta is not None:
+        payload["meta"] = meta
+    return _send_tcp(tcp_port, payload, timeout=timeout)
+
+
+def _assert_tcp_success(response: dict, label: str) -> dict:
+    _assert(bool(response.get("success")), f"{label} failed: {response.get('error', response)}")
+    data = response.get("data", {})
+    return data if isinstance(data, dict) else {}
+
+
+def _delete_smoke_asset(tcp_port: int, asset_path: str) -> dict:
+    return _tcp_command(
+        tcp_port,
+        "delete_asset",
+        {"asset_path": asset_path, "force": True},
+        {"scope": "destructive"},
+        timeout=60,
+    )
+
+
+def _run_mutating_widget_smoke(tcp_port: int) -> dict:
+    """Create, mutate, compile, inspect, and delete an isolated smoke WBP."""
+    package_path = "/Game/CommonAIExport/_Smoke"
+    asset_name = "W_CommonAIExportRuntimeSmoke"
+    asset_path = f"{package_path}/{asset_name}"
+
+    _delete_smoke_asset(tcp_port, asset_path)
+    created = False
+    try:
+        create_data = _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "create_widget_blueprint",
+                {
+                    "package_path": package_path,
+                    "asset_name": asset_name,
+                    "parent_class": "/Script/UMG.UserWidget",
+                },
+                timeout=60,
+            ),
+            "create_widget_blueprint",
+        )
+        created = True
+        smoke_asset_path = str(create_data.get("asset_path") or asset_path)
+
+        _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "add_widget",
+                {"asset_path": smoke_asset_path, "widget_class": "TextBlock", "widget_name": "SmokeText", "parent_name": "RootCanvas"},
+            ),
+            "add_widget SmokeText",
+        )
+        _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "set_widget_property",
+                {
+                    "asset_path": smoke_asset_path,
+                    "widget_name": "SmokeText",
+                    "property_name": "Text",
+                    "value": 'NSLOCTEXT("CommonAIExport", "RuntimeSmoke", "Runtime Smoke")',
+                },
+            ),
+            "set_widget_property Text",
+        )
+        _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "set_widget_property",
+                {
+                    "asset_path": smoke_asset_path,
+                    "widget_name": "SmokeText",
+                    "property_name": "Font.Size",
+                    "value": "24",
+                },
+            ),
+            "set_widget_property Font.Size",
+        )
+        _assert_tcp_success(
+            _tcp_command(
+                tcp_port,
+                "set_canvas_slot_layout",
+                {
+                    "asset_path": smoke_asset_path,
+                    "widget_name": "SmokeText",
+                    "position_x": 32,
+                    "position_y": 24,
+                    "size_x": 320,
+                    "size_y": 60,
+                    "anchor_min_x": 0,
+                    "anchor_min_y": 0,
+                    "anchor_max_x": 0,
+                    "anchor_max_y": 0,
+                    "alignment_x": 0,
+                    "alignment_y": 0,
+                },
+            ),
+            "set_canvas_slot_layout",
+        )
+        _assert_tcp_success(_tcp_command(tcp_port, "compile_and_save", {"asset_path": smoke_asset_path}, timeout=60), "compile_and_save")
+        tree_data = _assert_tcp_success(_tcp_command(tcp_port, "get_widget_tree", {"asset_path": smoke_asset_path}, timeout=60), "get_widget_tree")
+        tree_text = json.dumps(tree_data, ensure_ascii=False)
+        _assert("RootCanvas" in tree_text and "SmokeText" in tree_text, "mutating widget smoke tree missing expected widgets")
+        return {
+            "success": True,
+            "asset_path": smoke_asset_path,
+            "created": True,
+            "tree_checked": True,
+        }
+    finally:
+        if created:
+            cleanup = _delete_smoke_asset(tcp_port, asset_path)
+            _assert(bool(cleanup.get("success")), f"smoke asset cleanup failed: {cleanup.get('error', cleanup)}")
+
+
+def run_smoke(mutating_smoke: bool = False) -> dict:
     tcp_port = _read_port("AIExport_port.txt", DEFAULT_TCP_PORT)
     http_port = _read_port("AIExport_http_port.txt", 0)
     _assert(http_port > 0, "native HTTP port file missing")
@@ -188,6 +321,10 @@ def run_smoke() -> dict:
     after_delete = _mcp(http_port, 91, "tools/list", {}, session_id=session_id)
     _assert(after_delete.get("body", {}).get("error", {}).get("code") == -32001, "deleted session did not return -32001")
 
+    mutating_widget_result = None
+    if mutating_smoke:
+        mutating_widget_result = _run_mutating_widget_smoke(tcp_port)
+
     identity = _send_tcp(tcp_port, {"type": "editor_identity"})
     audit_path = Path(identity.get("data", {}).get("http_audit_log_path", ""))
     audit_lines = []
@@ -208,6 +345,7 @@ def run_smoke() -> dict:
         "destructive_scope_gate": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "session_delete_success": True,
+        "mutating_widget_smoke": mutating_widget_result,
         "audit_log_path": str(audit_path),
         "audit_line_count": len(audit_lines),
         "audit_parse_checked": min(len(audit_lines), 20),
@@ -217,10 +355,15 @@ def run_smoke() -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="Print compact JSON instead of pretty JSON")
+    parser.add_argument(
+        "--mutating-smoke",
+        action="store_true",
+        help="Create, compile, inspect, and delete an isolated /Game/CommonAIExport/_Smoke test WBP.",
+    )
     args = parser.parse_args()
 
     try:
-        result = run_smoke()
+        result = run_smoke(mutating_smoke=args.mutating_smoke)
     except Exception as exc:
         result = {"success": False, "error": str(exc)}
         print(json.dumps(result, indent=None if args.json else 2, ensure_ascii=False))

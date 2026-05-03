@@ -731,12 +731,14 @@ python Plugins/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py
 python Plugins/CommonAIExport/Resources/Scripts/validate_mcp_contract.py
 python Plugins/CommonAIExport/Resources/Scripts/test_mcp_contract.py
 python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py
+python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py --mutating-smoke
 ```
 
 For the non-runtime preflight, use the wrapper:
 
 ```powershell
 python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py
+python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py --runtime-smoke --mutating-smoke
 ```
 
 ### Example: Read recent errors

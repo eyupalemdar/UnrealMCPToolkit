@@ -54,6 +54,7 @@ python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py
 
 # Optional live-editor runtime smoke
 python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py
+python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py --mutating-smoke
 ```
 
 ```bash
