@@ -128,7 +128,7 @@ def send_command(command_type, params=None, project_dir=None, port=None):
         port = get_port(project_dir)
 
     command = {"type": command_type}
-    if params:
+    if params is not None:
         command["params"] = params
 
     json_command = json.dumps(command)
@@ -293,6 +293,23 @@ def cmd_list_types(args):
         return 1
 
 
+def cmd_list_commands(args):
+    """List registered TCP commands"""
+    response = send_command("list_commands")
+
+    if response.get("success"):
+        data = response.get("data", {})
+        print(f"Registered commands ({data.get('count', 0)}):")
+        for command in data.get("commands", []):
+            params = "params" if command.get("requires_params") else "no params"
+            mutating = "mutating" if command.get("mutating") else "read-only"
+            print(f"  - {command.get('name')} [{command.get('category')}, {params}, {mutating}]")
+        return 0
+    else:
+        print(f"Error: {response.get('error')}")
+        return 1
+
+
 def cmd_check(args):
     """Check if any server is running in port range"""
     print(f"Checking ports {PORT_RANGE[0]}-{PORT_RANGE[1]}...")
@@ -320,6 +337,7 @@ def print_usage():
     print("  export_widget <path> [outdir]   - Export widget blueprint")
     print("  export_blueprint <path> [outdir] - Export blueprint")
     print("  list_types                      - List supported asset types")
+    print("  list_commands                   - List registered TCP commands")
     print("\nExamples:")
     print("  python ai_export_client.py ping")
     print("  python ai_export_client.py export_widget /Game/UI/W_MainMenu")
@@ -340,6 +358,7 @@ def main():
         "check": cmd_check,
         "export_widget": cmd_export_widget,
         "export_blueprint": cmd_export_blueprint,
+        "list_commands": cmd_list_commands,
         "list_types": cmd_list_types,
         "list_supported_types": cmd_list_types,
     }

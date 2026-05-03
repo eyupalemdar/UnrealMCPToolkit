@@ -16,7 +16,8 @@ public class CommonAIExport : ModuleRules
 			"Sockets",
 			"Networking",
 			"Json",
-			"JsonUtilities"
+			"JsonUtilities",
+			"HTTPServer"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

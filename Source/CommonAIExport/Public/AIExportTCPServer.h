@@ -3,9 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HAL/CriticalSection.h"
 #include "HAL/Runnable.h"
+#include "HAL/ThreadSafeCounter.h"
+#include "HttpRouteHandle.h"
 
 class FSocket;
+class IHttpRouter;
+struct FHttpServerRequest;
+struct FHttpServerResponse;
 
 /**
  * TCP Server Runnable for AI Export commands.
@@ -13,6 +19,7 @@ class FSocket;
  *
  * Supported commands:
  * - ping: Connection test
+ * - list_commands: Registered command manifest
  * - export_widget: Export Widget Blueprint
  * - export_blueprint: Export regular Blueprint
  * - list_supported_types: List supported asset types
@@ -144,7 +151,113 @@ public:
 	/** Get port file path */
 	static FString GetPortFilePath();
 
+	/** Get global multi-editor registry directory */
+	static FString GetEditorRegistryDir();
+
+	/** Get this process registry file path for a port */
+	static FString GetEditorRegistryFilePath(int32 Port);
+
 private:
+	struct FCommandDescriptor
+	{
+		const TCHAR* Name;
+		const TCHAR* Category;
+		bool bRequiresParams;
+		bool bMutating;
+		int32 TimeoutSeconds;
+		const TCHAR* RequiredScope;
+		bool bSupportsDryRun;
+		bool bAsyncCandidate;
+		FString (FAIExportTCPServer::*ParamsHandler)(TSharedPtr<class FJsonObject> Params);
+		FString (FAIExportTCPServer::*NoParamsHandler)();
+	};
+
+	struct FAICommandContext
+	{
+		FString RequestId;
+		FString ClientId;
+		FString SessionId;
+		FString Scope;
+		int32 TimeoutSeconds = 0;
+		bool bDryRun = false;
+		bool bCancellationRequested = false;
+	};
+
+	struct FAsyncCommandJob
+	{
+		FString TaskId;
+		FString CommandName;
+		FString Status;
+		FString SubmittedAt;
+		FString StartedAt;
+		FString FinishedAt;
+		FString ResultJson;
+		FString ErrorMessage;
+		bool bCancelRequested = false;
+	};
+
+	struct FMcpHttpSession
+	{
+		FString SessionId;
+		FString ClientName;
+		FString CreatedAtUtc;
+		FDateTime LastSeenUtc;
+	};
+
+	/** Registered TCP command descriptors used for dispatch and introspection */
+	static const TArray<FCommandDescriptor>& GetCommandDescriptors();
+
+	/** Find a registered command descriptor by protocol command name */
+	static const FCommandDescriptor* FindCommandDescriptor(const FString& CommandType);
+
+	/** Build request context metadata from a command envelope */
+	FAICommandContext BuildCommandContext(TSharedPtr<class FJsonObject> RootObject, const FCommandDescriptor& Descriptor) const;
+
+	/** Validate whether a request context can invoke the descriptor */
+	bool ValidateCommandScope(const FCommandDescriptor& Descriptor, const FAICommandContext& Context, FString& OutError) const;
+
+	/** Dispatch a descriptor after validation has completed */
+	FString DispatchCommand(const FCommandDescriptor& Descriptor, TSharedPtr<class FJsonObject> Params);
+
+	/** Create a generic dry-run response for mutating commands */
+	FString CreateDryRunResponse(const FCommandDescriptor& Descriptor, const FAICommandContext& Context);
+
+	/** Add one command descriptor to a JSON object */
+	void WriteCommandDescriptorJson(const FCommandDescriptor& Descriptor, TSharedPtr<class FJsonObject> OutObject) const;
+
+	/** Build editor identity JSON used by status, registry, and discovery */
+	TSharedPtr<class FJsonObject> BuildEditorIdentityJson() const;
+
+	/** Build a machine-readable command manifest JSON object */
+	TSharedPtr<class FJsonObject> BuildCommandManifestJson() const;
+
+	/** Start/stop native localhost HTTP/MCP compatibility routes */
+	void StartHttpServer();
+	void StopHttpServer();
+
+	/** HTTP/MCP helpers */
+	const TArray<FString>* FindHttpHeaderValues(const FHttpServerRequest& Request, const FString& HeaderName) const;
+	FString GetHttpHeaderValue(const FHttpServerRequest& Request, const FString& HeaderName) const;
+	bool IsHttpOriginAllowed(const FString& Origin) const;
+	bool IsHttpRequestAllowed(const FHttpServerRequest& Request) const;
+	bool IsMcpProtocolVersionAllowed(const FHttpServerRequest& Request, FString& OutError) const;
+	void PruneExpiredMcpSessionsLocked(const FDateTime& NowUtc);
+	void AppendHttpAuditEvent(const FHttpServerRequest& Request, const FString& Route, int32 ResponseCode, bool bAllowed, const FString& Detail, const FString& McpSessionId = FString()) const;
+	TUniquePtr<FHttpServerResponse> MakeHttpJsonResponse(const FString& Json, int32 ResponseCode = 200, const FString& McpSessionId = FString()) const;
+	FString HandleMcpJsonRpc(const FString& RequestJson, const FString& RequestSessionId, FString& OutSessionId);
+
+	/** Write this editor instance to the global discovery registry */
+	void WriteEditorRegistryFile();
+
+	/** Remove this editor instance from the global discovery registry */
+	void RemoveEditorRegistryFile();
+
+	/** Convert async job state to JSON */
+	TSharedPtr<class FJsonObject> BuildTaskJson(const FAsyncCommandJob& Job, bool bIncludeResult) const;
+
+	/** Find a task by id under lock and return a copy of its state */
+	bool TryCopyTask(const FString& TaskId, FAsyncCommandJob& OutJob) const;
+
 	/** Process a single client connection */
 	void HandleClientConnection(FSocket* ClientSocket);
 
@@ -153,9 +266,34 @@ private:
 
 	/** Command handlers — Export */
 	FString HandlePing();
+	FString HandleListCommands();
+	FString HandleServerStatus();
+	FString HandleEditorIdentity();
+	FString HandleCommandManifestExport(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectStatus();
+	FString HandleSourceControlStatus(TSharedPtr<class FJsonObject> Params);
+	FString HandleTaskSubmit(TSharedPtr<class FJsonObject> Params);
+	FString HandleTaskStatus(TSharedPtr<class FJsonObject> Params);
+	FString HandleTaskResult(TSharedPtr<class FJsonObject> Params);
+	FString HandleTaskCancel(TSharedPtr<class FJsonObject> Params);
 	FString HandleExportWidget(TSharedPtr<class FJsonObject> Params);
 	FString HandleExportBlueprint(TSharedPtr<class FJsonObject> Params);
 	FString HandleListSupportedTypes();
+
+	/** Command handlers - Editor / Level / Actor */
+	FString HandleEditorWorldInfo();
+	FString HandleActorList(TSharedPtr<class FJsonObject> Params);
+	FString HandleActorSpawn(TSharedPtr<class FJsonObject> Params);
+	FString HandleActorSetTransform(TSharedPtr<class FJsonObject> Params);
+	FString HandleActorDelete(TSharedPtr<class FJsonObject> Params);
+	FString HandleLevelOpen(TSharedPtr<class FJsonObject> Params);
+	FString HandleLevelSaveCurrent();
+	FString HandlePIEStatus();
+	FString HandlePIEStart();
+	FString HandlePIEStop();
+	FString HandleEditorConsoleCommand(TSharedPtr<class FJsonObject> Params);
+	FString HandleEditorLogRead(TSharedPtr<class FJsonObject> Params);
+	FString HandleViewportCapture(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Widget Builder */
 	FString HandleCreateWidgetBlueprint(TSharedPtr<class FJsonObject> Params);
@@ -229,6 +367,10 @@ private:
 	FString HandleCreateAsset(TSharedPtr<class FJsonObject> Params);
 	FString HandleSetAssetProperty(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetAssetProperties(TSharedPtr<class FJsonObject> Params);
+	FString HandleAssetExists(TSharedPtr<class FJsonObject> Params);
+	FString HandleScanAssetPaths(TSharedPtr<class FJsonObject> Params);
+	FString HandleAssetSearch(TSharedPtr<class FJsonObject> Params);
+	FString HandleAssetValidateLight(TSharedPtr<class FJsonObject> Params);
 	FString HandleSaveAsset(TSharedPtr<class FJsonObject> Params);
 	FString HandleRenameAsset(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetReferencers(TSharedPtr<class FJsonObject> Params);
@@ -266,8 +408,39 @@ private:
 	/** Server port - dynamically assigned to avoid conflicts */
 	int32 ServerPort = 55560;
 
+	/** Native HTTP/MCP port - dynamically assigned to avoid conflicts */
+	int32 HttpPort = 0;
+
+	/** Stable identity for this editor TCP server instance */
+	FString EditorInstanceId;
+
+	/** Registry file path written by this server instance */
+	FString EditorRegistryFilePath;
+
+	/** Server start time in UTC ISO-8601 */
+	FString ServerStartedAtUtc;
+
 	/** Listener socket */
 	FSocket* ListenerSocket = nullptr;
+
+	/** Native HTTP/MCP router and route handles */
+	TSharedPtr<IHttpRouter> HttpRouter;
+	TArray<FHttpRouteHandle> HttpRouteHandles;
+	bool bHttpServerRunning = false;
+	FString HttpAuthToken;
+	TArray<FString> HttpAllowedOrigins;
+	FString HttpAllowedOriginsConfig;
+	FString HttpAuditLogPath;
+	bool bHttpAuditEnabled = true;
+	int32 McpSessionTtlSeconds = 3600;
+	TMap<FString, FMcpHttpSession> ActiveMcpSessions;
+	mutable FCriticalSection ActiveMcpSessionsCriticalSection;
+	mutable FCriticalSection HttpAuditCriticalSection;
+	mutable FThreadSafeCounter HttpRequestCount;
+	mutable FThreadSafeCounter HttpRejectedRequestCount;
+	mutable FThreadSafeCounter McpRequestCount;
+	mutable FThreadSafeCounter McpRejectedRequestCount;
+	mutable FThreadSafeCounter McpSessionExpiredCount;
 
 	/** Server thread */
 	FRunnableThread* ServerThread = nullptr;
@@ -277,6 +450,13 @@ private:
 
 	/** Stop requested flag */
 	TAtomic<bool> bStopRequested;
+
+	/** Active client tasks running on the thread pool */
+	FThreadSafeCounter ActiveClientConnections;
+
+	/** Async job registry for long-running commands */
+	mutable FCriticalSection AsyncJobsCriticalSection;
+	TMap<FString, TSharedPtr<FAsyncCommandJob>> AsyncJobs;
 };
 
 /**

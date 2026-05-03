@@ -21,14 +21,27 @@
 #include "SocketSubsystem.h"
 #include "Interfaces/IPv4/IPv4Address.h"
 #include "Interfaces/IPv4/IPv4Endpoint.h"
+#include "HttpPath.h"
+#include "HttpServerModule.h"
+#include "HttpServerRequest.h"
+#include "HttpServerResponse.h"
+#include "IHttpRouter.h"
 
 #include "Misc/FileHelper.h"
+#include "Misc/DateTime.h"
+#include "Misc/Guid.h"
 #include "Misc/Paths.h"
+#include "Misc/ScopeLock.h"
+#include "Misc/StringOutputDevice.h"
+#include "HAL/FileManager.h"
+#include "HAL/PlatformProcess.h"
+#include "HAL/PlatformMisc.h"
 
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonTypes.h"
 
 #include "Async/Async.h"
 #include "HAL/RunnableThread.h"
@@ -68,10 +81,16 @@
 #include "ICommonInputModule.h"
 #include "Modules/ModuleManager.h"
 #include "Editor.h"
+#include "EngineUtils.h"
+#include "FileHelpers.h"
+#include "GameFramework/Actor.h"
+#include "PlayInEditorDataTypes.h"
 #include "RenderingThread.h"
 #include "Engine/Engine.h"
 #include "RenderAssetUpdate.h"
 #include "Misc/Base64.h"
+#include "ScopedTransaction.h"
+#include "UnrealClient.h"
 #include "UObject/UnrealType.h"
 
 // Asset Lifecycle includes (for HandleReloadAsset)
@@ -79,6 +98,21 @@
 #include "PackageTools.h"
 #include "UObject/Package.h"
 #include "Misc/PackageName.h"
+#include "Interfaces/IPluginManager.h"
+
+namespace
+{
+FString CommonAIExportHttpVerbToString(EHttpServerRequestVerbs Verb)
+{
+	if (Verb == EHttpServerRequestVerbs::VERB_GET) return TEXT("GET");
+	if (Verb == EHttpServerRequestVerbs::VERB_POST) return TEXT("POST");
+	if (Verb == EHttpServerRequestVerbs::VERB_DELETE) return TEXT("DELETE");
+	if (Verb == EHttpServerRequestVerbs::VERB_OPTIONS) return TEXT("OPTIONS");
+	if (Verb == EHttpServerRequestVerbs::VERB_PUT) return TEXT("PUT");
+	if (Verb == EHttpServerRequestVerbs::VERB_PATCH) return TEXT("PATCH");
+	return TEXT("UNKNOWN");
+}
+}
 
 // Static instance
 TUniquePtr<FAIExportTCPServer> FAIExportTCPServerManager::Instance;
@@ -119,6 +153,7 @@ void FAIExportTCPServerManager::Stop()
 FAIExportTCPServer::FAIExportTCPServer()
 	: bIsRunning(false)
 	, bStopRequested(false)
+	, ActiveClientConnections(0)
 {
 }
 
@@ -192,6 +227,1377 @@ FString FAIExportTCPServer::GetPortFilePath()
 	return FPaths::Combine(FPaths::ProjectIntermediateDir(), TEXT("AIExport_port.txt"));
 }
 
+FString FAIExportTCPServer::GetEditorRegistryDir()
+{
+	return FPaths::Combine(FPlatformProcess::UserSettingsDir(), TEXT("CommonAIExport"), TEXT("Editors"));
+}
+
+FString FAIExportTCPServer::GetEditorRegistryFilePath(int32 Port)
+{
+	return FPaths::Combine(
+		GetEditorRegistryDir(),
+		FString::Printf(TEXT("%u-%d.json"), FPlatformProcess::GetCurrentProcessId(), Port));
+}
+
+const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCommandDescriptors()
+{
+#define AI_COMMAND_PARAMS(CommandName, CommandCategory, bCommandMutating, CommandTimeout, HandlerName) \
+	{ TEXT(CommandName), TEXT(CommandCategory), true, bCommandMutating, CommandTimeout, bCommandMutating ? TEXT("write") : TEXT("read"), bCommandMutating, CommandTimeout >= 120, &FAIExportTCPServer::HandlerName, nullptr }
+#define AI_COMMAND_PARAMS_SCOPE(CommandName, CommandCategory, bCommandMutating, CommandTimeout, CommandScope, bCommandDryRun, bCommandAsyncCandidate, HandlerName) \
+	{ TEXT(CommandName), TEXT(CommandCategory), true, bCommandMutating, CommandTimeout, TEXT(CommandScope), bCommandDryRun, bCommandAsyncCandidate, &FAIExportTCPServer::HandlerName, nullptr }
+#define AI_COMMAND_OPTIONAL_PARAMS(CommandName, CommandCategory, bCommandMutating, CommandTimeout, HandlerName) \
+	{ TEXT(CommandName), TEXT(CommandCategory), false, bCommandMutating, CommandTimeout, bCommandMutating ? TEXT("write") : TEXT("read"), bCommandMutating, CommandTimeout >= 120, &FAIExportTCPServer::HandlerName, nullptr }
+#define AI_COMMAND_NO_PARAMS(CommandName, CommandCategory, CommandTimeout, HandlerName) \
+	{ TEXT(CommandName), TEXT(CommandCategory), false, false, CommandTimeout, TEXT("read"), false, false, nullptr, &FAIExportTCPServer::HandlerName }
+#define AI_COMMAND_NO_PARAMS_SCOPE(CommandName, CommandCategory, bCommandMutating, CommandTimeout, CommandScope, bCommandDryRun, bCommandAsyncCandidate, HandlerName) \
+	{ TEXT(CommandName), TEXT(CommandCategory), false, bCommandMutating, CommandTimeout, TEXT(CommandScope), bCommandDryRun, bCommandAsyncCandidate, nullptr, &FAIExportTCPServer::HandlerName }
+
+	static const TArray<FCommandDescriptor> Commands = {
+		AI_COMMAND_NO_PARAMS("ping", "Utility", 0, HandlePing),
+		AI_COMMAND_NO_PARAMS("list_commands", "Utility", 0, HandleListCommands),
+		AI_COMMAND_NO_PARAMS("server_status", "Utility", 0, HandleServerStatus),
+		AI_COMMAND_NO_PARAMS("editor_identity", "Utility", 0, HandleEditorIdentity),
+		AI_COMMAND_OPTIONAL_PARAMS("command_manifest_export", "Utility", false, 30, HandleCommandManifestExport),
+		AI_COMMAND_NO_PARAMS("project_status", "Workflow", 0, HandleProjectStatus),
+		AI_COMMAND_OPTIONAL_PARAMS("source_control_status", "Workflow", false, 30, HandleSourceControlStatus),
+		AI_COMMAND_PARAMS("task_submit", "AsyncJob", false, 0, HandleTaskSubmit),
+		AI_COMMAND_OPTIONAL_PARAMS("task_status", "AsyncJob", false, 0, HandleTaskStatus),
+		AI_COMMAND_OPTIONAL_PARAMS("task_result", "AsyncJob", false, 0, HandleTaskResult),
+		AI_COMMAND_OPTIONAL_PARAMS("task_cancel", "AsyncJob", false, 0, HandleTaskCancel),
+		AI_COMMAND_PARAMS("export_widget", "Export", false, 60, HandleExportWidget),
+		AI_COMMAND_PARAMS("export_blueprint", "Export", false, 60, HandleExportBlueprint),
+		AI_COMMAND_NO_PARAMS("list_supported_types", "Export", 0, HandleListSupportedTypes),
+
+		AI_COMMAND_NO_PARAMS("editor_world_info", "Editor", 0, HandleEditorWorldInfo),
+		AI_COMMAND_OPTIONAL_PARAMS("actor_list", "EditorActor", false, 60, HandleActorList),
+		AI_COMMAND_PARAMS("actor_spawn", "EditorActor", true, 60, HandleActorSpawn),
+		AI_COMMAND_PARAMS("actor_set_transform", "EditorActor", true, 60, HandleActorSetTransform),
+		AI_COMMAND_PARAMS_SCOPE("actor_delete", "EditorActor", true, 60, "destructive", true, false, HandleActorDelete),
+		AI_COMMAND_PARAMS("level_open", "EditorLevel", true, 60, HandleLevelOpen),
+		AI_COMMAND_NO_PARAMS_SCOPE("level_save_current", "EditorLevel", true, 60, "write", true, false, HandleLevelSaveCurrent),
+		AI_COMMAND_NO_PARAMS("pie_status", "PIE", 0, HandlePIEStatus),
+		AI_COMMAND_NO_PARAMS_SCOPE("pie_start", "PIE", true, 30, "write", true, false, HandlePIEStart),
+		AI_COMMAND_NO_PARAMS_SCOPE("pie_stop", "PIE", true, 30, "write", true, false, HandlePIEStop),
+		AI_COMMAND_PARAMS_SCOPE("editor_console_command", "Editor", true, 60, "destructive", true, false, HandleEditorConsoleCommand),
+		AI_COMMAND_OPTIONAL_PARAMS("editor_log_read", "Workflow", false, 30, HandleEditorLogRead),
+		AI_COMMAND_OPTIONAL_PARAMS("viewport_capture", "EditorViewport", true, 30, HandleViewportCapture),
+
+		AI_COMMAND_PARAMS("create_widget_blueprint", "Widget", true, 60, HandleCreateWidgetBlueprint),
+		AI_COMMAND_PARAMS("add_widget", "Widget", true, 60, HandleAddWidget),
+		AI_COMMAND_PARAMS("remove_widget", "Widget", true, 60, HandleRemoveWidget),
+		AI_COMMAND_PARAMS("move_widget", "Widget", true, 60, HandleMoveWidget),
+		AI_COMMAND_PARAMS("set_widget_property", "Widget", true, 60, HandleSetWidgetProperty),
+		AI_COMMAND_PARAMS("set_slot_property", "Widget", true, 60, HandleSetSlotProperty),
+		AI_COMMAND_PARAMS("set_canvas_slot_layout", "Widget", true, 60, HandleSetCanvasSlotLayout),
+		AI_COMMAND_PARAMS("set_widget_properties", "Widget", true, 60, HandleSetWidgetProperties),
+		AI_COMMAND_PARAMS("compile_and_save", "Widget", true, 60, HandleCompileAndSave),
+		AI_COMMAND_PARAMS("get_widget_tree", "Widget", false, 60, HandleGetWidgetTree),
+		AI_COMMAND_NO_PARAMS("list_widget_classes", "Widget", 60, HandleListWidgetClasses),
+
+		AI_COMMAND_PARAMS("set_cdo_property", "CDO", true, 120, HandleSetCDOProperty),
+		AI_COMMAND_PARAMS("get_cdo_properties", "CDO", false, 60, HandleGetCDOProperties),
+		AI_COMMAND_PARAMS("add_cdo_array_element", "CDOArray", true, 60, HandleAddCDOArrayElement),
+		AI_COMMAND_PARAMS("set_cdo_array_element_property", "CDOArray", true, 60, HandleSetCDOArrayElementProperty),
+		AI_COMMAND_PARAMS("remove_cdo_array_element", "CDOArray", true, 60, HandleRemoveCDOArrayElement),
+		AI_COMMAND_PARAMS("get_cdo_array_length", "CDOArray", false, 60, HandleGetCDOArrayLength),
+
+		AI_COMMAND_PARAMS("add_event_node", "BlueprintGraph", true, 60, HandleAddEventNode),
+		AI_COMMAND_PARAMS("add_custom_event", "BlueprintGraph", true, 60, HandleAddCustomEvent),
+		AI_COMMAND_PARAMS("add_function_call", "BlueprintGraph", true, 60, HandleAddFunctionCallNode),
+		AI_COMMAND_PARAMS("add_variable_get_node", "BlueprintGraph", true, 60, HandleAddVariableGetNode),
+		AI_COMMAND_PARAMS("add_variable_set_node", "BlueprintGraph", true, 60, HandleAddVariableSetNode),
+		AI_COMMAND_PARAMS("add_make_struct_node", "BlueprintGraph", true, 60, HandleAddMakeStructNode),
+		AI_COMMAND_PARAMS("add_branch_node", "BlueprintGraph", true, 60, HandleAddBranchNode),
+		AI_COMMAND_PARAMS("ensure_function_graph", "BlueprintGraph", true, 60, HandleEnsureFunctionGraph),
+		AI_COMMAND_PARAMS("add_call_parent_function", "BlueprintGraph", true, 60, HandleAddCallParentFunction),
+		AI_COMMAND_PARAMS("connect_pins", "BlueprintGraph", true, 60, HandleConnectPins),
+		AI_COMMAND_PARAMS("set_pin_default", "BlueprintGraph", true, 60, HandleSetPinDefault),
+		AI_COMMAND_PARAMS("remove_graph_node", "BlueprintGraph", true, 60, HandleRemoveGraphNode),
+		AI_COMMAND_PARAMS("get_graph", "BlueprintGraph", false, 60, HandleGetGraph),
+		AI_COMMAND_PARAMS("list_graphs", "BlueprintGraph", false, 60, HandleListGraphs),
+
+		AI_COMMAND_PARAMS("add_variable", "BlueprintVariable", true, 60, HandleAddVariable),
+		AI_COMMAND_PARAMS("set_variable_default", "BlueprintVariable", true, 60, HandleSetVariableDefault),
+		AI_COMMAND_PARAMS("remove_variable", "BlueprintVariable", true, 60, HandleRemoveVariable),
+		AI_COMMAND_PARAMS("get_variables", "BlueprintVariable", false, 60, HandleGetVariables),
+		AI_COMMAND_PARAMS("reparent_blueprint", "BlueprintUtility", true, 60, HandleReparentBlueprint),
+
+		AI_COMMAND_PARAMS("create_material", "Material", true, 60, HandleCreateMaterial),
+		AI_COMMAND_PARAMS("set_material_property", "Material", true, 60, HandleSetMaterialProperty),
+		AI_COMMAND_PARAMS("add_expression", "Material", true, 60, HandleAddExpression),
+		AI_COMMAND_PARAMS("set_expression_property", "Material", true, 60, HandleSetExpressionProperty),
+		AI_COMMAND_PARAMS("connect_expressions", "Material", true, 60, HandleConnectExpressions),
+		AI_COMMAND_PARAMS("connect_to_material_property", "Material", true, 60, HandleConnectToMaterialProperty),
+		AI_COMMAND_PARAMS("disconnect_input", "Material", true, 60, HandleDisconnectInput),
+		AI_COMMAND_PARAMS("remove_expression", "Material", true, 60, HandleRemoveExpression),
+		AI_COMMAND_PARAMS("compile_material", "Material", true, 120, HandleCompileMaterial),
+		AI_COMMAND_PARAMS("get_material_graph", "Material", false, 60, HandleGetMaterialGraph),
+		AI_COMMAND_NO_PARAMS("list_expression_classes", "Material", 60, HandleListExpressionClasses),
+		AI_COMMAND_PARAMS("create_material_instance", "Material", true, 60, HandleCreateMaterialInstance),
+		AI_COMMAND_PARAMS("set_instance_parameter", "Material", true, 60, HandleSetInstanceParameter),
+		AI_COMMAND_PARAMS("save_material_instance", "Material", true, 60, HandleSaveMaterialInstance),
+		AI_COMMAND_PARAMS("get_material_instance_info", "Material", false, 60, HandleGetMaterialInstanceInfo),
+
+		AI_COMMAND_PARAMS("save_data_asset", "DataAsset", true, 60, HandleSaveDataAsset),
+
+		AI_COMMAND_PARAMS("create_asset", "Asset", true, 60, HandleCreateAsset),
+		AI_COMMAND_PARAMS("set_asset_property", "Asset", true, 60, HandleSetAssetProperty),
+		AI_COMMAND_PARAMS("get_asset_properties", "Asset", false, 60, HandleGetAssetProperties),
+		AI_COMMAND_PARAMS("asset_exists", "Asset", false, 30, HandleAssetExists),
+		AI_COMMAND_PARAMS("scan_asset_paths", "Asset", false, 60, HandleScanAssetPaths),
+		AI_COMMAND_OPTIONAL_PARAMS("asset_search", "Asset", false, 60, HandleAssetSearch),
+		AI_COMMAND_PARAMS("asset_validate_light", "Asset", false, 60, HandleAssetValidateLight),
+		AI_COMMAND_PARAMS("save_asset", "Asset", true, 60, HandleSaveAsset),
+		AI_COMMAND_PARAMS("rename_asset", "Asset", true, 120, HandleRenameAsset),
+		AI_COMMAND_PARAMS("get_referencers", "Asset", false, 60, HandleGetReferencers),
+		AI_COMMAND_PARAMS("get_dependencies", "Asset", false, 60, HandleGetDependencies),
+		AI_COMMAND_PARAMS_SCOPE("delete_asset", "Asset", true, 120, "destructive", true, true, HandleDeleteAsset),
+		AI_COMMAND_PARAMS("list_redirectors", "Asset", false, 60, HandleListRedirectors),
+		AI_COMMAND_PARAMS("fixup_redirectors", "Asset", true, 120, HandleFixupRedirectors),
+
+		AI_COMMAND_PARAMS("add_input_mapping", "Input", true, 60, HandleAddInputMapping),
+		AI_COMMAND_PARAMS("remove_input_mapping", "Input", true, 60, HandleRemoveInputMapping),
+		AI_COMMAND_PARAMS("get_input_mappings", "Input", false, 60, HandleGetInputMappings),
+
+		AI_COMMAND_PARAMS("create_anim_blueprint", "AnimBlueprint", true, 60, HandleCreateAnimBlueprint),
+		AI_COMMAND_PARAMS("get_anim_blueprint_info", "AnimBlueprint", false, 60, HandleGetAnimBlueprintInfo),
+
+		AI_COMMAND_PARAMS("import_texture", "Import", true, 60, HandleImportTexture),
+		AI_COMMAND_PARAMS("import_font", "Import", true, 60, HandleImportFont),
+
+		AI_COMMAND_PARAMS("capture_widget_preview", "WidgetPreview", false, 120, HandleCaptureWidgetPreview),
+		AI_COMMAND_PARAMS("reload_asset", "AssetLifecycle", false, 30, HandleReloadAsset),
+	};
+
+#undef AI_COMMAND_PARAMS
+#undef AI_COMMAND_PARAMS_SCOPE
+#undef AI_COMMAND_OPTIONAL_PARAMS
+#undef AI_COMMAND_NO_PARAMS
+#undef AI_COMMAND_NO_PARAMS_SCOPE
+
+	return Commands;
+}
+
+const FAIExportTCPServer::FCommandDescriptor* FAIExportTCPServer::FindCommandDescriptor(const FString& CommandType)
+{
+	for (const FCommandDescriptor& Descriptor : GetCommandDescriptors())
+	{
+		if (CommandType == Descriptor.Name)
+		{
+			return &Descriptor;
+		}
+	}
+
+	return nullptr;
+}
+
+FAIExportTCPServer::FAICommandContext FAIExportTCPServer::BuildCommandContext(TSharedPtr<FJsonObject> RootObject, const FCommandDescriptor& Descriptor) const
+{
+	FAICommandContext Context;
+	Context.RequestId = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphensLower);
+	Context.TimeoutSeconds = Descriptor.TimeoutSeconds;
+
+	const TSharedPtr<FJsonObject>* MetaObject = nullptr;
+	if (RootObject.IsValid() && RootObject->TryGetObjectField(TEXT("meta"), MetaObject) && MetaObject && MetaObject->IsValid())
+	{
+		(*MetaObject)->TryGetStringField(TEXT("request_id"), Context.RequestId);
+		(*MetaObject)->TryGetStringField(TEXT("client_id"), Context.ClientId);
+		(*MetaObject)->TryGetStringField(TEXT("session_id"), Context.SessionId);
+		(*MetaObject)->TryGetStringField(TEXT("scope"), Context.Scope);
+		(*MetaObject)->TryGetBoolField(TEXT("dry_run"), Context.bDryRun);
+		(*MetaObject)->TryGetBoolField(TEXT("cancel_requested"), Context.bCancellationRequested);
+
+		double RequestedTimeout = 0.0;
+		if ((*MetaObject)->TryGetNumberField(TEXT("timeout_seconds"), RequestedTimeout) && RequestedTimeout > 0.0)
+		{
+			Context.TimeoutSeconds = static_cast<int32>(RequestedTimeout);
+		}
+	}
+
+	Context.Scope = Context.Scope.ToLower();
+	return Context;
+}
+
+bool FAIExportTCPServer::ValidateCommandScope(const FCommandDescriptor& Descriptor, const FAICommandContext& Context, FString& OutError) const
+{
+	const FString RequiredScope = FString(Descriptor.RequiredScope ? Descriptor.RequiredScope : TEXT("read")).ToLower();
+	const FString EffectiveScope = Context.Scope.IsEmpty() ? TEXT("write") : Context.Scope.ToLower();
+
+	auto ScopeRank = [](const FString& Scope) -> int32
+	{
+		if (Scope == TEXT("read")) return 0;
+		if (Scope == TEXT("write")) return 1;
+		if (Scope == TEXT("destructive")) return 2;
+		return -1;
+	};
+
+	const int32 RequiredRank = ScopeRank(RequiredScope);
+	const int32 EffectiveRank = ScopeRank(EffectiveScope);
+	if (EffectiveRank < 0)
+	{
+		OutError = FString::Printf(TEXT("Invalid command scope '%s'. Expected one of: read, write, destructive"), *EffectiveScope);
+		return false;
+	}
+
+	if (RequiredRank < 0)
+	{
+		OutError = FString::Printf(TEXT("Command '%s' has invalid required scope '%s'"), Descriptor.Name, *RequiredScope);
+		return false;
+	}
+
+	if (EffectiveRank < RequiredRank)
+	{
+		OutError = FString::Printf(
+			TEXT("Command '%s' requires '%s' scope; request provided '%s' scope. Pass top-level meta.scope='%s' only after explicit user approval."),
+			Descriptor.Name,
+			*RequiredScope,
+			*EffectiveScope,
+			*RequiredScope);
+		return false;
+	}
+
+	return true;
+}
+
+FString FAIExportTCPServer::DispatchCommand(const FCommandDescriptor& Descriptor, TSharedPtr<FJsonObject> Params)
+{
+	if (Descriptor.ParamsHandler)
+	{
+		return (this->*Descriptor.ParamsHandler)(Params);
+	}
+
+	if (Descriptor.NoParamsHandler)
+	{
+		return (this->*Descriptor.NoParamsHandler)();
+	}
+
+	return CreateErrorResponse(FString::Printf(TEXT("Command '%s' has no registered handler"), Descriptor.Name));
+}
+
+FString FAIExportTCPServer::CreateDryRunResponse(const FCommandDescriptor& Descriptor, const FAICommandContext& Context)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetBoolField(TEXT("dry_run"), true);
+	Data->SetBoolField(TEXT("would_execute"), true);
+	Data->SetStringField(TEXT("command"), Descriptor.Name);
+	Data->SetStringField(TEXT("category"), Descriptor.Category);
+	Data->SetStringField(TEXT("request_id"), Context.RequestId);
+	Data->SetStringField(TEXT("required_scope"), Descriptor.RequiredScope ? Descriptor.RequiredScope : TEXT("read"));
+	Data->SetStringField(TEXT("effective_scope"), Context.Scope.IsEmpty() ? TEXT("write") : Context.Scope);
+	Data->SetStringField(TEXT("message"), TEXT("Dry-run accepted. No Unreal Editor state was changed."));
+	return CreateSuccessResponse(Data);
+}
+
+void FAIExportTCPServer::WriteCommandDescriptorJson(const FCommandDescriptor& Descriptor, TSharedPtr<FJsonObject> OutObject) const
+{
+	if (!OutObject.IsValid())
+	{
+		return;
+	}
+
+	OutObject->SetStringField(TEXT("name"), Descriptor.Name);
+	OutObject->SetStringField(TEXT("category"), Descriptor.Category);
+	OutObject->SetBoolField(TEXT("requires_params"), Descriptor.bRequiresParams);
+	OutObject->SetBoolField(TEXT("mutating"), Descriptor.bMutating);
+	OutObject->SetNumberField(TEXT("timeout_seconds"), Descriptor.TimeoutSeconds);
+	OutObject->SetStringField(TEXT("required_scope"), Descriptor.RequiredScope ? Descriptor.RequiredScope : TEXT("read"));
+	OutObject->SetBoolField(TEXT("supports_dry_run"), Descriptor.bSupportsDryRun);
+	OutObject->SetBoolField(TEXT("async_candidate"), Descriptor.bAsyncCandidate);
+}
+
+TSharedPtr<FJsonObject> FAIExportTCPServer::BuildEditorIdentityJson() const
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+
+	FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+	FString ProjectFile = FPaths::GetProjectFilePath();
+	if (!ProjectFile.IsEmpty())
+	{
+		ProjectFile = FPaths::ConvertRelativePathToFull(ProjectFile);
+	}
+
+	FString PluginVersion = TEXT("unknown");
+	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("CommonAIExport"));
+	if (Plugin.IsValid())
+	{
+		PluginVersion = Plugin->GetDescriptor().VersionName;
+	}
+
+	TArray<TSharedPtr<FJsonValue>> Scopes;
+	Scopes.Add(MakeShared<FJsonValueString>(TEXT("read")));
+	Scopes.Add(MakeShared<FJsonValueString>(TEXT("write")));
+	Scopes.Add(MakeShared<FJsonValueString>(TEXT("destructive")));
+
+	TArray<TSharedPtr<FJsonValue>> AllowedOrigins;
+	for (const FString& Origin : HttpAllowedOrigins)
+	{
+		AllowedOrigins.Add(MakeShared<FJsonValueString>(Origin));
+	}
+
+	int32 ActiveSessionCount = 0;
+	{
+		FScopeLock Lock(&ActiveMcpSessionsCriticalSection);
+		ActiveSessionCount = ActiveMcpSessions.Num();
+	}
+
+	TSharedPtr<FJsonObject> Capabilities = MakeShared<FJsonObject>();
+	Capabilities->SetNumberField(TEXT("command_count"), GetCommandDescriptors().Num());
+	Capabilities->SetBoolField(TEXT("supports_scope_gate"), true);
+	Capabilities->SetBoolField(TEXT("supports_dry_run"), true);
+	Capabilities->SetBoolField(TEXT("supports_async_jobs"), true);
+	Capabilities->SetBoolField(TEXT("supports_cross_project_routing"), false);
+	Capabilities->SetBoolField(TEXT("supports_native_http_mcp"), bHttpServerRunning);
+	Capabilities->SetBoolField(TEXT("supports_http_mcp_sessions"), bHttpServerRunning);
+	Capabilities->SetBoolField(TEXT("supports_mcp_pagination"), bHttpServerRunning);
+	Capabilities->SetBoolField(TEXT("supports_http_audit"), bHttpServerRunning);
+	Capabilities->SetBoolField(TEXT("http_auth_required"), !HttpAuthToken.IsEmpty());
+	Capabilities->SetArrayField(TEXT("supported_scopes"), Scopes);
+
+	TSharedPtr<FJsonObject> Transports = MakeShared<FJsonObject>();
+	Transports->SetStringField(TEXT("editor_backend"), TEXT("tcp_json_bridge"));
+	Transports->SetStringField(TEXT("mcp_wrapper"), TEXT("python_stdio_fastmcp"));
+	Transports->SetStringField(TEXT("native_http_mcp"), bHttpServerRunning ? FString::Printf(TEXT("http://127.0.0.1:%d/mcp"), HttpPort) : TEXT(""));
+	Transports->SetBoolField(TEXT("native_http_auth_required"), !HttpAuthToken.IsEmpty());
+	Transports->SetStringField(TEXT("native_http_auth_env"), TEXT("COMMONAI_MCP_HTTP_TOKEN"));
+
+	Data->SetNumberField(TEXT("schema_version"), 1);
+	Data->SetStringField(TEXT("editor_id"), EditorInstanceId.IsEmpty() ? FString::Printf(TEXT("%s-%u-%d"), FApp::GetProjectName(), FPlatformProcess::GetCurrentProcessId(), ServerPort) : EditorInstanceId);
+	Data->SetStringField(TEXT("server"), TEXT("CommonAIExport"));
+	Data->SetStringField(TEXT("host"), TEXT("127.0.0.1"));
+	Data->SetNumberField(TEXT("port"), ServerPort);
+	Data->SetNumberField(TEXT("http_port"), HttpPort);
+	Data->SetStringField(TEXT("http_health_url"), bHttpServerRunning ? FString::Printf(TEXT("http://127.0.0.1:%d/commonai/health"), HttpPort) : TEXT(""));
+	Data->SetStringField(TEXT("mcp_http_url"), bHttpServerRunning ? FString::Printf(TEXT("http://127.0.0.1:%d/mcp"), HttpPort) : TEXT(""));
+	Data->SetStringField(TEXT("mcp_protocol_version"), TEXT("2025-06-18"));
+	Data->SetNumberField(TEXT("mcp_session_ttl_seconds"), McpSessionTtlSeconds);
+	Data->SetNumberField(TEXT("active_mcp_sessions"), ActiveSessionCount);
+	Data->SetArrayField(TEXT("http_allowed_origins"), AllowedOrigins);
+	Data->SetBoolField(TEXT("http_audit_enabled"), bHttpAuditEnabled);
+	Data->SetStringField(TEXT("http_audit_log_path"), HttpAuditLogPath);
+	Data->SetNumberField(TEXT("http_request_count"), HttpRequestCount.GetValue());
+	Data->SetNumberField(TEXT("http_rejected_request_count"), HttpRejectedRequestCount.GetValue());
+	Data->SetNumberField(TEXT("mcp_request_count"), McpRequestCount.GetValue());
+	Data->SetNumberField(TEXT("mcp_rejected_request_count"), McpRejectedRequestCount.GetValue());
+	Data->SetNumberField(TEXT("mcp_session_expired_count"), McpSessionExpiredCount.GetValue());
+	Data->SetNumberField(TEXT("pid"), FPlatformProcess::GetCurrentProcessId());
+	Data->SetStringField(TEXT("project_name"), FApp::GetProjectName());
+	Data->SetStringField(TEXT("project_dir"), ProjectDir);
+	Data->SetStringField(TEXT("project_file"), ProjectFile);
+	Data->SetStringField(TEXT("engine_version"), FEngineVersion::Current().ToString());
+	Data->SetStringField(TEXT("plugin_name"), TEXT("CommonAIExport"));
+	Data->SetStringField(TEXT("plugin_version"), PluginVersion);
+	Data->SetStringField(TEXT("started_at_utc"), ServerStartedAtUtc);
+	Data->SetStringField(TEXT("last_seen_utc"), FDateTime::UtcNow().ToIso8601());
+	Data->SetStringField(TEXT("port_file"), FPaths::ConvertRelativePathToFull(GetPortFilePath()));
+	Data->SetStringField(TEXT("registry_file"), EditorRegistryFilePath);
+	Data->SetObjectField(TEXT("capabilities"), Capabilities);
+	Data->SetObjectField(TEXT("transports"), Transports);
+	return Data;
+}
+
+TSharedPtr<FJsonObject> FAIExportTCPServer::BuildCommandManifestJson() const
+{
+	TArray<TSharedPtr<FJsonValue>> Commands;
+	for (const FCommandDescriptor& Descriptor : GetCommandDescriptors())
+	{
+		TSharedPtr<FJsonObject> Command = MakeShared<FJsonObject>();
+		WriteCommandDescriptorJson(Descriptor, Command);
+		Commands.Add(MakeShared<FJsonValueObject>(Command));
+	}
+
+	TArray<TSharedPtr<FJsonValue>> Scopes;
+	Scopes.Add(MakeShared<FJsonValueString>(TEXT("read")));
+	Scopes.Add(MakeShared<FJsonValueString>(TEXT("write")));
+	Scopes.Add(MakeShared<FJsonValueString>(TEXT("destructive")));
+
+	TArray<TSharedPtr<FJsonValue>> AllowedOrigins;
+	for (const FString& Origin : HttpAllowedOrigins)
+	{
+		AllowedOrigins.Add(MakeShared<FJsonValueString>(Origin));
+	}
+
+	TSharedPtr<FJsonObject> Transports = MakeShared<FJsonObject>();
+	Transports->SetStringField(TEXT("editor_backend"), TEXT("tcp_json_bridge"));
+	Transports->SetStringField(TEXT("mcp_wrapper"), TEXT("python_stdio_fastmcp"));
+	Transports->SetStringField(TEXT("native_http_mcp"), bHttpServerRunning ? FString::Printf(TEXT("http://127.0.0.1:%d/mcp"), HttpPort) : TEXT(""));
+	Transports->SetBoolField(TEXT("native_http_auth_required"), !HttpAuthToken.IsEmpty());
+	Transports->SetStringField(TEXT("native_http_auth_env"), TEXT("COMMONAI_MCP_HTTP_TOKEN"));
+
+	TSharedPtr<FJsonObject> Manifest = MakeShared<FJsonObject>();
+	Manifest->SetNumberField(TEXT("schema_version"), 2);
+	Manifest->SetStringField(TEXT("server"), TEXT("CommonAIExport"));
+	Manifest->SetStringField(TEXT("generated_at_utc"), FDateTime::UtcNow().ToIso8601());
+	Manifest->SetStringField(TEXT("manifest_source"), TEXT("FAIExportTCPServer::GetCommandDescriptors"));
+	Manifest->SetStringField(TEXT("project_name"), FApp::GetProjectName());
+	Manifest->SetStringField(TEXT("project_dir"), FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
+	Manifest->SetStringField(TEXT("engine_version"), FEngineVersion::Current().ToString());
+	Manifest->SetNumberField(TEXT("tcp_port"), ServerPort);
+	Manifest->SetNumberField(TEXT("http_port"), HttpPort);
+	Manifest->SetStringField(TEXT("mcp_http_url"), bHttpServerRunning ? FString::Printf(TEXT("http://127.0.0.1:%d/mcp"), HttpPort) : TEXT(""));
+	Manifest->SetStringField(TEXT("scope_model"), TEXT("read < write < destructive; destructive commands require explicit meta.scope"));
+	Manifest->SetBoolField(TEXT("http_auth_required"), !HttpAuthToken.IsEmpty());
+	Manifest->SetBoolField(TEXT("supports_http_mcp_sessions"), bHttpServerRunning);
+	Manifest->SetBoolField(TEXT("supports_mcp_pagination"), bHttpServerRunning);
+	Manifest->SetBoolField(TEXT("supports_http_audit"), bHttpServerRunning);
+	Manifest->SetBoolField(TEXT("http_audit_enabled"), bHttpAuditEnabled);
+	Manifest->SetStringField(TEXT("http_audit_log_path"), HttpAuditLogPath);
+	Manifest->SetStringField(TEXT("mcp_protocol_version"), TEXT("2025-06-18"));
+	Manifest->SetNumberField(TEXT("mcp_session_ttl_seconds"), McpSessionTtlSeconds);
+	Manifest->SetArrayField(TEXT("http_allowed_origins"), AllowedOrigins);
+	Manifest->SetArrayField(TEXT("supported_scopes"), Scopes);
+	Manifest->SetObjectField(TEXT("transports"), Transports);
+	Manifest->SetNumberField(TEXT("command_count"), Commands.Num());
+	Manifest->SetArrayField(TEXT("commands"), Commands);
+	return Manifest;
+}
+
+const TArray<FString>* FAIExportTCPServer::FindHttpHeaderValues(const FHttpServerRequest& Request, const FString& HeaderName) const
+{
+	if (const TArray<FString>* DirectValues = Request.Headers.Find(HeaderName))
+	{
+		return DirectValues;
+	}
+
+	for (const TPair<FString, TArray<FString>>& Pair : Request.Headers)
+	{
+		if (Pair.Key.Equals(HeaderName, ESearchCase::IgnoreCase))
+		{
+			return &Pair.Value;
+		}
+	}
+
+	return nullptr;
+}
+
+FString FAIExportTCPServer::GetHttpHeaderValue(const FHttpServerRequest& Request, const FString& HeaderName) const
+{
+	if (const TArray<FString>* Values = FindHttpHeaderValues(Request, HeaderName))
+	{
+		if (Values->Num() > 0)
+		{
+			FString Value = (*Values)[0];
+			Value.TrimStartAndEndInline();
+			return Value;
+		}
+	}
+
+	return FString();
+}
+
+bool FAIExportTCPServer::IsHttpOriginAllowed(const FString& Origin) const
+{
+	if (Origin.IsEmpty())
+	{
+		return true;
+	}
+
+	for (const FString& AllowedOrigin : HttpAllowedOrigins)
+	{
+		if (AllowedOrigin == TEXT("*"))
+		{
+			return true;
+		}
+		if (Origin.Equals(AllowedOrigin, ESearchCase::IgnoreCase) || Origin.StartsWith(AllowedOrigin, ESearchCase::IgnoreCase))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool FAIExportTCPServer::IsHttpRequestAllowed(const FHttpServerRequest& Request) const
+{
+	if (Request.PeerAddress.IsValid())
+	{
+		const FString PeerIp = Request.PeerAddress->ToString(false);
+		if (PeerIp != TEXT("127.0.0.1") && PeerIp != TEXT("::1") && PeerIp != TEXT("0:0:0:0:0:0:0:1"))
+		{
+			return false;
+		}
+	}
+
+	const TArray<FString>* OriginValues = FindHttpHeaderValues(Request, TEXT("Origin"));
+	if (OriginValues)
+	{
+		for (const FString& Origin : *OriginValues)
+		{
+			if (!IsHttpOriginAllowed(Origin))
+			{
+				return false;
+			}
+		}
+	}
+
+	if (!HttpAuthToken.IsEmpty())
+	{
+		bool bAuthorized = false;
+		const TArray<FString>* AuthorizationValues = FindHttpHeaderValues(Request, TEXT("Authorization"));
+		if (AuthorizationValues)
+		{
+			const FString ExpectedBearer = FString::Printf(TEXT("Bearer %s"), *HttpAuthToken);
+			for (FString Authorization : *AuthorizationValues)
+			{
+				Authorization.TrimStartAndEndInline();
+				if (Authorization == ExpectedBearer || Authorization == HttpAuthToken)
+				{
+					bAuthorized = true;
+					break;
+				}
+			}
+		}
+
+		if (!bAuthorized)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool FAIExportTCPServer::IsMcpProtocolVersionAllowed(const FHttpServerRequest& Request, FString& OutError) const
+{
+	const TArray<FString>* ProtocolVersions = FindHttpHeaderValues(Request, TEXT("MCP-Protocol-Version"));
+	if (!ProtocolVersions)
+	{
+		return true;
+	}
+
+	for (FString ProtocolVersion : *ProtocolVersions)
+	{
+		ProtocolVersion.TrimStartAndEndInline();
+		if (ProtocolVersion.IsEmpty() || ProtocolVersion == TEXT("2025-06-18"))
+		{
+			return true;
+		}
+	}
+
+	OutError = TEXT("Unsupported MCP protocol version. Supported version: 2025-06-18");
+	return false;
+}
+
+void FAIExportTCPServer::PruneExpiredMcpSessionsLocked(const FDateTime& NowUtc)
+{
+	TArray<FString> ExpiredSessionIds;
+	for (const TPair<FString, FMcpHttpSession>& Pair : ActiveMcpSessions)
+	{
+		const FTimespan IdleTime = NowUtc - Pair.Value.LastSeenUtc;
+		if (IdleTime.GetTotalSeconds() > McpSessionTtlSeconds)
+		{
+			ExpiredSessionIds.Add(Pair.Key);
+		}
+	}
+
+	for (const FString& SessionId : ExpiredSessionIds)
+	{
+		ActiveMcpSessions.Remove(SessionId);
+		McpSessionExpiredCount.Increment();
+	}
+}
+
+void FAIExportTCPServer::AppendHttpAuditEvent(const FHttpServerRequest& Request, const FString& Route, int32 ResponseCode, bool bAllowed, const FString& Detail, const FString& McpSessionId) const
+{
+	if (!bHttpAuditEnabled || HttpAuditLogPath.IsEmpty())
+	{
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Event = MakeShared<FJsonObject>();
+	Event->SetStringField(TEXT("timestamp_utc"), FDateTime::UtcNow().ToIso8601());
+	Event->SetStringField(TEXT("route"), Route);
+	Event->SetStringField(TEXT("verb"), CommonAIExportHttpVerbToString(Request.Verb));
+	Event->SetNumberField(TEXT("response_code"), ResponseCode);
+	Event->SetBoolField(TEXT("allowed"), bAllowed);
+	Event->SetStringField(TEXT("detail"), Detail);
+	if (!McpSessionId.IsEmpty())
+	{
+		Event->SetStringField(TEXT("mcp_session_id"), McpSessionId);
+	}
+	if (Request.PeerAddress.IsValid())
+	{
+		Event->SetStringField(TEXT("peer"), Request.PeerAddress->ToString(false));
+	}
+	const FString Origin = GetHttpHeaderValue(Request, TEXT("Origin"));
+	if (!Origin.IsEmpty())
+	{
+		Event->SetStringField(TEXT("origin"), Origin);
+	}
+	const FString ProtocolVersion = GetHttpHeaderValue(Request, TEXT("MCP-Protocol-Version"));
+	if (!ProtocolVersion.IsEmpty())
+	{
+		Event->SetStringField(TEXT("mcp_protocol_version"), ProtocolVersion);
+	}
+
+	FString Line;
+	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> Writer = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Line);
+	FJsonSerializer::Serialize(Event.ToSharedRef(), Writer);
+	Line += LINE_TERMINATOR;
+
+	FScopeLock Lock(&HttpAuditCriticalSection);
+	FFileHelper::SaveStringToFile(Line, *HttpAuditLogPath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
+}
+
+TUniquePtr<FHttpServerResponse> FAIExportTCPServer::MakeHttpJsonResponse(const FString& Json, int32 ResponseCode, const FString& McpSessionId) const
+{
+	TUniquePtr<FHttpServerResponse> Response = FHttpServerResponse::Create(Json, TEXT("application/json; charset=utf-8"));
+	Response->Code = static_cast<EHttpServerResponseCodes>(ResponseCode);
+	Response->Headers.Add(TEXT("Access-Control-Allow-Origin"), { TEXT("http://localhost") });
+	Response->Headers.Add(TEXT("Access-Control-Allow-Headers"), { TEXT("Content-Type, MCP-Protocol-Version, Authorization, Mcp-Session-Id") });
+	Response->Headers.Add(TEXT("Access-Control-Allow-Methods"), { TEXT("GET, POST, DELETE, OPTIONS") });
+	Response->Headers.Add(TEXT("MCP-Protocol-Version"), { TEXT("2025-06-18") });
+	Response->Headers.Add(TEXT("Cache-Control"), { TEXT("no-store") });
+	Response->Headers.Add(TEXT("X-Content-Type-Options"), { TEXT("nosniff") });
+	if (!McpSessionId.IsEmpty())
+	{
+		Response->Headers.Add(TEXT("Mcp-Session-Id"), { McpSessionId });
+	}
+	return Response;
+}
+
+void FAIExportTCPServer::StartHttpServer()
+{
+	if (bHttpServerRunning)
+	{
+		return;
+	}
+
+	HttpAuthToken = FPlatformMisc::GetEnvironmentVariable(TEXT("COMMONAI_MCP_HTTP_TOKEN"));
+	HttpAuthToken.TrimStartAndEndInline();
+	if (HttpAuthToken.IsEmpty())
+	{
+		HttpAuthToken = FPlatformMisc::GetEnvironmentVariable(TEXT("COMMONAIEXPORT_HTTP_TOKEN"));
+		HttpAuthToken.TrimStartAndEndInline();
+	}
+
+	HttpAllowedOrigins.Reset();
+	HttpAllowedOriginsConfig = FPlatformMisc::GetEnvironmentVariable(TEXT("COMMONAI_MCP_HTTP_ALLOWED_ORIGINS"));
+	HttpAllowedOriginsConfig.TrimStartAndEndInline();
+	if (HttpAllowedOriginsConfig.IsEmpty())
+	{
+		HttpAllowedOriginsConfig = FPlatformMisc::GetEnvironmentVariable(TEXT("COMMONAIEXPORT_HTTP_ALLOWED_ORIGINS"));
+		HttpAllowedOriginsConfig.TrimStartAndEndInline();
+	}
+	if (!HttpAllowedOriginsConfig.IsEmpty())
+	{
+		TArray<FString> ConfiguredOrigins;
+		HttpAllowedOriginsConfig.ParseIntoArray(ConfiguredOrigins, TEXT(","), true);
+		for (FString Origin : ConfiguredOrigins)
+		{
+			Origin.TrimStartAndEndInline();
+			if (!Origin.IsEmpty())
+			{
+				HttpAllowedOrigins.Add(Origin);
+			}
+		}
+	}
+	if (HttpAllowedOrigins.Num() == 0)
+	{
+		HttpAllowedOrigins.Add(TEXT("http://localhost"));
+		HttpAllowedOrigins.Add(TEXT("http://127.0.0.1"));
+		HttpAllowedOrigins.Add(TEXT("http://[::1]"));
+	}
+
+	FString SessionTtl = FPlatformMisc::GetEnvironmentVariable(TEXT("COMMONAI_MCP_SESSION_TTL_SECONDS"));
+	SessionTtl.TrimStartAndEndInline();
+	if (!SessionTtl.IsEmpty())
+	{
+		const int32 ParsedTtl = FCString::Atoi(*SessionTtl);
+		if (ParsedTtl >= 60)
+		{
+			McpSessionTtlSeconds = ParsedTtl;
+		}
+	}
+
+	FString AuditEnabled = FPlatformMisc::GetEnvironmentVariable(TEXT("COMMONAI_MCP_HTTP_AUDIT"));
+	AuditEnabled.TrimStartAndEndInline();
+	bHttpAuditEnabled = !AuditEnabled.Equals(TEXT("0"), ESearchCase::IgnoreCase)
+		&& !AuditEnabled.Equals(TEXT("false"), ESearchCase::IgnoreCase)
+		&& !AuditEnabled.Equals(TEXT("off"), ESearchCase::IgnoreCase);
+	HttpAuditLogPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Logs"), TEXT("CommonAIExport_HTTP_Audit.jsonl")));
+
+	HttpRequestCount.Reset();
+	HttpRejectedRequestCount.Reset();
+	McpRequestCount.Reset();
+	McpRejectedRequestCount.Reset();
+	McpSessionExpiredCount.Reset();
+
+	HttpPort = FindAvailablePort(55610, 55650);
+	HttpRouter = FHttpServerModule::Get().GetHttpRouter(static_cast<uint32>(HttpPort), true);
+	if (!HttpRouter.IsValid())
+	{
+		UE_LOG(LogAIExport, Warning, TEXT("Could not create HTTP router on port %d"), HttpPort);
+		HttpPort = 0;
+		return;
+	}
+
+	auto BindRoute = [this](const TCHAR* Path, EHttpServerRequestVerbs Verbs, TFunction<FString(const FHttpServerRequest&)> Handler)
+	{
+		const FString Route(Path);
+		FHttpRouteHandle Handle = HttpRouter->BindRoute(
+			FHttpPath(Path),
+			Verbs,
+			FHttpRequestHandler::CreateLambda([this, Handler, Route](const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete)
+			{
+				HttpRequestCount.Increment();
+				if (Request.Verb == EHttpServerRequestVerbs::VERB_OPTIONS)
+				{
+					AppendHttpAuditEvent(Request, Route, 200, true, TEXT("preflight"));
+					OnComplete(MakeHttpJsonResponse(TEXT("{}")));
+					return true;
+				}
+				if (!IsHttpRequestAllowed(Request))
+				{
+					HttpRejectedRequestCount.Increment();
+					UE_LOG(LogAIExport, Warning, TEXT("Rejected CommonAIExport HTTP request for non-MCP route"));
+					AppendHttpAuditEvent(Request, Route, 403, false, TEXT("forbidden"));
+					OnComplete(MakeHttpJsonResponse(TEXT("{\"success\":false,\"error\":\"Forbidden origin, peer address, or authorization\"}"), 403));
+					return true;
+				}
+				const FString ResponseJson = Handler(Request);
+				AppendHttpAuditEvent(Request, Route, 200, true, TEXT("ok"));
+				OnComplete(MakeHttpJsonResponse(ResponseJson));
+				return true;
+			}));
+		if (Handle.IsValid())
+		{
+			HttpRouteHandles.Add(Handle);
+		}
+	};
+
+	BindRoute(TEXT("/commonai/health"), EHttpServerRequestVerbs::VERB_GET | EHttpServerRequestVerbs::VERB_OPTIONS, [this](const FHttpServerRequest&)
+	{
+		return HandlePing();
+	});
+	BindRoute(TEXT("/commonai/commands"), EHttpServerRequestVerbs::VERB_GET | EHttpServerRequestVerbs::VERB_OPTIONS, [this](const FHttpServerRequest&)
+	{
+		return HandleListCommands();
+	});
+	BindRoute(TEXT("/commonai/command"), EHttpServerRequestVerbs::VERB_POST | EHttpServerRequestVerbs::VERB_OPTIONS, [this](const FHttpServerRequest& Request)
+	{
+		FUTF8ToTCHAR BodyText(reinterpret_cast<const ANSICHAR*>(Request.Body.GetData()), Request.Body.Num());
+		return ProcessCommand(FString(BodyText.Length(), BodyText.Get()));
+	});
+
+	FHttpRouteHandle McpRouteHandle = HttpRouter->BindRoute(
+		FHttpPath(TEXT("/mcp")),
+		EHttpServerRequestVerbs::VERB_POST | EHttpServerRequestVerbs::VERB_DELETE | EHttpServerRequestVerbs::VERB_OPTIONS,
+		FHttpRequestHandler::CreateLambda([this](const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete)
+		{
+			HttpRequestCount.Increment();
+			if (Request.Verb == EHttpServerRequestVerbs::VERB_OPTIONS)
+			{
+				AppendHttpAuditEvent(Request, TEXT("/mcp"), 200, true, TEXT("preflight"));
+				OnComplete(MakeHttpJsonResponse(TEXT("{}")));
+				return true;
+			}
+			if (!IsHttpRequestAllowed(Request))
+			{
+				HttpRejectedRequestCount.Increment();
+				McpRejectedRequestCount.Increment();
+				UE_LOG(LogAIExport, Warning, TEXT("Rejected CommonAIExport MCP HTTP request"));
+				AppendHttpAuditEvent(Request, TEXT("/mcp"), 403, false, TEXT("forbidden"));
+				OnComplete(MakeHttpJsonResponse(TEXT("{\"success\":false,\"error\":\"Forbidden origin, peer address, or authorization\"}"), 403));
+				return true;
+			}
+
+			FString ProtocolError;
+			if (!IsMcpProtocolVersionAllowed(Request, ProtocolError))
+			{
+				HttpRejectedRequestCount.Increment();
+				McpRejectedRequestCount.Increment();
+				const FString SafeProtocolError = ProtocolError.Replace(TEXT("\""), TEXT("\\\""));
+				const FString ErrorJson = FString::Printf(TEXT("{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32002,\"message\":\"%s\"}}"), *SafeProtocolError);
+				AppendHttpAuditEvent(Request, TEXT("/mcp"), 200, false, TEXT("unsupported_protocol"));
+				OnComplete(MakeHttpJsonResponse(ErrorJson));
+				return true;
+			}
+
+			McpRequestCount.Increment();
+			const FString RequestSessionId = GetHttpHeaderValue(Request, TEXT("Mcp-Session-Id"));
+
+			if (Request.Verb == EHttpServerRequestVerbs::VERB_DELETE)
+			{
+				if (RequestSessionId.IsEmpty())
+				{
+					McpRejectedRequestCount.Increment();
+					AppendHttpAuditEvent(Request, TEXT("/mcp"), 400, false, TEXT("missing_session_for_delete"));
+					OnComplete(MakeHttpJsonResponse(TEXT("{\"success\":false,\"error\":\"Mcp-Session-Id header is required to delete a session\"}"), 400));
+					return true;
+				}
+
+				bool bRemoved = false;
+				{
+					FScopeLock Lock(&ActiveMcpSessionsCriticalSection);
+					PruneExpiredMcpSessionsLocked(FDateTime::UtcNow());
+					bRemoved = ActiveMcpSessions.Remove(RequestSessionId) > 0;
+				}
+
+				if (!bRemoved)
+				{
+					McpRejectedRequestCount.Increment();
+					AppendHttpAuditEvent(Request, TEXT("/mcp"), 404, false, TEXT("unknown_session_delete"), RequestSessionId);
+					OnComplete(MakeHttpJsonResponse(TEXT("{\"success\":false,\"error\":\"Unknown or expired MCP session id\"}"), 404));
+					return true;
+				}
+
+				AppendHttpAuditEvent(Request, TEXT("/mcp"), 200, true, TEXT("session_deleted"), RequestSessionId);
+				OnComplete(MakeHttpJsonResponse(TEXT("{\"success\":true,\"message\":\"MCP session deleted\"}")));
+				return true;
+			}
+
+			FUTF8ToTCHAR BodyText(reinterpret_cast<const ANSICHAR*>(Request.Body.GetData()), Request.Body.Num());
+			FString ResponseSessionId;
+			const FString ResponseJson = HandleMcpJsonRpc(FString(BodyText.Length(), BodyText.Get()), RequestSessionId, ResponseSessionId);
+			AppendHttpAuditEvent(Request, TEXT("/mcp"), 200, !ResponseJson.Contains(TEXT("\"error\"")), ResponseJson.Contains(TEXT("\"error\"")) ? TEXT("jsonrpc_error") : TEXT("ok"), ResponseSessionId.IsEmpty() ? RequestSessionId : ResponseSessionId);
+			OnComplete(MakeHttpJsonResponse(ResponseJson, 200, ResponseSessionId));
+			return true;
+		}));
+	if (McpRouteHandle.IsValid())
+	{
+		HttpRouteHandles.Add(McpRouteHandle);
+	}
+
+	FHttpServerModule::Get().StartAllListeners();
+	bHttpServerRunning = HttpRouteHandles.Num() > 0;
+
+	if (bHttpServerRunning)
+	{
+		const FString HttpPortPath = FPaths::Combine(FPaths::ProjectIntermediateDir(), TEXT("AIExport_http_port.txt"));
+		FFileHelper::SaveStringToFile(FString::FromInt(HttpPort), *HttpPortPath);
+		UE_LOG(LogAIExport, Log, TEXT("CommonAIExport HTTP/MCP routes listening on http://127.0.0.1:%d/mcp"), HttpPort);
+	}
+}
+
+void FAIExportTCPServer::StopHttpServer()
+{
+	if (HttpRouter.IsValid())
+	{
+		for (const FHttpRouteHandle& Handle : HttpRouteHandles)
+		{
+			if (Handle.IsValid())
+			{
+				HttpRouter->UnbindRoute(Handle);
+			}
+		}
+	}
+
+	HttpRouteHandles.Reset();
+	HttpRouter.Reset();
+	bHttpServerRunning = false;
+	HttpAuthToken.Reset();
+	HttpAllowedOrigins.Reset();
+	HttpAllowedOriginsConfig.Reset();
+	HttpAuditLogPath.Reset();
+	bHttpAuditEnabled = true;
+	{
+		FScopeLock Lock(&ActiveMcpSessionsCriticalSection);
+		ActiveMcpSessions.Reset();
+	}
+}
+
+FString FAIExportTCPServer::HandleMcpJsonRpc(const FString& RequestJson, const FString& RequestSessionId, FString& OutSessionId)
+{
+	auto SerializeObject = [](const TSharedPtr<FJsonObject>& Object) -> FString
+	{
+		FString Output;
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
+		FJsonSerializer::Serialize(Object.ToSharedRef(), Writer);
+		return Output;
+	};
+
+	auto MakeRpcResponse = [&SerializeObject](const TSharedPtr<FJsonValue>& IdValue, const TSharedPtr<FJsonObject>& Result) -> FString
+	{
+		TSharedPtr<FJsonObject> Response = MakeShared<FJsonObject>();
+		Response->SetStringField(TEXT("jsonrpc"), TEXT("2.0"));
+		Response->SetField(TEXT("id"), IdValue.IsValid() ? IdValue : MakeShared<FJsonValueNull>());
+		Response->SetObjectField(TEXT("result"), Result);
+		return SerializeObject(Response);
+	};
+
+	auto MakeRpcError = [&SerializeObject](const TSharedPtr<FJsonValue>& IdValue, int32 Code, const FString& Message) -> FString
+	{
+		TSharedPtr<FJsonObject> Error = MakeShared<FJsonObject>();
+		Error->SetNumberField(TEXT("code"), Code);
+		Error->SetStringField(TEXT("message"), Message);
+
+		TSharedPtr<FJsonObject> Response = MakeShared<FJsonObject>();
+		Response->SetStringField(TEXT("jsonrpc"), TEXT("2.0"));
+		Response->SetField(TEXT("id"), IdValue.IsValid() ? IdValue : MakeShared<FJsonValueNull>());
+		Response->SetObjectField(TEXT("error"), Error);
+		return SerializeObject(Response);
+	};
+
+	TSharedPtr<FJsonObject> Root;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(RequestJson);
+	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
+	{
+		return MakeRpcError(nullptr, -32700, TEXT("Parse error"));
+	}
+
+	TSharedPtr<FJsonValue> IdValue = Root->TryGetField(TEXT("id"));
+	FString Method;
+	if (!Root->TryGetStringField(TEXT("method"), Method))
+	{
+		return MakeRpcError(IdValue, -32600, TEXT("Invalid Request: missing method"));
+	}
+
+	const TSharedPtr<FJsonObject>* ParamsObj = nullptr;
+	Root->TryGetObjectField(TEXT("params"), ParamsObj);
+
+	if (!RequestSessionId.IsEmpty() && Method != TEXT("initialize"))
+	{
+		bool bKnownSession = false;
+		{
+			FScopeLock Lock(&ActiveMcpSessionsCriticalSection);
+			const FDateTime NowUtc = FDateTime::UtcNow();
+			PruneExpiredMcpSessionsLocked(NowUtc);
+			if (FMcpHttpSession* Session = ActiveMcpSessions.Find(RequestSessionId))
+			{
+				Session->LastSeenUtc = NowUtc;
+				bKnownSession = true;
+			}
+		}
+
+		if (!bKnownSession)
+		{
+			McpRejectedRequestCount.Increment();
+			return MakeRpcError(IdValue, -32001, TEXT("Unknown or expired MCP session id"));
+		}
+		OutSessionId = RequestSessionId;
+	}
+
+	if (Method == TEXT("initialize"))
+	{
+		const FString NewSessionId = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphensLower);
+		FString ClientName = TEXT("unknown");
+		if (ParamsObj && ParamsObj->IsValid())
+		{
+			const TSharedPtr<FJsonObject>* ClientInfo = nullptr;
+			if ((*ParamsObj)->TryGetObjectField(TEXT("clientInfo"), ClientInfo) && ClientInfo && ClientInfo->IsValid())
+			{
+				(*ClientInfo)->TryGetStringField(TEXT("name"), ClientName);
+			}
+		}
+		{
+			FScopeLock Lock(&ActiveMcpSessionsCriticalSection);
+			const FDateTime NowUtc = FDateTime::UtcNow();
+			PruneExpiredMcpSessionsLocked(NowUtc);
+
+			FMcpHttpSession Session;
+			Session.SessionId = NewSessionId;
+			Session.ClientName = ClientName;
+			Session.CreatedAtUtc = NowUtc.ToIso8601();
+			Session.LastSeenUtc = NowUtc;
+			ActiveMcpSessions.Add(NewSessionId, Session);
+		}
+		OutSessionId = NewSessionId;
+
+		TSharedPtr<FJsonObject> Capabilities = MakeShared<FJsonObject>();
+		Capabilities->SetObjectField(TEXT("tools"), MakeShared<FJsonObject>());
+		Capabilities->SetObjectField(TEXT("resources"), MakeShared<FJsonObject>());
+		Capabilities->SetObjectField(TEXT("prompts"), MakeShared<FJsonObject>());
+		TSharedPtr<FJsonObject> Experimental = MakeShared<FJsonObject>();
+		Experimental->SetBoolField(TEXT("sessions"), true);
+		Experimental->SetBoolField(TEXT("pagination"), true);
+		Capabilities->SetObjectField(TEXT("experimental"), Experimental);
+
+		TSharedPtr<FJsonObject> ServerInfo = MakeShared<FJsonObject>();
+		ServerInfo->SetStringField(TEXT("name"), TEXT("CommonAIExport"));
+		ServerInfo->SetStringField(TEXT("version"), TEXT("0.3.0"));
+
+		TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+		Result->SetStringField(TEXT("protocolVersion"), TEXT("2025-06-18"));
+		Result->SetObjectField(TEXT("capabilities"), Capabilities);
+		Result->SetObjectField(TEXT("serverInfo"), ServerInfo);
+		Result->SetStringField(TEXT("sessionId"), NewSessionId);
+		Result->SetNumberField(TEXT("sessionTtlSeconds"), McpSessionTtlSeconds);
+		return MakeRpcResponse(IdValue, Result);
+	}
+
+	if (Method == TEXT("notifications/initialized"))
+	{
+		return MakeRpcResponse(IdValue, MakeShared<FJsonObject>());
+	}
+
+	if (Method == TEXT("tools/list"))
+	{
+		int32 StartIndex = 0;
+		if (ParamsObj && ParamsObj->IsValid())
+		{
+			FString Cursor;
+			if ((*ParamsObj)->TryGetStringField(TEXT("cursor"), Cursor) && !Cursor.IsEmpty())
+			{
+				if (Cursor.StartsWith(TEXT("offset:")))
+				{
+					Cursor = Cursor.Mid(7);
+				}
+				StartIndex = FMath::Max(0, FCString::Atoi(*Cursor));
+			}
+		}
+
+		const int32 PageSize = 50;
+		const TArray<FCommandDescriptor>& Descriptors = GetCommandDescriptors();
+		const int32 EndIndex = FMath::Min(StartIndex + PageSize, Descriptors.Num());
+
+		TArray<TSharedPtr<FJsonValue>> Tools;
+		for (int32 Index = StartIndex; Index < EndIndex; ++Index)
+		{
+			const FCommandDescriptor& Descriptor = Descriptors[Index];
+			TSharedPtr<FJsonObject> Schema = MakeShared<FJsonObject>();
+			Schema->SetStringField(TEXT("type"), TEXT("object"));
+			Schema->SetBoolField(TEXT("additionalProperties"), true);
+
+			TSharedPtr<FJsonObject> Annotations = MakeShared<FJsonObject>();
+			Annotations->SetBoolField(TEXT("readOnlyHint"), !Descriptor.bMutating);
+			Annotations->SetBoolField(TEXT("destructiveHint"), FString(Descriptor.RequiredScope ? Descriptor.RequiredScope : TEXT("read")) == TEXT("destructive"));
+			Annotations->SetBoolField(TEXT("idempotentHint"), !Descriptor.bMutating);
+
+			TSharedPtr<FJsonObject> Tool = MakeShared<FJsonObject>();
+			Tool->SetStringField(TEXT("name"), Descriptor.Name);
+			Tool->SetStringField(TEXT("description"), FString::Printf(TEXT("CommonAIExport %s command. category=%s scope=%s dry_run=%s"), Descriptor.Name, Descriptor.Category, Descriptor.RequiredScope ? Descriptor.RequiredScope : TEXT("read"), Descriptor.bSupportsDryRun ? TEXT("true") : TEXT("false")));
+			Tool->SetObjectField(TEXT("inputSchema"), Schema);
+			Tool->SetObjectField(TEXT("annotations"), Annotations);
+			Tools.Add(MakeShared<FJsonValueObject>(Tool));
+		}
+
+		TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+		Result->SetArrayField(TEXT("tools"), Tools);
+		if (EndIndex < Descriptors.Num())
+		{
+			Result->SetStringField(TEXT("nextCursor"), FString::Printf(TEXT("offset:%d"), EndIndex));
+		}
+		return MakeRpcResponse(IdValue, Result);
+	}
+
+	if (Method == TEXT("tools/call"))
+	{
+		if (!ParamsObj || !ParamsObj->IsValid())
+		{
+			return MakeRpcError(IdValue, -32602, TEXT("tools/call requires params"));
+		}
+
+		FString Name;
+		if (!(*ParamsObj)->TryGetStringField(TEXT("name"), Name))
+		{
+			return MakeRpcError(IdValue, -32602, TEXT("tools/call requires params.name"));
+		}
+
+		const TSharedPtr<FJsonObject>* ArgumentsObj = nullptr;
+		(*ParamsObj)->TryGetObjectField(TEXT("arguments"), ArgumentsObj);
+
+		TSharedPtr<FJsonObject> Command = MakeShared<FJsonObject>();
+		Command->SetStringField(TEXT("type"), Name);
+		if (ArgumentsObj && ArgumentsObj->IsValid())
+		{
+			Command->SetObjectField(TEXT("params"), *ArgumentsObj);
+
+			TSharedPtr<FJsonObject> Meta = MakeShared<FJsonObject>();
+			FString Scope;
+			bool bDryRun = false;
+			if ((*ArgumentsObj)->TryGetStringField(TEXT("scope"), Scope) && !Scope.IsEmpty())
+			{
+				Meta->SetStringField(TEXT("scope"), Scope);
+			}
+			if ((*ArgumentsObj)->TryGetBoolField(TEXT("dry_run"), bDryRun) && bDryRun)
+			{
+				Meta->SetBoolField(TEXT("dry_run"), true);
+			}
+			if (Meta->Values.Num() > 0)
+			{
+				Command->SetObjectField(TEXT("meta"), Meta);
+			}
+		}
+
+		const FString CommandJson = SerializeObject(Command);
+		const FString RawResponse = ProcessCommand(CommandJson);
+
+		bool bSuccess = false;
+		TSharedPtr<FJsonObject> ParsedResponse;
+		TSharedRef<TJsonReader<>> ResponseReader = TJsonReaderFactory<>::Create(RawResponse);
+		if (FJsonSerializer::Deserialize(ResponseReader, ParsedResponse) && ParsedResponse.IsValid())
+		{
+			ParsedResponse->TryGetBoolField(TEXT("success"), bSuccess);
+		}
+
+		TSharedPtr<FJsonObject> TextContent = MakeShared<FJsonObject>();
+		TextContent->SetStringField(TEXT("type"), TEXT("text"));
+		TextContent->SetStringField(TEXT("text"), RawResponse);
+
+		TArray<TSharedPtr<FJsonValue>> Content;
+		Content.Add(MakeShared<FJsonValueObject>(TextContent));
+
+		TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+		Result->SetArrayField(TEXT("content"), Content);
+		Result->SetBoolField(TEXT("isError"), !bSuccess);
+		return MakeRpcResponse(IdValue, Result);
+	}
+
+	if (Method == TEXT("resources/list"))
+	{
+		TArray<TSharedPtr<FJsonValue>> Resources;
+		auto AddResource = [&Resources](const TCHAR* Uri, const TCHAR* Name, const TCHAR* Description)
+		{
+			TSharedPtr<FJsonObject> Resource = MakeShared<FJsonObject>();
+			Resource->SetStringField(TEXT("uri"), Uri);
+			Resource->SetStringField(TEXT("name"), Name);
+			Resource->SetStringField(TEXT("description"), Description);
+			Resource->SetStringField(TEXT("mimeType"), TEXT("application/json"));
+			Resources.Add(MakeShared<FJsonValueObject>(Resource));
+		};
+		AddResource(TEXT("commonai://project/status"), TEXT("Project Status"), TEXT("Current CommonAIExport project/editor status"));
+		AddResource(TEXT("commonai://commands/manifest"), TEXT("Command Manifest"), TEXT("Command descriptor manifest"));
+		AddResource(TEXT("commonai://editor/status"), TEXT("Editor Identity"), TEXT("Current editor identity and capabilities"));
+		AddResource(TEXT("commonai://logs/latest"), TEXT("Latest Log"), TEXT("Recent project log lines"));
+		AddResource(TEXT("commonai://audit/http"), TEXT("HTTP MCP Audit"), TEXT("Recent CommonAIExport native HTTP/MCP audit JSONL events"));
+
+		TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+		Result->SetArrayField(TEXT("resources"), Resources);
+		return MakeRpcResponse(IdValue, Result);
+	}
+
+	if (Method == TEXT("resources/read"))
+	{
+		if (!ParamsObj || !ParamsObj->IsValid())
+		{
+			return MakeRpcError(IdValue, -32602, TEXT("resources/read requires params"));
+		}
+
+		FString Uri;
+		if (!(*ParamsObj)->TryGetStringField(TEXT("uri"), Uri))
+		{
+			return MakeRpcError(IdValue, -32602, TEXT("resources/read requires params.uri"));
+		}
+
+		FString Text;
+		if (Uri == TEXT("commonai://project/status")) Text = HandleProjectStatus();
+		else if (Uri == TEXT("commonai://commands/manifest")) Text = HandleListCommands();
+		else if (Uri == TEXT("commonai://editor/status")) Text = HandleEditorIdentity();
+		else if (Uri == TEXT("commonai://logs/latest"))
+		{
+			TSharedPtr<FJsonObject> Params = MakeShared<FJsonObject>();
+			Params->SetNumberField(TEXT("max_lines"), 200);
+			Text = HandleEditorLogRead(Params);
+		}
+		else if (Uri == TEXT("commonai://audit/http"))
+		{
+			TArray<FString> Lines;
+			if (!HttpAuditLogPath.IsEmpty() && FPaths::FileExists(HttpAuditLogPath))
+			{
+				FFileHelper::LoadFileToStringArray(Lines, *HttpAuditLogPath);
+			}
+
+			TArray<TSharedPtr<FJsonValue>> Events;
+			const int32 StartIndex = FMath::Max(0, Lines.Num() - 200);
+			for (int32 Index = StartIndex; Index < Lines.Num(); ++Index)
+			{
+				const FString& Line = Lines[Index];
+				if (Line.TrimStartAndEnd().IsEmpty())
+				{
+					continue;
+				}
+
+				TSharedPtr<FJsonObject> ParsedEvent;
+				TSharedRef<TJsonReader<>> EventReader = TJsonReaderFactory<>::Create(Line);
+				if (FJsonSerializer::Deserialize(EventReader, ParsedEvent) && ParsedEvent.IsValid())
+				{
+					Events.Add(MakeShared<FJsonValueObject>(ParsedEvent));
+				}
+				else
+				{
+					TSharedPtr<FJsonObject> ErrorEvent = MakeShared<FJsonObject>();
+					ErrorEvent->SetBoolField(TEXT("parse_error"), true);
+					ErrorEvent->SetStringField(TEXT("raw"), Line);
+					Events.Add(MakeShared<FJsonValueObject>(ErrorEvent));
+				}
+			}
+
+			TSharedPtr<FJsonObject> Audit = MakeShared<FJsonObject>();
+			Audit->SetBoolField(TEXT("success"), true);
+			Audit->SetStringField(TEXT("log_path"), HttpAuditLogPath);
+			Audit->SetNumberField(TEXT("line_count"), Lines.Num());
+			Audit->SetNumberField(TEXT("returned_count"), Events.Num());
+			Audit->SetArrayField(TEXT("events"), Events);
+			TSharedRef<TJsonWriter<>> AuditWriter = TJsonWriterFactory<>::Create(&Text);
+			FJsonSerializer::Serialize(Audit.ToSharedRef(), AuditWriter);
+		}
+		else return MakeRpcError(IdValue, -32602, FString::Printf(TEXT("Unknown resource URI: %s"), *Uri));
+
+		TSharedPtr<FJsonObject> Content = MakeShared<FJsonObject>();
+		Content->SetStringField(TEXT("uri"), Uri);
+		Content->SetStringField(TEXT("mimeType"), TEXT("application/json"));
+		Content->SetStringField(TEXT("text"), Text);
+		TArray<TSharedPtr<FJsonValue>> Contents;
+		Contents.Add(MakeShared<FJsonValueObject>(Content));
+
+		TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+		Result->SetArrayField(TEXT("contents"), Contents);
+		return MakeRpcResponse(IdValue, Result);
+	}
+
+	if (Method == TEXT("prompts/list"))
+	{
+		TArray<TSharedPtr<FJsonValue>> Prompts;
+		auto AddPrompt = [&Prompts](const TCHAR* Name, const TCHAR* Description)
+		{
+			TSharedPtr<FJsonObject> Prompt = MakeShared<FJsonObject>();
+			Prompt->SetStringField(TEXT("name"), Name);
+			Prompt->SetStringField(TEXT("description"), Description);
+			Prompts.Add(MakeShared<FJsonValueObject>(Prompt));
+		};
+		AddPrompt(TEXT("build_fix_test"), TEXT("Guarded ProjectOkey build/fix/test workflow"));
+		AddPrompt(TEXT("asset_safety_review"), TEXT("Review an Unreal asset before copying, deleting, or mutating it"));
+		AddPrompt(TEXT("multi_editor_transfer"), TEXT("Plan guarded transfer between open Unreal projects"));
+		AddPrompt(TEXT("ui_transfer_validation"), TEXT("Validate UI transfer tasks before production Widget Blueprint mutation"));
+		AddPrompt(TEXT("blueprint_graph_inspection"), TEXT("Inspect Blueprint graph structure before graph mutation"));
+		AddPrompt(TEXT("runtime_debug_triage"), TEXT("Triage runtime/editor issues with status, logs, PIE, and audit context"));
+
+		TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+		Result->SetArrayField(TEXT("prompts"), Prompts);
+		return MakeRpcResponse(IdValue, Result);
+	}
+
+	if (Method == TEXT("prompts/get"))
+	{
+		if (!ParamsObj || !ParamsObj->IsValid())
+		{
+			return MakeRpcError(IdValue, -32602, TEXT("prompts/get requires params"));
+		}
+		FString Name;
+		(*ParamsObj)->TryGetStringField(TEXT("name"), Name);
+		FString PromptText;
+		if (Name == TEXT("build_fix_test"))
+		{
+			PromptText = TEXT("Use the guarded build workflow. Do not use Live Coding. Relaunch Unreal Editor through the existing VS2022 OkeyGame.sln Local Windows Debugger/F5 session. Check project_status, guarded build logs, and editor logs before and after fixes.");
+		}
+		else if (Name == TEXT("asset_safety_review"))
+		{
+			PromptText = TEXT("Before mutating an asset, run asset_validate_light, get_dependencies, get_referencers, and dry-run any destructive operation. Require explicit destructive scope for deletes/overwrites.");
+		}
+		else if (Name == TEXT("multi_editor_transfer"))
+		{
+			PromptText = TEXT("Use editors_list/editor registry, plan with asset_transfer_plan or code_transfer_plan, execute only after collision and scope review, then verify and run guarded build/status checks.");
+		}
+		else if (Name == TEXT("ui_transfer_validation"))
+		{
+			PromptText = TEXT("Before mutating production UI assets, read AI_UI_TRANSFER.md, Docs/AI_UI_Transfer/START_HERE.md, CommonUI architecture docs, and relevant component recipes. Ensure a TSpec exists and passes Scripts/ValidateUITSpecs.ps1. Probe uncertain components under /Game/UI/_AIProbe first.");
+		}
+		else if (Name == TEXT("blueprint_graph_inspection"))
+		{
+			PromptText = TEXT("Before editing Blueprint graphs, inspect with get_graph/list_graphs, identify existing events/functions/variables, and make narrowly scoped graph changes. Compile/save and inspect graph state after changes.");
+		}
+		else if (Name == TEXT("runtime_debug_triage"))
+		{
+			PromptText = TEXT("Start with project_status, server_status, pie_status, editor_log_read(filter='Error'), commonai://audit/http, and guarded_build_status. Reproduce in PIE only when needed; rerun smoke_mcp_runtime.py after fixes.");
+		}
+		else
+		{
+			return MakeRpcError(IdValue, -32602, FString::Printf(TEXT("Unknown prompt: %s"), *Name));
+		}
+
+		TSharedPtr<FJsonObject> TextContent = MakeShared<FJsonObject>();
+		TextContent->SetStringField(TEXT("type"), TEXT("text"));
+		TextContent->SetStringField(TEXT("text"), PromptText);
+		TSharedPtr<FJsonObject> Message = MakeShared<FJsonObject>();
+		Message->SetStringField(TEXT("role"), TEXT("user"));
+		Message->SetObjectField(TEXT("content"), TextContent);
+		TArray<TSharedPtr<FJsonValue>> Messages;
+		Messages.Add(MakeShared<FJsonValueObject>(Message));
+
+		TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+		Result->SetStringField(TEXT("description"), Name);
+		Result->SetArrayField(TEXT("messages"), Messages);
+		return MakeRpcResponse(IdValue, Result);
+	}
+
+	return MakeRpcError(IdValue, -32601, FString::Printf(TEXT("Method not found: %s"), *Method));
+}
+
+void FAIExportTCPServer::WriteEditorRegistryFile()
+{
+	if (EditorRegistryFilePath.IsEmpty())
+	{
+		EditorRegistryFilePath = GetEditorRegistryFilePath(ServerPort);
+	}
+
+	const FString RegistryDir = GetEditorRegistryDir();
+	IFileManager::Get().MakeDirectory(*RegistryDir, true);
+
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(BuildEditorIdentityJson().ToSharedRef(), Writer);
+
+	if (FFileHelper::SaveStringToFile(OutputString, *EditorRegistryFilePath))
+	{
+		UE_LOG(LogAIExport, Log, TEXT("Written editor registry entry: %s"), *EditorRegistryFilePath);
+	}
+	else
+	{
+		UE_LOG(LogAIExport, Warning, TEXT("Failed to write editor registry entry: %s"), *EditorRegistryFilePath);
+	}
+}
+
+void FAIExportTCPServer::RemoveEditorRegistryFile()
+{
+	if (EditorRegistryFilePath.IsEmpty())
+	{
+		return;
+	}
+
+	if (IFileManager::Get().FileExists(*EditorRegistryFilePath))
+	{
+		IFileManager::Get().Delete(*EditorRegistryFilePath, false, true, true);
+		UE_LOG(LogAIExport, Log, TEXT("Removed editor registry entry: %s"), *EditorRegistryFilePath);
+	}
+}
+
+TSharedPtr<FJsonObject> FAIExportTCPServer::BuildTaskJson(const FAsyncCommandJob& Job, bool bIncludeResult) const
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("task_id"), Job.TaskId);
+	Data->SetStringField(TEXT("command"), Job.CommandName);
+	Data->SetStringField(TEXT("status"), Job.Status);
+	Data->SetStringField(TEXT("submitted_at"), Job.SubmittedAt);
+	Data->SetBoolField(TEXT("cancel_requested"), Job.bCancelRequested);
+	if (!Job.StartedAt.IsEmpty())
+	{
+		Data->SetStringField(TEXT("started_at"), Job.StartedAt);
+	}
+	if (!Job.FinishedAt.IsEmpty())
+	{
+		Data->SetStringField(TEXT("finished_at"), Job.FinishedAt);
+	}
+	if (!Job.ErrorMessage.IsEmpty())
+	{
+		Data->SetStringField(TEXT("error"), Job.ErrorMessage);
+	}
+	if (bIncludeResult && !Job.ResultJson.IsEmpty())
+	{
+		Data->SetStringField(TEXT("response_json"), Job.ResultJson);
+
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Job.ResultJson);
+		TSharedPtr<FJsonObject> ParsedResult;
+		if (FJsonSerializer::Deserialize(Reader, ParsedResult) && ParsedResult.IsValid())
+		{
+			Data->SetObjectField(TEXT("response"), ParsedResult);
+		}
+	}
+	return Data;
+}
+
+bool FAIExportTCPServer::TryCopyTask(const FString& TaskId, FAsyncCommandJob& OutJob) const
+{
+	FScopeLock Lock(&AsyncJobsCriticalSection);
+	const TSharedPtr<FAsyncCommandJob>* FoundJob = AsyncJobs.Find(TaskId);
+	if (!FoundJob || !FoundJob->IsValid())
+	{
+		return false;
+	}
+
+	OutJob = *FoundJob->Get();
+	return true;
+}
+
 bool FAIExportTCPServer::Init()
 {
 	return true;
@@ -245,6 +1651,7 @@ uint32 FAIExportTCPServer::Run()
 
 	bIsRunning = true;
 	UE_LOG(LogAIExport, Log, TEXT("AIExport TCP Server listening on 127.0.0.1:%d"), ServerPort);
+	WriteEditorRegistryFile();
 
 	// Main accept loop
 	while (!bStopRequested)
@@ -260,8 +1667,13 @@ uint32 FAIExportTCPServer::Run()
 				if (ClientSocket)
 				{
 					UE_LOG(LogAIExport, Verbose, TEXT("Client connected"));
-					HandleClientConnection(ClientSocket);
-					SocketSubsystem->DestroySocket(ClientSocket);
+					ActiveClientConnections.Increment();
+					Async(EAsyncExecution::ThreadPool, [this, ClientSocket, SocketSubsystem]()
+					{
+						HandleClientConnection(ClientSocket);
+						SocketSubsystem->DestroySocket(ClientSocket);
+						ActiveClientConnections.Decrement();
+					});
 				}
 			}
 		}
@@ -272,6 +1684,11 @@ uint32 FAIExportTCPServer::Run()
 	{
 		SocketSubsystem->DestroySocket(ListenerSocket);
 		ListenerSocket = nullptr;
+	}
+
+	while (ActiveClientConnections.GetValue() > 0)
+	{
+		FPlatformProcess::Sleep(0.01f);
 	}
 
 	bIsRunning = false;
@@ -300,9 +1717,13 @@ void FAIExportTCPServer::StartServer()
 
 	// Find an available port
 	ServerPort = FindAvailablePort(55560, 55600);
+	EditorInstanceId = FString::Printf(TEXT("%s-%u-%d"), FApp::GetProjectName(), FPlatformProcess::GetCurrentProcessId(), ServerPort);
+	EditorRegistryFilePath = GetEditorRegistryFilePath(ServerPort);
+	ServerStartedAtUtc = FDateTime::UtcNow().ToIso8601();
 
 	// Write port to discovery file
 	WritePortFile(ServerPort);
+	StartHttpServer();
 
 	bStopRequested = false;
 	ServerThread = FRunnableThread::Create(this, TEXT("AIExportTCPServerThread"), 0, TPri_Normal);
@@ -322,6 +1743,7 @@ void FAIExportTCPServer::StopServer()
 
 	UE_LOG(LogAIExport, Log, TEXT("Stopping AIExport TCP Server..."));
 
+	StopHttpServer();
 	bStopRequested = true;
 
 	if (ServerThread)
@@ -330,6 +1752,8 @@ void FAIExportTCPServer::StopServer()
 		delete ServerThread;
 		ServerThread = nullptr;
 	}
+
+	RemoveEditorRegistryFile();
 }
 
 void FAIExportTCPServer::HandleClientConnection(FSocket* ClientSocket)
@@ -398,330 +1822,44 @@ FString FAIExportTCPServer::ProcessCommand(const FString& JsonCommand)
 		return CreateErrorResponse(TEXT("Missing 'type' field"));
 	}
 
-	// Get params (optional)
-	TSharedPtr<FJsonObject> Params = RootObject->GetObjectField(TEXT("params"));
+	// Get params (optional for no-parameter commands)
+	TSharedPtr<FJsonObject> Params;
+	if (RootObject->HasField(TEXT("params")))
+	{
+		const TSharedPtr<FJsonObject>* ParamsObject = nullptr;
+		if (!RootObject->TryGetObjectField(TEXT("params"), ParamsObject) || !ParamsObject || !ParamsObject->IsValid())
+		{
+			return CreateErrorResponse(TEXT("'params' must be a JSON object when provided"));
+		}
+		Params = *ParamsObject;
+	}
 
 	UE_LOG(LogAIExport, Log, TEXT("Processing command: %s"), *CommandType);
 
-	// Dispatch command
-	if (CommandType == TEXT("ping"))
-	{
-		return HandlePing();
-	}
-	else if (CommandType == TEXT("export_widget"))
-	{
-		return HandleExportWidget(Params);
-	}
-	else if (CommandType == TEXT("export_blueprint"))
-	{
-		return HandleExportBlueprint(Params);
-	}
-	else if (CommandType == TEXT("list_supported_types"))
-	{
-		return HandleListSupportedTypes();
-	}
-	// Widget Builder commands
-	else if (CommandType == TEXT("create_widget_blueprint"))
-	{
-		return HandleCreateWidgetBlueprint(Params);
-	}
-	else if (CommandType == TEXT("add_widget"))
-	{
-		return HandleAddWidget(Params);
-	}
-	else if (CommandType == TEXT("remove_widget"))
-	{
-		return HandleRemoveWidget(Params);
-	}
-	else if (CommandType == TEXT("move_widget"))
-	{
-		return HandleMoveWidget(Params);
-	}
-	else if (CommandType == TEXT("set_widget_property"))
-	{
-		return HandleSetWidgetProperty(Params);
-	}
-	else if (CommandType == TEXT("set_slot_property"))
-	{
-		return HandleSetSlotProperty(Params);
-	}
-	else if (CommandType == TEXT("set_canvas_slot_layout"))
-	{
-		return HandleSetCanvasSlotLayout(Params);
-	}
-	else if (CommandType == TEXT("set_widget_properties"))
-	{
-		return HandleSetWidgetProperties(Params);
-	}
-	else if (CommandType == TEXT("compile_and_save"))
-	{
-		return HandleCompileAndSave(Params);
-	}
-	else if (CommandType == TEXT("get_widget_tree"))
-	{
-		return HandleGetWidgetTree(Params);
-	}
-	else if (CommandType == TEXT("list_widget_classes"))
-	{
-		return HandleListWidgetClasses();
-	}
-	// CDO Property commands
-	else if (CommandType == TEXT("set_cdo_property"))
-	{
-		return HandleSetCDOProperty(Params);
-	}
-	else if (CommandType == TEXT("get_cdo_properties"))
-	{
-		return HandleGetCDOProperties(Params);
-	}
-	// CDO Array commands
-	else if (CommandType == TEXT("add_cdo_array_element"))
-	{
-		return HandleAddCDOArrayElement(Params);
-	}
-	else if (CommandType == TEXT("set_cdo_array_element_property"))
-	{
-		return HandleSetCDOArrayElementProperty(Params);
-	}
-	else if (CommandType == TEXT("remove_cdo_array_element"))
-	{
-		return HandleRemoveCDOArrayElement(Params);
-	}
-	else if (CommandType == TEXT("get_cdo_array_length"))
-	{
-		return HandleGetCDOArrayLength(Params);
-	}
-	// Blueprint Graph commands
-	else if (CommandType == TEXT("add_event_node"))
-	{
-		return HandleAddEventNode(Params);
-	}
-	else if (CommandType == TEXT("add_custom_event"))
-	{
-		return HandleAddCustomEvent(Params);
-	}
-	else if (CommandType == TEXT("add_function_call"))
-	{
-		return HandleAddFunctionCallNode(Params);
-	}
-	else if (CommandType == TEXT("add_variable_get_node"))
-	{
-		return HandleAddVariableGetNode(Params);
-	}
-	else if (CommandType == TEXT("add_variable_set_node"))
-	{
-		return HandleAddVariableSetNode(Params);
-	}
-	else if (CommandType == TEXT("add_make_struct_node"))
-	{
-		return HandleAddMakeStructNode(Params);
-	}
-	else if (CommandType == TEXT("add_branch_node"))
-	{
-		return HandleAddBranchNode(Params);
-	}
-	else if (CommandType == TEXT("ensure_function_graph"))
-	{
-		return HandleEnsureFunctionGraph(Params);
-	}
-	else if (CommandType == TEXT("add_call_parent_function"))
-	{
-		return HandleAddCallParentFunction(Params);
-	}
-	else if (CommandType == TEXT("connect_pins"))
-	{
-		return HandleConnectPins(Params);
-	}
-	else if (CommandType == TEXT("set_pin_default"))
-	{
-		return HandleSetPinDefault(Params);
-	}
-	else if (CommandType == TEXT("remove_graph_node"))
-	{
-		return HandleRemoveGraphNode(Params);
-	}
-	else if (CommandType == TEXT("get_graph"))
-	{
-		return HandleGetGraph(Params);
-	}
-	else if (CommandType == TEXT("list_graphs"))
-	{
-		return HandleListGraphs(Params);
-	}
-	// Blueprint Variable commands
-	else if (CommandType == TEXT("add_variable"))
-	{
-		return HandleAddVariable(Params);
-	}
-	else if (CommandType == TEXT("set_variable_default"))
-	{
-		return HandleSetVariableDefault(Params);
-	}
-	else if (CommandType == TEXT("remove_variable"))
-	{
-		return HandleRemoveVariable(Params);
-	}
-	else if (CommandType == TEXT("get_variables"))
-	{
-		return HandleGetVariables(Params);
-	}
-	// Blueprint Utility commands
-	else if (CommandType == TEXT("reparent_blueprint"))
-	{
-		return HandleReparentBlueprint(Params);
-	}
-	// Material Builder commands
-	else if (CommandType == TEXT("create_material"))
-	{
-		return HandleCreateMaterial(Params);
-	}
-	else if (CommandType == TEXT("set_material_property"))
-	{
-		return HandleSetMaterialProperty(Params);
-	}
-	else if (CommandType == TEXT("add_expression"))
-	{
-		return HandleAddExpression(Params);
-	}
-	else if (CommandType == TEXT("set_expression_property"))
-	{
-		return HandleSetExpressionProperty(Params);
-	}
-	else if (CommandType == TEXT("connect_expressions"))
-	{
-		return HandleConnectExpressions(Params);
-	}
-	else if (CommandType == TEXT("connect_to_material_property"))
-	{
-		return HandleConnectToMaterialProperty(Params);
-	}
-	else if (CommandType == TEXT("disconnect_input"))
-	{
-		return HandleDisconnectInput(Params);
-	}
-	else if (CommandType == TEXT("remove_expression"))
-	{
-		return HandleRemoveExpression(Params);
-	}
-	else if (CommandType == TEXT("compile_material"))
-	{
-		return HandleCompileMaterial(Params);
-	}
-	else if (CommandType == TEXT("get_material_graph"))
-	{
-		return HandleGetMaterialGraph(Params);
-	}
-	else if (CommandType == TEXT("list_expression_classes"))
-	{
-		return HandleListExpressionClasses();
-	}
-	else if (CommandType == TEXT("create_material_instance"))
-	{
-		return HandleCreateMaterialInstance(Params);
-	}
-	else if (CommandType == TEXT("set_instance_parameter"))
-	{
-		return HandleSetInstanceParameter(Params);
-	}
-	else if (CommandType == TEXT("save_material_instance"))
-	{
-		return HandleSaveMaterialInstance(Params);
-	}
-	else if (CommandType == TEXT("get_material_instance_info"))
-	{
-		return HandleGetMaterialInstanceInfo(Params);
-	}
-	// Data Asset commands
-	else if (CommandType == TEXT("save_data_asset"))
-	{
-		return HandleSaveDataAsset(Params);
-	}
-	// Generic Asset Factory commands
-	else if (CommandType == TEXT("create_asset"))
-	{
-		return HandleCreateAsset(Params);
-	}
-	else if (CommandType == TEXT("set_asset_property"))
-	{
-		return HandleSetAssetProperty(Params);
-	}
-	else if (CommandType == TEXT("get_asset_properties"))
-	{
-		return HandleGetAssetProperties(Params);
-	}
-	else if (CommandType == TEXT("save_asset"))
-	{
-		return HandleSaveAsset(Params);
-	}
-	else if (CommandType == TEXT("rename_asset"))
-	{
-		return HandleRenameAsset(Params);
-	}
-	else if (CommandType == TEXT("get_referencers"))
-	{
-		return HandleGetReferencers(Params);
-	}
-	else if (CommandType == TEXT("get_dependencies"))
-	{
-		return HandleGetDependencies(Params);
-	}
-	else if (CommandType == TEXT("delete_asset"))
-	{
-		return HandleDeleteAsset(Params);
-	}
-	else if (CommandType == TEXT("list_redirectors"))
-	{
-		return HandleListRedirectors(Params);
-	}
-	else if (CommandType == TEXT("fixup_redirectors"))
-	{
-		return HandleFixupRedirectors(Params);
-	}
-	// Input Mapping Context commands
-	else if (CommandType == TEXT("add_input_mapping"))
-	{
-		return HandleAddInputMapping(Params);
-	}
-	else if (CommandType == TEXT("remove_input_mapping"))
-	{
-		return HandleRemoveInputMapping(Params);
-	}
-	else if (CommandType == TEXT("get_input_mappings"))
-	{
-		return HandleGetInputMappings(Params);
-	}
-	// AnimBlueprint Builder commands
-	else if (CommandType == TEXT("create_anim_blueprint"))
-	{
-		return HandleCreateAnimBlueprint(Params);
-	}
-	else if (CommandType == TEXT("get_anim_blueprint_info"))
-	{
-		return HandleGetAnimBlueprintInfo(Params);
-	}
-	// Asset Import commands
-	else if (CommandType == TEXT("import_texture"))
-	{
-		return HandleImportTexture(Params);
-	}
-	else if (CommandType == TEXT("import_font"))
-	{
-		return HandleImportFont(Params);
-	}
-	// Widget Preview Capture commands (for IFTP verify loop)
-	else if (CommandType == TEXT("capture_widget_preview"))
-	{
-		return HandleCaptureWidgetPreview(Params);
-	}
-	// Asset Lifecycle commands
-	else if (CommandType == TEXT("reload_asset"))
-	{
-		return HandleReloadAsset(Params);
-	}
-	else
+	const FCommandDescriptor* Descriptor = FindCommandDescriptor(CommandType);
+	if (!Descriptor)
 	{
 		return CreateErrorResponse(FString::Printf(TEXT("Unknown command: %s"), *CommandType));
 	}
+
+	if (Descriptor->bRequiresParams && !Params.IsValid())
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Command '%s' requires a 'params' object"), *CommandType));
+	}
+
+	const FAICommandContext Context = BuildCommandContext(RootObject, *Descriptor);
+	FString ScopeError;
+	if (!ValidateCommandScope(*Descriptor, Context, ScopeError))
+	{
+		return CreateErrorResponse(ScopeError);
+	}
+
+	if (Context.bDryRun && Descriptor->bMutating)
+	{
+		return CreateDryRunResponse(*Descriptor, Context);
+	}
+
+	return DispatchCommand(*Descriptor, Params);
 }
 
 FString FAIExportTCPServer::HandlePing()
@@ -729,10 +1867,455 @@ FString FAIExportTCPServer::HandlePing()
 	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 	Data->SetStringField(TEXT("message"), TEXT("pong"));
 	Data->SetStringField(TEXT("server"), TEXT("CommonAIExport"));
+	Data->SetStringField(TEXT("editor_id"), EditorInstanceId);
 	Data->SetNumberField(TEXT("port"), ServerPort);
 	Data->SetStringField(TEXT("engine_version"), FEngineVersion::Current().ToString());
 	Data->SetStringField(TEXT("project_name"), FApp::GetProjectName());
+	Data->SetStringField(TEXT("project_dir"), FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
 	Data->SetNumberField(TEXT("uptime_seconds"), FPlatformTime::Seconds() - GStartTime);
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleListCommands()
+{
+	TSharedPtr<FJsonObject> Data = BuildCommandManifestJson();
+	Data->SetNumberField(TEXT("count"), GetCommandDescriptors().Num());
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleServerStatus()
+{
+	int32 QueuedTasks = 0;
+	int32 RunningTasks = 0;
+	int32 CompletedTasks = 0;
+	int32 FailedTasks = 0;
+	int32 CancelledTasks = 0;
+
+	{
+		FScopeLock Lock(&AsyncJobsCriticalSection);
+		for (const TPair<FString, TSharedPtr<FAsyncCommandJob>>& Pair : AsyncJobs)
+		{
+			if (!Pair.Value.IsValid())
+			{
+				continue;
+			}
+
+			const FString& Status = Pair.Value->Status;
+			if (Status == TEXT("queued")) ++QueuedTasks;
+			else if (Status == TEXT("running")) ++RunningTasks;
+			else if (Status == TEXT("completed")) ++CompletedTasks;
+			else if (Status == TEXT("failed")) ++FailedTasks;
+			else if (Status == TEXT("cancelled")) ++CancelledTasks;
+		}
+	}
+
+	TSharedPtr<FJsonObject> Data = BuildEditorIdentityJson();
+	TArray<TSharedPtr<FJsonValue>> Scopes;
+	Scopes.Add(MakeShared<FJsonValueString>(TEXT("read")));
+	Scopes.Add(MakeShared<FJsonValueString>(TEXT("write")));
+	Scopes.Add(MakeShared<FJsonValueString>(TEXT("destructive")));
+	Data->SetNumberField(TEXT("uptime_seconds"), FPlatformTime::Seconds() - GStartTime);
+	Data->SetNumberField(TEXT("active_client_connections"), ActiveClientConnections.GetValue());
+	Data->SetNumberField(TEXT("command_count"), GetCommandDescriptors().Num());
+	Data->SetArrayField(TEXT("supported_scopes"), Scopes);
+	Data->SetNumberField(TEXT("tasks_queued"), QueuedTasks);
+	Data->SetNumberField(TEXT("tasks_running"), RunningTasks);
+	Data->SetNumberField(TEXT("tasks_completed"), CompletedTasks);
+	Data->SetNumberField(TEXT("tasks_failed"), FailedTasks);
+	Data->SetNumberField(TEXT("tasks_cancelled"), CancelledTasks);
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleEditorIdentity()
+{
+	return CreateSuccessResponse(BuildEditorIdentityJson());
+}
+
+FString FAIExportTCPServer::HandleCommandManifestExport(TSharedPtr<FJsonObject> Params)
+{
+	FString OutputPath;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("output_path"), OutputPath);
+	}
+
+	if (OutputPath.IsEmpty())
+	{
+		OutputPath = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("AIManifests"), TEXT("CommonAIExport_CommandManifest.json"));
+	}
+	OutputPath = FPaths::ConvertRelativePathToFull(OutputPath);
+
+	const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+	if (!FPaths::IsUnderDirectory(OutputPath, ProjectDir))
+	{
+		return CreateErrorResponse(TEXT("output_path must resolve under the project directory"));
+	}
+
+	FString OutputJson;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputJson);
+	FJsonSerializer::Serialize(BuildCommandManifestJson().ToSharedRef(), Writer);
+
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(OutputPath), true);
+	if (!FFileHelper::SaveStringToFile(OutputJson, *OutputPath))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Failed to write command manifest: %s"), *OutputPath));
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("output_path"), OutputPath);
+	Data->SetNumberField(TEXT("command_count"), GetCommandDescriptors().Num());
+	Data->SetStringField(TEXT("manifest_source"), TEXT("FAIExportTCPServer::GetCommandDescriptors"));
+	Data->SetBoolField(TEXT("written"), true);
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleProjectStatus()
+{
+	TSharedPtr<FJsonObject> Data = BuildEditorIdentityJson();
+	Data->SetNumberField(TEXT("uptime_seconds"), FPlatformTime::Seconds() - GStartTime);
+	Data->SetNumberField(TEXT("command_count"), GetCommandDescriptors().Num());
+	Data->SetBoolField(TEXT("port_file_exists"), IFileManager::Get().FileExists(*GetPortFilePath()));
+	Data->SetBoolField(TEXT("project_file_exists"), IFileManager::Get().FileExists(*FPaths::GetProjectFilePath()));
+	Data->SetBoolField(TEXT("diversion_repo"), IFileManager::Get().DirectoryExists(*FPaths::Combine(FPaths::ProjectDir(), TEXT(".diversion"))));
+	Data->SetBoolField(TEXT("git_repo"), IFileManager::Get().DirectoryExists(*FPaths::Combine(FPaths::ProjectDir(), TEXT(".git"))));
+	Data->SetBoolField(TEXT("vs_solution_exists"), IFileManager::Get().FileExists(*FPaths::Combine(FPaths::ProjectDir(), FString::Printf(TEXT("%s.sln"), FApp::GetProjectName()))));
+	Data->SetStringField(TEXT("last_build_log"), FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(), TEXT("Saved"), TEXT("Logs"), TEXT("LastBuild.log"))));
+	Data->SetBoolField(TEXT("last_build_log_exists"), IFileManager::Get().FileExists(*FPaths::Combine(FPaths::ProjectDir(), TEXT("Saved"), TEXT("Logs"), TEXT("LastBuild.log"))));
+
+	TArray<FString> LogFiles;
+	IFileManager::Get().FindFiles(LogFiles, *FPaths::Combine(FPaths::ProjectLogDir(), TEXT("*.log")), true, false);
+	Data->SetNumberField(TEXT("log_file_count"), LogFiles.Num());
+
+	TSharedPtr<FJsonObject> EditorState = MakeShared<FJsonObject>();
+	EditorState->SetBoolField(TEXT("pie_active"), GEditor && GEditor->PlayWorld != nullptr);
+	EditorState->SetBoolField(TEXT("simulating"), GEditor && GEditor->bIsSimulatingInEditor);
+	UWorld* World = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
+	EditorState->SetStringField(TEXT("world_name"), World ? World->GetName() : TEXT(""));
+	EditorState->SetStringField(TEXT("world_package"), (World && World->GetOutermost()) ? World->GetOutermost()->GetName() : TEXT(""));
+	Data->SetObjectField(TEXT("editor_state"), EditorState);
+
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleSourceControlStatus(TSharedPtr<FJsonObject> Params)
+{
+	FString Provider = TEXT("auto");
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("provider"), Provider);
+	}
+	Provider = Provider.ToLower();
+
+	const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+	const bool bHasDiversion = IFileManager::Get().DirectoryExists(*FPaths::Combine(ProjectDir, TEXT(".diversion")));
+	const bool bHasGit = IFileManager::Get().DirectoryExists(*FPaths::Combine(ProjectDir, TEXT(".git")));
+
+	FString Executable;
+	FString Arguments;
+	if ((Provider == TEXT("auto") && bHasDiversion) || Provider == TEXT("dv") || Provider == TEXT("diversion"))
+	{
+		Executable = TEXT("dv");
+		Arguments = TEXT("status");
+		Provider = TEXT("diversion");
+	}
+	else if ((Provider == TEXT("auto") && bHasGit) || Provider == TEXT("git"))
+	{
+		Executable = TEXT("git");
+		Arguments = TEXT("status --short");
+		Provider = TEXT("git");
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("provider"), Provider);
+	Data->SetStringField(TEXT("project_dir"), ProjectDir);
+	Data->SetBoolField(TEXT("diversion_repo"), bHasDiversion);
+	Data->SetBoolField(TEXT("git_repo"), bHasGit);
+	if (Executable.IsEmpty())
+	{
+		Data->SetBoolField(TEXT("available"), false);
+		Data->SetStringField(TEXT("status"), TEXT("not_configured"));
+		return CreateSuccessResponse(Data);
+	}
+
+	int32 ReturnCode = -1;
+	FString StdOut;
+	FString StdErr;
+	const bool bLaunched = FPlatformProcess::ExecProcess(*Executable, *Arguments, &ReturnCode, &StdOut, &StdErr, *ProjectDir);
+	Data->SetBoolField(TEXT("available"), bLaunched);
+	Data->SetNumberField(TEXT("return_code"), ReturnCode);
+	Data->SetStringField(TEXT("stdout"), StdOut);
+	Data->SetStringField(TEXT("stderr"), StdErr);
+	Data->SetStringField(TEXT("status"), (bLaunched && ReturnCode == 0) ? TEXT("ok") : TEXT("failed"));
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleTaskSubmit(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid())
+	{
+		return CreateErrorResponse(TEXT("Missing 'params' object"));
+	}
+
+	FString CommandName;
+	if (!Params->TryGetStringField(TEXT("command"), CommandName) && !Params->TryGetStringField(TEXT("command_name"), CommandName))
+	{
+		return CreateErrorResponse(TEXT("Missing 'command' parameter"));
+	}
+
+	const FCommandDescriptor* TargetDescriptor = FindCommandDescriptor(CommandName);
+	if (!TargetDescriptor)
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Unknown command for task submission: %s"), *CommandName));
+	}
+
+	if (CommandName.StartsWith(TEXT("task_")))
+	{
+		return CreateErrorResponse(TEXT("Async task commands cannot submit other async task commands"));
+	}
+
+	TSharedPtr<FJsonObject> CommandParams;
+	if (Params->HasField(TEXT("params")))
+	{
+		const TSharedPtr<FJsonObject>* ParamsObject = nullptr;
+		if (!Params->TryGetObjectField(TEXT("params"), ParamsObject) || !ParamsObject || !ParamsObject->IsValid())
+		{
+			return CreateErrorResponse(TEXT("'params' must be a JSON object when provided"));
+		}
+		CommandParams = *ParamsObject;
+	}
+
+	if (TargetDescriptor->bRequiresParams && !CommandParams.IsValid())
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Command '%s' requires a 'params' object"), *CommandName));
+	}
+
+	TSharedPtr<FJsonObject> Meta = MakeShared<FJsonObject>();
+	const TSharedPtr<FJsonObject>* MetaObject = nullptr;
+	if (Params->TryGetObjectField(TEXT("meta"), MetaObject) && MetaObject && MetaObject->IsValid())
+	{
+		Meta = *MetaObject;
+	}
+
+	FString ScopeOverride;
+	if (Params->TryGetStringField(TEXT("scope"), ScopeOverride))
+	{
+		Meta->SetStringField(TEXT("scope"), ScopeOverride);
+	}
+
+	bool bDryRun = false;
+	if (Params->TryGetBoolField(TEXT("dry_run"), bDryRun))
+	{
+		Meta->SetBoolField(TEXT("dry_run"), bDryRun);
+	}
+
+	TSharedPtr<FJsonObject> SyntheticRoot = MakeShared<FJsonObject>();
+	SyntheticRoot->SetStringField(TEXT("type"), CommandName);
+	SyntheticRoot->SetObjectField(TEXT("meta"), Meta);
+
+	const FAICommandContext TargetContext = BuildCommandContext(SyntheticRoot, *TargetDescriptor);
+	FString ScopeError;
+	if (!ValidateCommandScope(*TargetDescriptor, TargetContext, ScopeError))
+	{
+		return CreateErrorResponse(ScopeError);
+	}
+
+	if (TargetContext.bDryRun && TargetDescriptor->bMutating)
+	{
+		return CreateDryRunResponse(*TargetDescriptor, TargetContext);
+	}
+
+	const FString TaskId = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphensLower);
+	TSharedPtr<FAsyncCommandJob> Job = MakeShared<FAsyncCommandJob>();
+	Job->TaskId = TaskId;
+	Job->CommandName = CommandName;
+	Job->Status = TEXT("queued");
+	Job->SubmittedAt = FDateTime::UtcNow().ToIso8601();
+
+	{
+		FScopeLock Lock(&AsyncJobsCriticalSection);
+		AsyncJobs.Add(TaskId, Job);
+	}
+
+	Async(EAsyncExecution::ThreadPool, [this, TaskId, CommandName, TargetDescriptor, CommandParams]()
+	{
+		{
+			FScopeLock Lock(&AsyncJobsCriticalSection);
+			TSharedPtr<FAsyncCommandJob>* FoundJob = AsyncJobs.Find(TaskId);
+			if (!FoundJob || !FoundJob->IsValid())
+			{
+				return;
+			}
+			if ((*FoundJob)->bCancelRequested)
+			{
+				(*FoundJob)->Status = TEXT("cancelled");
+				(*FoundJob)->FinishedAt = FDateTime::UtcNow().ToIso8601();
+				return;
+			}
+			(*FoundJob)->Status = TEXT("running");
+			(*FoundJob)->StartedAt = FDateTime::UtcNow().ToIso8601();
+		}
+
+		const FString Response = DispatchCommand(*TargetDescriptor, CommandParams);
+		bool bSuccess = false;
+		FString ErrorMessage;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response);
+		TSharedPtr<FJsonObject> ParsedResponse;
+		if (FJsonSerializer::Deserialize(Reader, ParsedResponse) && ParsedResponse.IsValid())
+		{
+			ParsedResponse->TryGetBoolField(TEXT("success"), bSuccess);
+			ParsedResponse->TryGetStringField(TEXT("error"), ErrorMessage);
+		}
+
+		{
+			FScopeLock Lock(&AsyncJobsCriticalSection);
+			TSharedPtr<FAsyncCommandJob>* FoundJob = AsyncJobs.Find(TaskId);
+			if (!FoundJob || !FoundJob->IsValid())
+			{
+				return;
+			}
+			(*FoundJob)->ResultJson = Response;
+			(*FoundJob)->FinishedAt = FDateTime::UtcNow().ToIso8601();
+			(*FoundJob)->Status = bSuccess ? TEXT("completed") : TEXT("failed");
+			(*FoundJob)->ErrorMessage = ErrorMessage;
+			if ((*FoundJob)->bCancelRequested && !bSuccess)
+			{
+				(*FoundJob)->Status = TEXT("cancelled");
+			}
+		}
+	});
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("task_id"), TaskId);
+	Data->SetStringField(TEXT("command"), CommandName);
+	Data->SetStringField(TEXT("status"), TEXT("queued"));
+	Data->SetBoolField(TEXT("async_candidate"), TargetDescriptor->bAsyncCandidate);
+	Data->SetNumberField(TEXT("timeout_seconds"), TargetDescriptor->TimeoutSeconds);
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleTaskStatus(TSharedPtr<FJsonObject> Params)
+{
+	FString TaskId;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("task_id"), TaskId);
+	}
+
+	if (!TaskId.IsEmpty())
+	{
+		FAsyncCommandJob Job;
+		if (!TryCopyTask(TaskId, Job))
+		{
+			return CreateErrorResponse(FString::Printf(TEXT("Unknown task_id: %s"), *TaskId));
+		}
+		return CreateSuccessResponse(BuildTaskJson(Job, false));
+	}
+
+	TArray<TSharedPtr<FJsonValue>> Tasks;
+	{
+		FScopeLock Lock(&AsyncJobsCriticalSection);
+		for (const TPair<FString, TSharedPtr<FAsyncCommandJob>>& Pair : AsyncJobs)
+		{
+			if (Pair.Value.IsValid())
+			{
+				Tasks.Add(MakeShared<FJsonValueObject>(BuildTaskJson(*Pair.Value, false)));
+			}
+		}
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetArrayField(TEXT("tasks"), Tasks);
+	Data->SetNumberField(TEXT("count"), Tasks.Num());
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleTaskResult(TSharedPtr<FJsonObject> Params)
+{
+	FString TaskId;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("task_id"), TaskId);
+	}
+
+	if (!TaskId.IsEmpty())
+	{
+		FAsyncCommandJob Job;
+		if (!TryCopyTask(TaskId, Job))
+		{
+			return CreateErrorResponse(FString::Printf(TEXT("Unknown task_id: %s"), *TaskId));
+		}
+		return CreateSuccessResponse(BuildTaskJson(Job, true));
+	}
+
+	TArray<TSharedPtr<FJsonValue>> Tasks;
+	{
+		FScopeLock Lock(&AsyncJobsCriticalSection);
+		for (const TPair<FString, TSharedPtr<FAsyncCommandJob>>& Pair : AsyncJobs)
+		{
+			if (Pair.Value.IsValid() && (Pair.Value->Status == TEXT("completed") || Pair.Value->Status == TEXT("failed") || Pair.Value->Status == TEXT("cancelled")))
+			{
+				Tasks.Add(MakeShared<FJsonValueObject>(BuildTaskJson(*Pair.Value, false)));
+			}
+		}
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetArrayField(TEXT("completed_tasks"), Tasks);
+	Data->SetNumberField(TEXT("count"), Tasks.Num());
+	Data->SetStringField(TEXT("message"), TEXT("Pass task_id to include the stored command response."));
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleTaskCancel(TSharedPtr<FJsonObject> Params)
+{
+	FString TaskId;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("task_id"), TaskId);
+	}
+
+	if (TaskId.IsEmpty())
+	{
+		TArray<TSharedPtr<FJsonValue>> CancellableTasks;
+		{
+			FScopeLock Lock(&AsyncJobsCriticalSection);
+			for (const TPair<FString, TSharedPtr<FAsyncCommandJob>>& Pair : AsyncJobs)
+			{
+				if (Pair.Value.IsValid() && (Pair.Value->Status == TEXT("queued") || Pair.Value->Status == TEXT("running")))
+				{
+					CancellableTasks.Add(MakeShared<FJsonValueObject>(BuildTaskJson(*Pair.Value, false)));
+				}
+			}
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetArrayField(TEXT("cancellable_tasks"), CancellableTasks);
+		Data->SetNumberField(TEXT("count"), CancellableTasks.Num());
+		Data->SetStringField(TEXT("message"), TEXT("Pass task_id to request cancellation."));
+		return CreateSuccessResponse(Data);
+	}
+
+	FAsyncCommandJob JobCopy;
+	{
+		FScopeLock Lock(&AsyncJobsCriticalSection);
+		TSharedPtr<FAsyncCommandJob>* FoundJob = AsyncJobs.Find(TaskId);
+		if (!FoundJob || !FoundJob->IsValid())
+		{
+			return CreateErrorResponse(FString::Printf(TEXT("Unknown task_id: %s"), *TaskId));
+		}
+
+		(*FoundJob)->bCancelRequested = true;
+		if ((*FoundJob)->Status == TEXT("queued"))
+		{
+			(*FoundJob)->Status = TEXT("cancelled");
+			(*FoundJob)->FinishedAt = FDateTime::UtcNow().ToIso8601();
+		}
+		JobCopy = *FoundJob->Get();
+	}
+
+	TSharedPtr<FJsonObject> Data = BuildTaskJson(JobCopy, false);
+	Data->SetBoolField(TEXT("cancel_requested"), true);
+	Data->SetStringField(TEXT("message"), TEXT("Cancellation is cooperative; already-running UE work may finish before the task observes cancellation."));
 	return CreateSuccessResponse(Data);
 }
 
@@ -923,6 +2506,653 @@ FString FAIExportTCPServer::CreateSuccessResponse(TSharedPtr<FJsonObject> Data)
 	FJsonSerializer::Serialize(Response.ToSharedRef(), Writer);
 
 	return OutputString;
+}
+
+namespace
+{
+	static UWorld* GetAIEditorWorld()
+	{
+		return GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
+	}
+
+	static void AddVectorJson(TSharedPtr<FJsonObject> Obj, const TCHAR* FieldName, const FVector& Value)
+	{
+		TSharedPtr<FJsonObject> Json = MakeShared<FJsonObject>();
+		Json->SetNumberField(TEXT("x"), Value.X);
+		Json->SetNumberField(TEXT("y"), Value.Y);
+		Json->SetNumberField(TEXT("z"), Value.Z);
+		Obj->SetObjectField(FieldName, Json);
+	}
+
+	static void AddRotatorJson(TSharedPtr<FJsonObject> Obj, const TCHAR* FieldName, const FRotator& Value)
+	{
+		TSharedPtr<FJsonObject> Json = MakeShared<FJsonObject>();
+		Json->SetNumberField(TEXT("pitch"), Value.Pitch);
+		Json->SetNumberField(TEXT("yaw"), Value.Yaw);
+		Json->SetNumberField(TEXT("roll"), Value.Roll);
+		Obj->SetObjectField(FieldName, Json);
+	}
+
+	static FVector ReadVectorField(TSharedPtr<FJsonObject> Params, const TCHAR* FieldName, const FVector& DefaultValue)
+	{
+		const TSharedPtr<FJsonObject>* Obj = nullptr;
+		if (!Params.IsValid() || !Params->TryGetObjectField(FieldName, Obj) || !Obj || !Obj->IsValid())
+		{
+			return DefaultValue;
+		}
+
+		FVector Result = DefaultValue;
+		double Value = 0.0;
+		if ((*Obj)->TryGetNumberField(TEXT("x"), Value)) Result.X = Value;
+		if ((*Obj)->TryGetNumberField(TEXT("y"), Value)) Result.Y = Value;
+		if ((*Obj)->TryGetNumberField(TEXT("z"), Value)) Result.Z = Value;
+		return Result;
+	}
+
+	static FRotator ReadRotatorField(TSharedPtr<FJsonObject> Params, const TCHAR* FieldName, const FRotator& DefaultValue)
+	{
+		const TSharedPtr<FJsonObject>* Obj = nullptr;
+		if (!Params.IsValid() || !Params->TryGetObjectField(FieldName, Obj) || !Obj || !Obj->IsValid())
+		{
+			return DefaultValue;
+		}
+
+		FRotator Result = DefaultValue;
+		double Value = 0.0;
+		if ((*Obj)->TryGetNumberField(TEXT("pitch"), Value)) Result.Pitch = Value;
+		if ((*Obj)->TryGetNumberField(TEXT("yaw"), Value)) Result.Yaw = Value;
+		if ((*Obj)->TryGetNumberField(TEXT("roll"), Value)) Result.Roll = Value;
+		return Result;
+	}
+
+	static TSharedPtr<FJsonObject> BuildActorJson(AActor* Actor)
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		if (!Actor)
+		{
+			return Data;
+		}
+
+		Data->SetStringField(TEXT("name"), Actor->GetName());
+		Data->SetStringField(TEXT("label"), Actor->GetActorLabel());
+		Data->SetStringField(TEXT("path"), Actor->GetPathName());
+		Data->SetStringField(TEXT("class"), Actor->GetClass() ? Actor->GetClass()->GetPathName() : TEXT(""));
+		Data->SetBoolField(TEXT("hidden"), Actor->IsHidden());
+		AddVectorJson(Data, TEXT("location"), Actor->GetActorLocation());
+		AddRotatorJson(Data, TEXT("rotation"), Actor->GetActorRotation());
+		AddVectorJson(Data, TEXT("scale"), Actor->GetActorScale3D());
+		return Data;
+	}
+
+	static TSharedPtr<FJsonObject> BuildAssetDataJson(const FAssetData& AssetData)
+	{
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		if (!AssetData.IsValid())
+		{
+			return Data;
+		}
+
+		Data->SetStringField(TEXT("asset_name"), AssetData.AssetName.ToString());
+		Data->SetStringField(TEXT("package_name"), AssetData.PackageName.ToString());
+		Data->SetStringField(TEXT("package_path"), AssetData.PackagePath.ToString());
+		Data->SetStringField(TEXT("object_path"), AssetData.GetSoftObjectPath().ToString());
+		Data->SetStringField(TEXT("class_path"), AssetData.AssetClassPath.ToString());
+		Data->SetBoolField(TEXT("is_redirector"), AssetData.AssetClassPath.ToString().Contains(TEXT("ObjectRedirector")));
+		return Data;
+	}
+
+	static AActor* FindActorForAI(UWorld* World, const FString& ActorPath, const FString& ActorLabel, const FString& ActorName)
+	{
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* Actor = *It;
+			if (!Actor)
+			{
+				continue;
+			}
+
+			if (!ActorPath.IsEmpty() && Actor->GetPathName() == ActorPath) return Actor;
+			if (!ActorLabel.IsEmpty() && Actor->GetActorLabel() == ActorLabel) return Actor;
+			if (!ActorName.IsEmpty() && Actor->GetName() == ActorName) return Actor;
+		}
+		return nullptr;
+	}
+}
+
+FString FAIExportTCPServer::HandleEditorWorldInfo()
+{
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [Promise, this]()
+	{
+		UWorld* World = GetAIEditorWorld();
+		if (!World)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("No editor world is available")));
+			return;
+		}
+
+		int32 ActorCount = 0;
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			++ActorCount;
+		}
+
+		TArray<TSharedPtr<FJsonValue>> Levels;
+		for (ULevel* Level : World->GetLevels())
+		{
+			if (!Level)
+			{
+				continue;
+			}
+			TSharedPtr<FJsonObject> LevelJson = MakeShared<FJsonObject>();
+			LevelJson->SetStringField(TEXT("name"), Level->GetName());
+			LevelJson->SetStringField(TEXT("package_name"), Level->GetOutermost() ? Level->GetOutermost()->GetName() : TEXT(""));
+			LevelJson->SetBoolField(TEXT("is_persistent"), Level == World->PersistentLevel);
+			Levels.Add(MakeShared<FJsonValueObject>(LevelJson));
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("world_name"), World->GetName());
+		Data->SetStringField(TEXT("package_name"), World->GetOutermost() ? World->GetOutermost()->GetName() : TEXT(""));
+		Data->SetStringField(TEXT("map_filename"), FEditorFileUtils::GetFilename(World));
+		Data->SetStringField(TEXT("world_type"), LexToString(World->WorldType));
+		Data->SetNumberField(TEXT("actor_count"), ActorCount);
+		Data->SetNumberField(TEXT("level_count"), Levels.Num());
+		Data->SetArrayField(TEXT("levels"), Levels);
+		Data->SetBoolField(TEXT("pie_active"), GEditor && GEditor->PlayWorld != nullptr);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Editor world info timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleActorList(TSharedPtr<FJsonObject> Params)
+{
+	FString NameFilter;
+	FString ClassFilter;
+	int32 Limit = 500;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("name_filter"), NameFilter);
+		Params->TryGetStringField(TEXT("class_filter"), ClassFilter);
+		double LimitValue = 0.0;
+		if (Params->TryGetNumberField(TEXT("limit"), LimitValue) && LimitValue > 0.0)
+		{
+			Limit = FMath::Clamp(static_cast<int32>(LimitValue), 1, 5000);
+		}
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [NameFilter, ClassFilter, Limit, Promise, this]()
+	{
+		UWorld* World = GetAIEditorWorld();
+		if (!World)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("No editor world is available")));
+			return;
+		}
+
+		TArray<TSharedPtr<FJsonValue>> Actors;
+		int32 MatchedCount = 0;
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* Actor = *It;
+			if (!Actor)
+			{
+				continue;
+			}
+
+			const FString Label = Actor->GetActorLabel();
+			const FString Name = Actor->GetName();
+			const FString ClassPath = Actor->GetClass() ? Actor->GetClass()->GetPathName() : TEXT("");
+			if (!NameFilter.IsEmpty() && !Name.Contains(NameFilter) && !Label.Contains(NameFilter))
+			{
+				continue;
+			}
+			if (!ClassFilter.IsEmpty() && !ClassPath.Contains(ClassFilter))
+			{
+				continue;
+			}
+
+			++MatchedCount;
+			if (Actors.Num() < Limit)
+			{
+				Actors.Add(MakeShared<FJsonValueObject>(BuildActorJson(Actor)));
+			}
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetArrayField(TEXT("actors"), Actors);
+		Data->SetNumberField(TEXT("count"), Actors.Num());
+		Data->SetNumberField(TEXT("matched_count"), MatchedCount);
+		Data->SetBoolField(TEXT("truncated"), MatchedCount > Actors.Num());
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Actor list timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleActorSpawn(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString ClassPath;
+	if (!Params->TryGetStringField(TEXT("class_path"), ClassPath))
+		return CreateErrorResponse(TEXT("Missing 'class_path' parameter"));
+
+	FString ActorLabel;
+	Params->TryGetStringField(TEXT("actor_label"), ActorLabel);
+	const FVector Location = ReadVectorField(Params, TEXT("location"), FVector::ZeroVector);
+	const FRotator Rotation = ReadRotatorField(Params, TEXT("rotation"), FRotator::ZeroRotator);
+	const FVector Scale = ReadVectorField(Params, TEXT("scale"), FVector::OneVector);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [ClassPath, ActorLabel, Location, Rotation, Scale, Promise, this]()
+	{
+		UWorld* World = GetAIEditorWorld();
+		if (!World)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("No editor world is available")));
+			return;
+		}
+
+		UClass* ActorClass = StaticLoadClass(AActor::StaticClass(), nullptr, *ClassPath);
+		if (!ActorClass)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load actor class: %s"), *ClassPath)));
+			return;
+		}
+
+		const FScopedTransaction Transaction(NSLOCTEXT("CommonAIExport", "ActorSpawn", "AI Spawn Actor"));
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AActor* Actor = World->SpawnActor<AActor>(ActorClass, Location, Rotation, SpawnParams);
+		if (!Actor)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to spawn actor class: %s"), *ClassPath)));
+			return;
+		}
+
+		Actor->Modify();
+		Actor->SetActorScale3D(Scale);
+		if (!ActorLabel.IsEmpty())
+		{
+			Actor->SetActorLabel(ActorLabel);
+		}
+		World->MarkPackageDirty();
+
+		Promise->SetValue(CreateSuccessResponse(BuildActorJson(Actor)));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Actor spawn timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleActorSetTransform(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString ActorPath, ActorLabel, ActorName;
+	Params->TryGetStringField(TEXT("actor_path"), ActorPath);
+	Params->TryGetStringField(TEXT("actor_label"), ActorLabel);
+	Params->TryGetStringField(TEXT("actor_name"), ActorName);
+	if (ActorPath.IsEmpty() && ActorLabel.IsEmpty() && ActorName.IsEmpty())
+		return CreateErrorResponse(TEXT("Expected one of: actor_path, actor_label, actor_name"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [Params, ActorPath, ActorLabel, ActorName, Promise, this]()
+	{
+		UWorld* World = GetAIEditorWorld();
+		if (!World)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("No editor world is available")));
+			return;
+		}
+
+		AActor* Actor = FindActorForAI(World, ActorPath, ActorLabel, ActorName);
+		if (!Actor)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Actor not found")));
+			return;
+		}
+
+		const FVector Location = ReadVectorField(Params, TEXT("location"), Actor->GetActorLocation());
+		const FRotator Rotation = ReadRotatorField(Params, TEXT("rotation"), Actor->GetActorRotation());
+		const FVector Scale = ReadVectorField(Params, TEXT("scale"), Actor->GetActorScale3D());
+		const FScopedTransaction Transaction(NSLOCTEXT("CommonAIExport", "ActorSetTransform", "AI Set Actor Transform"));
+		Actor->Modify();
+		Actor->SetActorLocationAndRotation(Location, Rotation, false, nullptr, ETeleportType::TeleportPhysics);
+		Actor->SetActorScale3D(Scale);
+		Actor->MarkPackageDirty();
+		Promise->SetValue(CreateSuccessResponse(BuildActorJson(Actor)));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Actor set transform timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleActorDelete(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString ActorPath, ActorLabel, ActorName;
+	Params->TryGetStringField(TEXT("actor_path"), ActorPath);
+	Params->TryGetStringField(TEXT("actor_label"), ActorLabel);
+	Params->TryGetStringField(TEXT("actor_name"), ActorName);
+	if (ActorPath.IsEmpty() && ActorLabel.IsEmpty() && ActorName.IsEmpty())
+		return CreateErrorResponse(TEXT("Expected one of: actor_path, actor_label, actor_name"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [ActorPath, ActorLabel, ActorName, Promise, this]()
+	{
+		UWorld* World = GetAIEditorWorld();
+		if (!World)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("No editor world is available")));
+			return;
+		}
+
+		AActor* Actor = FindActorForAI(World, ActorPath, ActorLabel, ActorName);
+		if (!Actor)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("Actor not found")));
+			return;
+		}
+
+		const FString DeletedPath = Actor->GetPathName();
+		const FScopedTransaction Transaction(NSLOCTEXT("CommonAIExport", "ActorDelete", "AI Delete Actor"));
+		const bool bDeleted = World->EditorDestroyActor(Actor, true);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("deleted"), bDeleted);
+		Data->SetStringField(TEXT("actor_path"), DeletedPath);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Actor delete timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleLevelOpen(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString MapPath;
+	if (!Params->TryGetStringField(TEXT("map_path"), MapPath))
+		return CreateErrorResponse(TEXT("Missing 'map_path' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [MapPath, Promise, this]()
+	{
+		FString Filename = MapPath;
+		if (MapPath.StartsWith(TEXT("/Game/")) || MapPath.StartsWith(TEXT("/Engine/")))
+		{
+			Filename = FPackageName::LongPackageNameToFilename(MapPath, FPackageName::GetMapPackageExtension());
+		}
+
+		const bool bLoaded = FEditorFileUtils::LoadMap(Filename, false, true);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("loaded"), bLoaded);
+		Data->SetStringField(TEXT("map_path"), MapPath);
+		Data->SetStringField(TEXT("filename"), Filename);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Level open timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleLevelSaveCurrent()
+{
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [Promise, this]()
+	{
+		UWorld* World = GetAIEditorWorld();
+		if (!World || !World->PersistentLevel)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("No editor world/persistent level is available")));
+			return;
+		}
+		FString SavedFilename;
+		const bool bSaved = FEditorFileUtils::SaveLevel(World->PersistentLevel, TEXT(""), &SavedFilename);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("saved"), bSaved);
+		Data->SetStringField(TEXT("package_name"), World->GetOutermost() ? World->GetOutermost()->GetName() : TEXT(""));
+		Data->SetStringField(TEXT("filename"), SavedFilename);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Level save current timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandlePIEStatus()
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetBoolField(TEXT("pie_active"), GEditor && GEditor->PlayWorld != nullptr);
+	Data->SetBoolField(TEXT("simulating"), GEditor && GEditor->bIsSimulatingInEditor);
+	Data->SetStringField(TEXT("play_world"), (GEditor && GEditor->PlayWorld) ? GEditor->PlayWorld->GetName() : TEXT(""));
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandlePIEStart()
+{
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+	AsyncTask(ENamedThreads::GameThread, [Promise, this]()
+	{
+		if (!GEditor)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("GEditor is not available")));
+			return;
+		}
+		if (GEditor->PlayWorld)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("PIE is already active")));
+			return;
+		}
+
+		FRequestPlaySessionParams Params;
+		GEditor->RequestPlaySession(Params);
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("requested"), true);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("PIE start timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandlePIEStop()
+{
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+	AsyncTask(ENamedThreads::GameThread, [Promise, this]()
+	{
+		if (!GEditor)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("GEditor is not available")));
+			return;
+		}
+		if (!GEditor->PlayWorld)
+		{
+			TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+			Data->SetBoolField(TEXT("requested"), false);
+			Data->SetBoolField(TEXT("pie_active"), false);
+			Promise->SetValue(CreateSuccessResponse(Data));
+			return;
+		}
+		GEditor->RequestEndPlayMap();
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("requested"), true);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("PIE stop timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleEditorConsoleCommand(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString Command;
+	if (!Params->TryGetStringField(TEXT("command"), Command) || Command.TrimStartAndEnd().IsEmpty())
+		return CreateErrorResponse(TEXT("Missing 'command' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+	AsyncTask(ENamedThreads::GameThread, [Command, Promise, this]()
+	{
+		if (!GEditor)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("GEditor is not available")));
+			return;
+		}
+
+		FStringOutputDevice Output;
+		UWorld* World = GetAIEditorWorld();
+		const bool bHandled = GEditor->Exec(World, *Command, Output);
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("command"), Command);
+		Data->SetBoolField(TEXT("handled"), bHandled);
+		Data->SetStringField(TEXT("output"), static_cast<const FString&>(Output));
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Editor console command timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleEditorLogRead(TSharedPtr<FJsonObject> Params)
+{
+	int32 MaxLines = 200;
+	FString Filter;
+	FString LogName;
+	if (Params.IsValid())
+	{
+		double MaxLinesValue = 0.0;
+		if (Params->TryGetNumberField(TEXT("max_lines"), MaxLinesValue) && MaxLinesValue > 0.0)
+		{
+			MaxLines = FMath::Clamp(static_cast<int32>(MaxLinesValue), 1, 5000);
+		}
+		Params->TryGetStringField(TEXT("filter"), Filter);
+		Params->TryGetStringField(TEXT("log_name"), LogName);
+	}
+
+	if (LogName.IsEmpty())
+	{
+		LogName = FString::Printf(TEXT("%s.log"), FApp::GetProjectName());
+	}
+
+	const FString LogDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectLogDir());
+	const FString LogFilePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(LogDir, FPaths::GetCleanFilename(LogName)));
+	if (!FPaths::IsUnderDirectory(LogFilePath, LogDir))
+	{
+		return CreateErrorResponse(TEXT("log_name must resolve under the project log directory"));
+	}
+
+	FString Contents;
+	if (!FFileHelper::LoadFileToString(Contents, *LogFilePath, FFileHelper::EHashOptions::None, FILEREAD_AllowWrite))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Could not read log file: %s"), *LogFilePath));
+	}
+
+	TArray<FString> Lines;
+	Contents.ParseIntoArrayLines(Lines, false);
+
+	TArray<TSharedPtr<FJsonValue>> OutLines;
+	const int32 StartIndex = FMath::Max(0, Lines.Num() - MaxLines);
+	int32 MatchedCount = 0;
+	for (int32 Index = StartIndex; Index < Lines.Num(); ++Index)
+	{
+		const FString& Line = Lines[Index];
+		if (!Filter.IsEmpty() && !Line.Contains(Filter, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+
+		++MatchedCount;
+		OutLines.Add(MakeShared<FJsonValueString>(Line));
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("log_path"), LogFilePath);
+	Data->SetStringField(TEXT("filter"), Filter);
+	Data->SetNumberField(TEXT("max_lines"), MaxLines);
+	Data->SetNumberField(TEXT("total_lines"), Lines.Num());
+	Data->SetNumberField(TEXT("returned_count"), OutLines.Num());
+	Data->SetNumberField(TEXT("matched_count"), MatchedCount);
+	Data->SetArrayField(TEXT("lines"), OutLines);
+	return CreateSuccessResponse(Data);
+}
+
+FString FAIExportTCPServer::HandleViewportCapture(TSharedPtr<FJsonObject> Params)
+{
+	FString OutputPath;
+	bool bShowUI = true;
+	bool bAddFilenameSuffix = false;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("output_path"), OutputPath);
+		Params->TryGetBoolField(TEXT("show_ui"), bShowUI);
+		Params->TryGetBoolField(TEXT("add_filename_suffix"), bAddFilenameSuffix);
+	}
+
+	if (OutputPath.IsEmpty())
+	{
+		const FString Timestamp = FDateTime::UtcNow().ToString(TEXT("%Y%m%d_%H%M%S"));
+		OutputPath = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Screenshots"), TEXT("AIViewport"), FString::Printf(TEXT("Viewport_%s.png"), *Timestamp));
+	}
+	OutputPath = FPaths::ConvertRelativePathToFull(OutputPath);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+	AsyncTask(ENamedThreads::GameThread, [OutputPath, bShowUI, bAddFilenameSuffix, Promise, this]()
+	{
+		IFileManager::Get().MakeDirectory(*FPaths::GetPath(OutputPath), true);
+		FScreenshotRequest::RequestScreenshot(OutputPath, bShowUI, bAddFilenameSuffix);
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("screenshot_requested"), true);
+		Data->SetStringField(TEXT("output_path"), OutputPath);
+		Data->SetBoolField(TEXT("show_ui"), bShowUI);
+		Data->SetBoolField(TEXT("add_filename_suffix"), bAddFilenameSuffix);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Viewport capture request timed out"));
+	return Future.Get();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3668,6 +5898,11 @@ FString FAIExportTCPServer::HandleGetVariables(TSharedPtr<FJsonObject> Params)
 // Generic Asset Factory Command Handlers
 // =============================================================================
 
+namespace
+{
+	static FName NormalizePackageName(const FString& InAssetPath);
+}
+
 FString FAIExportTCPServer::HandleCreateAsset(TSharedPtr<FJsonObject> Params)
 {
 	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
@@ -3777,6 +6012,319 @@ FString FAIExportTCPServer::HandleGetAssetProperties(TSharedPtr<FJsonObject> Par
 
 	Future.WaitFor(FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get asset properties timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAssetExists(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+
+		const bool bScanIncomplete = AR.IsLoadingAssets();
+		if (bScanIncomplete)
+		{
+			AR.WaitForCompletion();
+		}
+
+		const FName PackageName = NormalizePackageName(AssetPath);
+		FAssetData AssetData = AR.GetAssetByObjectPath(FSoftObjectPath(PackageName.ToString() + TEXT(".") + FPackageName::GetLongPackageAssetName(PackageName.ToString())));
+
+		if (!AssetData.IsValid())
+		{
+			TArray<FAssetData> PackageAssets;
+			AR.GetAssetsByPackageName(PackageName, PackageAssets);
+			if (PackageAssets.Num() > 0)
+			{
+				AssetData = PackageAssets[0];
+			}
+		}
+
+		FString PackageFilename;
+		const bool bPackageExistsOnDisk = FPackageName::DoesPackageExist(PackageName.ToString(), &PackageFilename);
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetStringField(TEXT("package_name"), PackageName.ToString());
+		Data->SetBoolField(TEXT("exists"), AssetData.IsValid() || bPackageExistsOnDisk);
+		Data->SetBoolField(TEXT("asset_registry_valid"), AssetData.IsValid());
+		Data->SetBoolField(TEXT("package_exists_on_disk"), bPackageExistsOnDisk);
+		Data->SetBoolField(TEXT("scan_was_incomplete"), bScanIncomplete);
+		Data->SetStringField(TEXT("package_filename"), PackageFilename);
+		if (AssetData.IsValid())
+		{
+			Data->SetStringField(TEXT("object_path"), AssetData.GetSoftObjectPath().ToString());
+			Data->SetStringField(TEXT("asset_name"), AssetData.AssetName.ToString());
+			Data->SetStringField(TEXT("class_path"), AssetData.AssetClassPath.ToString());
+		}
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Asset exists timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleScanAssetPaths(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	TArray<FString> Paths;
+	const TArray<TSharedPtr<FJsonValue>>* PathsArray = nullptr;
+	if (Params->TryGetArrayField(TEXT("paths"), PathsArray) && PathsArray)
+	{
+		for (const TSharedPtr<FJsonValue>& Value : *PathsArray)
+		{
+			FString PathValue;
+			if (Value.IsValid() && Value->TryGetString(PathValue) && !PathValue.IsEmpty())
+			{
+				Paths.Add(PathValue);
+			}
+		}
+	}
+	else
+	{
+		FString SinglePath;
+		if (Params->TryGetStringField(TEXT("path"), SinglePath) && !SinglePath.IsEmpty())
+		{
+			Paths.Add(SinglePath);
+		}
+	}
+
+	if (Paths.Num() == 0)
+	{
+		return CreateErrorResponse(TEXT("Missing 'paths' array or 'path' parameter"));
+	}
+
+	bool bForceRescan = false;
+	Params->TryGetBoolField(TEXT("force_rescan"), bForceRescan);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [Paths, bForceRescan, Promise, this]()
+	{
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+
+		AR.ScanPathsSynchronous(Paths, bForceRescan);
+
+		TArray<TSharedPtr<FJsonValue>> PathValues;
+		PathValues.Reserve(Paths.Num());
+		for (const FString& Path : Paths)
+		{
+			PathValues.Add(MakeShared<FJsonValueString>(Path));
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetArrayField(TEXT("paths"), PathValues);
+		Data->SetNumberField(TEXT("count"), Paths.Num());
+		Data->SetBoolField(TEXT("force_rescan"), bForceRescan);
+		Data->SetBoolField(TEXT("scanned"), true);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Scan asset paths timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAssetSearch(TSharedPtr<FJsonObject> Params)
+{
+	FString Path = TEXT("/Game");
+	FString NameFilter;
+	FString ClassFilter;
+	bool bRecursive = true;
+	int32 Offset = 0;
+	int32 Limit = 100;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("path"), Path);
+		Params->TryGetStringField(TEXT("name_filter"), NameFilter);
+		Params->TryGetStringField(TEXT("class_filter"), ClassFilter);
+		Params->TryGetBoolField(TEXT("recursive"), bRecursive);
+
+		double NumberValue = 0.0;
+		if (Params->TryGetNumberField(TEXT("offset"), NumberValue) && NumberValue > 0.0)
+		{
+			Offset = static_cast<int32>(NumberValue);
+		}
+		if (Params->TryGetNumberField(TEXT("limit"), NumberValue) && NumberValue > 0.0)
+		{
+			Limit = FMath::Clamp(static_cast<int32>(NumberValue), 1, 1000);
+		}
+	}
+	if (Path.IsEmpty())
+	{
+		Path = TEXT("/Game");
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+	AsyncTask(ENamedThreads::GameThread, [Path, NameFilter, ClassFilter, bRecursive, Offset, Limit, Promise, this]()
+	{
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+
+		const bool bScanIncomplete = AR.IsLoadingAssets();
+		if (bScanIncomplete)
+		{
+			AR.WaitForCompletion();
+		}
+
+		FARFilter Filter;
+		Filter.PackagePaths.Add(FName(*Path));
+		Filter.bRecursivePaths = bRecursive;
+
+		TArray<FAssetData> Assets;
+		AR.GetAssets(Filter, Assets);
+
+		TArray<TSharedPtr<FJsonValue>> Results;
+		int32 MatchedCount = 0;
+		for (const FAssetData& AssetData : Assets)
+		{
+			const FString AssetName = AssetData.AssetName.ToString();
+			const FString PackageName = AssetData.PackageName.ToString();
+			const FString ClassPath = AssetData.AssetClassPath.ToString();
+			if (!NameFilter.IsEmpty() && !AssetName.Contains(NameFilter, ESearchCase::IgnoreCase) && !PackageName.Contains(NameFilter, ESearchCase::IgnoreCase))
+			{
+				continue;
+			}
+			if (!ClassFilter.IsEmpty() && !ClassPath.Contains(ClassFilter, ESearchCase::IgnoreCase))
+			{
+				continue;
+			}
+
+			if (MatchedCount >= Offset && Results.Num() < Limit)
+			{
+				Results.Add(MakeShared<FJsonValueObject>(BuildAssetDataJson(AssetData)));
+			}
+			++MatchedCount;
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("path"), Path);
+		Data->SetStringField(TEXT("name_filter"), NameFilter);
+		Data->SetStringField(TEXT("class_filter"), ClassFilter);
+		Data->SetBoolField(TEXT("recursive"), bRecursive);
+		Data->SetNumberField(TEXT("offset"), Offset);
+		Data->SetNumberField(TEXT("limit"), Limit);
+		Data->SetNumberField(TEXT("returned_count"), Results.Num());
+		Data->SetNumberField(TEXT("matched_count"), MatchedCount);
+		Data->SetBoolField(TEXT("truncated"), MatchedCount > Offset + Results.Num());
+		Data->SetBoolField(TEXT("scan_was_incomplete"), bScanIncomplete);
+		Data->SetArrayField(TEXT("assets"), Results);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Asset search timed out"));
+	return Future.Get();
+}
+
+FString FAIExportTCPServer::HandleAssetValidateLight(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise, this]()
+	{
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+
+		const bool bScanIncomplete = AR.IsLoadingAssets();
+		if (bScanIncomplete)
+		{
+			AR.WaitForCompletion();
+		}
+
+		const FName PackageName = NormalizePackageName(AssetPath);
+		TArray<FAssetData> PackageAssets;
+		AR.GetAssetsByPackageName(PackageName, PackageAssets);
+
+		FString PackageFilename;
+		const bool bPackageExistsOnDisk = FPackageName::DoesPackageExist(PackageName.ToString(), &PackageFilename);
+
+		TArray<FName> Dependencies;
+		TArray<FName> Referencers;
+		AR.GetDependencies(PackageName, Dependencies);
+		AR.GetReferencers(PackageName, Referencers);
+
+		TArray<TSharedPtr<FJsonValue>> Warnings;
+		TArray<TSharedPtr<FJsonValue>> ExternalDependencies;
+		if (PackageAssets.Num() == 0 && !bPackageExistsOnDisk)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("asset_missing")));
+		}
+		if (bScanIncomplete)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("asset_registry_scan_was_incomplete")));
+		}
+
+		for (const FAssetData& AssetData : PackageAssets)
+		{
+			if (AssetData.AssetClassPath.ToString().Contains(TEXT("ObjectRedirector")))
+			{
+				Warnings.Add(MakeShared<FJsonValueString>(TEXT("asset_is_redirector")));
+				break;
+			}
+		}
+
+		for (const FName& Dependency : Dependencies)
+		{
+			const FString DependencyPath = Dependency.ToString();
+			if (!DependencyPath.StartsWith(TEXT("/Game/")) && !DependencyPath.StartsWith(TEXT("/Engine/")) && !DependencyPath.StartsWith(TEXT("/Script/")))
+			{
+				ExternalDependencies.Add(MakeShared<FJsonValueString>(DependencyPath));
+			}
+		}
+		if (ExternalDependencies.Num() > 0)
+		{
+			Warnings.Add(MakeShared<FJsonValueString>(TEXT("has_non_project_engine_script_dependencies")));
+		}
+
+		TArray<TSharedPtr<FJsonValue>> AssetArray;
+		for (const FAssetData& AssetData : PackageAssets)
+		{
+			AssetArray.Add(MakeShared<FJsonValueObject>(BuildAssetDataJson(AssetData)));
+		}
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetStringField(TEXT("package_name"), PackageName.ToString());
+		Data->SetStringField(TEXT("package_filename"), PackageFilename);
+		Data->SetBoolField(TEXT("valid"), Warnings.Num() == 0);
+		Data->SetBoolField(TEXT("exists"), PackageAssets.Num() > 0 || bPackageExistsOnDisk);
+		Data->SetBoolField(TEXT("asset_registry_valid"), PackageAssets.Num() > 0);
+		Data->SetBoolField(TEXT("package_exists_on_disk"), bPackageExistsOnDisk);
+		Data->SetBoolField(TEXT("scan_was_incomplete"), bScanIncomplete);
+		Data->SetNumberField(TEXT("assets_in_package_count"), PackageAssets.Num());
+		Data->SetNumberField(TEXT("dependency_count"), Dependencies.Num());
+		Data->SetNumberField(TEXT("referencer_count"), Referencers.Num());
+		Data->SetNumberField(TEXT("external_dependency_count"), ExternalDependencies.Num());
+		Data->SetArrayField(TEXT("assets"), AssetArray);
+		Data->SetArrayField(TEXT("external_dependencies"), ExternalDependencies);
+		Data->SetArrayField(TEXT("warnings"), Warnings);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Asset validation timed out"));
 	return Future.Get();
 }
 
