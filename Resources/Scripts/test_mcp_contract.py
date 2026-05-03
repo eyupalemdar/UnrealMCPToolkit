@@ -150,7 +150,15 @@ def _failures() -> list[str]:
         for expected_name in ("asset_exists", "get_widget_tree", "task_events"):
             if expected_name not in generated_wrappers:
                 failures.append(f"generated wrapper runtime missing {expected_name}")
-        for expected_name in ("level_open", "level_save_current", "pie_start", "pie_stop", "viewport_capture"):
+        for expected_name in (
+            "actor_set_transform",
+            "actor_spawn",
+            "level_open",
+            "level_save_current",
+            "pie_start",
+            "pie_stop",
+            "viewport_capture",
+        ):
             spec = generated_wrappers.get(expected_name)
             if not spec:
                 failures.append(f"generated wrapper runtime missing write-scope {expected_name}")
@@ -188,6 +196,35 @@ def _failures() -> list[str]:
             )
             if viewport_call.get("params") != {"show_ui": False, "add_filename_suffix": True} or viewport_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed write-scope optional payload mapping")
+            spawn_call = build_tcp_call(
+                "actor_spawn",
+                {
+                    "class_path": "/Script/Engine.StaticMeshActor",
+                    "actor_label": "",
+                    "location": None,
+                    "rotation": {"yaw": 90},
+                    "scale": None,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if spawn_call.get("params") != {"class_path": "/Script/Engine.StaticMeshActor", "rotation": {"yaw": 90}} or spawn_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed actor_spawn optional transform mapping")
+            set_transform_call = build_tcp_call(
+                "actor_set_transform",
+                {
+                    "actor_path": "",
+                    "actor_label": "BP_TestActor",
+                    "actor_name": "",
+                    "location": None,
+                    "rotation": None,
+                    "scale": {"x": 1, "y": 1, "z": 1},
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if set_transform_call.get("params") != {"actor_label": "BP_TestActor", "scale": {"x": 1, "y": 1, "z": 1}} or set_transform_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed actor_set_transform optional transform mapping")
         else:
             failures.append("generated wrapper runtime missing build_tcp_call")
     else:

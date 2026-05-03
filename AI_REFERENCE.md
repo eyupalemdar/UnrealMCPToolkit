@@ -758,9 +758,10 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
 now covers read-only payload wrappers and a small safe write-scope set
-(`level_open`, `level_save_current`, `pie_start`, `pie_stop`, and
-`viewport_capture`) where payload fields, `scope`, and `dry_run` request meta are
-encoded explicitly.
+(`actor_spawn`, `actor_set_transform`, `level_open`, `level_save_current`,
+`pie_start`, `pie_stop`, and `viewport_capture`) where payload fields, optional
+dict transform values, `scope`, and `dry_run` request meta are encoded
+explicitly.
 
 Regenerate them with:
 

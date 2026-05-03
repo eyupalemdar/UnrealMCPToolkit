@@ -1840,16 +1840,7 @@ def actor_spawn(
     Returns:
         JSON with the spawned actor record, or a dry-run response.
     """
-    params: dict = {"class_path": class_path}
-    if actor_label:
-        params["actor_label"] = actor_label
-    if location is not None:
-        params["location"] = location
-    if rotation is not None:
-        params["rotation"] = rotation
-    if scale is not None:
-        params["scale"] = scale
-    return _format_response(_send_command("actor_spawn", params, _request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("actor_spawn", locals())
 
 
 @mcp.tool()
@@ -1883,20 +1874,7 @@ def actor_set_transform(
     Returns:
         JSON with the updated actor record, or a dry-run response.
     """
-    params: dict = {}
-    if actor_path:
-        params["actor_path"] = actor_path
-    if actor_label:
-        params["actor_label"] = actor_label
-    if actor_name:
-        params["actor_name"] = actor_name
-    if location is not None:
-        params["location"] = location
-    if rotation is not None:
-        params["rotation"] = rotation
-    if scale is not None:
-        params["scale"] = scale
-    return _format_response(_send_command("actor_set_transform", params, _request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("actor_set_transform", locals())
 
 
 @mcp.tool()

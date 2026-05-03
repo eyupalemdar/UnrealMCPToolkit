@@ -325,6 +325,10 @@ def _include_rule_for_if(test: ast.AST, param_name: str) -> str:
     if isinstance(test, ast.Name) and test.id == param_name:
         return "when_truthy"
     if isinstance(test, ast.Compare) and isinstance(test.left, ast.Name) and test.left.id == param_name:
+        if len(test.ops) == 1 and isinstance(test.ops[0], ast.IsNot):
+            comparator = test.comparators[0]
+            if isinstance(comparator, ast.Constant) and comparator.value is None:
+                return "when_not_none"
         if len(test.ops) == 1 and isinstance(test.ops[0], ast.Gt):
             comparator = test.comparators[0]
             if isinstance(comparator, ast.Constant) and comparator.value == 0:
@@ -666,9 +670,12 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
                 )
                 continue
 
+            default_include = "always" if param.get("required") else "when_provided"
+            if not param.get("required") and param.get("default_is_literal") and param.get("default_value") is None:
+                default_include = "when_not_none"
             rule = payload_rules.get(param_name, {})
-            include = rule.get("include", "always" if param.get("required") else "when_provided")
-            if include not in {"always", "when_truthy", "when_gt_zero", "when_provided", "conditional"}:
+            include = rule.get("include", default_include)
+            if include not in {"always", "when_truthy", "when_not_none", "when_gt_zero", "when_provided", "conditional"}:
                 b_can_generate = False
                 break
             if include == "conditional":
@@ -738,6 +745,8 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
         "        value = arguments[name]",
         "        include = param.get(\"include\", \"always\")",
         "        if include == \"when_truthy\" and not value:",
+        "            continue",
+        "        if include == \"when_not_none\" and value is None:",
         "            continue",
         "        if include == \"when_gt_zero\" and not (isinstance(value, (int, float)) and value > 0):",
         "            continue",
