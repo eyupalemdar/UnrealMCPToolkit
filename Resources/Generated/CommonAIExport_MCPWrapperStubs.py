@@ -687,7 +687,7 @@ def get_cdo_array_length(asset_path: str, array_name: str) -> str:
     return _format_response(_send_command("get_cdo_array_length", params))
 
 
-def add_event_node(asset_path: str, event_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph') -> str:
+def add_event_node(asset_path: str, event_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_event_node` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -697,10 +697,10 @@ def add_event_node(asset_path: str, event_name: str, node_name: str, pos_x: int 
         "pos_y": pos_y,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("add_event_node", params))
+    return _format_response(_send_command("add_event_node", params, _request_meta(scope, dry_run)))
 
 
-def add_custom_event(asset_path: str, event_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph') -> str:
+def add_custom_event(asset_path: str, event_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_custom_event` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -710,10 +710,10 @@ def add_custom_event(asset_path: str, event_name: str, node_name: str, pos_x: in
         "pos_y": pos_y,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("add_custom_event", params))
+    return _format_response(_send_command("add_custom_event", params, _request_meta(scope, dry_run)))
 
 
-def add_function_call(asset_path: str, function_name: str, node_name: str, target_class: str = '', pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph') -> str:
+def add_function_call(asset_path: str, function_name: str, node_name: str, target_class: str = '', pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_function_call` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -724,10 +724,10 @@ def add_function_call(asset_path: str, function_name: str, node_name: str, targe
         "pos_y": pos_y,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("add_function_call", params))
+    return _format_response(_send_command("add_function_call", params, _request_meta(scope, dry_run)))
 
 
-def add_variable_get_node(asset_path: str, variable_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph') -> str:
+def add_variable_get_node(asset_path: str, variable_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_variable_get_node` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -737,10 +737,10 @@ def add_variable_get_node(asset_path: str, variable_name: str, node_name: str, p
         "pos_y": pos_y,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("add_variable_get_node", params))
+    return _format_response(_send_command("add_variable_get_node", params, _request_meta(scope, dry_run)))
 
 
-def add_variable_set_node(asset_path: str, variable_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph') -> str:
+def add_variable_set_node(asset_path: str, variable_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_variable_set_node` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -750,10 +750,10 @@ def add_variable_set_node(asset_path: str, variable_name: str, node_name: str, p
         "pos_y": pos_y,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("add_variable_set_node", params))
+    return _format_response(_send_command("add_variable_set_node", params, _request_meta(scope, dry_run)))
 
 
-def add_make_struct_node(asset_path: str, struct_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph') -> str:
+def add_make_struct_node(asset_path: str, struct_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_make_struct_node` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -763,10 +763,10 @@ def add_make_struct_node(asset_path: str, struct_name: str, node_name: str, pos_
         "pos_y": pos_y,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("add_make_struct_node", params))
+    return _format_response(_send_command("add_make_struct_node", params, _request_meta(scope, dry_run)))
 
 
-def add_branch_node(asset_path: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph') -> str:
+def add_branch_node(asset_path: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_branch_node` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -775,10 +775,10 @@ def add_branch_node(asset_path: str, node_name: str, pos_x: int = 0, pos_y: int 
         "pos_y": pos_y,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("add_branch_node", params))
+    return _format_response(_send_command("add_branch_node", params, _request_meta(scope, dry_run)))
 
 
-def ensure_function_graph(asset_path: str, function_name: str, inputs: list[dict] | None = None, outputs: list[dict] | None = None, entry_node_name: str = '', result_node_name: str = '') -> str:
+def ensure_function_graph(asset_path: str, function_name: str, inputs: list[dict] | None = None, outputs: list[dict] | None = None, entry_node_name: str = '', result_node_name: str = '', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `ensure_function_graph` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -788,10 +788,10 @@ def ensure_function_graph(asset_path: str, function_name: str, inputs: list[dict
         "entry_node_name": entry_node_name,
         "result_node_name": result_node_name,
     }
-    return _format_response(_send_command("ensure_function_graph", params))
+    return _format_response(_send_command("ensure_function_graph", params, _request_meta(scope, dry_run)))
 
 
-def add_call_parent_function(asset_path: str, function_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph') -> str:
+def add_call_parent_function(asset_path: str, function_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_call_parent_function` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -801,10 +801,10 @@ def add_call_parent_function(asset_path: str, function_name: str, node_name: str
         "pos_y": pos_y,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("add_call_parent_function", params))
+    return _format_response(_send_command("add_call_parent_function", params, _request_meta(scope, dry_run)))
 
 
-def connect_pins(asset_path: str, from_node: str, from_pin: str, to_node: str, to_pin: str, graph_name: str = '') -> str:
+def connect_pins(asset_path: str, from_node: str, from_pin: str, to_node: str, to_pin: str, graph_name: str = '', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `connect_pins` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -814,10 +814,10 @@ def connect_pins(asset_path: str, from_node: str, from_pin: str, to_node: str, t
         "to_pin": to_pin,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("connect_pins", params))
+    return _format_response(_send_command("connect_pins", params, _request_meta(scope, dry_run)))
 
 
-def set_pin_default(asset_path: str, node_name: str, pin_name: str, default_value: str, graph_name: str = '') -> str:
+def set_pin_default(asset_path: str, node_name: str, pin_name: str, default_value: str, graph_name: str = '', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_pin_default` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
@@ -826,17 +826,17 @@ def set_pin_default(asset_path: str, node_name: str, pin_name: str, default_valu
         "default_value": default_value,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("set_pin_default", params))
+    return _format_response(_send_command("set_pin_default", params, _request_meta(scope, dry_run)))
 
 
-def remove_graph_node(asset_path: str, node_name: str, graph_name: str = '') -> str:
+def remove_graph_node(asset_path: str, node_name: str, graph_name: str = '', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `remove_graph_node` (BlueprintGraph)."""
     params = {
         "asset_path": asset_path,
         "node_name": node_name,
         "graph_name": graph_name,
     }
-    return _format_response(_send_command("remove_graph_node", params))
+    return _format_response(_send_command("remove_graph_node", params, _request_meta(scope, dry_run)))
 
 
 def get_graph(asset_path: str, graph_name: str = 'EventGraph') -> str:
@@ -856,7 +856,7 @@ def list_graphs(asset_path: str) -> str:
     return _format_response(_send_command("list_graphs", params))
 
 
-def add_variable(asset_path: str, var_name: str, var_type: str, instance_editable: bool = False, blueprint_read_only: bool = False, category: str = '') -> str:
+def add_variable(asset_path: str, var_name: str, var_type: str, instance_editable: bool = False, blueprint_read_only: bool = False, category: str = '', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_variable` (BlueprintVariable)."""
     params = {
         "asset_path": asset_path,
@@ -866,26 +866,26 @@ def add_variable(asset_path: str, var_name: str, var_type: str, instance_editabl
         "blueprint_read_only": blueprint_read_only,
         "category": category,
     }
-    return _format_response(_send_command("add_variable", params))
+    return _format_response(_send_command("add_variable", params, _request_meta(scope, dry_run)))
 
 
-def set_variable_default(asset_path: str, var_name: str, default_value: str) -> str:
+def set_variable_default(asset_path: str, var_name: str, default_value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_variable_default` (BlueprintVariable)."""
     params = {
         "asset_path": asset_path,
         "var_name": var_name,
         "default_value": default_value,
     }
-    return _format_response(_send_command("set_variable_default", params))
+    return _format_response(_send_command("set_variable_default", params, _request_meta(scope, dry_run)))
 
 
-def remove_variable(asset_path: str, var_name: str) -> str:
+def remove_variable(asset_path: str, var_name: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `remove_variable` (BlueprintVariable)."""
     params = {
         "asset_path": asset_path,
         "var_name": var_name,
     }
-    return _format_response(_send_command("remove_variable", params))
+    return _format_response(_send_command("remove_variable", params, _request_meta(scope, dry_run)))
 
 
 def get_variables(asset_path: str) -> str:
@@ -896,13 +896,13 @@ def get_variables(asset_path: str) -> str:
     return _format_response(_send_command("get_variables", params))
 
 
-def reparent_blueprint(asset_path: str, new_parent_class: str) -> str:
+def reparent_blueprint(asset_path: str, new_parent_class: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `reparent_blueprint` (BlueprintUtility)."""
     params = {
         "asset_path": asset_path,
         "new_parent_class": new_parent_class,
     }
-    return _format_response(_send_command("reparent_blueprint", params))
+    return _format_response(_send_command("reparent_blueprint", params, _request_meta(scope, dry_run)))
 
 
 def create_material(package_path: str, asset_name: str, domain: str = 'Surface', blend_mode: str = 'Opaque', shading_model: str = 'DefaultLit', two_sided: bool = False, scope: str = '', dry_run: bool = False) -> str:

@@ -3406,7 +3406,9 @@ def compile_and_save(asset_path: str) -> str:
 @mcp.tool()
 def reparent_blueprint(
     asset_path: str,
-    new_parent_class: str
+    new_parent_class: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Change the parent class of a Widget Blueprint.
@@ -3420,10 +3422,7 @@ def reparent_blueprint(
     Returns:
         JSON with old_parent and new_parent on success.
     """
-    return _format_response(_send_command("reparent_blueprint", {
-        "asset_path": asset_path,
-        "new_parent_class": new_parent_class,
-    }))
+    return _send_generated_tcp_tool("reparent_blueprint", locals())
 
 
 # =============================================================================
@@ -4400,7 +4399,9 @@ def add_event_node(
     node_name: str,
     pos_x: int = 0,
     pos_y: int = 0,
-    graph_name: str = "EventGraph"
+    graph_name: str = "EventGraph",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add an event override node to a Blueprint graph.
@@ -4419,14 +4420,7 @@ def add_event_node(
     Returns:
         JSON with node_name and event_name on success.
     """
-    return _format_response(_send_command("add_event_node", {
-        "asset_path": asset_path,
-        "event_name": event_name,
-        "node_name": node_name,
-        "pos_x": pos_x,
-        "pos_y": pos_y,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("add_event_node", locals())
 
 
 @mcp.tool()
@@ -4436,7 +4430,9 @@ def add_custom_event(
     node_name: str,
     pos_x: int = 0,
     pos_y: int = 0,
-    graph_name: str = "EventGraph"
+    graph_name: str = "EventGraph",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a Custom Event node to a Blueprint graph.
@@ -4452,14 +4448,7 @@ def add_custom_event(
     Returns:
         JSON with node_name and event_name.
     """
-    return _format_response(_send_command("add_custom_event", {
-        "asset_path": asset_path,
-        "event_name": event_name,
-        "node_name": node_name,
-        "pos_x": pos_x,
-        "pos_y": pos_y,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("add_custom_event", locals())
 
 
 @mcp.tool()
@@ -4470,7 +4459,9 @@ def add_function_call(
     target_class: str = "",
     pos_x: int = 0,
     pos_y: int = 0,
-    graph_name: str = "EventGraph"
+    graph_name: str = "EventGraph",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a function call node to a Blueprint graph.
@@ -4491,17 +4482,7 @@ def add_function_call(
     Returns:
         JSON with node_name and function_name.
     """
-    params = {
-        "asset_path": asset_path,
-        "function_name": function_name,
-        "node_name": node_name,
-        "pos_x": pos_x,
-        "pos_y": pos_y,
-        "graph_name": graph_name,
-    }
-    if target_class:
-        params["target_class"] = target_class
-    return _format_response(_send_command("add_function_call", params))
+    return _send_generated_tcp_tool("add_function_call", locals())
 
 
 @mcp.tool()
@@ -4511,7 +4492,9 @@ def add_variable_get_node(
     node_name: str,
     pos_x: int = 0,
     pos_y: int = 0,
-    graph_name: str = "EventGraph"
+    graph_name: str = "EventGraph",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a Variable Get node to the graph.
@@ -4527,14 +4510,7 @@ def add_variable_get_node(
     Returns:
         JSON with node_name and variable_name.
     """
-    return _format_response(_send_command("add_variable_get_node", {
-        "asset_path": asset_path,
-        "variable_name": variable_name,
-        "node_name": node_name,
-        "pos_x": pos_x,
-        "pos_y": pos_y,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("add_variable_get_node", locals())
 
 
 @mcp.tool()
@@ -4544,7 +4520,9 @@ def add_variable_set_node(
     node_name: str,
     pos_x: int = 0,
     pos_y: int = 0,
-    graph_name: str = "EventGraph"
+    graph_name: str = "EventGraph",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a Variable Set node to the graph.
@@ -4560,14 +4538,7 @@ def add_variable_set_node(
     Returns:
         JSON with node_name and variable_name.
     """
-    return _format_response(_send_command("add_variable_set_node", {
-        "asset_path": asset_path,
-        "variable_name": variable_name,
-        "node_name": node_name,
-        "pos_x": pos_x,
-        "pos_y": pos_y,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("add_variable_set_node", locals())
 
 
 @mcp.tool()
@@ -4577,7 +4548,9 @@ def add_make_struct_node(
     node_name: str,
     pos_x: int = 0,
     pos_y: int = 0,
-    graph_name: str = "EventGraph"
+    graph_name: str = "EventGraph",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a Make Struct node to the graph.
@@ -4593,14 +4566,7 @@ def add_make_struct_node(
     Returns:
         JSON with node_name and struct_name.
     """
-    return _format_response(_send_command("add_make_struct_node", {
-        "asset_path": asset_path,
-        "struct_name": struct_name,
-        "node_name": node_name,
-        "pos_x": pos_x,
-        "pos_y": pos_y,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("add_make_struct_node", locals())
 
 
 @mcp.tool()
@@ -4609,7 +4575,9 @@ def add_branch_node(
     node_name: str,
     pos_x: int = 0,
     pos_y: int = 0,
-    graph_name: str = "EventGraph"
+    graph_name: str = "EventGraph",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a Branch (if/else) node to the graph.
@@ -4624,13 +4592,7 @@ def add_branch_node(
     Returns:
         JSON with node_name.
     """
-    return _format_response(_send_command("add_branch_node", {
-        "asset_path": asset_path,
-        "node_name": node_name,
-        "pos_x": pos_x,
-        "pos_y": pos_y,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("add_branch_node", locals())
 
 
 @mcp.tool()
@@ -4640,7 +4602,9 @@ def add_call_parent_function(
     node_name: str,
     pos_x: int = 0,
     pos_y: int = 0,
-    graph_name: str = "EventGraph"
+    graph_name: str = "EventGraph",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a Call Parent Function node to a Blueprint graph.
@@ -4656,14 +4620,7 @@ def add_call_parent_function(
     Returns:
         JSON with node_name and function_name.
     """
-    return _format_response(_send_command("add_call_parent_function", {
-        "asset_path": asset_path,
-        "function_name": function_name,
-        "node_name": node_name,
-        "pos_x": pos_x,
-        "pos_y": pos_y,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("add_call_parent_function", locals())
 
 
 @mcp.tool()
@@ -4673,7 +4630,9 @@ def ensure_function_graph(
     inputs: list[dict] | None = None,
     outputs: list[dict] | None = None,
     entry_node_name: str = "",
-    result_node_name: str = ""
+    result_node_name: str = "",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Create or update a Blueprint function graph and tag its entry/result nodes.
@@ -4694,19 +4653,7 @@ def ensure_function_graph(
     Returns:
         JSON with graph_name, function_name, entry_node_name, and pin counts.
     """
-    params = {
-        "asset_path": asset_path,
-        "function_name": function_name,
-    }
-    if inputs:
-        params["inputs"] = inputs
-    if outputs:
-        params["outputs"] = outputs
-    if entry_node_name:
-        params["entry_node_name"] = entry_node_name
-    if result_node_name:
-        params["result_node_name"] = result_node_name
-    return _format_response(_send_command("ensure_function_graph", params))
+    return _send_generated_tcp_tool("ensure_function_graph", locals())
 
 
 @mcp.tool()
@@ -4716,7 +4663,9 @@ def connect_pins(
     from_pin: str,
     to_node: str,
     to_pin: str,
-    graph_name: str = ""
+    graph_name: str = "",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Connect an output pin to an input pin between two nodes.
@@ -4735,14 +4684,7 @@ def connect_pins(
     Returns:
         JSON with connection details.
     """
-    return _format_response(_send_command("connect_pins", {
-        "asset_path": asset_path,
-        "from_node": from_node,
-        "from_pin": from_pin,
-        "to_node": to_node,
-        "to_pin": to_pin,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("connect_pins", locals())
 
 
 @mcp.tool()
@@ -4751,7 +4693,9 @@ def set_pin_default(
     node_name: str,
     pin_name: str,
     default_value: str,
-    graph_name: str = ""
+    graph_name: str = "",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a pin's default value (for unconnected input pins).
@@ -4766,17 +4710,17 @@ def set_pin_default(
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_pin_default", {
-        "asset_path": asset_path,
-        "node_name": node_name,
-        "pin_name": pin_name,
-        "default_value": default_value,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("set_pin_default", locals())
 
 
 @mcp.tool()
-def remove_graph_node(asset_path: str, node_name: str, graph_name: str = "") -> str:
+def remove_graph_node(
+    asset_path: str,
+    node_name: str,
+    graph_name: str = "",
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Remove a node from the Blueprint graph by its logical name.
 
@@ -4788,11 +4732,7 @@ def remove_graph_node(asset_path: str, node_name: str, graph_name: str = "") -> 
     Returns:
         JSON with removal confirmation.
     """
-    return _format_response(_send_command("remove_graph_node", {
-        "asset_path": asset_path,
-        "node_name": node_name,
-        "graph_name": graph_name,
-    }))
+    return _send_generated_tcp_tool("remove_graph_node", locals())
 
 
 @mcp.tool()
@@ -4840,7 +4780,9 @@ def add_variable(
     var_type: str,
     instance_editable: bool = False,
     blueprint_read_only: bool = False,
-    category: str = ""
+    category: str = "",
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Add a member variable to a Blueprint.
@@ -4862,23 +4804,16 @@ def add_variable(
     Returns:
         JSON with var_name and var_type.
     """
-    params = {
-        "asset_path": asset_path,
-        "var_name": var_name,
-        "var_type": var_type,
-        "instance_editable": instance_editable,
-        "blueprint_read_only": blueprint_read_only,
-    }
-    if category:
-        params["category"] = category
-    return _format_response(_send_command("add_variable", params))
+    return _send_generated_tcp_tool("add_variable", locals())
 
 
 @mcp.tool()
 def set_variable_default(
     asset_path: str,
     var_name: str,
-    default_value: str
+    default_value: str,
+    scope: str = "",
+    dry_run: bool = False,
 ) -> str:
     """
     Set a Blueprint variable's default value.
@@ -4891,15 +4826,16 @@ def set_variable_default(
     Returns:
         JSON with success status.
     """
-    return _format_response(_send_command("set_variable_default", {
-        "asset_path": asset_path,
-        "var_name": var_name,
-        "default_value": default_value,
-    }))
+    return _send_generated_tcp_tool("set_variable_default", locals())
 
 
 @mcp.tool()
-def remove_variable(asset_path: str, var_name: str) -> str:
+def remove_variable(
+    asset_path: str,
+    var_name: str,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
     """
     Remove a variable from a Blueprint.
 
@@ -4910,10 +4846,7 @@ def remove_variable(asset_path: str, var_name: str) -> str:
     Returns:
         JSON with removal confirmation.
     """
-    return _format_response(_send_command("remove_variable", {
-        "asset_path": asset_path,
-        "var_name": var_name,
-    }))
+    return _send_generated_tcp_tool("remove_variable", locals())
 
 
 @mcp.tool()

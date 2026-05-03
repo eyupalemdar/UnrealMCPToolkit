@@ -59,7 +59,7 @@ Claude Code ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE E
 |------|---------|
 | `create_widget_blueprint(package_path, asset_name, parent_class?)` | Create new WBP. parent_class e.g. `/Script/CommonUI.CommonUserWidget` |
 | `compile_and_save(asset_path)` | Compile + save to disk. **Always call after modifications.** |
-| `reparent_blueprint(asset_path, new_parent_class)` | Change parent class. e.g. `/Script/LyraGame.LyraActivatableWidget` |
+| `reparent_blueprint(asset_path, new_parent_class, scope?, dry_run?)` | Change parent class. e.g. `/Script/LyraGame.LyraActivatableWidget` |
 | `get_widget_tree(asset_path)` | Get full widget hierarchy as JSON |
 | `list_widget_classes()` | List all available non-abstract widget classes |
 | `export_widget(asset_path, both_formats?)` | Export to _raw.txt + _simplified.txt + _stripped.txt |
@@ -210,17 +210,17 @@ set_cdo_array_element_property(
 
 | Tool | Purpose |
 |------|---------|
-| `add_event_node(asset_path, event_name, node_name, pos_x?, pos_y?, graph_name?)` | Add event override (Construct, Tick, BP_OnSelected, etc.) |
-| `add_custom_event(asset_path, event_name, node_name, pos_x?, pos_y?, graph_name?)` | Add custom event |
-| `ensure_function_graph(asset_path, function_name, inputs?, outputs?, entry_node_name?, result_node_name?)` | Create/update a function graph and tag entry/result nodes |
-| `add_function_call(asset_path, function_name, node_name, target_class?, pos_x?, pos_y?, graph_name?)` | Add function call node |
-| `add_variable_get_node(asset_path, var_name, node_name, pos_x?, pos_y?, graph_name?)` | Add Get node for variable |
-| `add_variable_set_node(asset_path, var_name, node_name, pos_x?, pos_y?, graph_name?)` | Add Set node for variable |
-| `add_make_struct_node(asset_path, struct_type, node_name, pos_x?, pos_y?, graph_name?)` | Add Make Struct node |
-| `add_branch_node(asset_path, node_name, pos_x?, pos_y?, graph_name?)` | Add Branch (if) node |
-| `connect_pins(asset_path, source_node, source_pin, target_node, target_pin, graph_name?)` | Connect two pins |
-| `set_pin_default(asset_path, node_name, pin_name, value, graph_name?)` | Set pin default value |
-| `remove_graph_node(asset_path, node_name, graph_name?)` | Remove a graph node |
+| `add_event_node(asset_path, event_name, node_name, pos_x?, pos_y?, graph_name?, scope?, dry_run?)` | Add event override (Construct, Tick, BP_OnSelected, etc.) |
+| `add_custom_event(asset_path, event_name, node_name, pos_x?, pos_y?, graph_name?, scope?, dry_run?)` | Add custom event |
+| `ensure_function_graph(asset_path, function_name, inputs?, outputs?, entry_node_name?, result_node_name?, scope?, dry_run?)` | Create/update a function graph and tag entry/result nodes |
+| `add_function_call(asset_path, function_name, node_name, target_class?, pos_x?, pos_y?, graph_name?, scope?, dry_run?)` | Add function call node |
+| `add_variable_get_node(asset_path, var_name, node_name, pos_x?, pos_y?, graph_name?, scope?, dry_run?)` | Add Get node for variable |
+| `add_variable_set_node(asset_path, var_name, node_name, pos_x?, pos_y?, graph_name?, scope?, dry_run?)` | Add Set node for variable |
+| `add_make_struct_node(asset_path, struct_type, node_name, pos_x?, pos_y?, graph_name?, scope?, dry_run?)` | Add Make Struct node |
+| `add_branch_node(asset_path, node_name, pos_x?, pos_y?, graph_name?, scope?, dry_run?)` | Add Branch (if) node |
+| `connect_pins(asset_path, source_node, source_pin, target_node, target_pin, graph_name?, scope?, dry_run?)` | Connect two pins |
+| `set_pin_default(asset_path, node_name, pin_name, value, graph_name?, scope?, dry_run?)` | Set pin default value |
+| `remove_graph_node(asset_path, node_name, graph_name?, scope?, dry_run?)` | Remove a graph node |
 | `get_graph(asset_path, graph_name?)` | Get graph as JSON (default: "EventGraph") |
 | `list_graphs(asset_path)` | List all graphs |
 
@@ -288,9 +288,9 @@ Without `target_class`, the function may resolve to wrong overload or fail.
 
 | Tool | Purpose |
 |------|---------|
-| `add_variable(asset_path, var_name, var_type, instance_editable?, blueprint_read_only?, category?)` | Add member variable |
-| `set_variable_default(asset_path, var_name, value)` | Set default value |
-| `remove_variable(asset_path, var_name)` | Remove variable |
+| `add_variable(asset_path, var_name, var_type, instance_editable?, blueprint_read_only?, category?, scope?, dry_run?)` | Add member variable |
+| `set_variable_default(asset_path, var_name, value, scope?, dry_run?)` | Set default value |
+| `remove_variable(asset_path, var_name, scope?, dry_run?)` | Remove variable |
 | `get_variables(asset_path)` | Get all variables as JSON |
 
 ### Variable Types
@@ -770,11 +770,11 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 `CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
-now covers 97 wrappers: read-only payload wrappers, the safe write-scope set
+now covers 113 wrappers: read-only payload wrappers, the safe write-scope set
 (editor/level/actor/PIE/viewport, Asset/DataAsset/Input, Import,
-AnimBlueprint, CDO/CDOArray, and Material graph/MIC wrappers), and the current
-destructive dry-run set (`actor_delete`, `delete_asset`, and
-`editor_console_command`).
+AnimBlueprint, CDO/CDOArray, Material graph/MIC, Blueprint graph/variable, and
+Blueprint utility wrappers), and the current destructive dry-run set
+(`actor_delete`, `delete_asset`, and `editor_console_command`).
 Payload fields, optional dict transform values, `scope`, and `dry_run` request
 meta are encoded explicitly so destructive tools keep their existing
 client/server scope gates. Payload inclusion rules now include explicit

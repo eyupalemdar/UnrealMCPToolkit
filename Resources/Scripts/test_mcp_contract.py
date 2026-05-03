@@ -174,16 +174,27 @@ def _failures() -> list[str]:
             "actor_set_transform",
             "actor_spawn",
             "add_cdo_array_element",
+            "add_branch_node",
+            "add_call_parent_function",
+            "add_custom_event",
+            "add_event_node",
             "add_expression",
+            "add_function_call",
             "add_input_mapping",
+            "add_make_struct_node",
+            "add_variable",
+            "add_variable_get_node",
+            "add_variable_set_node",
             "compile_material",
             "connect_expressions",
             "connect_to_material_property",
+            "connect_pins",
             "create_anim_blueprint",
             "create_asset",
             "create_material",
             "create_material_instance",
             "disconnect_input",
+            "ensure_function_graph",
             "fixup_redirectors",
             "import_font",
             "import_texture",
@@ -195,6 +206,9 @@ def _failures() -> list[str]:
             "rename_asset",
             "remove_cdo_array_element",
             "remove_expression",
+            "remove_graph_node",
+            "remove_variable",
+            "reparent_blueprint",
             "save_asset",
             "save_data_asset",
             "save_material_instance",
@@ -204,6 +218,8 @@ def _failures() -> list[str]:
             "set_instance_parameter",
             "set_asset_property",
             "set_material_property",
+            "set_pin_default",
+            "set_variable_default",
             "viewport_capture",
         ):
             spec = generated_wrappers.get(expected_name)
@@ -493,6 +509,101 @@ def _failures() -> list[str]:
             )
             if compile_material_call.get("params") != {"asset_path": "/Game/Materials/M_Test"} or compile_material_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed compile_material payload/meta mapping")
+            add_event_call = build_tcp_call(
+                "add_event_node",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "event_name": "Construct",
+                    "node_name": "Event_Construct",
+                    "pos_x": 0,
+                    "pos_y": 0,
+                    "graph_name": "EventGraph",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if add_event_call.get("params") != {"asset_path": "/Game/UI/W_Test", "event_name": "Construct", "node_name": "Event_Construct"} or add_event_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed add_event_node default payload/meta mapping")
+            function_call = build_tcp_call(
+                "add_function_call",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "function_name": "SetText",
+                    "node_name": "SetText",
+                    "target_class": "/Script/UMG.TextBlock",
+                    "pos_x": 300,
+                    "pos_y": 0,
+                    "graph_name": "UpdateText",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            expected_function_params = {
+                "asset_path": "/Game/UI/W_Test",
+                "function_name": "SetText",
+                "node_name": "SetText",
+                "target_class": "/Script/UMG.TextBlock",
+                "pos_x": 300,
+                "graph_name": "UpdateText",
+            }
+            if function_call.get("params") != expected_function_params or function_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed add_function_call optional payload/meta mapping")
+            ensure_graph_call = build_tcp_call(
+                "ensure_function_graph",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "function_name": "UpdateText",
+                    "inputs": None,
+                    "outputs": [{"name": "Handled", "type": "bool"}],
+                    "entry_node_name": "",
+                    "result_node_name": "UpdateText_Result",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if ensure_graph_call.get("params") != {"asset_path": "/Game/UI/W_Test", "function_name": "UpdateText", "outputs": [{"name": "Handled", "type": "bool"}], "result_node_name": "UpdateText_Result"} or ensure_graph_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed ensure_function_graph optional payload/meta mapping")
+            connect_pins_call = build_tcp_call(
+                "connect_pins",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "from_node": "Event_Construct",
+                    "from_pin": "then",
+                    "to_node": "SetText",
+                    "to_pin": "execute",
+                    "graph_name": "",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if connect_pins_call.get("params") != {"asset_path": "/Game/UI/W_Test", "from_node": "Event_Construct", "from_pin": "then", "to_node": "SetText", "to_pin": "execute"} or connect_pins_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed connect_pins default payload/meta mapping")
+            add_variable_call = build_tcp_call(
+                "add_variable",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "var_name": "TitleText",
+                    "var_type": "Text",
+                    "instance_editable": False,
+                    "blueprint_read_only": False,
+                    "category": "Content",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if add_variable_call.get("params") != {"asset_path": "/Game/UI/W_Test", "var_name": "TitleText", "var_type": "Text", "category": "Content"} or add_variable_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed add_variable optional payload/meta mapping")
+            reparent_call = build_tcp_call(
+                "reparent_blueprint",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "new_parent_class": "/Script/UMG.UserWidget",
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if reparent_call.get("params") != {"asset_path": "/Game/UI/W_Test", "new_parent_class": "/Script/UMG.UserWidget"} or reparent_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed reparent_blueprint payload/meta mapping")
             spawn_call = build_tcp_call(
                 "actor_spawn",
                 {

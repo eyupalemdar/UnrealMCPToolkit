@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T18:51:57.851959Z",
+  "generated_at_utc": "2026-05-03T18:56:49.643814Z",
   "tool_count": 140,
   "tools": {
     "ping": {
@@ -2597,6 +2597,14 @@
         "graph_name": {
           "type": "string",
           "default": "EventGraph"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2644,6 +2652,14 @@
         "graph_name": {
           "type": "string",
           "default": "EventGraph"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2695,6 +2711,14 @@
         "graph_name": {
           "type": "string",
           "default": "EventGraph"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2742,6 +2766,14 @@
         "graph_name": {
           "type": "string",
           "default": "EventGraph"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2789,6 +2821,14 @@
         "graph_name": {
           "type": "string",
           "default": "EventGraph"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2836,6 +2876,14 @@
         "graph_name": {
           "type": "string",
           "default": "EventGraph"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2880,6 +2928,14 @@
         "graph_name": {
           "type": "string",
           "default": "EventGraph"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2947,6 +3003,14 @@
         "result_node_name": {
           "type": "string",
           "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -2993,6 +3057,14 @@
         "graph_name": {
           "type": "string",
           "default": "EventGraph"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3038,6 +3110,14 @@
         "graph_name": {
           "type": "string",
           "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3082,6 +3162,14 @@
         "graph_name": {
           "type": "string",
           "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3119,6 +3207,14 @@
         "graph_name": {
           "type": "string",
           "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3223,6 +3319,14 @@
         "category": {
           "type": "string",
           "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3258,6 +3362,14 @@
         },
         "default_value": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3290,6 +3402,14 @@
         },
         "var_name": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -3348,6 +3468,14 @@
         },
         "new_parent_class": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
