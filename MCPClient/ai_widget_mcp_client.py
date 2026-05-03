@@ -1845,6 +1845,53 @@ def runtime_ai_perception_diagnostics(
 
 
 @mcp.tool()
+def runtime_ai_controller_diagnostics(
+    world: str = "auto",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    name_filter: str = "",
+    class_filter: str = "",
+    pawn_filter: str = "",
+    include_blackboard_values: bool = True,
+    include_behavior_debug: bool = True,
+    include_path_points: bool = True,
+    include_perception: bool = False,
+    controller_limit: int = 100,
+    blackboard_key_limit: int = 50,
+    path_point_limit: int = 25,
+    debug_string_limit: int = 4000,
+) -> str:
+    """
+    Inspect runtime AIController, Brain, Blackboard, and PathFollowing state.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        actor_path: Optional exact AIController or AI pawn UObject path to inspect.
+        actor_label: Optional exact AIController or AI pawn actor label to inspect.
+        actor_name: Optional exact AIController or AI pawn object name to inspect.
+        name_filter: Optional substring matched against controller or pawn name/label/path.
+        class_filter: Optional substring matched against AIController class path.
+        pawn_filter: Optional substring matched against possessed pawn name/label/path/class.
+        include_blackboard_values: Include per-key Blackboard value descriptions.
+        include_behavior_debug: Include Brain/BehaviorTree debug strings.
+        include_path_points: Include current NavigationPath point samples.
+        include_perception: Include embedded AIPerception listener details.
+        controller_limit: Maximum AIController records returned.
+        blackboard_key_limit: Maximum Blackboard keys returned per controller.
+        path_point_limit: Maximum path points returned per controller path.
+        debug_string_limit: Maximum characters retained per debug string field.
+
+    Returns:
+        JSON with AIController focus/move state, possessed pawn, BrainComponent,
+        BehaviorTreeComponent, BlackboardComponent keys, PathFollowingComponent
+        status/path summaries, aggregate counts, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_ai_controller_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_gameplay_tags_diagnostics(
     world: str = "auto",
     actor_path: str = "",

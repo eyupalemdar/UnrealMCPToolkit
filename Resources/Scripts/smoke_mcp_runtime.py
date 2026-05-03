@@ -558,6 +558,31 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         first_listener = ai_perception_diagnostics["listeners"][0]
         _assert(isinstance(first_listener, dict) and isinstance(first_listener.get("targets"), list), "runtime AI perception diagnostics missing target array")
 
+    ai_controller_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_ai_controller_diagnostics",
+            {
+                "world": "auto",
+                "controller_limit": 10,
+                "blackboard_key_limit": 5,
+                "path_point_limit": 5,
+                "debug_string_limit": 1000,
+            },
+        ),
+        "runtime_ai_controller_diagnostics",
+    )
+    _assert(ai_controller_diagnostics.get("world_available") is True, "runtime AI controller diagnostics did not report an available world")
+    _assert(isinstance(ai_controller_diagnostics.get("world"), dict), "runtime AI controller diagnostics missing world summary")
+    _assert(isinstance(ai_controller_diagnostics.get("ai_controllers"), list), "runtime AI controller diagnostics missing controller array")
+    _assert(isinstance(ai_controller_diagnostics.get("ai_controller_count"), int), "runtime AI controller diagnostics missing controller count")
+    _assert(isinstance(ai_controller_diagnostics.get("matched_ai_controller_count"), int), "runtime AI controller diagnostics missing matched controller count")
+    if ai_controller_diagnostics.get("ai_controllers"):
+        first_controller = ai_controller_diagnostics["ai_controllers"][0]
+        _assert(isinstance(first_controller.get("brain"), dict), "runtime AI controller diagnostics missing brain object")
+        _assert(isinstance(first_controller.get("blackboard"), dict), "runtime AI controller diagnostics missing blackboard object")
+        _assert(isinstance(first_controller.get("path_following"), dict), "runtime AI controller diagnostics missing path following object")
+
     gameplay_tags_diagnostics = _assert_tcp_success(
         _tcp_command(
             tcp_port,
@@ -876,6 +901,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_replication_diagnostics_checked": True,
         "runtime_ability_system_diagnostics_checked": True,
         "runtime_ai_perception_diagnostics_checked": True,
+        "runtime_ai_controller_diagnostics_checked": True,
         "runtime_gameplay_tags_diagnostics_checked": True,
         "runtime_commonui_diagnostics_checked": True,
         "runtime_audio_diagnostics_checked": True,

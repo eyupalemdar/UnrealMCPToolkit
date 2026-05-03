@@ -290,6 +290,28 @@ def runtime_ai_perception_diagnostics(world: str = 'auto', actor_path: str = '',
     return _format_response(_send_command("runtime_ai_perception_diagnostics", params))
 
 
+def runtime_ai_controller_diagnostics(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', class_filter: str = '', pawn_filter: str = '', include_blackboard_values: bool = True, include_behavior_debug: bool = True, include_path_points: bool = True, include_perception: bool = False, controller_limit: int = 100, blackboard_key_limit: int = 50, path_point_limit: int = 25, debug_string_limit: int = 4000) -> str:
+    """Generated stub for TCP command `runtime_ai_controller_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "name_filter": name_filter,
+        "class_filter": class_filter,
+        "pawn_filter": pawn_filter,
+        "include_blackboard_values": include_blackboard_values,
+        "include_behavior_debug": include_behavior_debug,
+        "include_path_points": include_path_points,
+        "include_perception": include_perception,
+        "controller_limit": controller_limit,
+        "blackboard_key_limit": blackboard_key_limit,
+        "path_point_limit": path_point_limit,
+        "debug_string_limit": debug_string_limit,
+    }
+    return _format_response(_send_command("runtime_ai_controller_diagnostics", params))
+
+
 def runtime_gameplay_tags_diagnostics(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', class_filter: str = '', component_class_filter: str = '', tag_filter: str = '', include_dictionary: bool = True, include_components: bool = True, actor_limit: int = 100, component_limit: int = 200, tag_limit: int = 500) -> str:
     """Generated stub for TCP command `runtime_gameplay_tags_diagnostics` (RuntimeInspector)."""
     params = {

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T20:24:33.580462Z",
-  "tool_count": 144,
+  "generated_at_utc": "2026-05-03T20:54:44.681587Z",
+  "tool_count": 145,
   "tools": {
     "ping": {
       "type": "object",
@@ -979,6 +979,88 @@
         "stimulus_limit": {
           "type": "integer",
           "default": 100
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_ai_controller_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "class_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "pawn_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "include_blackboard_values": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_behavior_debug": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_path_points": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_perception": {
+          "type": "boolean",
+          "default": false
+        },
+        "controller_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "blackboard_key_limit": {
+          "type": "integer",
+          "default": 50
+        },
+        "path_point_limit": {
+          "type": "integer",
+          "default": 25
+        },
+        "debug_string_limit": {
+          "type": "integer",
+          "default": 4000
         }
       },
       "required": [],
