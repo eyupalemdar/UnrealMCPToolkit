@@ -201,6 +201,19 @@ def runtime_component_list(world: str = 'auto', actor_path: str = '', actor_labe
     return _format_response(_send_command("runtime_component_list", params))
 
 
+def runtime_diagnostics(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', include_components: bool = True, component_limit: int = 100) -> str:
+    """Generated stub for TCP command `runtime_diagnostics` (RuntimeInspector)."""
+    params = {
+        "world": world,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "include_components": include_components,
+        "component_limit": component_limit,
+    }
+    return _format_response(_send_command("runtime_diagnostics", params))
+
+
 def actor_list(name_filter: str = '', class_filter: str = '', limit: int = 500) -> str:
     """Generated stub for TCP command `actor_list` (EditorActor)."""
     params = {

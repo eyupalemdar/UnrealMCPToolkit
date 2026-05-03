@@ -494,6 +494,14 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     no_scope_delete = _send_tcp(tcp_port, {"type": "delete_asset", "params": {"asset_path": "/Game/CommonAIExport/RuntimeSmokeMissing"}})
     _assert(not no_scope_delete.get("success") and "destructive" in no_scope_delete.get("error", ""), "destructive scope gate failed")
 
+    runtime_diagnostics = _assert_tcp_success(
+        _tcp_command(tcp_port, "runtime_diagnostics", {"world": "auto", "component_limit": 5}),
+        "runtime_diagnostics",
+    )
+    _assert(runtime_diagnostics.get("world_available") is True, "runtime diagnostics did not report an available world")
+    _assert(isinstance(runtime_diagnostics.get("pie"), dict), "runtime diagnostics missing PIE state")
+    _assert(isinstance(runtime_diagnostics.get("players"), dict), "runtime diagnostics missing player summary")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -549,6 +557,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "unsupported_protocol_code": bad_protocol.get("body", {}).get("error", {}).get("code"),
         "dry_run_scope_gate": True,
         "destructive_scope_gate": True,
+        "runtime_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),

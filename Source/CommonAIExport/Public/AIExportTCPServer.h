@@ -316,6 +316,7 @@ private:
 	FString HandleRuntimeWorldInfo(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimePlayerList(TSharedPtr<class FJsonObject> Params);
 	FString HandleRuntimeComponentList(TSharedPtr<class FJsonObject> Params);
+	FString HandleRuntimeDiagnostics(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorList(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSpawn(TSharedPtr<class FJsonObject> Params);
 	FString HandleActorSetTransform(TSharedPtr<class FJsonObject> Params);

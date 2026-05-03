@@ -1762,6 +1762,33 @@ def runtime_component_list(
 
 
 @mcp.tool()
+def runtime_diagnostics(
+    world: str = "auto",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    include_components: bool = True,
+    component_limit: int = 100,
+) -> str:
+    """
+    Capture a focused runtime/PIE diagnostics snapshot.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor".
+        actor_path: Optional exact actor UObject path to inspect.
+        actor_label: Optional exact actor label to inspect.
+        actor_name: Optional exact actor object name to inspect.
+        include_components: Include selected actor component records.
+        component_limit: Maximum selected actor components returned.
+
+    Returns:
+        JSON with PIE state, selected world summary, player controller summary,
+        optional selected actor/component details, and diagnostic warnings.
+    """
+    return _send_generated_tcp_tool("runtime_diagnostics", locals())
+
+
+@mcp.tool()
 def actor_list(
     name_filter: str = "",
     class_filter: str = "",
