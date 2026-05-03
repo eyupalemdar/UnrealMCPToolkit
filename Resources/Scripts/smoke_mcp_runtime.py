@@ -526,6 +526,22 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         first_actor = replication_diagnostics["actors"][0]
         _assert(isinstance(first_actor, dict) and isinstance(first_actor.get("replication"), dict), "runtime replication diagnostics missing actor replication object")
 
+    ability_system_diagnostics = _assert_tcp_success(
+        _tcp_command(
+            tcp_port,
+            "runtime_ability_system_diagnostics",
+            {"world": "auto", "actor_limit": 10, "ability_limit": 5, "effect_limit": 5, "attribute_limit": 5},
+        ),
+        "runtime_ability_system_diagnostics",
+    )
+    _assert(ability_system_diagnostics.get("world_available") is True, "runtime ability system diagnostics did not report an available world")
+    _assert(isinstance(ability_system_diagnostics.get("world"), dict), "runtime ability system diagnostics missing world summary")
+    _assert(isinstance(ability_system_diagnostics.get("actors"), list), "runtime ability system diagnostics missing actor array")
+    _assert(isinstance(ability_system_diagnostics.get("ability_system_component_count"), int), "runtime ability system diagnostics missing component count")
+    if ability_system_diagnostics.get("actors"):
+        first_actor = ability_system_diagnostics["actors"][0]
+        _assert(isinstance(first_actor, dict) and isinstance(first_actor.get("ability_system_components"), list), "runtime ability system diagnostics missing component array")
+
     task = _send_tcp(tcp_port, {"type": "task_submit", "params": {"command": "ping"}})
     _assert(bool(task.get("success")), "task_submit failed")
     task_id = task["data"]["task_id"]
@@ -584,6 +600,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "runtime_diagnostics_checked": True,
         "runtime_input_routing_checked": True,
         "runtime_replication_diagnostics_checked": True,
+        "runtime_ability_system_diagnostics_checked": True,
         "async_task_status": task_result.get("data", {}).get("status") if task_result else "",
         "async_task_event_count": task_events.get("returned_count", 0),
         "latest_task_event_sequence": task_events.get("latest_sequence", 0),

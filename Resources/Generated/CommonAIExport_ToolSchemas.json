@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-03T15:37:28.585909Z",
-  "tool_count": 129,
+  "generated_at_utc": "2026-05-03T15:54:28.697373Z",
+  "tool_count": 130,
   "tools": {
     "ping": {
       "type": "object",
@@ -795,6 +795,80 @@
           "default": 100
         },
         "component_limit": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "RuntimeInspector",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "runtime_ability_system_diagnostics": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "class_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "include_abilities": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_effects": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_attributes": {
+          "type": "boolean",
+          "default": true
+        },
+        "actor_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "ability_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "effect_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "attribute_limit": {
           "type": "integer",
           "default": 100
         }

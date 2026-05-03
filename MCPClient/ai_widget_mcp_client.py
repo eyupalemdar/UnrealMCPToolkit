@@ -1765,6 +1765,48 @@ def runtime_replication_diagnostics(
 
 
 @mcp.tool()
+def runtime_ability_system_diagnostics(
+    world: str = "auto",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    name_filter: str = "",
+    class_filter: str = "",
+    include_abilities: bool = True,
+    include_effects: bool = True,
+    include_attributes: bool = True,
+    actor_limit: int = 100,
+    ability_limit: int = 100,
+    effect_limit: int = 100,
+    attribute_limit: int = 100,
+) -> str:
+    """
+    Inspect runtime AbilitySystemComponent state without mutating gameplay.
+
+    Args:
+        world: "auto", "pie"/"runtime"/"play", or "editor". Auto prefers PIE
+               when Play-In-Editor is active and otherwise uses the editor world.
+        actor_path: Optional exact actor UObject path to inspect.
+        actor_label: Optional exact actor label to inspect.
+        actor_name: Optional exact actor object name to inspect.
+        name_filter: Optional substring matched against actor name or label.
+        class_filter: Optional substring matched against actor class path.
+        include_abilities: Include activatable ability spec summaries.
+        include_effects: Include active gameplay effect summaries.
+        include_attributes: Include attribute set and numeric attribute summaries.
+        actor_limit: Maximum ability-system actor records returned.
+        ability_limit: Maximum ability records returned per component.
+        effect_limit: Maximum active effect records returned per component.
+        attribute_limit: Maximum attribute records returned per component.
+
+    Returns:
+        JSON with AbilitySystemComponent ownership, tags, granted abilities,
+        active gameplay effects, attributes, aggregate counts, and warnings.
+    """
+    return _send_generated_tcp_tool("runtime_ability_system_diagnostics", locals())
+
+
+@mcp.tool()
 def runtime_component_list(
     world: str = "auto",
     actor_path: str = "",
