@@ -1993,14 +1993,7 @@ def actor_delete(
     Returns:
         JSON with deletion status, or a dry-run/scope error.
     """
-    params: dict = {}
-    if actor_path:
-        params["actor_path"] = actor_path
-    if actor_label:
-        params["actor_label"] = actor_label
-    if actor_name:
-        params["actor_name"] = actor_name
-    return _format_response(_send_command("actor_delete", params, _request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("actor_delete", locals())
 
 
 @mcp.tool()
@@ -2112,9 +2105,7 @@ def editor_console_command(
     Returns:
         JSON with handled status and captured command output.
     """
-    return _format_response(_send_command("editor_console_command", {
-        "command": command,
-    }, _request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("editor_console_command", locals())
 
 
 @mcp.tool()
@@ -4972,10 +4963,7 @@ def delete_asset(
         - Prefer get_referencers + default (non-force) delete — safest against dangling refs.
         - For Blueprint/Widget Blueprint assets, pass the BP path (not the _C generated class).
     """
-    params = {"asset_path": asset_path}
-    if force:
-        params["force"] = True
-    return _format_response(_send_command("delete_asset", params, _request_meta(scope, dry_run)))
+    return _send_generated_tcp_tool("delete_asset", locals())
 
 
 # =============================================================================

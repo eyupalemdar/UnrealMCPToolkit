@@ -4,7 +4,7 @@
   "display_name": "CommonAIExport",
   "description": "Project-local Unreal Editor automation MCP bridge for ProjectOkey.",
   "version": "0.4.1",
-  "generated_at_utc": "2026-05-03T15:54:28.753250Z",
+  "generated_at_utc": "2026-05-03T16:04:30.492966Z",
   "transports": {
     "stdio": {
       "command": "python",

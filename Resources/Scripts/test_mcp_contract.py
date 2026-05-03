@@ -164,6 +164,18 @@ def _failures() -> list[str]:
                 failures.append(f"generated wrapper runtime missing write-scope {expected_name}")
             elif not spec.get("meta_params"):
                 failures.append(f"generated wrapper runtime missing meta params for {expected_name}")
+        for expected_name in (
+            "actor_delete",
+            "delete_asset",
+            "editor_console_command",
+        ):
+            spec = generated_wrappers.get(expected_name)
+            if not spec:
+                failures.append(f"generated wrapper runtime missing destructive {expected_name}")
+            elif spec.get("required_scope") != "destructive" or not spec.get("supports_dry_run"):
+                failures.append(f"generated wrapper runtime has wrong destructive metadata for {expected_name}")
+            elif not spec.get("meta_params"):
+                failures.append(f"generated wrapper runtime missing destructive meta params for {expected_name}")
         build_tcp_call = runtime_namespace.get("build_tcp_call")
         if callable(build_tcp_call):
             asset_call = build_tcp_call("asset_exists", {"asset_path": "/Game/Example"})
@@ -225,6 +237,39 @@ def _failures() -> list[str]:
             )
             if set_transform_call.get("params") != {"actor_label": "BP_TestActor", "scale": {"x": 1, "y": 1, "z": 1}} or set_transform_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed actor_set_transform optional transform mapping")
+            delete_call = build_tcp_call(
+                "delete_asset",
+                {
+                    "asset_path": "/Game/Missing",
+                    "force": False,
+                    "scope": "destructive",
+                    "dry_run": True,
+                },
+            )
+            if delete_call.get("params") != {"asset_path": "/Game/Missing"} or delete_call.get("meta") != {"scope": "destructive", "dry_run": True}:
+                failures.append("generated wrapper runtime failed destructive delete_asset payload/meta mapping")
+            actor_delete_call = build_tcp_call(
+                "actor_delete",
+                {
+                    "actor_path": "",
+                    "actor_label": "BP_TestActor",
+                    "actor_name": "",
+                    "scope": "destructive",
+                    "dry_run": True,
+                },
+            )
+            if actor_delete_call.get("params") != {"actor_label": "BP_TestActor"} or actor_delete_call.get("meta") != {"scope": "destructive", "dry_run": True}:
+                failures.append("generated wrapper runtime failed destructive actor_delete payload/meta mapping")
+            console_call = build_tcp_call(
+                "editor_console_command",
+                {
+                    "command": "stat fps",
+                    "scope": "destructive",
+                    "dry_run": True,
+                },
+            )
+            if console_call.get("params") != {"command": "stat fps"} or console_call.get("meta") != {"scope": "destructive", "dry_run": True}:
+                failures.append("generated wrapper runtime failed destructive editor_console_command payload/meta mapping")
         else:
             failures.append("generated wrapper runtime missing build_tcp_call")
     else:

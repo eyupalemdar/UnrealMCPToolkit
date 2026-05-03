@@ -625,7 +625,7 @@ def build_wrapper_stubs(command_manifest: dict, wrapper_spec: dict) -> str:
 
 
 def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
-    """Generate a small imported runtime registry for safe generated wrappers."""
+    """Generate a small imported runtime registry for eligible pass-through wrappers."""
     command_by_name = {command["name"]: command for command in command_manifest["commands"]}
     specs: dict[str, dict] = {}
 
@@ -640,13 +640,13 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
 
         param_names = {param.get("name") for param in params}
         b_read_only_candidate = not command.get("mutating") and command.get("required_scope") == "read" and not (param_names & {"scope", "dry_run"})
-        b_write_candidate = (
+        b_mutating_candidate = (
             command.get("mutating")
-            and command.get("required_scope") == "write"
+            and command.get("required_scope") in {"write", "destructive"}
             and command.get("supports_dry_run")
             and {"scope", "dry_run"}.issubset(param_names)
         )
-        if not b_read_only_candidate and not b_write_candidate:
+        if not b_read_only_candidate and not b_mutating_candidate:
             continue
 
         payload_rules = wrapper.get("payload_params") or {}
@@ -656,7 +656,7 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
         for param in params:
             param_name = param["name"]
             if param_name in {"scope", "dry_run"}:
-                if not b_write_candidate or param.get("required") or not param.get("default_is_literal", False):
+                if not b_mutating_candidate or param.get("required") or not param.get("default_is_literal", False):
                     b_can_generate = False
                     break
                 runtime_meta_params.append(

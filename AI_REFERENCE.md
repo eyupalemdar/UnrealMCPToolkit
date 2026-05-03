@@ -760,11 +760,13 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 `CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
-now covers read-only payload wrappers and a small safe write-scope set
+now covers read-only payload wrappers, the safe write-scope set
 (`actor_spawn`, `actor_set_transform`, `level_open`, `level_save_current`,
-`pie_start`, `pie_stop`, and `viewport_capture`) where payload fields, optional
-dict transform values, `scope`, and `dry_run` request meta are encoded
-explicitly.
+`pie_start`, `pie_stop`, and `viewport_capture`), and the current destructive
+dry-run set (`actor_delete`, `delete_asset`, and `editor_console_command`).
+Payload fields, optional dict transform values, `scope`, and `dry_run` request
+meta are encoded explicitly so destructive tools keep their existing
+client/server scope gates.
 
 Regenerate them with:
 
