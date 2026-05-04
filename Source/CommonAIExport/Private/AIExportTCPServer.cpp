@@ -254,6 +254,11 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_PARAMS("object_get_property", "Reflection", false, 60, HandleObjectGetProperty),
 		AI_COMMAND_PARAMS("object_set_property", "Reflection", true, 60, HandleObjectSetProperty),
 		AI_COMMAND_PARAMS("object_call_function", "Reflection", true, 60, HandleObjectCallFunction),
+		AI_COMMAND_PARAMS("reflect_class", "Reflection", false, 60, HandleReflectClass),
+		AI_COMMAND_PARAMS("reflect_struct", "Reflection", false, 60, HandleReflectStruct),
+		AI_COMMAND_PARAMS("reflect_enum", "Reflection", false, 60, HandleReflectEnum),
+		AI_COMMAND_OPTIONAL_PARAMS("list_classes", "Reflection", false, 60, HandleListClasses),
+		AI_COMMAND_OPTIONAL_PARAMS("list_gameplay_tags", "Reflection", false, 60, HandleListGameplayTags),
 
 		AI_COMMAND_PARAMS("add_event_node", "BlueprintGraph", true, 60, HandleAddEventNode),
 		AI_COMMAND_PARAMS("add_custom_event", "BlueprintGraph", true, 60, HandleAddCustomEvent),

@@ -1000,6 +1000,74 @@ def object_call_function(function_name: str, args: dict | None = None, object_pa
     return _format_response(_send_command("object_call_function", params, _request_meta(scope, dry_run)))
 
 
+def reflect_class(class_path: str = '', class_name: str = '', include_properties: bool = True, include_functions: bool = True, include_super: bool = True, include_metadata: bool = False, limit: int = 500) -> str:
+    """Generated stub for TCP command `reflect_class` (Reflection)."""
+    params = {
+        "class_path": class_path,
+        "class_name": class_name,
+        "include_properties": include_properties,
+        "include_functions": include_functions,
+        "include_super": include_super,
+        "include_metadata": include_metadata,
+        "limit": limit,
+    }
+    return _format_response(_send_command("reflect_class", params))
+
+
+def reflect_struct(struct_path: str = '', struct_name: str = '', include_properties: bool = True, include_super: bool = True, include_metadata: bool = False, limit: int = 500) -> str:
+    """Generated stub for TCP command `reflect_struct` (Reflection)."""
+    params = {
+        "struct_path": struct_path,
+        "struct_name": struct_name,
+        "include_properties": include_properties,
+        "include_super": include_super,
+        "include_metadata": include_metadata,
+        "limit": limit,
+    }
+    return _format_response(_send_command("reflect_struct", params))
+
+
+def reflect_enum(enum_path: str = '', enum_name: str = '', include_hidden: bool = False, include_metadata: bool = False, limit: int = 500) -> str:
+    """Generated stub for TCP command `reflect_enum` (Reflection)."""
+    params = {
+        "enum_path": enum_path,
+        "enum_name": enum_name,
+        "include_hidden": include_hidden,
+        "include_metadata": include_metadata,
+        "limit": limit,
+    }
+    return _format_response(_send_command("reflect_enum", params))
+
+
+def list_classes(query: str = '', parent_class: str = '', package_prefix: str = '', include_abstract: bool = True, include_deprecated: bool = False, include_interfaces: bool = True, include_blueprint_generated: bool = True, limit: int = 200) -> str:
+    """Generated stub for TCP command `list_classes` (Reflection)."""
+    params = {
+        "query": query,
+        "parent_class": parent_class,
+        "package_prefix": package_prefix,
+        "include_abstract": include_abstract,
+        "include_deprecated": include_deprecated,
+        "include_interfaces": include_interfaces,
+        "include_blueprint_generated": include_blueprint_generated,
+        "limit": limit,
+    }
+    return _format_response(_send_command("list_classes", params))
+
+
+def list_gameplay_tags(root_tag: str = '', query: str = '', only_dictionary_tags: bool = True, include_metadata: bool = True, include_parents: bool = False, include_children: bool = False, limit: int = 500) -> str:
+    """Generated stub for TCP command `list_gameplay_tags` (Reflection)."""
+    params = {
+        "root_tag": root_tag,
+        "query": query,
+        "only_dictionary_tags": only_dictionary_tags,
+        "include_metadata": include_metadata,
+        "include_parents": include_parents,
+        "include_children": include_children,
+        "limit": limit,
+    }
+    return _format_response(_send_command("list_gameplay_tags", params))
+
+
 def add_event_node(asset_path: str, event_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_event_node` (BlueprintGraph)."""
     params = {

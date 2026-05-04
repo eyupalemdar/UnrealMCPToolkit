@@ -4958,6 +4958,74 @@ def object_call_function(
     return _send_generated_tcp_tool("object_call_function", locals())
 
 
+@mcp.tool()
+def reflect_class(
+    class_path: str = "",
+    class_name: str = "",
+    include_properties: bool = True,
+    include_functions: bool = True,
+    include_super: bool = True,
+    include_metadata: bool = False,
+    limit: int = 500,
+) -> str:
+    """Read reflected UClass metadata, properties, and functions."""
+    return _send_generated_tcp_tool("reflect_class", locals())
+
+
+@mcp.tool()
+def reflect_struct(
+    struct_path: str = "",
+    struct_name: str = "",
+    include_properties: bool = True,
+    include_super: bool = True,
+    include_metadata: bool = False,
+    limit: int = 500,
+) -> str:
+    """Read reflected UScriptStruct metadata and properties."""
+    return _send_generated_tcp_tool("reflect_struct", locals())
+
+
+@mcp.tool()
+def reflect_enum(
+    enum_path: str = "",
+    enum_name: str = "",
+    include_hidden: bool = False,
+    include_metadata: bool = False,
+    limit: int = 500,
+) -> str:
+    """Read reflected UEnum metadata and enumerator values."""
+    return _send_generated_tcp_tool("reflect_enum", locals())
+
+
+@mcp.tool()
+def list_classes(
+    query: str = "",
+    parent_class: str = "",
+    package_prefix: str = "",
+    include_abstract: bool = True,
+    include_deprecated: bool = False,
+    include_interfaces: bool = True,
+    include_blueprint_generated: bool = True,
+    limit: int = 200,
+) -> str:
+    """List loaded UClass types with optional parent, package, and text filters."""
+    return _send_generated_tcp_tool("list_classes", locals())
+
+
+@mcp.tool()
+def list_gameplay_tags(
+    root_tag: str = "",
+    query: str = "",
+    only_dictionary_tags: bool = True,
+    include_metadata: bool = True,
+    include_parents: bool = False,
+    include_children: bool = False,
+    limit: int = 500,
+) -> str:
+    """List registered Gameplay Tags with optional hierarchy and metadata details."""
+    return _send_generated_tcp_tool("list_gameplay_tags", locals())
+
+
 # =============================================================================
 # CDO ARRAY PROPERTIES
 # =============================================================================

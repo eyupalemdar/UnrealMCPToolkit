@@ -2,8 +2,8 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 154
-- MCP tools: 173
+- TCP commands: 159
+- MCP tools: 178
 - Categories: 28
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
@@ -36,7 +36,7 @@
 | `PIE` | 3 |
 | `Project` | 4 |
 | `ProjectConfig` | 5 |
-| `Reflection` | 4 |
+| `Reflection` | 9 |
 | `RuntimeInspector` | 22 |
 | `Utility` | 5 |
 | `Widget` | 11 |
@@ -137,6 +137,11 @@
 | `object_get_property` | `Reflection` | `read` | false | false | false | 60 |
 | `object_set_property` | `Reflection` | `write` | true | true | false | 60 |
 | `object_call_function` | `Reflection` | `write` | true | true | false | 60 |
+| `reflect_class` | `Reflection` | `read` | false | false | false | 60 |
+| `reflect_struct` | `Reflection` | `read` | false | false | false | 60 |
+| `reflect_enum` | `Reflection` | `read` | false | false | false | 60 |
+| `list_classes` | `Reflection` | `read` | false | false | false | 60 |
+| `list_gameplay_tags` | `Reflection` | `read` | false | false | false | 60 |
 | `add_event_node` | `BlueprintGraph` | `write` | true | true | false | 60 |
 | `add_custom_event` | `BlueprintGraph` | `write` | true | true | false | 60 |
 | `add_function_call` | `BlueprintGraph` | `write` | true | true | false | 60 |

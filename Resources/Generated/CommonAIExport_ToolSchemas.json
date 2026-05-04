@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T14:49:53.943071Z",
-  "tool_count": 173,
+  "generated_at_utc": "2026-05-04T15:03:37.163749Z",
+  "tool_count": 178,
   "tools": {
     "ping": {
       "type": "object",
@@ -3831,6 +3831,248 @@
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false
+      }
+    },
+    "reflect_class": {
+      "type": "object",
+      "properties": {
+        "class_path": {
+          "type": "string",
+          "default": ""
+        },
+        "class_name": {
+          "type": "string",
+          "default": ""
+        },
+        "include_properties": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_functions": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_super": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_metadata": {
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "type": "integer",
+          "default": 500
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Reflection",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "reflect_struct": {
+      "type": "object",
+      "properties": {
+        "struct_path": {
+          "type": "string",
+          "default": ""
+        },
+        "struct_name": {
+          "type": "string",
+          "default": ""
+        },
+        "include_properties": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_super": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_metadata": {
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "type": "integer",
+          "default": 500
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Reflection",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "reflect_enum": {
+      "type": "object",
+      "properties": {
+        "enum_path": {
+          "type": "string",
+          "default": ""
+        },
+        "enum_name": {
+          "type": "string",
+          "default": ""
+        },
+        "include_hidden": {
+          "type": "boolean",
+          "default": false
+        },
+        "include_metadata": {
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "type": "integer",
+          "default": 500
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Reflection",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "list_classes": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "default": ""
+        },
+        "parent_class": {
+          "type": "string",
+          "default": ""
+        },
+        "package_prefix": {
+          "type": "string",
+          "default": ""
+        },
+        "include_abstract": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_deprecated": {
+          "type": "boolean",
+          "default": false
+        },
+        "include_interfaces": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_blueprint_generated": {
+          "type": "boolean",
+          "default": true
+        },
+        "limit": {
+          "type": "integer",
+          "default": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Reflection",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "list_gameplay_tags": {
+      "type": "object",
+      "properties": {
+        "root_tag": {
+          "type": "string",
+          "default": ""
+        },
+        "query": {
+          "type": "string",
+          "default": ""
+        },
+        "only_dictionary_tags": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_metadata": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_parents": {
+          "type": "boolean",
+          "default": false
+        },
+        "include_children": {
+          "type": "boolean",
+          "default": false
+        },
+        "limit": {
+          "type": "integer",
+          "default": 500
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Reflection",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
       }
     },
     "add_event_node": {

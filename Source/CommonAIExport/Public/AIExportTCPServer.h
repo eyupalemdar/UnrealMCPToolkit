@@ -299,6 +299,11 @@ private:
 	FString HandleObjectGetProperty(TSharedPtr<class FJsonObject> Params);
 	FString HandleObjectSetProperty(TSharedPtr<class FJsonObject> Params);
 	FString HandleObjectCallFunction(TSharedPtr<class FJsonObject> Params);
+	FString HandleReflectClass(TSharedPtr<class FJsonObject> Params);
+	FString HandleReflectStruct(TSharedPtr<class FJsonObject> Params);
+	FString HandleReflectEnum(TSharedPtr<class FJsonObject> Params);
+	FString HandleListClasses(TSharedPtr<class FJsonObject> Params);
+	FString HandleListGameplayTags(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Blueprint Graph */
 	FString HandleAddEventNode(TSharedPtr<class FJsonObject> Params);

@@ -79,6 +79,31 @@ FString FAIExportTCPServer::HandleObjectCallFunction(TSharedPtr<FJsonObject> Par
 	return CommonAIExport::CommandHandlers::Reflection::HandleObjectCallFunction(Params);
 }
 
+FString FAIExportTCPServer::HandleReflectClass(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Reflection::HandleReflectClass(Params);
+}
+
+FString FAIExportTCPServer::HandleReflectStruct(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Reflection::HandleReflectStruct(Params);
+}
+
+FString FAIExportTCPServer::HandleReflectEnum(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Reflection::HandleReflectEnum(Params);
+}
+
+FString FAIExportTCPServer::HandleListClasses(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Reflection::HandleListClasses(Params);
+}
+
+FString FAIExportTCPServer::HandleListGameplayTags(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Reflection::HandleListGameplayTags(Params);
+}
+
 FString FAIExportTCPServer::HandleCreateAsset(TSharedPtr<FJsonObject> Params)
 {
 	return CommonAIExport::CommandHandlers::Asset::HandleCreateAsset(Params);
