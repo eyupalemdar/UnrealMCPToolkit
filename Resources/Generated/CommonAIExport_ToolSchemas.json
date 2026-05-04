@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T16:08:31.296927Z",
-  "tool_count": 186,
+  "generated_at_utc": "2026-05-04T16:26:16.284248Z",
+  "tool_count": 188,
   "tools": {
     "ping": {
       "type": "object",
@@ -7059,6 +7059,119 @@
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false
+      }
+    },
+    "landscape_info": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "editor"
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "include_components": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_layers": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_splines": {
+          "type": "boolean",
+          "default": true
+        },
+        "landscape_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "component_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "layer_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "spline_control_point_limit": {
+          "type": "integer",
+          "default": 200
+        },
+        "spline_segment_limit": {
+          "type": "integer",
+          "default": 200
+        },
+        "weightmap_allocation_limit": {
+          "type": "integer",
+          "default": 32
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Landscape",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "landscape_sample_height": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number",
+          "default": 0.0
+        },
+        "trace_extent": {
+          "type": "number",
+          "default": 100000.0
+        },
+        "world": {
+          "type": "string",
+          "default": "editor"
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Landscape",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
       }
     },
     "import_texture": {

@@ -6295,7 +6295,42 @@ def spline_component_set_points(
 
 
 # =============================================================================
-# WIDGET PREVIEW CAPTURE (IFTP verify loop — multi-ratio fidelity testing)
+# LANDSCAPE DIAGNOSTICS
+# =============================================================================
+
+@mcp.tool()
+def landscape_info(
+    world: str = "editor",
+    name_filter: str = "",
+    include_components: bool = True,
+    include_layers: bool = True,
+    include_splines: bool = True,
+    landscape_limit: int = 100,
+    component_limit: int = 100,
+    layer_limit: int = 100,
+    spline_control_point_limit: int = 200,
+    spline_segment_limit: int = 200,
+    weightmap_allocation_limit: int = 32,
+) -> str:
+    """Inspect Landscape proxies, components, target layers, and Landscape splines."""
+    return _send_generated_tcp_tool("landscape_info", locals())
+
+
+@mcp.tool()
+def landscape_sample_height(
+    x: float,
+    y: float,
+    z: float = 0.0,
+    trace_extent: float = 100000.0,
+    world: str = "editor",
+    name_filter: str = "",
+) -> str:
+    """Sample Landscape height and normal at an XY point."""
+    return _send_generated_tcp_tool("landscape_sample_height", locals())
+
+
+# =============================================================================
+# WIDGET PREVIEW CAPTURE
 # =============================================================================
 
 @mcp.tool()

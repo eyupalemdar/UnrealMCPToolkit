@@ -122,6 +122,10 @@
  * - spline_component_info: Inspect spline components and control points
  * - spline_component_set_points: Replace spline control points on an editor actor
  *
+ * Landscape commands:
+ * - landscape_info: Inspect Landscape proxies, components, target layers, and Landscape splines
+ * - landscape_sample_height: Sample Landscape height/normal at an XY point
+ *
  * Asset Import commands:
  * - import_texture: Import a texture file from disk into Content Browser
  * - import_font: Import font files (TTF/OTF) and create a Composite Font asset
@@ -405,6 +409,10 @@ private:
 	FString HandleSplineActorCreate(TSharedPtr<class FJsonObject> Params);
 	FString HandleSplineComponentInfo(TSharedPtr<class FJsonObject> Params);
 	FString HandleSplineComponentSetPoints(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers - Landscape */
+	FString HandleLandscapeInfo(TSharedPtr<class FJsonObject> Params);
+	FString HandleLandscapeSampleHeight(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Asset Import */
 	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);

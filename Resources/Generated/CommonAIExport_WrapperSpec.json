@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T16:08:31.366010Z",
+  "generated_at_utc": "2026-05-04T16:26:16.357634Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 186,
-  "tcp_command_count": 167,
+  "tool_count": 188,
+  "tcp_command_count": 169,
   "client_only_count": 19,
-  "wrapper_count": 186,
+  "wrapper_count": 188,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -4079,7 +4079,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6302,
+        "line": 6337,
         "params": [
           {
             "name": "asset_path",
@@ -9082,6 +9082,316 @@
       },
       "calls_expected_tcp_command": true
     },
+    "landscape_info": {
+      "name": "landscape_info",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "landscape_info",
+      "literal_send_commands": [
+        "landscape_info"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "world": {
+            "type": "string",
+            "default": "editor"
+          },
+          "name_filter": {
+            "type": "string",
+            "default": ""
+          },
+          "include_components": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_layers": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_splines": {
+            "type": "boolean",
+            "default": true
+          },
+          "landscape_limit": {
+            "type": "integer",
+            "default": 100
+          },
+          "component_limit": {
+            "type": "integer",
+            "default": 100
+          },
+          "layer_limit": {
+            "type": "integer",
+            "default": 100
+          },
+          "spline_control_point_limit": {
+            "type": "integer",
+            "default": 200
+          },
+          "spline_segment_limit": {
+            "type": "integer",
+            "default": 200
+          },
+          "weightmap_allocation_limit": {
+            "type": "integer",
+            "default": 32
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Landscape",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "landscape_info",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6302,
+        "params": [
+          {
+            "name": "world",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'editor'",
+            "default_value": "editor",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "name_filter",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_components",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_layers",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_splines",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "landscape_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "component_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "layer_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "spline_control_point_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "spline_segment_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "weightmap_allocation_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "32",
+            "default_value": 32,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "landscape_info"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "landscape_sample_height": {
+      "name": "landscape_sample_height",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "landscape_sample_height",
+      "literal_send_commands": [
+        "landscape_sample_height"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "z": {
+            "type": "number",
+            "default": 0.0
+          },
+          "trace_extent": {
+            "type": "number",
+            "default": 100000.0
+          },
+          "world": {
+            "type": "string",
+            "default": "editor"
+          },
+          "name_filter": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Landscape",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "landscape_sample_height",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6320,
+        "params": [
+          {
+            "name": "x",
+            "kind": "positional_or_keyword",
+            "annotation": "float",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "y",
+            "kind": "positional_or_keyword",
+            "annotation": "float",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "z",
+            "kind": "positional_or_keyword",
+            "annotation": "float",
+            "default": "0.0",
+            "default_value": 0.0,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "trace_extent",
+            "kind": "positional_or_keyword",
+            "annotation": "float",
+            "default": "100000.0",
+            "default_value": 100000.0,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "world",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'editor'",
+            "default_value": "editor",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "name_filter",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "landscape_sample_height"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
     "level_open": {
       "name": "level_open",
       "source": "tcp_command",
@@ -12423,7 +12733,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6382,
+        "line": 6417,
         "params": [
           {
             "name": "asset_path",

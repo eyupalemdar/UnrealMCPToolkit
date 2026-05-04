@@ -113,6 +113,7 @@ def _failures() -> list[str]:
         "blueprint_component_set_property": ("asset_path", "component_name", "property_path", "value"),
         "sequencer_asset_info": ("asset_path",),
         "spline_component_set_points": ("points",),
+        "landscape_sample_height": ("x", "y"),
     }.items():
         props = schemas["tools"].get(tool_name, {}).get("properties", {})
         for prop_name in required_props:

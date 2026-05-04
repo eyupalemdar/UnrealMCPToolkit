@@ -1787,6 +1787,37 @@ def spline_component_set_points(points: list[dict], actor_path: str = '', actor_
     return _format_response(_send_command("spline_component_set_points", params, _request_meta(scope, dry_run)))
 
 
+def landscape_info(world: str = 'editor', name_filter: str = '', include_components: bool = True, include_layers: bool = True, include_splines: bool = True, landscape_limit: int = 100, component_limit: int = 100, layer_limit: int = 100, spline_control_point_limit: int = 200, spline_segment_limit: int = 200, weightmap_allocation_limit: int = 32) -> str:
+    """Generated stub for TCP command `landscape_info` (Landscape)."""
+    params = {
+        "world": world,
+        "name_filter": name_filter,
+        "include_components": include_components,
+        "include_layers": include_layers,
+        "include_splines": include_splines,
+        "landscape_limit": landscape_limit,
+        "component_limit": component_limit,
+        "layer_limit": layer_limit,
+        "spline_control_point_limit": spline_control_point_limit,
+        "spline_segment_limit": spline_segment_limit,
+        "weightmap_allocation_limit": weightmap_allocation_limit,
+    }
+    return _format_response(_send_command("landscape_info", params))
+
+
+def landscape_sample_height(x: float, y: float, z: float = 0.0, trace_extent: float = 100000.0, world: str = 'editor', name_filter: str = '') -> str:
+    """Generated stub for TCP command `landscape_sample_height` (Landscape)."""
+    params = {
+        "x": x,
+        "y": y,
+        "z": z,
+        "trace_extent": trace_extent,
+        "world": world,
+        "name_filter": name_filter,
+    }
+    return _format_response(_send_command("landscape_sample_height", params))
+
+
 def import_texture(source_path: str, package_path: str, asset_name: str = '', compression: str = 'UserInterface2D', srgb: bool = True, mip_gen: str = 'NoMipmaps', lod_group: str = 'UI', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `import_texture` (Import)."""
     params = {

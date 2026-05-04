@@ -516,6 +516,19 @@
       "extension_policy": "Use this capability for SplineComponent point-level inspection and editor authoring. actor_spawn owns generic actor creation; runtime_component_list owns generic component summaries."
     },
     {
+      "id": "landscape_diagnostics",
+      "domain": "world",
+      "title": "Landscape proxy diagnostics and height sampling",
+      "status": "native",
+      "category_tags": ["Landscape"],
+      "commands": [
+        "landscape_info",
+        "landscape_sample_height"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for ALandscapeProxy, LandscapeComponent, target layer, LandscapeSpline, and terrain height diagnostics. SplineComponent authoring stays in spline_authoring; generic actor/component summaries stay in editor_actor_operations/runtime_diagnostics."
+    },
+    {
       "id": "client_editor_bridge",
       "domain": "client",
       "title": "MCP client multi-editor bridge",
