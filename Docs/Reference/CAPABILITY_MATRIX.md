@@ -2,7 +2,9 @@
 
 `Resources/CapabilityMatrix.json` is the control surface for feature growth.
 Every native TCP command and every Python client-only MCP tool must appear in
-exactly one capability entry.
+exactly one capability entry. `Resources/CapabilityLayerMatrix.json` records the
+Builder/Exporter decision for each capability and is validated with the same
+contract checks.
 
 ## What It Catches
 
@@ -11,6 +13,8 @@ exactly one capability entry.
 - Duplicate command coverage across capability entries.
 - A new client-only MCP tool that has no capability owner.
 - Missing capability metadata such as owner domain, status, and extension policy.
+- Missing Builder/Exporter layering decisions for any capability.
+- Stale layer references to removed CommandHandlers, Builders, or Exporters.
 
 ## Update Rule
 
@@ -24,6 +28,9 @@ Before adding a new Unreal automation feature:
 4. Keep semantic overlap notes in the capability text. The validator catches
    exact coverage mistakes; reviewers still use the policy text to catch
    design-level duplicates.
+5. Update `Resources/CapabilityLayerMatrix.json` with the capability's
+   `command_owned`, `builder_backed`, `exporter_backed`, `builder_and_exporter`,
+   or `client_only` decision.
 
 ## Layering Check
 
@@ -93,6 +100,17 @@ host-relative `Plugins/CommonAIExport/...` path.
 | `client_tools` | Python-only MCP tool names; each client-only tool must appear exactly once |
 | `extension_policy` | Review guidance for whether a future feature belongs here |
 
+## Layer Matrix Fields
+
+| Field | Purpose |
+|---|---|
+| `capability` | Capability id from `CapabilityMatrix.json`; every id must appear exactly once |
+| `mode` | Layering decision: `command_owned`, `builder_backed`, `exporter_backed`, `builder_and_exporter`, or `client_only` |
+| `command_handlers` | CommandHandler `.cpp` file stems that own transport/response handling |
+| `builders` | Builder UClass names that own reusable mutation logic |
+| `exporters` | Exporter UClass names that own canonical `export_asset` serialization |
+| `rationale` | Short explanation for why the layer decision is intentional |
+
 The matrix is intentionally hand-maintained. Generated manifests say what exists;
-this matrix says where each feature belongs and forces every addition through
-that ownership check.
+these matrices say where each feature belongs and force every addition through
+coverage and layering checks.

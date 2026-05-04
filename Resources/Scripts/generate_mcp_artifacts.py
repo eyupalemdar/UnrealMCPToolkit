@@ -28,10 +28,18 @@ WRAPPER_STUBS_PATH = GENERATED_DIR / "CommonAIExport_MCPWrapperStubs.py"
 WRAPPER_RUNTIME_PATH = GENERATED_DIR / "CommonAIExport_MCPWrapperRuntime.py"
 AI_REFERENCE_PATH = PLUGIN_ROOT / "Docs" / "Reference" / "AI_REFERENCE.md"
 CAPABILITY_MATRIX_PATH = PLUGIN_ROOT / "Resources" / "CapabilityMatrix.json"
+CAPABILITY_LAYER_MATRIX_PATH = PLUGIN_ROOT / "Resources" / "CapabilityLayerMatrix.json"
 
 AI_REFERENCE_SUMMARY_BEGIN = "<!-- BEGIN COMMONAI GENERATED TOOL SUMMARY -->"
 AI_REFERENCE_SUMMARY_END = "<!-- END COMMONAI GENERATED TOOL SUMMARY -->"
 CAPABILITY_MATRIX_ALLOWED_STATUSES = {"native", "client_only", "hybrid"}
+CAPABILITY_LAYER_ALLOWED_MODES = {
+    "command_owned",
+    "builder_backed",
+    "exporter_backed",
+    "builder_and_exporter",
+    "client_only",
+}
 
 CLIENT_ONLY_TOOLS = {
     "editors_list",
@@ -139,6 +147,11 @@ def load_capability_matrix(path: Path = CAPABILITY_MATRIX_PATH) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_capability_layer_matrix(path: Path = CAPABILITY_LAYER_MATRIX_PATH) -> dict:
+    """Load Builder/Exporter layering decisions for each capability."""
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def _matrix_string_list(item: dict, field_name: str, label: str, errors: list[str]) -> list[str]:
     value = item.get(field_name, [])
     if value is None:
@@ -154,6 +167,143 @@ def _matrix_string_list(item: dict, field_name: str, label: str, errors: list[st
             continue
         values.append(entry)
     return values
+
+
+def _validate_command_handler_stems(names: list[str], label: str, errors: list[str]) -> None:
+    handler_dir = PLUGIN_ROOT / "Source" / "CommonAIExport" / "Private" / "CommandHandlers"
+    for name in names:
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+            errors.append(f"{label}: command handler name must be a file stem: {name}")
+            continue
+
+        path = handler_dir / f"{name}.cpp"
+        if not path.exists():
+            errors.append(f"{label}: command handler file does not exist: {path.relative_to(PLUGIN_ROOT)}")
+
+
+def _validate_layer_classes(names: list[str], kind: str, label: str, errors: list[str]) -> None:
+    source_dir = PLUGIN_ROOT / "Source" / "CommonAIExport"
+    plural = "Builders" if kind == "builder" else "Exporters"
+
+    for name in names:
+        if not re.fullmatch(r"U[A-Za-z_][A-Za-z0-9_]*", name):
+            errors.append(f"{label}: {kind} class must be a UClass-style name: {name}")
+            continue
+
+        stem = name[1:] if name.startswith("U") else name
+        header = source_dir / "Public" / plural / f"{stem}.h"
+        source = source_dir / "Private" / plural / f"{stem}.cpp"
+        if not header.exists():
+            errors.append(f"{label}: {kind} header does not exist: {header.relative_to(PLUGIN_ROOT)}")
+        if not source.exists():
+            errors.append(f"{label}: {kind} source does not exist: {source.relative_to(PLUGIN_ROOT)}")
+
+
+def validate_capability_layer_matrix(matrix: dict, path: Path = CAPABILITY_LAYER_MATRIX_PATH) -> list[str]:
+    """Validate explicit CommandHandler/Builder/Exporter layer decisions."""
+    errors: list[str] = []
+    try:
+        layer_matrix = load_capability_layer_matrix(path)
+    except FileNotFoundError:
+        return [f"Capability layer matrix is missing: {path}"]
+    except json.JSONDecodeError as exc:
+        return [f"Capability layer matrix is invalid JSON: {exc}"]
+
+    if not isinstance(layer_matrix, dict):
+        return ["Capability layer matrix root must be a JSON object"]
+
+    if layer_matrix.get("schema_version") != 1:
+        errors.append("Capability layer matrix schema_version must be 1")
+    if layer_matrix.get("server") != "CommonAIExport":
+        errors.append("Capability layer matrix server must be CommonAIExport")
+
+    coverage_policy = layer_matrix.get("coverage_policy", {})
+    if not isinstance(coverage_policy, dict):
+        errors.append("Capability layer matrix coverage_policy must be an object")
+    elif coverage_policy.get("capabilities") != "exactly_once":
+        errors.append("Capability layer matrix coverage_policy.capabilities must be exactly_once")
+
+    capabilities = matrix.get("capabilities", [])
+    capability_by_id = {
+        capability.get("id"): capability
+        for capability in capabilities
+        if isinstance(capability, dict) and isinstance(capability.get("id"), str)
+    }
+
+    decisions = layer_matrix.get("decisions")
+    if not isinstance(decisions, list) or not decisions:
+        errors.append("Capability layer matrix decisions must be a non-empty array")
+        return errors
+
+    covered_capabilities: list[str] = []
+    for index, decision in enumerate(decisions):
+        if not isinstance(decision, dict):
+            errors.append(f"layer_decision[{index}] must be an object")
+            continue
+
+        capability_id = decision.get("capability")
+        label = f"layer_decision[{index}]"
+        capability = None
+        if isinstance(capability_id, str) and capability_id:
+            label = capability_id
+            covered_capabilities.append(capability_id)
+            capability = capability_by_id.get(capability_id)
+            if not capability:
+                errors.append(f"{label}: unknown capability id")
+        else:
+            errors.append(f"{label}: capability must be a non-empty string")
+
+        mode = decision.get("mode")
+        if mode not in CAPABILITY_LAYER_ALLOWED_MODES:
+            errors.append(f"{label}: mode must be one of {', '.join(sorted(CAPABILITY_LAYER_ALLOWED_MODES))}")
+
+        rationale = decision.get("rationale")
+        if not isinstance(rationale, str) or not rationale.strip():
+            errors.append(f"{label}: rationale must be a non-empty string")
+
+        command_handlers = _matrix_string_list(decision, "command_handlers", label, errors)
+        builders = _matrix_string_list(decision, "builders", label, errors)
+        exporters = _matrix_string_list(decision, "exporters", label, errors)
+
+        _validate_command_handler_stems(command_handlers, label, errors)
+        _validate_layer_classes(builders, "builder", label, errors)
+        _validate_layer_classes(exporters, "exporter", label, errors)
+
+        if capability:
+            status = capability.get("status")
+            has_native_commands = bool(capability.get("commands"))
+            if status == "client_only" and mode != "client_only":
+                errors.append(f"{label}: client_only capability must use client_only layer mode")
+            if status != "client_only" and mode == "client_only":
+                errors.append(f"{label}: native capability cannot use client_only layer mode")
+            if has_native_commands and not command_handlers:
+                errors.append(f"{label}: native capability decisions must name at least one command handler")
+
+        if mode == "client_only" and (command_handlers or builders or exporters):
+            errors.append(f"{label}: client_only mode must not name native command handlers, builders, or exporters")
+        elif mode == "command_owned" and (builders or exporters):
+            errors.append(f"{label}: command_owned mode must not name builders or exporters")
+        elif mode == "builder_backed" and not builders:
+            errors.append(f"{label}: builder_backed mode must name at least one builder")
+        elif mode == "exporter_backed" and not exporters:
+            errors.append(f"{label}: exporter_backed mode must name at least one exporter")
+        elif mode == "builder_and_exporter" and (not builders or not exporters):
+            errors.append(f"{label}: builder_and_exporter mode must name both builders and exporters")
+
+    duplicate_capabilities = _duplicate_values(covered_capabilities)
+    if duplicate_capabilities:
+        errors.append("Capability layer matrix duplicate capability coverage: " + ", ".join(duplicate_capabilities))
+
+    expected_capabilities = set(capability_by_id)
+    missing_capabilities = sorted(expected_capabilities - set(covered_capabilities))
+    if missing_capabilities:
+        errors.append("Capability layer matrix missing capability coverage: " + ", ".join(missing_capabilities))
+
+    unknown_capabilities = sorted(set(covered_capabilities) - expected_capabilities)
+    if unknown_capabilities:
+        errors.append("Capability layer matrix unknown capability coverage: " + ", ".join(unknown_capabilities))
+
+    return errors
 
 
 def validate_capability_matrix(command_manifest: dict, path: Path = CAPABILITY_MATRIX_PATH) -> list[str]:
@@ -253,6 +403,9 @@ def validate_capability_matrix(command_manifest: dict, path: Path = CAPABILITY_M
     missing_client_only = sorted(client_only_set - set(covered_client_only))
     if missing_client_only:
         errors.append("Capability matrix missing client-only tool coverage: " + ", ".join(missing_client_only))
+
+    if path == CAPABILITY_MATRIX_PATH:
+        errors.extend(validate_capability_layer_matrix(matrix))
 
     return errors
 

@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "server": "CommonAIExport",
+  "description": "Builder/Exporter layering decisions for every capability in Resources/CapabilityMatrix.json. This file is intentionally explicit so new command families must declare whether domain logic stays command-owned, moves into Builders, or gets canonical Exporters coverage.",
+  "coverage_policy": {
+    "capabilities": "exactly_once"
+  },
+  "decisions": [
+    {
+      "capability": "utility_command_contract",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportUtilityCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Protocol, identity, and manifest commands are transport/control-plane concerns."
+    },
+    {
+      "capability": "workflow_source_control_build_test",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportWorkflowCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Source control, logs, build, cook, and test commands orchestrate external workflows rather than Unreal asset construction."
+    },
+    {
+      "capability": "project_introspection_and_plugins",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportProjectCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Project descriptor, plugin, and module operations are project-file orchestration."
+    },
+    {
+      "capability": "project_config_mutation",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportProjectCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Config edits are structured .ini operations, not Unreal asset builder work."
+    },
+    {
+      "capability": "async_task_queue",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportAsyncCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Async queue commands wrap command dispatch and event state."
+    },
+    {
+      "capability": "export_introspection",
+      "mode": "exporter_backed",
+      "command_handlers": ["AIExportExportCommands"],
+      "builders": [],
+      "exporters": [
+        "UAIWidgetBlueprintExporter",
+        "UAIAnimBlueprintExporter",
+        "UAIBlueprintExporter",
+        "UAIWorldExporter",
+        "UAIDataAssetExporter",
+        "UAIDataTableExporter",
+        "UAIInputExporter",
+        "UAIAudioExporter",
+        "UAITextureExporter",
+        "UAIPhysicalMaterialExporter",
+        "UAIMaterialExporter"
+      ],
+      "rationale": "Canonical asset serialization is owned by registered Exporters and surfaced through export commands."
+    },
+    {
+      "capability": "import_asset_files",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportImportCommands"],
+      "builders": ["UAIAssetImportBuilder"],
+      "exporters": [],
+      "rationale": "External file ingestion creates persistent Unreal assets through reusable import builder logic."
+    },
+    {
+      "capability": "runtime_diagnostics",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportRuntimeCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Runtime diagnostics are scoped read-only snapshots, not reusable asset authoring or canonical asset exports."
+    },
+    {
+      "capability": "editor_world_console",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportEditorCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Editor world metadata and console execution operate on live editor state."
+    },
+    {
+      "capability": "editor_actor_operations",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportEditorCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Actor spawn, transform, and delete mutate the live editor world rather than persistent asset definitions."
+    },
+    {
+      "capability": "editor_level_operations",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportEditorCommands", "AIExportLevelStructureCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Level lifecycle and level-structure diagnostics are editor/world operations."
+    },
+    {
+      "capability": "editor_pie_control",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportEditorCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "PIE lifecycle is editor session control."
+    },
+    {
+      "capability": "editor_viewport_capture",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportEditorCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Viewport capture reads editor presentation state and writes image output."
+    },
+    {
+      "capability": "widget_blueprint_authoring",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportWidgetCommands"],
+      "builders": ["UAIWidgetBlueprintBuilder"],
+      "exporters": [],
+      "rationale": "Widget Blueprint tree creation and mutation belong in the reusable Widget builder."
+    },
+    {
+      "capability": "widget_preview_capture",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportWidgetPreviewCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Preview capture instantiates design-time/runtime widget state and renders screenshots."
+    },
+    {
+      "capability": "cdo_property_access",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportCDOCommands"],
+      "builders": ["UAIWidgetBlueprintBuilder", "UAIDataAssetBuilder"],
+      "exporters": [],
+      "rationale": "CDO/property mutation delegates typed property writes to existing asset builders."
+    },
+    {
+      "capability": "cdo_array_access",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportCDOCommands"],
+      "builders": ["UAIWidgetBlueprintBuilder", "UAIDataAssetBuilder"],
+      "exporters": [],
+      "rationale": "Array edits reuse the same typed property mutation helpers as scalar CDO access."
+    },
+    {
+      "capability": "reflection_object_access",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportReflectionCommands"],
+      "builders": ["UAIDataAssetBuilder"],
+      "exporters": [],
+      "rationale": "Common reflected object writes reuse import-text property mutation helpers."
+    },
+    {
+      "capability": "blueprint_graph_editing",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportBlueprintGraphCommands"],
+      "builders": ["UAIBlueprintGraphBuilder"],
+      "exporters": [],
+      "rationale": "K2 graph node, pin, variable, and graph mutations are reusable Blueprint builder operations."
+    },
+    {
+      "capability": "blueprint_variables",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportBlueprintGraphCommands"],
+      "builders": ["UAIBlueprintGraphBuilder"],
+      "exporters": [],
+      "rationale": "Blueprint member variable lifecycle is implemented by the graph builder."
+    },
+    {
+      "capability": "blueprint_parenting",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportWidgetCommands"],
+      "builders": ["UAIWidgetBlueprintBuilder"],
+      "exporters": [],
+      "rationale": "Blueprint reparenting is an asset compatibility mutation handled by the Widget/Blueprint builder path."
+    },
+    {
+      "capability": "blueprint_components",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportBlueprintComponentCommands"],
+      "builders": ["UAIBlueprintComponentBuilder"],
+      "exporters": [],
+      "rationale": "Actor Blueprint SCS component mutation belongs in the component builder."
+    },
+    {
+      "capability": "material_graph_and_instances",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportMaterialCommands"],
+      "builders": ["UAIMaterialBuilder"],
+      "exporters": [],
+      "rationale": "Material graph and material instance operations are reusable asset authoring."
+    },
+    {
+      "capability": "data_assets",
+      "mode": "builder_and_exporter",
+      "command_handlers": ["AIExportDataAssetCommands"],
+      "builders": ["UAIDataAssetBuilder"],
+      "exporters": ["UAIDataAssetExporter"],
+      "rationale": "DataAsset persistence uses builder helpers and DataAsset canonical export is supported by the exporter registry."
+    },
+    {
+      "capability": "data_tables",
+      "mode": "builder_and_exporter",
+      "command_handlers": ["AIExportDataTableCommands"],
+      "builders": ["UAIDataTableBuilder"],
+      "exporters": ["UAIDataTableExporter"],
+      "rationale": "DataTable asset creation, row mutation, CSV import, and canonical row export are reusable domain layers."
+    },
+    {
+      "capability": "asset_authoring_registry",
+      "mode": "builder_backed",
+      "command_handlers": ["AIExportAssetCommands"],
+      "builders": ["UAIAssetFactory", "UAIDataAssetBuilder"],
+      "exporters": [],
+      "rationale": "Generic asset creation and import-text property mutation use asset factory and data asset helpers; lifecycle operations remain command-owned inside this capability."
+    },
+    {
+      "capability": "asset_lifecycle_reload",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportAssetLifecycleCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Reload/cache refresh commands are editor lifecycle operations."
+    },
+    {
+      "capability": "static_mesh_diagnostics",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportStaticMeshCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "StaticMesh info is targeted diagnostics, not canonical asset serialization or mesh mutation."
+    },
+    {
+      "capability": "skeletal_mesh_diagnostics",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportSkeletalMeshCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "SkeletalMesh info is targeted diagnostics, not canonical asset serialization or skeletal mesh mutation."
+    },
+    {
+      "capability": "input_settings",
+      "mode": "builder_and_exporter",
+      "command_handlers": ["AIExportInputCommands"],
+      "builders": ["UAIAssetFactory"],
+      "exporters": ["UAIInputExporter"],
+      "rationale": "Input mapping mutation uses asset factory helpers; InputAction and InputMappingContext canonical export is registry-backed."
+    },
+    {
+      "capability": "anim_blueprints",
+      "mode": "builder_and_exporter",
+      "command_handlers": ["AIExportAnimBlueprintCommands"],
+      "builders": ["UAIAnimBlueprintBuilder"],
+      "exporters": ["UAIAnimBlueprintExporter"],
+      "rationale": "Animation Blueprint creation and info use builder logic, with canonical AnimBlueprint export covered by the exporter registry."
+    },
+    {
+      "capability": "animation_asset_diagnostics",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportAnimationAssetCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Animation asset info is targeted read-only diagnostics."
+    },
+    {
+      "capability": "sequencer_assets",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportSequencerCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Sequencer info is scoped MovieScene diagnostics, not sequence authoring or canonical export."
+    },
+    {
+      "capability": "spline_authoring",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportSplineCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Spline commands currently edit live editor actor/component state."
+    },
+    {
+      "capability": "landscape_diagnostics",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportLandscapeCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Landscape commands are bounded read-only world diagnostics."
+    },
+    {
+      "capability": "foliage_diagnostics",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportFoliageCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Foliage commands are bounded read-only world diagnostics."
+    },
+    {
+      "capability": "pcg_diagnostics",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportPCGCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "PCG commands inspect graph and component state without mutating PCG assets."
+    },
+    {
+      "capability": "niagara_asset_diagnostics",
+      "mode": "command_owned",
+      "command_handlers": ["AIExportNiagaraCommands"],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Niagara commands inspect systems, emitters, scripts, and renderer metadata without authoring VFX assets."
+    },
+    {
+      "capability": "client_editor_bridge",
+      "mode": "client_only",
+      "command_handlers": [],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Multi-editor routing is Python MCP client orchestration."
+    },
+    {
+      "capability": "client_transfer_workflows",
+      "mode": "client_only",
+      "command_handlers": [],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Transfer planning and verification are client-side workflows."
+    },
+    {
+      "capability": "client_resources_prompts",
+      "mode": "client_only",
+      "command_handlers": [],
+      "builders": [],
+      "exporters": [],
+      "rationale": "MCP resources and prompts are hosted by the Python client."
+    },
+    {
+      "capability": "client_docs_policy_metadata",
+      "mode": "client_only",
+      "command_handlers": [],
+      "builders": [],
+      "exporters": [],
+      "rationale": "Docs lookup, policy, metadata export, and native probes are client-side support surfaces."
+    }
+  ]
+}

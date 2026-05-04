@@ -11,6 +11,7 @@ from pathlib import Path
 from generate_mcp_artifacts import (
     AI_REFERENCE_SUMMARY_BEGIN,
     AI_REFERENCE_SUMMARY_END,
+    CAPABILITY_LAYER_MATRIX_PATH,
     CAPABILITY_MATRIX_PATH,
     CLIENT_ONLY_TOOLS,
     COMMAND_MANIFEST_PATH,
@@ -249,6 +250,7 @@ def main() -> int:
         print(f"MCP tools: {len(mcp_tools)}")
         print("Client-only MCP tools: " + ", ".join(sorted(CLIENT_ONLY_TOOLS)))
         print(f"Capability matrix: {CAPABILITY_MATRIX_PATH}")
+        print(f"Capability layer matrix: {CAPABILITY_LAYER_MATRIX_PATH}")
         if doc_counts:
             print("Doc counts: " + ", ".join(str(count) for count in doc_counts))
         return 1
