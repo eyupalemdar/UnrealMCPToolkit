@@ -405,6 +405,7 @@ FString HandleMoveWidget(TSharedPtr<FJsonObject> Params)
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetStringField(TEXT("widget_name"), WidgetName);
 		Data->SetStringField(TEXT("new_parent"), NewParentName);
+		Data->SetNumberField(TEXT("index"), NewIndex);
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 

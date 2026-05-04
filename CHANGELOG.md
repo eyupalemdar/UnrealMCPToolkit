@@ -82,6 +82,19 @@ class references.
 Commits:
 - `3707b04` test: enforce capability layer matrix
 
+### Changelist 7 - Commandlet Export And Widget Reordering
+
+Completed the Python export wrapper path so automation clients can run the
+existing `AIExport` commandlet directly instead of falling back to manual copy
+instructions. The wrapper now resolves the host project, UnrealEditor-Cmd,
+output directory, commandlet mode, and simplified output path while preserving
+manual `_raw.txt` simplification.
+
+Implemented index-aware widget moves using UE 5.7 `UPanelWidget` APIs. Widget
+reordering now uses `ShiftChild` for same-parent moves and `InsertChildAt` for
+cross-parent moves, keeps compatible slot data through slot templates, rejects
+self/descendant moves, and returns the applied index in the handler response.
+
 ## Validation
 
 - `python Resources/Scripts/validate_mcp_contract.py`

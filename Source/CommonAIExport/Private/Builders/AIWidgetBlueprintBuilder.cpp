@@ -97,6 +97,33 @@ FString StripObjectPathDecorators(const FString& Input)
 	return Result;
 }
 
+bool IsWidgetDescendantOf(const UWidget* Candidate, const UWidget* PotentialAncestor)
+{
+	if (!Candidate || !PotentialAncestor)
+	{
+		return false;
+	}
+	if (Candidate == PotentialAncestor)
+	{
+		return true;
+	}
+
+	const UPanelWidget* Panel = Cast<UPanelWidget>(PotentialAncestor);
+	if (!Panel)
+	{
+		return false;
+	}
+
+	for (int32 ChildIndex = 0; ChildIndex < Panel->GetChildrenCount(); ++ChildIndex)
+	{
+		if (IsWidgetDescendantOf(Candidate, Panel->GetChildAt(ChildIndex)))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 void AddUniqueCandidate(TArray<FString>& Candidates, const FString& Candidate)
 {
 	if (!Candidate.IsEmpty())
@@ -567,34 +594,75 @@ bool UAIWidgetBlueprintBuilder::MoveWidget(
 
 	FScopedTransaction Transaction(LOCTEXT("AIMoveWidget", "AI: Move Widget"));
 
-	// Remove from current parent
-	if (Widget == WidgetBP->WidgetTree->RootWidget)
+	UPanelWidget* CurrentParent = Widget->GetParent();
+	const int32 CurrentIndex = CurrentParent ? CurrentParent->GetChildIndex(Widget) : INDEX_NONE;
+	const bool bIsRoot = Widget == WidgetBP->WidgetTree->RootWidget;
+
+	if (NewParentName.IsEmpty())
+	{
+		if (!bIsRoot && CurrentParent)
+		{
+			CurrentParent->RemoveChild(Widget);
+		}
+
+		WidgetBP->WidgetTree->RootWidget = Widget;
+		MarkModified(WidgetBP);
+		return true;
+	}
+
+	UWidget* NewParent = FindWidgetByName(WidgetBP, NewParentName);
+	UPanelWidget* PanelParent = Cast<UPanelWidget>(NewParent);
+	if (!PanelParent)
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("MoveWidget: New parent '%s' is not a panel"),
+			*NewParentName);
+		return false;
+	}
+
+	if (IsWidgetDescendantOf(PanelParent, Widget))
+	{
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("MoveWidget: Cannot move widget '%s' under itself or descendant '%s'"),
+			*WidgetName, *NewParentName);
+		return false;
+	}
+
+	if (CurrentParent == PanelParent)
+	{
+		const int32 TargetIndex = NewIndex >= 0 ? NewIndex : PanelParent->GetChildrenCount() - 1;
+		PanelParent->ShiftChild(TargetIndex, Widget);
+		MarkModified(WidgetBP);
+		return true;
+	}
+
+	UPanelSlot* SlotTemplate = Widget->Slot;
+
+	if (bIsRoot)
 	{
 		WidgetBP->WidgetTree->RootWidget = nullptr;
 	}
-	else if (Widget->Slot && Widget->Slot->Parent)
+	else if (CurrentParent)
 	{
-		Widget->Slot->Parent->RemoveChild(Widget);
+		CurrentParent->RemoveChild(Widget);
 	}
 
-	// Add to new parent
-	if (NewParentName.IsEmpty())
+	UPanelSlot* NewSlot = NewIndex >= 0
+		? PanelParent->InsertChildAt(NewIndex, Widget, SlotTemplate)
+		: PanelParent->AddChild(Widget, SlotTemplate);
+
+	if (!NewSlot)
 	{
-		WidgetBP->WidgetTree->RootWidget = Widget;
-	}
-	else
-	{
-		UWidget* NewParent = FindWidgetByName(WidgetBP, NewParentName);
-		UPanelWidget* PanelParent = Cast<UPanelWidget>(NewParent);
-		if (!PanelParent)
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("MoveWidget: Failed to add widget '%s' to parent '%s'"),
+			*WidgetName, *NewParentName);
+		if (bIsRoot)
 		{
-			UE_LOG(LogAIWidgetBuilder, Error, TEXT("MoveWidget: New parent '%s' is not a panel"),
-				*NewParentName);
-			return false;
+			WidgetBP->WidgetTree->RootWidget = Widget;
 		}
-
-		PanelParent->AddChild(Widget);
-		// TODO: Handle NewIndex reordering if needed
+		else if (CurrentParent)
+		{
+			const int32 RestoreIndex = CurrentIndex != INDEX_NONE ? CurrentIndex : CurrentParent->GetChildrenCount();
+			CurrentParent->InsertChildAt(RestoreIndex, Widget, SlotTemplate);
+		}
+		return false;
 	}
 
 	MarkModified(WidgetBP);
