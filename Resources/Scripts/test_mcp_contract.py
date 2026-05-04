@@ -114,6 +114,8 @@ def _failures() -> list[str]:
         "sequencer_asset_info": ("asset_path",),
         "spline_component_set_points": ("points",),
         "landscape_sample_height": ("x", "y"),
+        "foliage_sample_instances": ("x", "y"),
+        "foliage_type_settings": ("foliage_type_path",),
     }.items():
         props = schemas["tools"].get(tool_name, {}).get("properties", {})
         for prop_name in required_props:

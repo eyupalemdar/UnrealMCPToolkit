@@ -6330,6 +6330,43 @@ def landscape_sample_height(
 
 
 # =============================================================================
+# FOLIAGE DIAGNOSTICS
+# =============================================================================
+
+@mcp.tool()
+def foliage_info(
+    world: str = "editor",
+    type_filter: str = "",
+    include_settings: bool = True,
+    foliage_actor_limit: int = 100,
+    foliage_type_limit: int = 200,
+) -> str:
+    """Inspect InstancedFoliageActors, FoliageTypes, settings, components, and counts."""
+    return _send_generated_tcp_tool("foliage_info", locals())
+
+
+@mcp.tool()
+def foliage_sample_instances(
+    x: float,
+    y: float,
+    z: float = 0.0,
+    radius: float = 1000.0,
+    limit: int = 100,
+    scan_limit: int = 50000,
+    world: str = "editor",
+    type_filter: str = "",
+) -> str:
+    """Sample Foliage instance transforms around a world-space point."""
+    return _send_generated_tcp_tool("foliage_sample_instances", locals())
+
+
+@mcp.tool()
+def foliage_type_settings(foliage_type_path: str) -> str:
+    """Inspect a FoliageType asset's placement and rendering settings."""
+    return _send_generated_tcp_tool("foliage_type_settings", locals())
+
+
+# =============================================================================
 # WIDGET PREVIEW CAPTURE
 # =============================================================================
 

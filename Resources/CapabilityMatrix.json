@@ -529,6 +529,20 @@
       "extension_policy": "Use this capability for ALandscapeProxy, LandscapeComponent, target layer, LandscapeSpline, and terrain height diagnostics. SplineComponent authoring stays in spline_authoring; generic actor/component summaries stay in editor_actor_operations/runtime_diagnostics."
     },
     {
+      "id": "foliage_diagnostics",
+      "domain": "world",
+      "title": "Foliage type diagnostics and instance sampling",
+      "status": "native",
+      "category_tags": ["Foliage"],
+      "commands": [
+        "foliage_info",
+        "foliage_sample_instances",
+        "foliage_type_settings"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for AInstancedFoliageActor, UFoliageType, foliage settings, HISM component summaries, and bounded instance sampling diagnostics. Generic actor/component summaries stay in editor_actor_operations/runtime_diagnostics; foliage painting, erasure, or type mutation must be a separately reviewed mutating capability."
+    },
+    {
       "id": "client_editor_bridge",
       "domain": "client",
       "title": "MCP client multi-editor bridge",

@@ -1,11 +1,11 @@
 {
   "schema_version": 3,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T16:26:16.259272Z",
+  "generated_at_utc": "2026-05-04T16:42:59.212469Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
-  "command_count": 169,
-  "category_count": 32,
+  "command_count": 172,
+  "category_count": 33,
   "categories": {
     "AnimBlueprint": 2,
     "Asset": 14,
@@ -24,6 +24,7 @@
     "EditorLevel": 2,
     "EditorViewport": 1,
     "Export": 3,
+    "Foliage": 3,
     "Import": 2,
     "Input": 3,
     "Landscape": 2,
@@ -2358,6 +2359,48 @@
       "line": 338
     },
     {
+      "name": "foliage_info",
+      "category": "Foliage",
+      "requires_params": false,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleFoliageInfo",
+      "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 339
+    },
+    {
+      "name": "foliage_sample_instances",
+      "category": "Foliage",
+      "requires_params": true,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleFoliageSampleInstances",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 340
+    },
+    {
+      "name": "foliage_type_settings",
+      "category": "Foliage",
+      "requires_params": true,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleFoliageTypeSettings",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 341
+    },
+    {
       "name": "import_texture",
       "category": "Import",
       "requires_params": true,
@@ -2369,7 +2412,7 @@
       "handler": "HandleImportTexture",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 340
+      "line": 343
     },
     {
       "name": "import_font",
@@ -2383,7 +2426,7 @@
       "handler": "HandleImportFont",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 341
+      "line": 344
     },
     {
       "name": "capture_widget_preview",
@@ -2397,7 +2440,7 @@
       "handler": "HandleCaptureWidgetPreview",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 343
+      "line": 346
     },
     {
       "name": "reload_asset",
@@ -2411,7 +2454,7 @@
       "handler": "HandleReloadAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 344
+      "line": 347
     }
   ]
 }

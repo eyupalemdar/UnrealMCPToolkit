@@ -126,6 +126,11 @@
  * - landscape_info: Inspect Landscape proxies, components, target layers, and Landscape splines
  * - landscape_sample_height: Sample Landscape height/normal at an XY point
  *
+ * Foliage commands:
+ * - foliage_info: Inspect InstancedFoliageActors, FoliageTypes, settings, components, and counts
+ * - foliage_sample_instances: Sample Foliage instance transforms around a world-space point
+ * - foliage_type_settings: Inspect a FoliageType asset's placement/rendering settings
+ *
  * Asset Import commands:
  * - import_texture: Import a texture file from disk into Content Browser
  * - import_font: Import font files (TTF/OTF) and create a Composite Font asset
@@ -413,6 +418,11 @@ private:
 	/** Command handlers - Landscape */
 	FString HandleLandscapeInfo(TSharedPtr<class FJsonObject> Params);
 	FString HandleLandscapeSampleHeight(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers - Foliage */
+	FString HandleFoliageInfo(TSharedPtr<class FJsonObject> Params);
+	FString HandleFoliageSampleInstances(TSharedPtr<class FJsonObject> Params);
+	FString HandleFoliageTypeSettings(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Asset Import */
 	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);

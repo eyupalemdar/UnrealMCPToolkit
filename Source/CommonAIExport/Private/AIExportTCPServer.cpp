@@ -336,6 +336,9 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_PARAMS("spline_component_set_points", "Spline", true, 60, HandleSplineComponentSetPoints),
 		AI_COMMAND_OPTIONAL_PARAMS("landscape_info", "Landscape", false, 60, HandleLandscapeInfo),
 		AI_COMMAND_PARAMS("landscape_sample_height", "Landscape", false, 60, HandleLandscapeSampleHeight),
+		AI_COMMAND_OPTIONAL_PARAMS("foliage_info", "Foliage", false, 60, HandleFoliageInfo),
+		AI_COMMAND_PARAMS("foliage_sample_instances", "Foliage", false, 60, HandleFoliageSampleInstances),
+		AI_COMMAND_PARAMS("foliage_type_settings", "Foliage", false, 60, HandleFoliageTypeSettings),
 
 		AI_COMMAND_PARAMS("import_texture", "Import", true, 60, HandleImportTexture),
 		AI_COMMAND_PARAMS("import_font", "Import", true, 60, HandleImportFont),

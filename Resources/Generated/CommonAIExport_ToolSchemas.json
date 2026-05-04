@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T16:26:16.284248Z",
-  "tool_count": 188,
+  "generated_at_utc": "2026-05-04T16:42:59.237553Z",
+  "tool_count": 191,
   "tools": {
     "ping": {
       "type": "object",
@@ -7162,6 +7162,130 @@
         "source": "tcp_command",
         "schema_source": "python_mcp_signature",
         "category": "Landscape",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "foliage_info": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "editor"
+        },
+        "type_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "include_settings": {
+          "type": "boolean",
+          "default": true
+        },
+        "foliage_actor_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "foliage_type_limit": {
+          "type": "integer",
+          "default": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Foliage",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "foliage_sample_instances": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number",
+          "default": 0.0
+        },
+        "radius": {
+          "type": "number",
+          "default": 1000.0
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "scan_limit": {
+          "type": "integer",
+          "default": 50000
+        },
+        "world": {
+          "type": "string",
+          "default": "editor"
+        },
+        "type_filter": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Foliage",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "foliage_type_settings": {
+      "type": "object",
+      "properties": {
+        "foliage_type_path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "foliage_type_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Foliage",
         "required_scope": "read",
         "mutating": false,
         "supports_dry_run": false,

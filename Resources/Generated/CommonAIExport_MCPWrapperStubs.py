@@ -1818,6 +1818,41 @@ def landscape_sample_height(x: float, y: float, z: float = 0.0, trace_extent: fl
     return _format_response(_send_command("landscape_sample_height", params))
 
 
+def foliage_info(world: str = 'editor', type_filter: str = '', include_settings: bool = True, foliage_actor_limit: int = 100, foliage_type_limit: int = 200) -> str:
+    """Generated stub for TCP command `foliage_info` (Foliage)."""
+    params = {
+        "world": world,
+        "type_filter": type_filter,
+        "include_settings": include_settings,
+        "foliage_actor_limit": foliage_actor_limit,
+        "foliage_type_limit": foliage_type_limit,
+    }
+    return _format_response(_send_command("foliage_info", params))
+
+
+def foliage_sample_instances(x: float, y: float, z: float = 0.0, radius: float = 1000.0, limit: int = 100, scan_limit: int = 50000, world: str = 'editor', type_filter: str = '') -> str:
+    """Generated stub for TCP command `foliage_sample_instances` (Foliage)."""
+    params = {
+        "x": x,
+        "y": y,
+        "z": z,
+        "radius": radius,
+        "limit": limit,
+        "scan_limit": scan_limit,
+        "world": world,
+        "type_filter": type_filter,
+    }
+    return _format_response(_send_command("foliage_sample_instances", params))
+
+
+def foliage_type_settings(foliage_type_path: str) -> str:
+    """Generated stub for TCP command `foliage_type_settings` (Foliage)."""
+    params = {
+        "foliage_type_path": foliage_type_path,
+    }
+    return _format_response(_send_command("foliage_type_settings", params))
+
+
 def import_texture(source_path: str, package_path: str, asset_name: str = '', compression: str = 'UserInterface2D', srgb: bool = True, mip_gen: str = 'NoMipmaps', lod_group: str = 'UI', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `import_texture` (Import)."""
     params = {
