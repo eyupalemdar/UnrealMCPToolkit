@@ -63,7 +63,7 @@ AI Assistant ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE 
 | `get_widget_tree(asset_path)` | Get full widget hierarchy as JSON |
 | `list_widget_classes()` | List all available non-abstract widget classes |
 | `export_widget(asset_path, both_formats?)` | Export to _raw.txt + _simplified.txt + _stripped.txt |
-| `export_blueprint(asset_path, both_formats?)` | Export any BP type (Widget, Blueprint, DataAsset, etc.) |
+| `export_blueprint(asset_path, both_formats?)` | Export any supported asset (Widget, Blueprint, DataAsset, DataTable, etc.) |
 | `list_supported_types()` | List exportable asset types |
 
 ### Example: Create Widget
@@ -1052,7 +1052,7 @@ Exports UE assets to 3 formats for AI analysis:
 | Raw | `_raw.txt` | ALL values including defaults. Debugging only |
 
 ### Supported Export Types
-Widget Blueprint, Blueprint, AnimBlueprint, DataAsset, InputAction, InputMappingContext, Material, MaterialInstance, PhysicalMaterial, Texture, Audio (SoundClass, SoundSubmix, etc.), World/Map
+Widget Blueprint, Blueprint, AnimBlueprint, DataAsset, DataTable, InputAction, InputMappingContext, Material, MaterialInstance, PhysicalMaterial, Texture, Audio (SoundClass, SoundSubmix, etc.), World/Map
 
 ### Output Path
 Exports go to `Dev/AIExports/` mirroring the Content folder structure:

@@ -100,7 +100,7 @@ code_transfer_plan(source_paths=["Source/OkeyGame/Public/MyClass.h"], source_edi
 | **Build BP Logic** | Add events, function calls, connect pins, set defaults |
 | **Create Materials** | Materials, material instances, expression graphs |
 | **Import Assets** | Textures, fonts from disk |
-| **Export Assets** | Widget BP, Blueprint, AnimBP, DataAsset, Material, World, Audio, Texture |
+| **Export Assets** | Widget BP, Blueprint, AnimBP, DataAsset, DataTable, Material, World, Audio, Texture |
 | **Control Editor Worlds** | Inspect editor world, list/spawn/move/delete actors, open/save levels, PIE status/start/stop |
 | **Inspect Project Health** | Search assets, run light asset validation, read editor logs, source-control status, guarded build status |
 | **Use Context Resources** | Read CommonAI resources/prompts and export MCP metadata/command manifests |

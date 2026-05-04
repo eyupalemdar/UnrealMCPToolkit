@@ -93,6 +93,7 @@ CommonAIExport/
 │   │       ├── AIBlueprintExporter.h    # UBlueprint (Priority: 50)
 │   │       ├── AIWidgetBlueprintExporter.h  # UWidgetBlueprint (Priority: 100)
 │   │       ├── AIDataAssetExporter.h    # UDataAsset (Priority: 40)
+│   │       ├── AIDataTableExporter.h    # UDataTable (Priority: 50)
 │   │       ├── AIInputExporter.h        # InputAction/IMC (Priority: 50)
 │   │       ├── AIAudioExporter.h        # Audio assets (Priority: 50)
 │   │       ├── AIWorldExporter.h        # UWorld/Map (Priority: 50)
@@ -112,6 +113,7 @@ CommonAIExport/
 │           ├── AIBlueprintExporter.cpp
 │           ├── AIWidgetBlueprintExporter.cpp
 │           ├── AIDataAssetExporter.cpp
+│           ├── AIDataTableExporter.cpp
 │           ├── AIInputExporter.cpp
 │           ├── AIAudioExporter.cpp
 │           ├── AIWorldExporter.cpp      # Map/World export
@@ -220,6 +222,7 @@ UnrealEditor-Cmd.exe "Project.uproject" -run=AIExport -asset="/Game/UI/W_Menu" -
 | Input Mapping Context | `UAIInputExporter` | 50 | ✅ |
 | Audio (SoundClass, etc.) | `UAIAudioExporter` | 50 | ✅ |
 | Texture | `UAITextureExporter` | 50 | ✅ |
+| DataTable | `UAIDataTableExporter` | 50 | ✅ |
 | **PhysicalMaterial** | `UAIPhysicalMaterialExporter` | 46 | ✅ **NEW** |
 | Material/MaterialInstance | `UAIMaterialExporter` | 45 | ✅ |
 | DataAsset | `UAIDataAssetExporter` | 40 | ✅ |
@@ -654,8 +657,8 @@ CommonAIExport runs a TCP server for external tool integration (AI assistants, s
 | Command | Description |
 |---------|-------------|
 | `ping` | Check if server is alive |
-| `list_supported_types` | Get supported asset types |
-| `export_blueprint` | Export any supported asset (Blueprint, Widget, DataAsset, etc.) |
+| `list_supported_types` | Get registry-supported export asset classes |
+| `export_blueprint` | Export any supported asset (Blueprint, Widget, DataAsset, DataTable, etc.) |
 | `export_widget` | Export WidgetBlueprint specifically |
 
 #### export_blueprint Command (PRIMARY)
@@ -663,6 +666,7 @@ CommonAIExport runs a TCP server for external tool integration (AI assistants, s
 **IMPORTANT:** This command exports ALL supported types, not just Blueprints:
 - Blueprint, WidgetBlueprint, AnimBlueprint
 - **DataAsset** (e.g., InputConfig, PawnData, AbilitySet)
+- **DataTable** rows and row-struct metadata
 - InputAction, InputMappingContext
 
 ```json

@@ -51,10 +51,11 @@ DECLARE_DELEGATE_ThreeParams(FOnAIExportProgress, int32 /*Current*/, int32 /*Tot
  * - UBlueprint (Actor BP, Object BP, etc.)
  * - UWidgetBlueprint
  * - UDataAsset (and all derived types)
+ * - UDataTable
  * - UInputAction, UInputMappingContext
  * - Audio: USoundClass, USoundSubmix, USoundConcurrency, USoundAttenuation
  * - Audio Modulation: USoundControlBus, USoundControlBusMix, USoundModulationPatch
- * - UWorld (Map/Level) - NEW!
+ * - UWorld (Map/Level)
  *
  * Usage:
  *   FAIExportResult Result = UAIExportFunctionLibrary::ExportAssetByPath(
