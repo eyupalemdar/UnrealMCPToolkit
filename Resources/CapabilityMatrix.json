@@ -369,7 +369,7 @@
         "blueprint_component_set_property"
       ],
       "client_tools": [],
-      "extension_policy": "Use this capability for Actor Blueprint SCS component authoring. Runtime component inspection stays under runtime_diagnostics; Widget tree composition stays under widget_blueprint_authoring."
+      "extension_policy": "Use this capability for Actor Blueprint SCS component authoring. SCS mutation belongs in UAIBlueprintComponentBuilder rather than CommandHandlers. Runtime component inspection stays under runtime_diagnostics; Widget tree composition stays under widget_blueprint_authoring."
     },
     {
       "id": "material_graph_and_instances",
@@ -550,7 +550,7 @@
         "spline_component_set_points"
       ],
       "client_tools": [],
-      "extension_policy": "Use this capability for SplineComponent point-level inspection and editor authoring. actor_spawn owns generic actor creation; runtime_component_list owns generic component summaries."
+      "extension_policy": "Use this capability for SplineComponent point-level inspection and editor authoring. Keep handler-owned until reusable spline domain logic justifies a builder; actor_spawn owns generic actor creation; runtime_component_list owns generic component summaries."
     },
     {
       "id": "landscape_diagnostics",

@@ -25,6 +25,32 @@ Before adding a new Unreal automation feature:
    exact coverage mistakes; reviewers still use the policy text to catch
    design-level duplicates.
 
+## Layering Check
+
+For every new or changed `CommandHandlers` file, make an explicit
+Builder/Exporter decision before merging:
+
+| Command shape | Builder decision | Exporter decision |
+|---|---|---|
+| Creates or mutates a reusable Unreal asset, subasset, graph, SCS tree, or template object | Put the Unreal mutation API in a `Builders` class; the handler should only parse params, schedule the Game Thread work, and format the response | Add an exporter only if the resulting asset type needs canonical `export_asset` or `list_supported_types` coverage |
+| Writes live editor/world/runtime state | Add a builder only when the domain logic is reusable across more than one command family; otherwise keep it in the handler | Do not add an exporter unless there is a persistent asset representation to export |
+| Read-only diagnostics or targeted inspection | Usually no builder; shared parsing/summary code can live in domain utilities when it repeats | Usually no exporter; command responses are scoped diagnostics, not canonical asset exports |
+| Canonical asset serialization for AI review | No builder unless creation/mutation is also supported | Add or extend an `Exporters` class and register it with `UAIExporterRegistry` |
+
+Current audit notes:
+
+- `blueprint_components` uses `UAIBlueprintComponentBuilder` because Actor
+  Blueprint SCS mutation is reusable asset authoring. It does not need a
+  dedicated exporter because whole-Blueprint export is already owned by the
+  Blueprint exporter.
+- `spline_authoring` remains command-handler owned for now because it edits live
+  editor actor/component state. Add a spline builder only if spline authoring
+  grows beyond this command family or starts producing reusable spline assets.
+- Static Mesh, Skeletal Mesh, Animation, Niagara, Sequencer, Landscape, Foliage,
+  PCG, and level-structure commands are currently read-only diagnostics, so
+  adding Builders or Exporters would duplicate the existing command response
+  surface.
+
 ## Required Checks
 
 Run these after command, wrapper, or matrix changes:
