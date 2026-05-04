@@ -774,6 +774,11 @@ Generated artifacts are checked by the contract validator and live under
 - `CommonAIExport_MCPWrapperStubs.py`
 - `CommonAIExport_MCPWrapperRuntime.py`
 
+Capability ownership is checked by `Resources/CapabilityMatrix.json`; see
+`Docs/Reference/CAPABILITY_MATRIX.md`. Every native TCP command and every
+client-only MCP tool must be assigned to exactly one capability before the
+contract validator passes.
+
 `CommonAIExport_WrapperSpec.json` binds each TCP descriptor to the Python MCP
 wrapper function, records the wrapper signature and payload inclusion rules,
 and fails validation when a wrapper is missing or calls the wrong TCP command.

@@ -8,6 +8,7 @@ import sys
 
 from generate_mcp_artifacts import (
     AI_REFERENCE_PATH,
+    CAPABILITY_MATRIX_PATH,
     CLIENT_ONLY_TOOLS,
     COMMAND_MANIFEST_PATH,
     TOOL_SCHEMAS_PATH,
@@ -21,6 +22,7 @@ from generate_mcp_artifacts import (
     build_wrapper_stubs,
     build_tool_schemas,
     read_mcp_tool_signatures,
+    validate_capability_matrix,
 )
 
 
@@ -34,6 +36,8 @@ def _failures() -> list[str]:
     wrapper_spec = build_wrapper_spec(manifest, schemas)
     commands = manifest["commands"]
     signatures = read_mcp_tool_signatures()
+
+    failures.extend(validate_capability_matrix(manifest, CAPABILITY_MATRIX_PATH))
 
     seen_names: set[str] = set()
     for command in commands:

@@ -1,0 +1,541 @@
+{
+  "schema_version": 1,
+  "server": "CommonAIExport",
+  "description": "Canonical capability coverage matrix for the CommonAIExport Unreal automation surface. Contract checks require every native TCP command and every client-only MCP tool to appear exactly once.",
+  "coverage_policy": {
+    "tcp_commands": "exactly_once",
+    "client_only_tools": "exactly_once"
+  },
+  "capabilities": [
+    {
+      "id": "utility_command_contract",
+      "domain": "core",
+      "title": "Connection, command discovery, and manifest export",
+      "status": "native",
+      "category_tags": ["Utility"],
+      "commands": [
+        "ping",
+        "list_commands",
+        "server_status",
+        "editor_identity",
+        "command_manifest_export"
+      ],
+      "client_tools": [],
+      "extension_policy": "Extend this capability for protocol discovery, identity, and command metadata. Do not add parallel status probes without documenting the transport difference."
+    },
+    {
+      "id": "workflow_source_control_build_test",
+      "domain": "workflow",
+      "title": "Source control, logs, build, cook, and tests",
+      "status": "native",
+      "category_tags": ["Workflow"],
+      "commands": [
+        "project_status",
+        "source_control_status",
+        "source_control_log",
+        "source_control_show",
+        "source_control_diff",
+        "build_project",
+        "generate_project_files",
+        "cook_project",
+        "list_tests",
+        "run_tests",
+        "get_test_log",
+        "editor_log_read"
+      ],
+      "client_tools": [],
+      "extension_policy": "Add build/test/source-control workflow automation here unless the new behavior owns a different execution boundary."
+    },
+    {
+      "id": "project_introspection_and_plugins",
+      "domain": "project",
+      "title": "Project metadata, plugin state, and module discovery",
+      "status": "native",
+      "category_tags": ["Project"],
+      "commands": [
+        "project_info",
+        "project_plugin_list",
+        "project_plugin_set_enabled",
+        "project_module_list"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for project descriptor, plugin, and module operations. New project settings writes should prefer project_config_mutation."
+    },
+    {
+      "id": "project_config_mutation",
+      "domain": "project",
+      "title": "Config file read and write operations",
+      "status": "native",
+      "category_tags": ["ProjectConfig"],
+      "commands": [
+        "project_config_get",
+        "project_config_set",
+        "project_config_delete",
+        "project_config_list_sections",
+        "project_config_list_keys"
+      ],
+      "client_tools": [],
+      "extension_policy": "Extend this capability for structured .ini reads and writes. Keep path allowlists and section/key validation in the native layer."
+    },
+    {
+      "id": "async_task_queue",
+      "domain": "workflow",
+      "title": "Asynchronous command execution and event streaming",
+      "status": "native",
+      "category_tags": ["AsyncJob"],
+      "commands": [
+        "task_submit",
+        "task_status",
+        "task_result",
+        "task_cancel",
+        "task_events",
+        "task_events_wait"
+      ],
+      "client_tools": [],
+      "extension_policy": "Add job lifecycle or queue observability here. Do not create one-off async variants for commands that can use task_submit."
+    },
+    {
+      "id": "export_introspection",
+      "domain": "content_io",
+      "title": "Blueprint and widget export",
+      "status": "native",
+      "category_tags": ["Export"],
+      "commands": [
+        "export_widget",
+        "export_blueprint",
+        "list_supported_types"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for read-only Unreal asset export and supported-type discovery."
+    },
+    {
+      "id": "import_asset_files",
+      "domain": "content_io",
+      "title": "External asset import",
+      "status": "native",
+      "category_tags": ["Import"],
+      "commands": [
+        "import_texture",
+        "import_font"
+      ],
+      "client_tools": [],
+      "extension_policy": "Extend this capability for additional Unreal import factories that ingest files from disk."
+    },
+    {
+      "id": "runtime_diagnostics",
+      "domain": "runtime",
+      "title": "Runtime world and subsystem diagnostics",
+      "status": "native",
+      "category_tags": ["RuntimeInspector"],
+      "commands": [
+        "runtime_world_info",
+        "runtime_player_list",
+        "runtime_component_list",
+        "runtime_diagnostics",
+        "runtime_input_routing",
+        "runtime_replication_diagnostics",
+        "runtime_ability_system_diagnostics",
+        "runtime_ai_perception_diagnostics",
+        "runtime_ai_controller_diagnostics",
+        "runtime_eqs_diagnostics",
+        "runtime_gameplay_tags_diagnostics",
+        "runtime_commonui_diagnostics",
+        "runtime_audio_diagnostics",
+        "runtime_navigation_diagnostics",
+        "runtime_asset_streaming_diagnostics",
+        "runtime_async_load_diagnostics",
+        "runtime_game_instance_diagnostics",
+        "runtime_level_travel_diagnostics",
+        "runtime_multiplayer_connection_diagnostics",
+        "runtime_tick_timer_latent_diagnostics",
+        "runtime_scheduler_performance_diagnostics",
+        "runtime_physics_collision_diagnostics"
+      ],
+      "client_tools": [],
+      "extension_policy": "Add read-only PIE/runtime diagnostics here. Mutating gameplay control should be a separate reviewed capability."
+    },
+    {
+      "id": "editor_world_console",
+      "domain": "editor",
+      "title": "Editor world metadata and console execution",
+      "status": "native",
+      "category_tags": ["Editor"],
+      "commands": [
+        "editor_world_info",
+        "editor_console_command"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for editor-wide world state and explicit console command execution. Keep destructive scope gates for console execution."
+    },
+    {
+      "id": "editor_actor_operations",
+      "domain": "editor",
+      "title": "Editor actor discovery and mutation",
+      "status": "native",
+      "category_tags": ["EditorActor"],
+      "commands": [
+        "actor_list",
+        "actor_spawn",
+        "actor_set_transform",
+        "actor_delete"
+      ],
+      "client_tools": [],
+      "extension_policy": "Extend this capability for level actor operations. Use dry-run support for destructive actor changes."
+    },
+    {
+      "id": "editor_level_operations",
+      "domain": "editor",
+      "title": "Level open and save operations",
+      "status": "native",
+      "category_tags": ["EditorLevel"],
+      "commands": [
+        "level_open",
+        "level_save_current"
+      ],
+      "client_tools": [],
+      "extension_policy": "Add map and level package lifecycle operations here when they operate on editor-loaded levels."
+    },
+    {
+      "id": "editor_pie_control",
+      "domain": "editor",
+      "title": "Play-in-editor lifecycle",
+      "status": "native",
+      "category_tags": ["PIE"],
+      "commands": [
+        "pie_status",
+        "pie_start",
+        "pie_stop"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for PIE lifecycle control. Runtime inspection stays under runtime_diagnostics."
+    },
+    {
+      "id": "editor_viewport_capture",
+      "domain": "editor",
+      "title": "Editor viewport screenshot capture",
+      "status": "native",
+      "category_tags": ["EditorViewport"],
+      "commands": [
+        "viewport_capture"
+      ],
+      "client_tools": [],
+      "extension_policy": "Extend this capability for viewport capture variants and camera-aware editor screenshots."
+    },
+    {
+      "id": "widget_blueprint_authoring",
+      "domain": "ui",
+      "title": "Widget Blueprint tree authoring",
+      "status": "native",
+      "category_tags": ["Widget"],
+      "commands": [
+        "create_widget_blueprint",
+        "add_widget",
+        "remove_widget",
+        "move_widget",
+        "set_widget_property",
+        "set_slot_property",
+        "set_canvas_slot_layout",
+        "set_widget_properties",
+        "compile_and_save",
+        "get_widget_tree",
+        "list_widget_classes"
+      ],
+      "client_tools": [],
+      "extension_policy": "Add UMG/CommonUI authoring operations here only after checking existing widget commands and the UI transfer component recipes."
+    },
+    {
+      "id": "widget_preview_capture",
+      "domain": "ui",
+      "title": "Widget Blueprint preview capture",
+      "status": "native",
+      "category_tags": ["WidgetPreview"],
+      "commands": [
+        "capture_widget_preview"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for design-time WBP preview capture and render warmup behavior."
+    },
+    {
+      "id": "cdo_property_access",
+      "domain": "reflection",
+      "title": "Class default object property access",
+      "status": "native",
+      "category_tags": ["CDO"],
+      "commands": [
+        "set_cdo_property",
+        "get_cdo_properties"
+      ],
+      "client_tools": [],
+      "extension_policy": "Extend this capability for CDO scalar/object property access. Array edits belong in cdo_array_access."
+    },
+    {
+      "id": "cdo_array_access",
+      "domain": "reflection",
+      "title": "Class default object array mutation",
+      "status": "native",
+      "category_tags": ["CDOArray"],
+      "commands": [
+        "add_cdo_array_element",
+        "set_cdo_array_element_property",
+        "remove_cdo_array_element",
+        "get_cdo_array_length"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for nested/array CDO edits and keep array length/readback validation paired with writes."
+    },
+    {
+      "id": "reflection_object_access",
+      "domain": "reflection",
+      "title": "Object access and reflected type discovery",
+      "status": "native",
+      "category_tags": ["Reflection"],
+      "commands": [
+        "object_query",
+        "object_get_property",
+        "object_set_property",
+        "object_call_function",
+        "reflect_class",
+        "reflect_struct",
+        "reflect_enum",
+        "list_classes",
+        "list_gameplay_tags"
+      ],
+      "client_tools": [],
+      "extension_policy": "Add reflection-based discovery or object invocation here. Prefer typed high-level commands when the workflow is common enough."
+    },
+    {
+      "id": "blueprint_graph_editing",
+      "domain": "blueprint",
+      "title": "Blueprint graph node and pin editing",
+      "status": "native",
+      "category_tags": ["BlueprintGraph"],
+      "commands": [
+        "add_event_node",
+        "add_custom_event",
+        "add_function_call",
+        "add_variable_get_node",
+        "add_variable_set_node",
+        "add_make_struct_node",
+        "add_branch_node",
+        "ensure_function_graph",
+        "add_call_parent_function",
+        "connect_pins",
+        "set_pin_default",
+        "remove_graph_node",
+        "get_graph",
+        "list_graphs"
+      ],
+      "client_tools": [],
+      "extension_policy": "Extend this capability for K2 graph editing. Check graph, variable, and reflection commands before adding new node helpers."
+    },
+    {
+      "id": "blueprint_variables",
+      "domain": "blueprint",
+      "title": "Blueprint variable lifecycle",
+      "status": "native",
+      "category_tags": ["BlueprintVariable"],
+      "commands": [
+        "add_variable",
+        "set_variable_default",
+        "remove_variable",
+        "get_variables"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for Blueprint member variables. Widget tree children are not Blueprint variables."
+    },
+    {
+      "id": "blueprint_parenting",
+      "domain": "blueprint",
+      "title": "Blueprint parent class changes",
+      "status": "native",
+      "category_tags": ["BlueprintUtility"],
+      "commands": [
+        "reparent_blueprint"
+      ],
+      "client_tools": [],
+      "extension_policy": "Keep parent-class changes isolated here because they affect compile and asset compatibility."
+    },
+    {
+      "id": "material_graph_and_instances",
+      "domain": "material",
+      "title": "Material graph, compile, and material instance automation",
+      "status": "native",
+      "category_tags": ["Material"],
+      "commands": [
+        "create_material",
+        "set_material_property",
+        "add_expression",
+        "set_expression_property",
+        "connect_expressions",
+        "connect_to_material_property",
+        "disconnect_input",
+        "remove_expression",
+        "compile_material",
+        "get_material_graph",
+        "list_expression_classes",
+        "create_material_instance",
+        "set_instance_parameter",
+        "save_material_instance",
+        "get_material_instance_info"
+      ],
+      "client_tools": [],
+      "extension_policy": "Add material/MIC automation here. Prefer reflected object access only for uncommon fields that do not justify a material command."
+    },
+    {
+      "id": "data_assets",
+      "domain": "data",
+      "title": "Data asset persistence",
+      "status": "native",
+      "category_tags": ["DataAsset"],
+      "commands": [
+        "save_data_asset"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for data asset save/persistence operations. Asset creation and generic asset fields belong in asset_authoring_registry."
+    },
+    {
+      "id": "data_tables",
+      "domain": "data",
+      "title": "DataTable creation, rows, and CSV import",
+      "status": "native",
+      "category_tags": ["DataTable"],
+      "commands": [
+        "create_datatable",
+        "get_datatable_info",
+        "read_datatable_rows",
+        "add_datatable_row",
+        "remove_datatable_row",
+        "import_datatable_csv"
+      ],
+      "client_tools": [],
+      "extension_policy": "Extend this capability for row-structured table operations and imports."
+    },
+    {
+      "id": "asset_authoring_registry",
+      "domain": "asset",
+      "title": "Generic asset creation, property access, registry queries, and redirectors",
+      "status": "native",
+      "category_tags": ["Asset"],
+      "commands": [
+        "create_asset",
+        "set_asset_property",
+        "get_asset_properties",
+        "asset_exists",
+        "scan_asset_paths",
+        "asset_search",
+        "asset_validate_light",
+        "save_asset",
+        "rename_asset",
+        "get_referencers",
+        "get_dependencies",
+        "delete_asset",
+        "list_redirectors",
+        "fixup_redirectors"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for generic asset lifecycle and registry work. Prefer specialized Widget, Material, DataTable, or Import capabilities for typed workflows."
+    },
+    {
+      "id": "asset_lifecycle_reload",
+      "domain": "asset",
+      "title": "Asset reload and editor cache refresh",
+      "status": "native",
+      "category_tags": ["AssetLifecycle"],
+      "commands": [
+        "reload_asset"
+      ],
+      "client_tools": [],
+      "extension_policy": "Keep reload/cache-refresh operations here so authoring workflows can explicitly depend on them."
+    },
+    {
+      "id": "input_settings",
+      "domain": "project",
+      "title": "Project input mapping settings",
+      "status": "native",
+      "category_tags": ["Input"],
+      "commands": [
+        "add_input_mapping",
+        "remove_input_mapping",
+        "get_input_mappings"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for input settings mutations and discovery. General .ini edits stay under project_config_mutation."
+    },
+    {
+      "id": "anim_blueprints",
+      "domain": "animation",
+      "title": "Animation Blueprint creation and inspection",
+      "status": "native",
+      "category_tags": ["AnimBlueprint"],
+      "commands": [
+        "create_anim_blueprint",
+        "get_anim_blueprint_info"
+      ],
+      "client_tools": [],
+      "extension_policy": "Extend this capability for animation Blueprint asset automation."
+    },
+    {
+      "id": "client_editor_bridge",
+      "domain": "client",
+      "title": "MCP client multi-editor bridge",
+      "status": "client_only",
+      "category_tags": ["ClientOnly"],
+      "commands": [],
+      "client_tools": [
+        "editors_list",
+        "editor_call"
+      ],
+      "extension_policy": "Use this capability for Python client orchestration across editor connections."
+    },
+    {
+      "id": "client_transfer_workflows",
+      "domain": "client",
+      "title": "Cross-project asset and code transfer workflows",
+      "status": "client_only",
+      "category_tags": ["ClientOnly"],
+      "commands": [],
+      "client_tools": [
+        "asset_transfer_plan",
+        "asset_transfer_execute",
+        "asset_transfer_verify",
+        "code_transfer_plan",
+        "code_transfer_execute",
+        "code_transfer_verify"
+      ],
+      "extension_policy": "Extend this capability for client-side transfer planning, execution, and verification."
+    },
+    {
+      "id": "client_resources_prompts",
+      "domain": "client",
+      "title": "MCP resources and prompt templates",
+      "status": "client_only",
+      "category_tags": ["ClientOnly"],
+      "commands": [],
+      "client_tools": [
+        "commonai_resources_list",
+        "commonai_resource_read",
+        "commonai_prompts_list",
+        "commonai_prompt_get"
+      ],
+      "extension_policy": "Use this capability for Python-hosted MCP resources and reusable prompts."
+    },
+    {
+      "id": "client_docs_policy_metadata",
+      "domain": "client",
+      "title": "Client guardrails, docs lookup, native probes, and metadata export",
+      "status": "client_only",
+      "category_tags": ["ClientOnly"],
+      "commands": [],
+      "client_tools": [
+        "guarded_build_status",
+        "client_scope_policy",
+        "ue_docs_search",
+        "ue_class_lookup",
+        "mcp_server_metadata_export",
+        "native_http_status",
+        "native_mcp_probe"
+      ],
+      "extension_policy": "Add client-only guardrails, documentation lookup, metadata export, or native endpoint probes here."
+    }
+  ]
+}

@@ -27,9 +27,11 @@ WRAPPER_SPEC_PATH = GENERATED_DIR / "CommonAIExport_WrapperSpec.json"
 WRAPPER_STUBS_PATH = GENERATED_DIR / "CommonAIExport_MCPWrapperStubs.py"
 WRAPPER_RUNTIME_PATH = GENERATED_DIR / "CommonAIExport_MCPWrapperRuntime.py"
 AI_REFERENCE_PATH = PLUGIN_ROOT / "Docs" / "Reference" / "AI_REFERENCE.md"
+CAPABILITY_MATRIX_PATH = PLUGIN_ROOT / "Resources" / "CapabilityMatrix.json"
 
 AI_REFERENCE_SUMMARY_BEGIN = "<!-- BEGIN COMMONAI GENERATED TOOL SUMMARY -->"
 AI_REFERENCE_SUMMARY_END = "<!-- END COMMONAI GENERATED TOOL SUMMARY -->"
+CAPABILITY_MATRIX_ALLOWED_STATUSES = {"native", "client_only", "hybrid"}
 
 CLIENT_ONLY_TOOLS = {
     "editors_list",
@@ -126,6 +128,133 @@ def _project_relative(path: Path) -> str:
 
 def _bool(value: str) -> bool:
     return value == "true"
+
+
+def _duplicate_values(items: list[str]) -> list[str]:
+    return sorted(item for item, count in Counter(items).items() if count > 1)
+
+
+def load_capability_matrix(path: Path = CAPABILITY_MATRIX_PATH) -> dict:
+    """Load the hand-maintained capability matrix used by contract checks."""
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _matrix_string_list(item: dict, field_name: str, label: str, errors: list[str]) -> list[str]:
+    value = item.get(field_name, [])
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        errors.append(f"{label}: {field_name} must be an array")
+        return []
+
+    values: list[str] = []
+    for index, entry in enumerate(value):
+        if not isinstance(entry, str) or not entry:
+            errors.append(f"{label}: {field_name}[{index}] must be a non-empty string")
+            continue
+        values.append(entry)
+    return values
+
+
+def validate_capability_matrix(command_manifest: dict, path: Path = CAPABILITY_MATRIX_PATH) -> list[str]:
+    """Validate capability coverage for every TCP command and client-only MCP tool."""
+    errors: list[str] = []
+    try:
+        matrix = load_capability_matrix(path)
+    except FileNotFoundError:
+        return [f"Capability matrix is missing: {path}"]
+    except json.JSONDecodeError as exc:
+        return [f"Capability matrix is invalid JSON: {exc}"]
+
+    if not isinstance(matrix, dict):
+        return ["Capability matrix root must be a JSON object"]
+
+    if matrix.get("schema_version") != 1:
+        errors.append("Capability matrix schema_version must be 1")
+    if matrix.get("server") != "CommonAIExport":
+        errors.append("Capability matrix server must be CommonAIExport")
+
+    coverage_policy = matrix.get("coverage_policy", {})
+    if not isinstance(coverage_policy, dict):
+        errors.append("Capability matrix coverage_policy must be an object")
+    else:
+        if coverage_policy.get("tcp_commands") != "exactly_once":
+            errors.append("Capability matrix coverage_policy.tcp_commands must be exactly_once")
+        if coverage_policy.get("client_only_tools") != "exactly_once":
+            errors.append("Capability matrix coverage_policy.client_only_tools must be exactly_once")
+
+    capabilities = matrix.get("capabilities")
+    if not isinstance(capabilities, list) or not capabilities:
+        errors.append("Capability matrix capabilities must be a non-empty array")
+        return errors
+
+    tcp_names = [command.get("name") for command in command_manifest.get("commands", []) if command.get("name")]
+    tcp_set = set(tcp_names)
+    client_only_set = set(CLIENT_ONLY_TOOLS)
+    capability_ids: list[str] = []
+    covered_tcp: list[str] = []
+    covered_client_only: list[str] = []
+
+    for index, capability in enumerate(capabilities):
+        if not isinstance(capability, dict):
+            errors.append(f"capability[{index}] must be an object")
+            continue
+
+        capability_id = capability.get("id")
+        label = f"capability[{index}]"
+        if isinstance(capability_id, str) and capability_id:
+            label = capability_id
+            capability_ids.append(capability_id)
+            if not re.fullmatch(r"[a-z][a-z0-9_]*", capability_id):
+                errors.append(f"{label}: id must be lower_snake_case")
+        else:
+            errors.append(f"{label}: id must be a non-empty string")
+
+        for field_name in ("domain", "title", "status", "extension_policy"):
+            value = capability.get(field_name)
+            if not isinstance(value, str) or not value.strip():
+                errors.append(f"{label}: {field_name} must be a non-empty string")
+
+        status = capability.get("status")
+        if isinstance(status, str) and status not in CAPABILITY_MATRIX_ALLOWED_STATUSES:
+            errors.append(
+                f"{label}: status must be one of {', '.join(sorted(CAPABILITY_MATRIX_ALLOWED_STATUSES))}"
+            )
+
+        commands = _matrix_string_list(capability, "commands", label, errors)
+        client_tools = _matrix_string_list(capability, "client_tools", label, errors)
+        if not commands and not client_tools:
+            errors.append(f"{label}: at least one command or client_tool is required")
+
+        unknown_commands = sorted(set(commands) - tcp_set)
+        unknown_client_tools = sorted(set(client_tools) - client_only_set)
+        if unknown_commands:
+            errors.append(f"{label}: unknown TCP commands: {', '.join(unknown_commands)}")
+        if unknown_client_tools:
+            errors.append(f"{label}: unknown client-only tools: {', '.join(unknown_client_tools)}")
+
+        covered_tcp.extend(commands)
+        covered_client_only.extend(client_tools)
+
+    duplicate_ids = _duplicate_values(capability_ids)
+    if duplicate_ids:
+        errors.append("Capability matrix duplicate ids: " + ", ".join(duplicate_ids))
+
+    duplicate_tcp = _duplicate_values(covered_tcp)
+    if duplicate_tcp:
+        errors.append("Capability matrix duplicate TCP command coverage: " + ", ".join(duplicate_tcp))
+    missing_tcp = sorted(tcp_set - set(covered_tcp))
+    if missing_tcp:
+        errors.append("Capability matrix missing TCP command coverage: " + ", ".join(missing_tcp))
+
+    duplicate_client_only = _duplicate_values(covered_client_only)
+    if duplicate_client_only:
+        errors.append("Capability matrix duplicate client-only tool coverage: " + ", ".join(duplicate_client_only))
+    missing_client_only = sorted(client_only_set - set(covered_client_only))
+    if missing_client_only:
+        errors.append("Capability matrix missing client-only tool coverage: " + ", ".join(missing_client_only))
+
+    return errors
 
 
 def parse_cpp_descriptors() -> list[dict]:

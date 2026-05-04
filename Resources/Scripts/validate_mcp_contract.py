@@ -11,6 +11,7 @@ from pathlib import Path
 from generate_mcp_artifacts import (
     AI_REFERENCE_SUMMARY_BEGIN,
     AI_REFERENCE_SUMMARY_END,
+    CAPABILITY_MATRIX_PATH,
     CLIENT_ONLY_TOOLS,
     COMMAND_MANIFEST_PATH,
     SERVER_METADATA_PATH,
@@ -25,6 +26,7 @@ from generate_mcp_artifacts import (
     build_wrapper_spec,
     build_wrapper_stubs,
     build_tool_schemas,
+    validate_capability_matrix,
 )
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[2]
@@ -226,6 +228,7 @@ def main() -> int:
 
     expected_count = len(cpp_commands) + len(CLIENT_ONLY_TOOLS)
     errors.extend(_validate_generated_artifacts(cpp_commands, expected_count))
+    errors.extend(validate_capability_matrix(build_command_manifest()))
 
     if not doc_counts:
         errors.append("AI_REFERENCE.md has no MCP tool count markers")
@@ -245,6 +248,7 @@ def main() -> int:
         print(f"C++ commands: {len(cpp_commands)}")
         print(f"MCP tools: {len(mcp_tools)}")
         print("Client-only MCP tools: " + ", ".join(sorted(CLIENT_ONLY_TOOLS)))
+        print(f"Capability matrix: {CAPABILITY_MATRIX_PATH}")
         if doc_counts:
             print("Doc counts: " + ", ".join(str(count) for count in doc_counts))
         return 1
