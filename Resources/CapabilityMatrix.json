@@ -502,6 +502,20 @@
       "extension_policy": "Use this capability for Sequencer/LevelSequence asset introspection. Do not overlap with WidgetAnimation export or generic asset reflection when MovieScene bindings/tracks/sections are the workflow."
     },
     {
+      "id": "spline_authoring",
+      "domain": "editor",
+      "title": "Spline actor creation and point authoring",
+      "status": "native",
+      "category_tags": ["Spline"],
+      "commands": [
+        "spline_actor_create",
+        "spline_component_info",
+        "spline_component_set_points"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for SplineComponent point-level inspection and editor authoring. actor_spawn owns generic actor creation; runtime_component_list owns generic component summaries."
+    },
+    {
       "id": "client_editor_bridge",
       "domain": "client",
       "title": "MCP client multi-editor bridge",

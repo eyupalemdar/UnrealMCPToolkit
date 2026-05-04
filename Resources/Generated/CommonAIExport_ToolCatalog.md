@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 164
-- MCP tools: 183
-- Categories: 30
+- TCP commands: 167
+- MCP tools: 186
+- Categories: 31
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
@@ -40,6 +40,7 @@
 | `Reflection` | 9 |
 | `RuntimeInspector` | 22 |
 | `Sequencer` | 1 |
+| `Spline` | 3 |
 | `Utility` | 5 |
 | `Widget` | 11 |
 | `WidgetPreview` | 1 |
@@ -209,6 +210,9 @@
 | `create_anim_blueprint` | `AnimBlueprint` | `write` | true | true | false | 60 |
 | `get_anim_blueprint_info` | `AnimBlueprint` | `read` | false | false | false | 60 |
 | `sequencer_asset_info` | `Sequencer` | `read` | false | false | false | 60 |
+| `spline_actor_create` | `Spline` | `write` | true | true | false | 60 |
+| `spline_component_info` | `Spline` | `read` | false | false | false | 60 |
+| `spline_component_set_points` | `Spline` | `write` | true | true | false | 60 |
 | `import_texture` | `Import` | `write` | true | true | false | 60 |
 | `import_font` | `Import` | `write` | true | true | false | 60 |
 | `capture_widget_preview` | `WidgetPreview` | `read` | false | false | true | 120 |

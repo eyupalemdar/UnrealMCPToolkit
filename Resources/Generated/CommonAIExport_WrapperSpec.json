@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T15:52:51.307247Z",
+  "generated_at_utc": "2026-05-04T16:08:31.366010Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 183,
-  "tcp_command_count": 164,
+  "tool_count": 186,
+  "tcp_command_count": 167,
   "client_only_count": 19,
-  "wrapper_count": 183,
+  "wrapper_count": 186,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -4079,7 +4079,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6252,
+        "line": 6302,
         "params": [
           {
             "name": "asset_path",
@@ -12423,7 +12423,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6332,
+        "line": 6382,
         "params": [
           {
             "name": "asset_path",
@@ -19453,6 +19453,537 @@
         "returns": "str",
         "literal_send_commands": [
           "source_control_status"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "spline_actor_create": {
+      "name": "spline_actor_create",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "spline_actor_create",
+      "literal_send_commands": [
+        "spline_actor_create"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "actor_label": {
+            "type": "string",
+            "default": ""
+          },
+          "component_name": {
+            "type": "string",
+            "default": "SplineComponent"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coordinate_space": {
+            "type": "string",
+            "default": "world"
+          },
+          "point_type": {
+            "type": "string",
+            "default": "Curve"
+          },
+          "closed_loop": {
+            "type": "boolean",
+            "default": false
+          },
+          "set_closed_loop": {
+            "type": "boolean",
+            "default": false
+          },
+          "on_conflict": {
+            "type": "string",
+            "default": "error"
+          },
+          "scope": {
+            "type": "string",
+            "default": ""
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Spline",
+          "required_scope": "write",
+          "mutating": true,
+          "supports_dry_run": true,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        }
+      },
+      "wrapper": {
+        "name": "spline_actor_create",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6248,
+        "params": [
+          {
+            "name": "actor_label",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "component_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'SplineComponent'",
+            "default_value": "SplineComponent",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "location",
+            "kind": "positional_or_keyword",
+            "annotation": "dict | None",
+            "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "points",
+            "kind": "positional_or_keyword",
+            "annotation": "list[dict] | None",
+            "default": "None",
+            "default_value": null,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "coordinate_space",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'world'",
+            "default_value": "world",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "point_type",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'Curve'",
+            "default_value": "Curve",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "closed_loop",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "set_closed_loop",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "on_conflict",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'error'",
+            "default_value": "error",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "scope",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "dry_run",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "spline_actor_create"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "spline_component_info": {
+      "name": "spline_component_info",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "spline_component_info",
+      "literal_send_commands": [
+        "spline_component_info"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "actor_path": {
+            "type": "string",
+            "default": ""
+          },
+          "actor_label": {
+            "type": "string",
+            "default": ""
+          },
+          "actor_name": {
+            "type": "string",
+            "default": ""
+          },
+          "component_name": {
+            "type": "string",
+            "default": ""
+          },
+          "world": {
+            "type": "string",
+            "default": "editor"
+          },
+          "include_points": {
+            "type": "boolean",
+            "default": true
+          },
+          "point_limit": {
+            "type": "integer",
+            "default": 500
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Spline",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "spline_component_info",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6266,
+        "params": [
+          {
+            "name": "actor_path",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "actor_label",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "actor_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "component_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "world",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'editor'",
+            "default_value": "editor",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_points",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "point_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "500",
+            "default_value": 500,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "spline_component_info"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "spline_component_set_points": {
+      "name": "spline_component_set_points",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "spline_component_set_points",
+      "literal_send_commands": [
+        "spline_component_set_points"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "actor_path": {
+            "type": "string",
+            "default": ""
+          },
+          "actor_label": {
+            "type": "string",
+            "default": ""
+          },
+          "actor_name": {
+            "type": "string",
+            "default": ""
+          },
+          "component_name": {
+            "type": "string",
+            "default": ""
+          },
+          "coordinate_space": {
+            "type": "string",
+            "default": "world"
+          },
+          "point_type": {
+            "type": "string",
+            "default": "Curve"
+          },
+          "closed_loop": {
+            "type": "boolean",
+            "default": false
+          },
+          "set_closed_loop": {
+            "type": "boolean",
+            "default": false
+          },
+          "scope": {
+            "type": "string",
+            "default": ""
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Spline",
+          "required_scope": "write",
+          "mutating": true,
+          "supports_dry_run": true,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        }
+      },
+      "wrapper": {
+        "name": "spline_component_set_points",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6280,
+        "params": [
+          {
+            "name": "points",
+            "kind": "positional_or_keyword",
+            "annotation": "list[dict]",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "actor_path",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "actor_label",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "actor_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "component_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "coordinate_space",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'world'",
+            "default_value": "world",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "point_type",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'Curve'",
+            "default_value": "Curve",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "closed_loop",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "set_closed_loop",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "scope",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "dry_run",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "spline_component_set_points"
         ]
       },
       "calls_expected_tcp_command": true

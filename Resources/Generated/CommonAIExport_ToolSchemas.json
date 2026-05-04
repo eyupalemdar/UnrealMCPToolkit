@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T15:52:51.238735Z",
-  "tool_count": 183,
+  "generated_at_utc": "2026-05-04T16:08:31.296927Z",
+  "tool_count": 186,
   "tools": {
     "ping": {
       "type": "object",
@@ -6855,6 +6855,210 @@
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true
+      }
+    },
+    "spline_actor_create": {
+      "type": "object",
+      "properties": {
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "component_name": {
+          "type": "string",
+          "default": "SplineComponent"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "points": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coordinate_space": {
+          "type": "string",
+          "default": "world"
+        },
+        "point_type": {
+          "type": "string",
+          "default": "Curve"
+        },
+        "closed_loop": {
+          "type": "boolean",
+          "default": false
+        },
+        "set_closed_loop": {
+          "type": "boolean",
+          "default": false
+        },
+        "on_conflict": {
+          "type": "string",
+          "default": "error"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Spline",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "spline_component_info": {
+      "type": "object",
+      "properties": {
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "component_name": {
+          "type": "string",
+          "default": ""
+        },
+        "world": {
+          "type": "string",
+          "default": "editor"
+        },
+        "include_points": {
+          "type": "boolean",
+          "default": true
+        },
+        "point_limit": {
+          "type": "integer",
+          "default": 500
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Spline",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "spline_component_set_points": {
+      "type": "object",
+      "properties": {
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "component_name": {
+          "type": "string",
+          "default": ""
+        },
+        "coordinate_space": {
+          "type": "string",
+          "default": "world"
+        },
+        "point_type": {
+          "type": "string",
+          "default": "Curve"
+        },
+        "closed_loop": {
+          "type": "boolean",
+          "default": false
+        },
+        "set_closed_loop": {
+          "type": "boolean",
+          "default": false
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "points"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Spline",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
       }
     },
     "import_texture": {

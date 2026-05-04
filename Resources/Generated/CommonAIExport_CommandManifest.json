@@ -1,11 +1,11 @@
 {
   "schema_version": 3,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T15:52:51.213659Z",
+  "generated_at_utc": "2026-05-04T16:08:31.272388Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
-  "command_count": 164,
-  "category_count": 30,
+  "command_count": 167,
+  "category_count": 31,
   "categories": {
     "AnimBlueprint": 2,
     "Asset": 14,
@@ -33,6 +33,7 @@
     "Reflection": 9,
     "RuntimeInspector": 22,
     "Sequencer": 1,
+    "Spline": 3,
     "Utility": 5,
     "Widget": 11,
     "WidgetPreview": 1,
@@ -2286,6 +2287,48 @@
       "line": 333
     },
     {
+      "name": "spline_actor_create",
+      "category": "Spline",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleSplineActorCreate",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 334
+    },
+    {
+      "name": "spline_component_info",
+      "category": "Spline",
+      "requires_params": true,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleSplineComponentInfo",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 335
+    },
+    {
+      "name": "spline_component_set_points",
+      "category": "Spline",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleSplineComponentSetPoints",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 336
+    },
+    {
       "name": "import_texture",
       "category": "Import",
       "requires_params": true,
@@ -2297,7 +2340,7 @@
       "handler": "HandleImportTexture",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 335
+      "line": 338
     },
     {
       "name": "import_font",
@@ -2311,7 +2354,7 @@
       "handler": "HandleImportFont",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 336
+      "line": 339
     },
     {
       "name": "capture_widget_preview",
@@ -2325,7 +2368,7 @@
       "handler": "HandleCaptureWidgetPreview",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 338
+      "line": 341
     },
     {
       "name": "reload_asset",
@@ -2339,7 +2382,7 @@
       "handler": "HandleReloadAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 339
+      "line": 342
     }
   ]
 }

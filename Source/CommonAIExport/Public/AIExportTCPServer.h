@@ -117,6 +117,11 @@
  * Sequencer commands:
  * - sequencer_asset_info: Inspect LevelSequence MovieScene bindings, tracks, and sections
  *
+ * Spline commands:
+ * - spline_actor_create: Create an editor actor with a SplineComponent
+ * - spline_component_info: Inspect spline components and control points
+ * - spline_component_set_points: Replace spline control points on an editor actor
+ *
  * Asset Import commands:
  * - import_texture: Import a texture file from disk into Content Browser
  * - import_font: Import font files (TTF/OTF) and create a Composite Font asset
@@ -395,6 +400,11 @@ private:
 	FString HandleGetAnimBlueprintInfo(TSharedPtr<class FJsonObject> Params);
 	/** Command handlers - Sequencer */
 	FString HandleSequencerAssetInfo(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers - Spline */
+	FString HandleSplineActorCreate(TSharedPtr<class FJsonObject> Params);
+	FString HandleSplineComponentInfo(TSharedPtr<class FJsonObject> Params);
+	FString HandleSplineComponentSetPoints(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Asset Import */
 	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);

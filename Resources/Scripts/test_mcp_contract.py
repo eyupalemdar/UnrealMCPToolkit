@@ -112,6 +112,7 @@ def _failures() -> list[str]:
         "blueprint_component_remove": ("asset_path", "component_name"),
         "blueprint_component_set_property": ("asset_path", "component_name", "property_path", "value"),
         "sequencer_asset_info": ("asset_path",),
+        "spline_component_set_points": ("points",),
     }.items():
         props = schemas["tools"].get(tool_name, {}).get("properties", {})
         for prop_name in required_props:
@@ -268,6 +269,8 @@ def _failures() -> list[str]:
             "set_asset_property",
             "set_material_property",
             "set_pin_default",
+            "spline_actor_create",
+            "spline_component_set_points",
             "set_variable_default",
             "set_slot_property",
             "set_widget_properties",

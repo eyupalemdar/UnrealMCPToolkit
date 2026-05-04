@@ -6244,6 +6244,56 @@ def sequencer_asset_info(
     return _send_generated_tcp_tool("sequencer_asset_info", locals())
 
 
+@mcp.tool()
+def spline_actor_create(
+    actor_label: str = "",
+    component_name: str = "SplineComponent",
+    location: dict | None = None,
+    points: list[dict] | None = None,
+    coordinate_space: str = "world",
+    point_type: str = "Curve",
+    closed_loop: bool = False,
+    set_closed_loop: bool = False,
+    on_conflict: str = "error",
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """Create an editor actor with a SplineComponent and optional initial points."""
+    return _send_generated_tcp_tool("spline_actor_create", locals())
+
+
+@mcp.tool()
+def spline_component_info(
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    component_name: str = "",
+    world: str = "editor",
+    include_points: bool = True,
+    point_limit: int = 500,
+) -> str:
+    """Inspect spline components and control points on an actor."""
+    return _send_generated_tcp_tool("spline_component_info", locals())
+
+
+@mcp.tool()
+def spline_component_set_points(
+    points: list[dict],
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    component_name: str = "",
+    coordinate_space: str = "world",
+    point_type: str = "Curve",
+    closed_loop: bool = False,
+    set_closed_loop: bool = False,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """Replace spline control points on an editor actor's SplineComponent."""
+    return _send_generated_tcp_tool("spline_component_set_points", locals())
+
+
 # =============================================================================
 # WIDGET PREVIEW CAPTURE (IFTP verify loop — multi-ratio fidelity testing)
 # =============================================================================

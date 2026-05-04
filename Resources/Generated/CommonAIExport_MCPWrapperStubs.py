@@ -1741,6 +1741,52 @@ def sequencer_asset_info(asset_path: str, include_sections: bool = True, binding
     return _format_response(_send_command("sequencer_asset_info", params))
 
 
+def spline_actor_create(actor_label: str = '', component_name: str = 'SplineComponent', location: dict | None = None, points: list[dict] | None = None, coordinate_space: str = 'world', point_type: str = 'Curve', closed_loop: bool = False, set_closed_loop: bool = False, on_conflict: str = 'error', scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `spline_actor_create` (Spline)."""
+    params = {
+        "actor_label": actor_label,
+        "component_name": component_name,
+        "location": location,
+        "points": points,
+        "coordinate_space": coordinate_space,
+        "point_type": point_type,
+        "closed_loop": closed_loop,
+        "set_closed_loop": set_closed_loop,
+        "on_conflict": on_conflict,
+    }
+    return _format_response(_send_command("spline_actor_create", params, _request_meta(scope, dry_run)))
+
+
+def spline_component_info(actor_path: str = '', actor_label: str = '', actor_name: str = '', component_name: str = '', world: str = 'editor', include_points: bool = True, point_limit: int = 500) -> str:
+    """Generated stub for TCP command `spline_component_info` (Spline)."""
+    params = {
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "component_name": component_name,
+        "world": world,
+        "include_points": include_points,
+        "point_limit": point_limit,
+    }
+    return _format_response(_send_command("spline_component_info", params))
+
+
+def spline_component_set_points(points: list[dict], actor_path: str = '', actor_label: str = '', actor_name: str = '', component_name: str = '', coordinate_space: str = 'world', point_type: str = 'Curve', closed_loop: bool = False, set_closed_loop: bool = False, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `spline_component_set_points` (Spline)."""
+    params = {
+        "points": points,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "component_name": component_name,
+        "coordinate_space": coordinate_space,
+        "point_type": point_type,
+        "closed_loop": closed_loop,
+        "set_closed_loop": set_closed_loop,
+    }
+    return _format_response(_send_command("spline_component_set_points", params, _request_meta(scope, dry_run)))
+
+
 def import_texture(source_path: str, package_path: str, asset_name: str = '', compression: str = 'UserInterface2D', srgb: bool = True, mip_gen: str = 'NoMipmaps', lod_group: str = 'UI', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `import_texture` (Import)."""
     params = {
