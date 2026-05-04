@@ -54,6 +54,14 @@ Current audit notes:
   ingestion creates persistent Unreal assets and should not live in transport
   handlers. Exporters are not involved; imported Texture and Font assets are
   covered by their own read/export surfaces.
+- `asset_authoring_registry` already delegates creation and generic property
+  mutation to `UAIAssetFactory`/`UAIDataAssetBuilder`. Registry queries,
+  rename/delete, redirector cleanup, and reload remain command-owned editor
+  lifecycle operations unless their logic starts repeating across typed asset
+  builders.
+- `editor_actor_operations`, `project_introspection_and_plugins`, and
+  `project_config_mutation` remain command-owned because they orchestrate live
+  editor state or project files rather than building a reusable Unreal asset.
 - Static Mesh, Skeletal Mesh, Animation, Niagara, Sequencer, Landscape, Foliage,
   PCG, and level-structure commands are currently read-only diagnostics, so
   adding Builders or Exporters would duplicate the existing command response
