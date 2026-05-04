@@ -464,6 +464,18 @@
       "extension_policy": "Keep reload/cache-refresh operations here so authoring workflows can explicitly depend on them."
     },
     {
+      "id": "static_mesh_diagnostics",
+      "domain": "asset",
+      "title": "StaticMesh asset diagnostics",
+      "status": "native",
+      "category_tags": ["StaticMesh"],
+      "commands": [
+        "static_mesh_info"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for typed StaticMesh asset inspection, including LODs, sections, material slots, sockets, BodySetup collision, bounds, memory estimates, and Nanite state. Generic asset registry and property access stay in asset_authoring_registry; mesh mutation/import/export workflows must be separately reviewed."
+    },
+    {
       "id": "input_settings",
       "domain": "project",
       "title": "Project input mapping settings",

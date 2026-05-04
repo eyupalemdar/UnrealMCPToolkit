@@ -1698,6 +1698,24 @@ def fixup_redirectors(folder_path: str, recursive: bool = True, scope: str = '',
     return _format_response(_send_command("fixup_redirectors", params, _request_meta(scope, dry_run)))
 
 
+def static_mesh_info(asset_path: str, include_lods: bool = True, include_sections: bool = True, include_materials: bool = True, include_sockets: bool = True, include_collision: bool = True, include_nanite: bool = True, lod_limit: int = 8, section_limit: int = 64, material_limit: int = 128, socket_limit: int = 128) -> str:
+    """Generated stub for TCP command `static_mesh_info` (StaticMesh)."""
+    params = {
+        "asset_path": asset_path,
+        "include_lods": include_lods,
+        "include_sections": include_sections,
+        "include_materials": include_materials,
+        "include_sockets": include_sockets,
+        "include_collision": include_collision,
+        "include_nanite": include_nanite,
+        "lod_limit": lod_limit,
+        "section_limit": section_limit,
+        "material_limit": material_limit,
+        "socket_limit": socket_limit,
+    }
+    return _format_response(_send_command("static_mesh_info", params))
+
+
 def add_input_mapping(asset_path: str, input_action_path: str, key: str, triggers: list[str] | None = None, modifiers: list[str] | None = None, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_input_mapping` (Input)."""
     params = {

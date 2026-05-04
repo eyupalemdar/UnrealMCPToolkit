@@ -324,6 +324,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_PARAMS_SCOPE("delete_asset", "Asset", true, 120, "destructive", true, true, HandleDeleteAsset),
 		AI_COMMAND_PARAMS("list_redirectors", "Asset", false, 60, HandleListRedirectors),
 		AI_COMMAND_PARAMS("fixup_redirectors", "Asset", true, 120, HandleFixupRedirectors),
+		AI_COMMAND_PARAMS("static_mesh_info", "StaticMesh", false, 60, HandleStaticMeshInfo),
 
 		AI_COMMAND_PARAMS("add_input_mapping", "Input", true, 60, HandleAddInputMapping),
 		AI_COMMAND_PARAMS("remove_input_mapping", "Input", true, 60, HandleRemoveInputMapping),

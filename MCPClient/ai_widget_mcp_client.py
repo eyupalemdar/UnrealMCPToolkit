@@ -5885,6 +5885,43 @@ def asset_validate_light(asset_path: str) -> str:
 
 
 @mcp.tool()
+def static_mesh_info(
+    asset_path: str,
+    include_lods: bool = True,
+    include_sections: bool = True,
+    include_materials: bool = True,
+    include_sockets: bool = True,
+    include_collision: bool = True,
+    include_nanite: bool = True,
+    lod_limit: int = 8,
+    section_limit: int = 64,
+    material_limit: int = 128,
+    socket_limit: int = 128,
+) -> str:
+    """
+    Inspect a StaticMesh asset without mutating it.
+
+    Args:
+        asset_path: StaticMesh path, e.g. "/Game/Props/SM_Crate".
+        include_lods: Include render LOD summaries.
+        include_sections: Include per-section material/collision/shadow metadata.
+        include_materials: Include material slots and overlay materials.
+        include_sockets: Include StaticMesh sockets.
+        include_collision: Include BodySetup and simple collision counts.
+        include_nanite: Include Nanite settings and render data status.
+        lod_limit: Maximum LOD entries returned.
+        section_limit: Maximum section entries per LOD.
+        material_limit: Maximum material slots returned.
+        socket_limit: Maximum sockets returned.
+
+    Returns:
+        JSON with bounds, memory estimate, LODs, sections, materials, sockets,
+        collision, and Nanite diagnostics.
+    """
+    return _send_generated_tcp_tool("static_mesh_info", locals())
+
+
+@mcp.tool()
 def asset_exists(asset_path: str) -> str:
     """
     Check whether an asset/package exists in the Asset Registry or on disk.

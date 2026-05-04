@@ -1,11 +1,11 @@
 {
   "schema_version": 3,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T17:47:24.678939Z",
+  "generated_at_utc": "2026-05-04T18:01:14.307980Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
-  "command_count": 175,
-  "category_count": 34,
+  "command_count": 176,
+  "category_count": 35,
   "categories": {
     "AnimBlueprint": 2,
     "Asset": 14,
@@ -37,6 +37,7 @@
     "RuntimeInspector": 22,
     "Sequencer": 1,
     "Spline": 3,
+    "StaticMesh": 1,
     "Utility": 5,
     "Widget": 11,
     "WidgetPreview": 1,
@@ -2220,6 +2221,20 @@
       "line": 326
     },
     {
+      "name": "static_mesh_info",
+      "category": "StaticMesh",
+      "requires_params": true,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleStaticMeshInfo",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 327
+    },
+    {
       "name": "add_input_mapping",
       "category": "Input",
       "requires_params": true,
@@ -2231,7 +2246,7 @@
       "handler": "HandleAddInputMapping",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 328
+      "line": 329
     },
     {
       "name": "remove_input_mapping",
@@ -2245,7 +2260,7 @@
       "handler": "HandleRemoveInputMapping",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 329
+      "line": 330
     },
     {
       "name": "get_input_mappings",
@@ -2259,7 +2274,7 @@
       "handler": "HandleGetInputMappings",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 330
+      "line": 331
     },
     {
       "name": "create_anim_blueprint",
@@ -2273,7 +2288,7 @@
       "handler": "HandleCreateAnimBlueprint",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 332
+      "line": 333
     },
     {
       "name": "get_anim_blueprint_info",
@@ -2287,7 +2302,7 @@
       "handler": "HandleGetAnimBlueprintInfo",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 333
+      "line": 334
     },
     {
       "name": "sequencer_asset_info",
@@ -2301,7 +2316,7 @@
       "handler": "HandleSequencerAssetInfo",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 334
+      "line": 335
     },
     {
       "name": "spline_actor_create",
@@ -2315,7 +2330,7 @@
       "handler": "HandleSplineActorCreate",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 335
+      "line": 336
     },
     {
       "name": "spline_component_info",
@@ -2329,7 +2344,7 @@
       "handler": "HandleSplineComponentInfo",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 336
+      "line": 337
     },
     {
       "name": "spline_component_set_points",
@@ -2343,7 +2358,7 @@
       "handler": "HandleSplineComponentSetPoints",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 337
+      "line": 338
     },
     {
       "name": "landscape_info",
@@ -2357,7 +2372,7 @@
       "handler": "HandleLandscapeInfo",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 338
+      "line": 339
     },
     {
       "name": "landscape_sample_height",
@@ -2371,7 +2386,7 @@
       "handler": "HandleLandscapeSampleHeight",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 339
+      "line": 340
     },
     {
       "name": "foliage_info",
@@ -2385,7 +2400,7 @@
       "handler": "HandleFoliageInfo",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 340
+      "line": 341
     },
     {
       "name": "foliage_sample_instances",
@@ -2399,7 +2414,7 @@
       "handler": "HandleFoliageSampleInstances",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 341
+      "line": 342
     },
     {
       "name": "foliage_type_settings",
@@ -2413,7 +2428,7 @@
       "handler": "HandleFoliageTypeSettings",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 342
+      "line": 343
     },
     {
       "name": "pcg_graph_info",
@@ -2427,7 +2442,7 @@
       "handler": "HandlePCGGraphInfo",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 343
+      "line": 344
     },
     {
       "name": "pcg_component_info",
@@ -2441,7 +2456,7 @@
       "handler": "HandlePCGComponentInfo",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 344
+      "line": 345
     },
     {
       "name": "import_texture",
@@ -2455,7 +2470,7 @@
       "handler": "HandleImportTexture",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 346
+      "line": 347
     },
     {
       "name": "import_font",
@@ -2469,7 +2484,7 @@
       "handler": "HandleImportFont",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 347
+      "line": 348
     },
     {
       "name": "capture_widget_preview",
@@ -2483,7 +2498,7 @@
       "handler": "HandleCaptureWidgetPreview",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 349
+      "line": 350
     },
     {
       "name": "reload_asset",
@@ -2497,7 +2512,7 @@
       "handler": "HandleReloadAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 350
+      "line": 351
     }
   ]
 }
