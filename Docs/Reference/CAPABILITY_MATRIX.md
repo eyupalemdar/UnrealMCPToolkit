@@ -47,9 +47,9 @@ Current audit notes:
   editor actor/component state. Add a spline builder only if spline authoring
   grows beyond this command family or starts producing reusable spline assets.
 - `data_tables` uses `UAIDataTableBuilder` because DataTable creation, row
-  mutation, and CSV import are reusable asset authoring. It does not need a
-  dedicated exporter unless DataTable is added to canonical `export_asset`
-  coverage.
+  mutation, and CSV import are reusable asset authoring. It also uses
+  `UAIDataTableExporter` because DataTable rows are useful canonical
+  `export_asset` content.
 - `import_asset_files` uses `UAIAssetImportBuilder` because external file
   ingestion creates persistent Unreal assets and should not live in transport
   handlers. Exporters are not involved; imported Texture and Font assets are

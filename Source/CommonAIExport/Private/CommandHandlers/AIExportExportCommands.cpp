@@ -3,6 +3,7 @@
 #include "CommandHandlers/AIExportExportCommands.h"
 #include "CommandHandlers/AIExportCommandResponse.h"
 #include "AIExportFunctionLibrary.h"
+#include "AIExporterRegistry.h"
 #include "Builders/AIWidgetBlueprintBuilder.h"
 #include "Builders/AIMaterialBuilder.h"
 #include "Builders/AIBlueprintGraphBuilder.h"
@@ -323,28 +324,26 @@ FString HandleListSupportedTypes()
 	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 
 	TArray<TSharedPtr<FJsonValue>> Types;
-	// Blueprints
-	Types.Add(MakeShared<FJsonValueString>(TEXT("WidgetBlueprint")));
-	Types.Add(MakeShared<FJsonValueString>(TEXT("Blueprint")));
-	Types.Add(MakeShared<FJsonValueString>(TEXT("AnimBlueprint")));
-	// Data
-	Types.Add(MakeShared<FJsonValueString>(TEXT("DataAsset")));
-	// Input
-	Types.Add(MakeShared<FJsonValueString>(TEXT("InputAction")));
-	Types.Add(MakeShared<FJsonValueString>(TEXT("InputMappingContext")));
-	// Audio Foundation
-	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundClass")));
-	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundSubmix")));
-	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundConcurrency")));
-	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundAttenuation")));
-	// Audio Modulation
-	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundControlBus")));
-	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundControlBusMix")));
-	Types.Add(MakeShared<FJsonValueString>(TEXT("SoundModulationPatch")));
-	// Physics
-	Types.Add(MakeShared<FJsonValueString>(TEXT("PhysicalMaterial")));
+	TArray<TSharedPtr<FJsonValue>> ClassPaths;
+
+	TArray<UClass*> SupportedClasses = UAIExporterRegistry::Get()->GetAllSupportedClasses();
+	SupportedClasses.Sort([](const UClass& A, const UClass& B)
+	{
+		return A.GetName() < B.GetName();
+	});
+
+	for (UClass* SupportedClass : SupportedClasses)
+	{
+		if (!SupportedClass)
+		{
+			continue;
+		}
+		Types.Add(MakeShared<FJsonValueString>(SupportedClass->GetName()));
+		ClassPaths.Add(MakeShared<FJsonValueString>(SupportedClass->GetPathName()));
+	}
 
 	Data->SetArrayField(TEXT("types"), Types);
+	Data->SetArrayField(TEXT("class_paths"), ClassPaths);
 	return CreateSuccessResponse(Data);
 }
 

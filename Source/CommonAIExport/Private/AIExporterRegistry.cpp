@@ -8,6 +8,7 @@
 #include "Exporters/AIAnimBlueprintExporter.h"
 #include "Exporters/AIWidgetBlueprintExporter.h"
 #include "Exporters/AIDataAssetExporter.h"
+#include "Exporters/AIDataTableExporter.h"
 #include "Exporters/AIInputExporter.h"
 #include "Exporters/AIAudioExporter.h"
 #include "Exporters/AIWorldExporter.h"
@@ -166,6 +167,9 @@ void UAIExporterRegistry::RegisterDefaultExporters()
 
 	// Data Asset (priority 40)
 	RegisterExporter(UAIDataAssetExporter::StaticClass());
+
+	// DataTable (priority 50)
+	RegisterExporter(UAIDataTableExporter::StaticClass());
 
 	// Input (priority 50)
 	RegisterExporter(UAIInputExporter::StaticClass());
