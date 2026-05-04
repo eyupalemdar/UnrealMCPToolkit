@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T15:22:55.201591Z",
-  "tool_count": 178,
+  "generated_at_utc": "2026-05-04T15:41:34.193799Z",
+  "tool_count": 182,
   "tools": {
     "ping": {
       "type": "object",
@@ -5008,6 +5008,194 @@
         "source": "tcp_command",
         "schema_source": "python_mcp_signature",
         "category": "BlueprintUtility",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "blueprint_component_list": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "BlueprintComponent",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "blueprint_component_add": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "component_name": {
+          "type": "string"
+        },
+        "component_class": {
+          "type": "string"
+        },
+        "parent_component_name": {
+          "type": "string",
+          "default": ""
+        },
+        "compile_blueprint": {
+          "type": "boolean",
+          "default": true
+        },
+        "save_asset": {
+          "type": "boolean",
+          "default": false
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "asset_path",
+        "component_name",
+        "component_class"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "BlueprintComponent",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "blueprint_component_remove": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "component_name": {
+          "type": "string"
+        },
+        "promote_children": {
+          "type": "boolean",
+          "default": true
+        },
+        "compile_blueprint": {
+          "type": "boolean",
+          "default": true
+        },
+        "save_asset": {
+          "type": "boolean",
+          "default": false
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "asset_path",
+        "component_name"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "BlueprintComponent",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "blueprint_component_set_property": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "component_name": {
+          "type": "string"
+        },
+        "property_path": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "compile_blueprint": {
+          "type": "boolean",
+          "default": false
+        },
+        "save_asset": {
+          "type": "boolean",
+          "default": false
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "asset_path",
+        "component_name",
+        "property_path",
+        "value"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "BlueprintComponent",
         "required_scope": "write",
         "mutating": true,
         "supports_dry_run": true,

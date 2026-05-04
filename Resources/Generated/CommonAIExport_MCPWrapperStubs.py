@@ -1291,6 +1291,52 @@ def reparent_blueprint(asset_path: str, new_parent_class: str, scope: str = '', 
     return _format_response(_send_command("reparent_blueprint", params, _request_meta(scope, dry_run)))
 
 
+def blueprint_component_list(asset_path: str) -> str:
+    """Generated stub for TCP command `blueprint_component_list` (BlueprintComponent)."""
+    params = {
+        "asset_path": asset_path,
+    }
+    return _format_response(_send_command("blueprint_component_list", params))
+
+
+def blueprint_component_add(asset_path: str, component_name: str, component_class: str, parent_component_name: str = '', compile_blueprint: bool = True, save_asset: bool = False, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `blueprint_component_add` (BlueprintComponent)."""
+    params = {
+        "asset_path": asset_path,
+        "component_name": component_name,
+        "component_class": component_class,
+        "parent_component_name": parent_component_name,
+        "compile_blueprint": compile_blueprint,
+        "save_asset": save_asset,
+    }
+    return _format_response(_send_command("blueprint_component_add", params, _request_meta(scope, dry_run)))
+
+
+def blueprint_component_remove(asset_path: str, component_name: str, promote_children: bool = True, compile_blueprint: bool = True, save_asset: bool = False, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `blueprint_component_remove` (BlueprintComponent)."""
+    params = {
+        "asset_path": asset_path,
+        "component_name": component_name,
+        "promote_children": promote_children,
+        "compile_blueprint": compile_blueprint,
+        "save_asset": save_asset,
+    }
+    return _format_response(_send_command("blueprint_component_remove", params, _request_meta(scope, dry_run)))
+
+
+def blueprint_component_set_property(asset_path: str, component_name: str, property_path: str, value: str, compile_blueprint: bool = False, save_asset: bool = False, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `blueprint_component_set_property` (BlueprintComponent)."""
+    params = {
+        "asset_path": asset_path,
+        "component_name": component_name,
+        "property_path": property_path,
+        "value": value,
+        "compile_blueprint": compile_blueprint,
+        "save_asset": save_asset,
+    }
+    return _format_response(_send_command("blueprint_component_set_property", params, _request_meta(scope, dry_run)))
+
+
 def create_material(package_path: str, asset_name: str, domain: str = 'Surface', blend_mode: str = 'Opaque', shading_model: str = 'DefaultLit', two_sided: bool = False, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `create_material` (Material)."""
     params = {

@@ -280,6 +280,10 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_PARAMS("remove_variable", "BlueprintVariable", true, 60, HandleRemoveVariable),
 		AI_COMMAND_PARAMS("get_variables", "BlueprintVariable", false, 60, HandleGetVariables),
 		AI_COMMAND_PARAMS("reparent_blueprint", "BlueprintUtility", true, 60, HandleReparentBlueprint),
+		AI_COMMAND_PARAMS("blueprint_component_list", "BlueprintComponent", false, 60, HandleBlueprintComponentList),
+		AI_COMMAND_PARAMS("blueprint_component_add", "BlueprintComponent", true, 60, HandleBlueprintComponentAdd),
+		AI_COMMAND_PARAMS("blueprint_component_remove", "BlueprintComponent", true, 60, HandleBlueprintComponentRemove),
+		AI_COMMAND_PARAMS("blueprint_component_set_property", "BlueprintComponent", true, 60, HandleBlueprintComponentSetProperty),
 
 		AI_COMMAND_PARAMS("create_material", "Material", true, 60, HandleCreateMaterial),
 		AI_COMMAND_PARAMS("set_material_property", "Material", true, 60, HandleSetMaterialProperty),

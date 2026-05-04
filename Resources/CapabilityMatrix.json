@@ -356,6 +356,21 @@
       "extension_policy": "Keep parent-class changes isolated here because they affect compile and asset compatibility."
     },
     {
+      "id": "blueprint_components",
+      "domain": "blueprint",
+      "title": "Actor Blueprint SimpleConstructionScript components",
+      "status": "native",
+      "category_tags": ["BlueprintComponent"],
+      "commands": [
+        "blueprint_component_list",
+        "blueprint_component_add",
+        "blueprint_component_remove",
+        "blueprint_component_set_property"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for Actor Blueprint SCS component authoring. Runtime component inspection stays under runtime_diagnostics; Widget tree composition stays under widget_blueprint_authoring."
+    },
+    {
       "id": "material_graph_and_instances",
       "domain": "material",
       "title": "Material graph, compile, and material instance automation",

@@ -71,6 +71,12 @@
  * Blueprint Utility commands:
  * - reparent_blueprint: Change the parent class of a Blueprint
  *
+ * Blueprint Component commands:
+ * - blueprint_component_list: List SCS components on Actor Blueprints
+ * - blueprint_component_add: Add an SCS component node
+ * - blueprint_component_remove: Remove an SCS component node
+ * - blueprint_component_set_property: Set a component template property
+ *
  * Material Builder commands:
  * - create_material: Create a new Material asset
  * - set_material_property: Set material domain/blend/shading
@@ -329,6 +335,10 @@ private:
 
 	/** Command handlers — Blueprint Utility */
 	FString HandleReparentBlueprint(TSharedPtr<class FJsonObject> Params);
+	FString HandleBlueprintComponentList(TSharedPtr<class FJsonObject> Params);
+	FString HandleBlueprintComponentAdd(TSharedPtr<class FJsonObject> Params);
+	FString HandleBlueprintComponentRemove(TSharedPtr<class FJsonObject> Params);
+	FString HandleBlueprintComponentSetProperty(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Material Builder */
 	FString HandleCreateMaterial(TSharedPtr<class FJsonObject> Params);

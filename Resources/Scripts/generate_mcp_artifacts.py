@@ -1149,6 +1149,7 @@ def update_ai_reference(command_manifest: dict, tool_schemas: dict, path: Path =
     """Replace the generated AI_REFERENCE tool summary block."""
     text = path.read_text(encoding="utf-8")
     replacement = build_ai_reference_tool_summary(command_manifest, tool_schemas)
+    tool_count = str(tool_schemas["tool_count"])
 
     if AI_REFERENCE_SUMMARY_BEGIN in text and AI_REFERENCE_SUMMARY_END in text:
         start = text.index("## Tool Count by Category")
@@ -1164,6 +1165,9 @@ def update_ai_reference(command_manifest: dict, tool_schemas: dict, path: Path =
             raise RuntimeError("AI_REFERENCE.md has no horizontal rule after Tool Count by Category")
         next_rule = start + rule_match.start()
         new_text = text[:start] + replacement + text[next_rule:]
+
+    new_text = re.sub(r"(>\s*)\d+(\s+MCP tools across)", rf"\g<1>{tool_count}\g<2>", new_text, count=1)
+    new_text = re.sub(r"(\*)\d+(\s+MCP tools, covering)", rf"\g<1>{tool_count}\g<2>", new_text, count=1)
 
     if new_text != text:
         path.write_text(new_text, encoding="utf-8")

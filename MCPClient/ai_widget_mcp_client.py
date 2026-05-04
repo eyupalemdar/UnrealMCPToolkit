@@ -3993,6 +3993,107 @@ def reparent_blueprint(
 
 
 # =============================================================================
+# BLUEPRINT COMPONENTS
+# =============================================================================
+
+@mcp.tool()
+def blueprint_component_list(asset_path: str) -> str:
+    """
+    List SimpleConstructionScript components on an Actor Blueprint.
+
+    Args:
+        asset_path: Asset path of the Actor Blueprint.
+
+    Returns:
+        JSON with flat SCS component records and root component names.
+    """
+    return _send_generated_tcp_tool("blueprint_component_list", locals())
+
+
+@mcp.tool()
+def blueprint_component_add(
+    asset_path: str,
+    component_name: str,
+    component_class: str,
+    parent_component_name: str = "",
+    compile_blueprint: bool = True,
+    save_asset: bool = False,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """
+    Add a component node to an Actor Blueprint's SimpleConstructionScript.
+
+    Args:
+        asset_path: Asset path of the Actor Blueprint.
+        component_name: New component variable name.
+        component_class: Component class path or loaded class name,
+            e.g. "/Script/Engine.StaticMeshComponent".
+        parent_component_name: Optional scene component parent name.
+        compile_blueprint: Compile the Blueprint after the structural change.
+        save_asset: Save the Blueprint package after mutation.
+
+    Returns:
+        JSON with the created component record.
+    """
+    return _send_generated_tcp_tool("blueprint_component_add", locals())
+
+
+@mcp.tool()
+def blueprint_component_remove(
+    asset_path: str,
+    component_name: str,
+    promote_children: bool = True,
+    compile_blueprint: bool = True,
+    save_asset: bool = False,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """
+    Remove a component node from an Actor Blueprint's SimpleConstructionScript.
+
+    Args:
+        asset_path: Asset path of the Actor Blueprint.
+        component_name: Existing component variable name.
+        promote_children: Promote child scene components when removing this node.
+        compile_blueprint: Compile the Blueprint after the structural change.
+        save_asset: Save the Blueprint package after mutation.
+
+    Returns:
+        JSON with removal metadata and the removed component record.
+    """
+    return _send_generated_tcp_tool("blueprint_component_remove", locals())
+
+
+@mcp.tool()
+def blueprint_component_set_property(
+    asset_path: str,
+    component_name: str,
+    property_path: str,
+    value: str,
+    compile_blueprint: bool = False,
+    save_asset: bool = False,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """
+    Set a property on a Blueprint component template.
+
+    Args:
+        asset_path: Asset path of the Actor Blueprint.
+        component_name: Existing component variable name.
+        property_path: Component template property path, supporting dot paths.
+        value: Unreal ImportText value.
+        compile_blueprint: Compile the Blueprint after the property change.
+        save_asset: Save the Blueprint package after mutation.
+
+    Returns:
+        JSON with the updated component record and property metadata.
+    """
+    return _send_generated_tcp_tool("blueprint_component_set_property", locals())
+
+
+# =============================================================================
 # WIDGET TREE MANIPULATION
 # =============================================================================
 

@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 159
-- MCP tools: 178
-- Categories: 28
+- TCP commands: 163
+- MCP tools: 182
+- Categories: 29
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
@@ -18,6 +18,7 @@
 | `Asset` | 14 |
 | `AssetLifecycle` | 1 |
 | `AsyncJob` | 6 |
+| `BlueprintComponent` | 4 |
 | `BlueprintGraph` | 14 |
 | `BlueprintUtility` | 1 |
 | `BlueprintVariable` | 4 |
@@ -161,6 +162,10 @@
 | `remove_variable` | `BlueprintVariable` | `write` | true | true | false | 60 |
 | `get_variables` | `BlueprintVariable` | `read` | false | false | false | 60 |
 | `reparent_blueprint` | `BlueprintUtility` | `write` | true | true | false | 60 |
+| `blueprint_component_list` | `BlueprintComponent` | `read` | false | false | false | 60 |
+| `blueprint_component_add` | `BlueprintComponent` | `write` | true | true | false | 60 |
+| `blueprint_component_remove` | `BlueprintComponent` | `write` | true | true | false | 60 |
+| `blueprint_component_set_property` | `BlueprintComponent` | `write` | true | true | false | 60 |
 | `create_material` | `Material` | `write` | true | true | false | 60 |
 | `set_material_property` | `Material` | `write` | true | true | false | 60 |
 | `add_expression` | `Material` | `write` | true | true | false | 60 |

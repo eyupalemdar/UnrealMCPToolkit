@@ -107,6 +107,16 @@ def _failures() -> list[str]:
         if prop_name not in runtime_component_props:
             failures.append(f"runtime_component_list schema missing {prop_name}")
 
+    for tool_name, required_props in {
+        "blueprint_component_add": ("asset_path", "component_name", "component_class"),
+        "blueprint_component_remove": ("asset_path", "component_name"),
+        "blueprint_component_set_property": ("asset_path", "component_name", "property_path", "value"),
+    }.items():
+        props = schemas["tools"].get(tool_name, {}).get("properties", {})
+        for prop_name in required_props:
+            if prop_name not in props:
+                failures.append(f"{tool_name} schema missing {prop_name}")
+
     if COMMAND_MANIFEST_PATH.exists():
         generated_manifest = json.loads(COMMAND_MANIFEST_PATH.read_text(encoding="utf-8"))
         generated_names = [command["name"] for command in generated_manifest.get("commands", [])]
@@ -233,6 +243,9 @@ def _failures() -> list[str]:
             "pie_start",
             "pie_stop",
             "add_widget",
+            "blueprint_component_add",
+            "blueprint_component_remove",
+            "blueprint_component_set_property",
             "compile_and_save",
             "remove_input_mapping",
             "rename_asset",
