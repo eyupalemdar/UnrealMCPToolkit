@@ -217,6 +217,15 @@ private:
 	FString HandleListTests(TSharedPtr<class FJsonObject> Params);
 	FString HandleRunTests(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetTestLog(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectInfo(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectPluginList(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectPluginSetEnabled(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectModuleList(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectConfigGet(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectConfigSet(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectConfigDelete(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectConfigListSections(TSharedPtr<class FJsonObject> Params);
+	FString HandleProjectConfigListKeys(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskSubmit(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskStatus(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskResult(TSharedPtr<class FJsonObject> Params);

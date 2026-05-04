@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 145
-- MCP tools: 164
-- Categories: 26
+- TCP commands: 154
+- MCP tools: 173
+- Categories: 28
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
@@ -34,6 +34,8 @@
 | `Input` | 3 |
 | `Material` | 15 |
 | `PIE` | 3 |
+| `Project` | 4 |
+| `ProjectConfig` | 5 |
 | `Reflection` | 4 |
 | `RuntimeInspector` | 22 |
 | `Utility` | 5 |
@@ -61,6 +63,15 @@
 | `list_tests` | `Workflow` | `read` | false | false | true | 300 |
 | `run_tests` | `Workflow` | `read` | false | false | true | 1800 |
 | `get_test_log` | `Workflow` | `read` | false | false | false | 30 |
+| `project_info` | `Project` | `read` | false | false | false | 30 |
+| `project_plugin_list` | `Project` | `read` | false | false | false | 30 |
+| `project_plugin_set_enabled` | `Project` | `write` | true | true | false | 30 |
+| `project_module_list` | `Project` | `read` | false | false | false | 30 |
+| `project_config_get` | `ProjectConfig` | `read` | false | false | false | 30 |
+| `project_config_set` | `ProjectConfig` | `write` | true | true | false | 30 |
+| `project_config_delete` | `ProjectConfig` | `write` | true | true | false | 30 |
+| `project_config_list_sections` | `ProjectConfig` | `read` | false | false | false | 30 |
+| `project_config_list_keys` | `ProjectConfig` | `read` | false | false | false | 30 |
 | `task_submit` | `AsyncJob` | `read` | false | false | false | 0 |
 | `task_status` | `AsyncJob` | `read` | false | false | false | 0 |
 | `task_result` | `AsyncJob` | `read` | false | false | false | 0 |

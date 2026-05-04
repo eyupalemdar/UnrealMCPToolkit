@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T14:11:18.296611Z",
+  "generated_at_utc": "2026-05-04T14:49:54.019839Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 164,
-  "tcp_command_count": 145,
+  "tool_count": 173,
+  "tcp_command_count": 154,
   "client_only_count": 19,
-  "wrapper_count": 164,
+  "wrapper_count": 173,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -66,7 +66,7 @@
       "wrapper": {
         "name": "actor_delete",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2718,
+        "line": 2832,
         "params": [
           {
             "name": "actor_path",
@@ -167,7 +167,7 @@
       "wrapper": {
         "name": "actor_list",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2629,
+        "line": 2743,
         "params": [
           {
             "name": "name_filter",
@@ -304,7 +304,7 @@
       "wrapper": {
         "name": "actor_set_transform",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2684,
+        "line": 2798,
         "params": [
           {
             "name": "actor_path",
@@ -470,7 +470,7 @@
       "wrapper": {
         "name": "actor_spawn",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2655,
+        "line": 2769,
         "params": [
           {
             "name": "class_path",
@@ -606,7 +606,7 @@
       "wrapper": {
         "name": "add_branch_node",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5140,
+        "line": 5254,
         "params": [
           {
             "name": "asset_path",
@@ -746,7 +746,7 @@
       "wrapper": {
         "name": "add_call_parent_function",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5166,
+        "line": 5280,
         "params": [
           {
             "name": "asset_path",
@@ -887,7 +887,7 @@
       "wrapper": {
         "name": "add_cdo_array_element",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4852,
+        "line": 4966,
         "params": [
           {
             "name": "asset_path",
@@ -1018,7 +1018,7 @@
       "wrapper": {
         "name": "add_custom_event",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4994,
+        "line": 5108,
         "params": [
           {
             "name": "asset_path",
@@ -1160,7 +1160,7 @@
       "wrapper": {
         "name": "add_datatable_row",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4602,
+        "line": 4716,
         "params": [
           {
             "name": "asset_path",
@@ -1291,7 +1291,7 @@
       "wrapper": {
         "name": "add_event_node",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4963,
+        "line": 5077,
         "params": [
           {
             "name": "asset_path",
@@ -1436,7 +1436,7 @@
       "wrapper": {
         "name": "add_expression",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4241,
+        "line": 4355,
         "params": [
           {
             "name": "asset_path",
@@ -1580,7 +1580,7 @@
       "wrapper": {
         "name": "add_function_call",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5022,
+        "line": 5136,
         "params": [
           {
             "name": "asset_path",
@@ -1752,7 +1752,7 @@
       "wrapper": {
         "name": "add_input_mapping",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5807,
+        "line": 5921,
         "params": [
           {
             "name": "asset_path",
@@ -1892,7 +1892,7 @@
       "wrapper": {
         "name": "add_make_struct_node",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5112,
+        "line": 5226,
         "params": [
           {
             "name": "asset_path",
@@ -2041,7 +2041,7 @@
       "wrapper": {
         "name": "add_variable",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5344,
+        "line": 5458,
         "params": [
           {
             "name": "asset_path",
@@ -2190,7 +2190,7 @@
       "wrapper": {
         "name": "add_variable_get_node",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5056,
+        "line": 5170,
         "params": [
           {
             "name": "asset_path",
@@ -2339,7 +2339,7 @@
       "wrapper": {
         "name": "add_variable_set_node",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5084,
+        "line": 5198,
         "params": [
           {
             "name": "asset_path",
@@ -2480,7 +2480,7 @@
       "wrapper": {
         "name": "add_widget",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3870,
+        "line": 3984,
         "params": [
           {
             "name": "asset_path",
@@ -2583,7 +2583,7 @@
       "wrapper": {
         "name": "asset_exists",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5554,
+        "line": 5668,
         "params": [
           {
             "name": "asset_path",
@@ -2660,7 +2660,7 @@
       "wrapper": {
         "name": "asset_search",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5506,
+        "line": 5620,
         "params": [
           {
             "name": "path",
@@ -2837,7 +2837,7 @@
       "wrapper": {
         "name": "asset_transfer_execute",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3075,
+        "line": 3189,
         "params": [
           {
             "name": "source_asset_path",
@@ -3042,7 +3042,7 @@
       "wrapper": {
         "name": "asset_transfer_plan",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2912,
+        "line": 3026,
         "params": [
           {
             "name": "source_asset_path",
@@ -3211,7 +3211,7 @@
       "wrapper": {
         "name": "asset_transfer_verify",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3261,
+        "line": 3375,
         "params": [
           {
             "name": "source_asset_path",
@@ -3347,7 +3347,7 @@
       "wrapper": {
         "name": "asset_validate_light",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5539,
+        "line": 5653,
         "params": [
           {
             "name": "asset_path",
@@ -3587,7 +3587,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5925,
+        "line": 6039,
         "params": [
           {
             "name": "asset_path",
@@ -3771,7 +3771,7 @@
       "wrapper": {
         "name": "client_scope_policy",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1639,
+        "line": 1753,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -3872,7 +3872,7 @@
       "wrapper": {
         "name": "code_transfer_execute",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3467,
+        "line": 3581,
         "params": [
           {
             "name": "source_paths",
@@ -4093,7 +4093,7 @@
       "wrapper": {
         "name": "code_transfer_plan",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3321,
+        "line": 3435,
         "params": [
           {
             "name": "source_paths",
@@ -4278,7 +4278,7 @@
       "wrapper": {
         "name": "code_transfer_verify",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3603,
+        "line": 3717,
         "params": [
           {
             "name": "source_paths",
@@ -4486,7 +4486,7 @@
       "wrapper": {
         "name": "commonai_prompt_get",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1586,
+        "line": 1700,
         "params": [
           {
             "name": "name",
@@ -4541,7 +4541,7 @@
       "wrapper": {
         "name": "commonai_prompts_list",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1567,
+        "line": 1681,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -4583,7 +4583,7 @@
       "wrapper": {
         "name": "commonai_resource_read",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1553,
+        "line": 1667,
         "params": [
           {
             "name": "uri",
@@ -4629,7 +4629,7 @@
       "wrapper": {
         "name": "commonai_resources_list",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1533,
+        "line": 1647,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -4682,7 +4682,7 @@
       "wrapper": {
         "name": "compile_and_save",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3822,
+        "line": 3936,
         "params": [
           {
             "name": "asset_path",
@@ -4766,7 +4766,7 @@
       "wrapper": {
         "name": "compile_material",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4410,
+        "line": 4524,
         "params": [
           {
             "name": "asset_path",
@@ -4866,7 +4866,7 @@
       "wrapper": {
         "name": "connect_expressions",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4306,
+        "line": 4420,
         "params": [
           {
             "name": "asset_path",
@@ -5006,7 +5006,7 @@
       "wrapper": {
         "name": "connect_pins",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5227,
+        "line": 5341,
         "params": [
           {
             "name": "asset_path",
@@ -5147,7 +5147,7 @@
       "wrapper": {
         "name": "connect_to_material_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4334,
+        "line": 4448,
         "params": [
           {
             "name": "asset_path",
@@ -5392,7 +5392,7 @@
       "wrapper": {
         "name": "create_anim_blueprint",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5880,
+        "line": 5994,
         "params": [
           {
             "name": "package_path",
@@ -5522,7 +5522,7 @@
       "wrapper": {
         "name": "create_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5438,
+        "line": 5552,
         "params": [
           {
             "name": "package_path",
@@ -5641,7 +5641,7 @@
       "wrapper": {
         "name": "create_datatable",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4574,
+        "line": 4688,
         "params": [
           {
             "name": "package_path",
@@ -5763,7 +5763,7 @@
       "wrapper": {
         "name": "create_material",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4187,
+        "line": 4301,
         "params": [
           {
             "name": "package_path",
@@ -5900,7 +5900,7 @@
       "wrapper": {
         "name": "create_material_instance",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4459,
+        "line": 4573,
         "params": [
           {
             "name": "package_path",
@@ -6010,7 +6010,7 @@
       "wrapper": {
         "name": "create_widget_blueprint",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3799,
+        "line": 3913,
         "params": [
           {
             "name": "package_path",
@@ -6116,7 +6116,7 @@
       "wrapper": {
         "name": "delete_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5764,
+        "line": 5878,
         "params": [
           {
             "name": "asset_path",
@@ -6217,7 +6217,7 @@
       "wrapper": {
         "name": "disconnect_input",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4364,
+        "line": 4478,
         "params": [
           {
             "name": "asset_path",
@@ -6339,7 +6339,7 @@
       "wrapper": {
         "name": "editor_call",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1841,
+        "line": 1955,
         "params": [
           {
             "name": "command",
@@ -6456,7 +6456,7 @@
       "wrapper": {
         "name": "editor_console_command",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2834,
+        "line": 2948,
         "params": [
           {
             "name": "command",
@@ -6581,7 +6581,7 @@
       "wrapper": {
         "name": "editor_log_read",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2857,
+        "line": 2971,
         "params": [
           {
             "name": "max_lines",
@@ -6664,7 +6664,7 @@
       "wrapper": {
         "name": "editor_world_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1894,
+        "line": 2008,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -6708,7 +6708,7 @@
       "wrapper": {
         "name": "editors_list",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1815,
+        "line": 1929,
         "params": [
           {
             "name": "include_stale",
@@ -6811,7 +6811,7 @@
       "wrapper": {
         "name": "ensure_function_graph",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5194,
+        "line": 5308,
         "params": [
           {
             "name": "asset_path",
@@ -6940,7 +6940,7 @@
       "wrapper": {
         "name": "export_blueprint",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4160,
+        "line": 4274,
         "params": [
           {
             "name": "asset_path",
@@ -7037,7 +7037,7 @@
       "wrapper": {
         "name": "export_widget",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4137,
+        "line": 4251,
         "params": [
           {
             "name": "asset_path",
@@ -7138,7 +7138,7 @@
       "wrapper": {
         "name": "fixup_redirectors",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5671,
+        "line": 5785,
         "params": [
           {
             "name": "folder_path",
@@ -7306,7 +7306,7 @@
       "wrapper": {
         "name": "get_anim_blueprint_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5907,
+        "line": 6021,
         "params": [
           {
             "name": "asset_path",
@@ -7364,7 +7364,7 @@
       "wrapper": {
         "name": "get_asset_properties",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5492,
+        "line": 5606,
         "params": [
           {
             "name": "asset_path",
@@ -7426,7 +7426,7 @@
       "wrapper": {
         "name": "get_cdo_array_length",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4941,
+        "line": 5055,
         "params": [
           {
             "name": "asset_path",
@@ -7493,7 +7493,7 @@
       "wrapper": {
         "name": "get_cdo_properties",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4759,
+        "line": 4873,
         "params": [
           {
             "name": "asset_path",
@@ -7551,7 +7551,7 @@
       "wrapper": {
         "name": "get_datatable_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4586,
+        "line": 4700,
         "params": [
           {
             "name": "asset_path",
@@ -7609,7 +7609,7 @@
       "wrapper": {
         "name": "get_dependencies",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5619,
+        "line": 5733,
         "params": [
           {
             "name": "asset_path",
@@ -7671,7 +7671,7 @@
       "wrapper": {
         "name": "get_graph",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5306,
+        "line": 5420,
         "params": [
           {
             "name": "asset_path",
@@ -7747,7 +7747,7 @@
       "wrapper": {
         "name": "get_input_mappings",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5862,
+        "line": 5976,
         "params": [
           {
             "name": "asset_path",
@@ -7805,7 +7805,7 @@
       "wrapper": {
         "name": "get_material_graph",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4430,
+        "line": 4544,
         "params": [
           {
             "name": "asset_path",
@@ -7863,7 +7863,7 @@
       "wrapper": {
         "name": "get_material_instance_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4532,
+        "line": 4646,
         "params": [
           {
             "name": "asset_path",
@@ -7921,7 +7921,7 @@
       "wrapper": {
         "name": "get_referencers",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5596,
+        "line": 5710,
         "params": [
           {
             "name": "asset_path",
@@ -8049,7 +8049,7 @@
       "wrapper": {
         "name": "get_variables",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5420,
+        "line": 5534,
         "params": [
           {
             "name": "asset_path",
@@ -8107,7 +8107,7 @@
       "wrapper": {
         "name": "get_widget_tree",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4095,
+        "line": 4209,
         "params": [
           {
             "name": "asset_path",
@@ -8161,7 +8161,7 @@
       "wrapper": {
         "name": "guarded_build_status",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1601,
+        "line": 1715,
         "params": [
           {
             "name": "tail_lines",
@@ -8236,7 +8236,7 @@
       "wrapper": {
         "name": "import_datatable_csv",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4627,
+        "line": 4741,
         "params": [
           {
             "name": "asset_path",
@@ -8363,7 +8363,7 @@
       "wrapper": {
         "name": "import_font",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4693,
+        "line": 4807,
         "params": [
           {
             "name": "package_path",
@@ -8498,7 +8498,7 @@
       "wrapper": {
         "name": "import_texture",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4644,
+        "line": 4758,
         "params": [
           {
             "name": "source_path",
@@ -8636,7 +8636,7 @@
       "wrapper": {
         "name": "level_open",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2745,
+        "line": 2859,
         "params": [
           {
             "name": "map_path",
@@ -8715,7 +8715,7 @@
       "wrapper": {
         "name": "level_save_current",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2766,
+        "line": 2880,
         "params": [
           {
             "name": "scope",
@@ -8818,7 +8818,7 @@
       "wrapper": {
         "name": "list_expression_classes",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4444,
+        "line": 4558,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -8866,7 +8866,7 @@
       "wrapper": {
         "name": "list_graphs",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5326,
+        "line": 5440,
         "params": [
           {
             "name": "asset_path",
@@ -8928,7 +8928,7 @@
       "wrapper": {
         "name": "list_redirectors",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5642,
+        "line": 5756,
         "params": [
           {
             "name": "folder_path",
@@ -8998,7 +8998,7 @@
       "wrapper": {
         "name": "list_supported_types",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4127,
+        "line": 4241,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -9097,7 +9097,7 @@
       "wrapper": {
         "name": "list_widget_classes",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4112,
+        "line": 4226,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -9141,7 +9141,7 @@
       "wrapper": {
         "name": "mcp_server_metadata_export",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1698,
+        "line": 1812,
         "params": [
           {
             "name": "output_path",
@@ -9216,7 +9216,7 @@
       "wrapper": {
         "name": "move_widget",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3925,
+        "line": 4039,
         "params": [
           {
             "name": "asset_path",
@@ -9315,7 +9315,7 @@
       "wrapper": {
         "name": "native_http_status",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1733,
+        "line": 1847,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -9351,7 +9351,7 @@
       "wrapper": {
         "name": "native_mcp_probe",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1744,
+        "line": 1858,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -9447,7 +9447,7 @@
       "wrapper": {
         "name": "object_call_function",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4829,
+        "line": 4943,
         "params": [
           {
             "name": "function_name",
@@ -9636,7 +9636,7 @@
       "wrapper": {
         "name": "object_get_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4794,
+        "line": 4908,
         "params": [
           {
             "name": "property_path",
@@ -9813,7 +9813,7 @@
       "wrapper": {
         "name": "object_query",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4774,
+        "line": 4888,
         "params": [
           {
             "name": "object_path",
@@ -10023,7 +10023,7 @@
       "wrapper": {
         "name": "object_set_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4810,
+        "line": 4924,
         "params": [
           {
             "name": "property_path",
@@ -10183,7 +10183,7 @@
       "wrapper": {
         "name": "pie_start",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2796,
+        "line": 2910,
         "params": [
           {
             "name": "scope",
@@ -10244,7 +10244,7 @@
       "wrapper": {
         "name": "pie_status",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2785,
+        "line": 2899,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -10295,7 +10295,7 @@
       "wrapper": {
         "name": "pie_stop",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2815,
+        "line": 2929,
         "params": [
           {
             "name": "scope",
@@ -10362,6 +10362,754 @@
         "returns": "str",
         "literal_send_commands": [
           "ping"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "project_config_delete": {
+      "name": "project_config_delete",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "project_config_delete",
+      "literal_send_commands": [
+        "project_config_delete"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "config_name": {
+            "type": "string",
+            "default": "Engine"
+          },
+          "create_backup": {
+            "type": "boolean",
+            "default": true
+          },
+          "scope": {
+            "type": "string",
+            "default": "write"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "section",
+          "key"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "ProjectConfig",
+          "required_scope": "write",
+          "mutating": true,
+          "supports_dry_run": true,
+          "async_candidate": false,
+          "timeout_seconds": 30
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        }
+      },
+      "wrapper": {
+        "name": "project_config_delete",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 1605,
+        "params": [
+          {
+            "name": "section",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "key",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "config_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'Engine'",
+            "default_value": "Engine",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "create_backup",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "scope",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'write'",
+            "default_value": "write",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "dry_run",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "project_config_delete"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "project_config_get": {
+      "name": "project_config_get",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "project_config_get",
+      "literal_send_commands": [
+        "project_config_get"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "config_name": {
+            "type": "string",
+            "default": "Engine"
+          }
+        },
+        "required": [
+          "section",
+          "key"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "ProjectConfig",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 30
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "project_config_get",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 1573,
+        "params": [
+          {
+            "name": "section",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "key",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "config_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'Engine'",
+            "default_value": "Engine",
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "project_config_get"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "project_config_list_keys": {
+      "name": "project_config_list_keys",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "project_config_list_keys",
+      "literal_send_commands": [
+        "project_config_list_keys"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string"
+          },
+          "config_name": {
+            "type": "string",
+            "default": "Engine"
+          },
+          "include_values": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "section"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "ProjectConfig",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 30
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "project_config_list_keys",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 1633,
+        "params": [
+          {
+            "name": "section",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "config_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'Engine'",
+            "default_value": "Engine",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_values",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "project_config_list_keys"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "project_config_list_sections": {
+      "name": "project_config_list_sections",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "project_config_list_sections",
+      "literal_send_commands": [
+        "project_config_list_sections"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "config_name": {
+            "type": "string",
+            "default": "Engine"
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "ProjectConfig",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 30
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "project_config_list_sections",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 1625,
+        "params": [
+          {
+            "name": "config_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'Engine'",
+            "default_value": "Engine",
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "project_config_list_sections"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "project_config_set": {
+      "name": "project_config_set",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "project_config_set",
+      "literal_send_commands": [
+        "project_config_set"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "config_name": {
+            "type": "string",
+            "default": "Engine"
+          },
+          "create_backup": {
+            "type": "boolean",
+            "default": true
+          },
+          "scope": {
+            "type": "string",
+            "default": "write"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "section",
+          "key",
+          "value"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "ProjectConfig",
+          "required_scope": "write",
+          "mutating": true,
+          "supports_dry_run": true,
+          "async_candidate": false,
+          "timeout_seconds": 30
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        }
+      },
+      "wrapper": {
+        "name": "project_config_set",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 1583,
+        "params": [
+          {
+            "name": "section",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "key",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "value",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "config_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'Engine'",
+            "default_value": "Engine",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "create_backup",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "scope",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'write'",
+            "default_value": "write",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "dry_run",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "project_config_set"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "project_info": {
+      "name": "project_info",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "project_info",
+      "literal_send_commands": [
+        "project_info"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Project",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 30
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "project_info",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 1533,
+        "params": [],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "project_info"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "project_module_list": {
+      "name": "project_module_list",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "project_module_list",
+      "literal_send_commands": [
+        "project_module_list"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Project",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 30
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "project_module_list",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 1567,
+        "params": [],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "project_module_list"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "project_plugin_list": {
+      "name": "project_plugin_list",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "project_plugin_list",
+      "literal_send_commands": [
+        "project_plugin_list"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "include_enabled_plugins": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Project",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 30
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "project_plugin_list",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 1539,
+        "params": [
+          {
+            "name": "include_enabled_plugins",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "project_plugin_list"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "project_plugin_set_enabled": {
+      "name": "project_plugin_set_enabled",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "project_plugin_set_enabled",
+      "literal_send_commands": [
+        "project_plugin_set_enabled"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "plugin_name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "create_backup": {
+            "type": "boolean",
+            "default": true
+          },
+          "allow_unknown_plugin": {
+            "type": "boolean",
+            "default": false
+          },
+          "scope": {
+            "type": "string",
+            "default": "write"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "plugin_name"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Project",
+          "required_scope": "write",
+          "mutating": true,
+          "supports_dry_run": true,
+          "async_candidate": false,
+          "timeout_seconds": 30
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        }
+      },
+      "wrapper": {
+        "name": "project_plugin_set_enabled",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 1547,
+        "params": [
+          {
+            "name": "plugin_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "enabled",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "create_backup",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "allow_unknown_plugin",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "scope",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'write'",
+            "default_value": "write",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "dry_run",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "project_plugin_set_enabled"
         ]
       },
       "calls_expected_tcp_command": true
@@ -10454,7 +11202,7 @@
       "wrapper": {
         "name": "read_datatable_rows",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4592,
+        "line": 4706,
         "params": [
           {
             "name": "asset_path",
@@ -10534,7 +11282,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6005,
+        "line": 6119,
         "params": [
           {
             "name": "asset_path",
@@ -10626,7 +11374,7 @@
       "wrapper": {
         "name": "remove_cdo_array_element",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4917,
+        "line": 5031,
         "params": [
           {
             "name": "asset_path",
@@ -10736,7 +11484,7 @@
       "wrapper": {
         "name": "remove_datatable_row",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4615,
+        "line": 4729,
         "params": [
           {
             "name": "asset_path",
@@ -10842,7 +11590,7 @@
       "wrapper": {
         "name": "remove_expression",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4388,
+        "line": 4502,
         "params": [
           {
             "name": "asset_path",
@@ -10943,7 +11691,7 @@
       "wrapper": {
         "name": "remove_graph_node",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5284,
+        "line": 5398,
         "params": [
           {
             "name": "asset_path",
@@ -11049,7 +11797,7 @@
       "wrapper": {
         "name": "remove_input_mapping",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5840,
+        "line": 5954,
         "params": [
           {
             "name": "asset_path",
@@ -11146,7 +11894,7 @@
       "wrapper": {
         "name": "remove_variable",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5400,
+        "line": 5514,
         "params": [
           {
             "name": "asset_path",
@@ -11243,7 +11991,7 @@
       "wrapper": {
         "name": "remove_widget",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3905,
+        "line": 4019,
         "params": [
           {
             "name": "asset_path",
@@ -11344,7 +12092,7 @@
       "wrapper": {
         "name": "rename_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5728,
+        "line": 5842,
         "params": [
           {
             "name": "asset_path",
@@ -11450,7 +12198,7 @@
       "wrapper": {
         "name": "reparent_blueprint",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3844,
+        "line": 3958,
         "params": [
           {
             "name": "asset_path",
@@ -11652,7 +12400,7 @@
       "wrapper": {
         "name": "runtime_ability_system_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1990,
+        "line": 2104,
         "params": [
           {
             "name": "world",
@@ -11873,7 +12621,7 @@
       "wrapper": {
         "name": "runtime_ai_controller_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2070,
+        "line": 2184,
         "params": [
           {
             "name": "world",
@@ -12096,7 +12844,7 @@
       "wrapper": {
         "name": "runtime_ai_perception_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2032,
+        "line": 2146,
         "params": [
           {
             "name": "world",
@@ -12251,7 +12999,7 @@
       "wrapper": {
         "name": "runtime_asset_streaming_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2299,
+        "line": 2413,
         "params": [
           {
             "name": "world",
@@ -12388,7 +13136,7 @@
       "wrapper": {
         "name": "runtime_async_load_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2321,
+        "line": 2435,
         "params": [
           {
             "name": "world",
@@ -12580,7 +13328,7 @@
       "wrapper": {
         "name": "runtime_audio_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2226,
+        "line": 2340,
         "params": [
           {
             "name": "world",
@@ -12750,7 +13498,7 @@
       "wrapper": {
         "name": "runtime_commonui_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2192,
+        "line": 2306,
         "params": [
           {
             "name": "world",
@@ -12907,7 +13655,7 @@
       "wrapper": {
         "name": "runtime_component_list",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2555,
+        "line": 2669,
         "params": [
           {
             "name": "world",
@@ -13080,7 +13828,7 @@
       "wrapper": {
         "name": "runtime_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2602,
+        "line": 2716,
         "params": [
           {
             "name": "world",
@@ -13210,7 +13958,7 @@
       "wrapper": {
         "name": "runtime_eqs_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2117,
+        "line": 2231,
         "params": [
           {
             "name": "world",
@@ -13362,7 +14110,7 @@
       "wrapper": {
         "name": "runtime_game_instance_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2362,
+        "line": 2476,
         "params": [
           {
             "name": "world",
@@ -13539,7 +14287,7 @@
       "wrapper": {
         "name": "runtime_gameplay_tags_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2149,
+        "line": 2263,
         "params": [
           {
             "name": "world",
@@ -13704,7 +14452,7 @@
       "wrapper": {
         "name": "runtime_input_routing",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1940,
+        "line": 2054,
         "params": [
           {
             "name": "world",
@@ -13777,7 +14525,7 @@
       "wrapper": {
         "name": "runtime_level_travel_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2397,
+        "line": 2511,
         "params": [
           {
             "name": "world",
@@ -13898,7 +14646,7 @@
       "wrapper": {
         "name": "runtime_multiplayer_connection_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2424,
+        "line": 2538,
         "params": [
           {
             "name": "world",
@@ -14054,7 +14802,7 @@
       "wrapper": {
         "name": "runtime_navigation_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2262,
+        "line": 2376,
         "params": [
           {
             "name": "world",
@@ -14216,7 +14964,7 @@
       "wrapper": {
         "name": "runtime_physics_collision_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2523,
+        "line": 2637,
         "params": [
           {
             "name": "world",
@@ -14327,7 +15075,7 @@
       "wrapper": {
         "name": "runtime_player_list",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1924,
+        "line": 2038,
         "params": [
           {
             "name": "world",
@@ -14421,7 +15169,7 @@
       "wrapper": {
         "name": "runtime_replication_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1956,
+        "line": 2070,
         "params": [
           {
             "name": "world",
@@ -14582,7 +15330,7 @@
       "wrapper": {
         "name": "runtime_scheduler_performance_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2488,
+        "line": 2602,
         "params": [
           {
             "name": "world",
@@ -14735,7 +15483,7 @@
       "wrapper": {
         "name": "runtime_tick_timer_latent_diagnostics",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2457,
+        "line": 2571,
         "params": [
           {
             "name": "world",
@@ -14846,7 +15594,7 @@
       "wrapper": {
         "name": "runtime_world_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1906,
+        "line": 2020,
         "params": [
           {
             "name": "world",
@@ -14917,7 +15665,7 @@
       "wrapper": {
         "name": "save_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5708,
+        "line": 5822,
         "params": [
           {
             "name": "asset_path",
@@ -15001,7 +15749,7 @@
       "wrapper": {
         "name": "save_data_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4550,
+        "line": 4664,
         "params": [
           {
             "name": "asset_path",
@@ -15085,7 +15833,7 @@
       "wrapper": {
         "name": "save_material_instance",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4512,
+        "line": 4626,
         "params": [
           {
             "name": "asset_path",
@@ -15177,7 +15925,7 @@
       "wrapper": {
         "name": "scan_asset_paths",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5569,
+        "line": 5683,
         "params": [
           {
             "name": "paths",
@@ -15324,7 +16072,7 @@
       "wrapper": {
         "name": "set_asset_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5467,
+        "line": 5581,
         "params": [
           {
             "name": "asset_path",
@@ -15470,7 +16218,7 @@
       "wrapper": {
         "name": "set_canvas_slot_layout",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4014,
+        "line": 4128,
         "params": [
           {
             "name": "asset_path",
@@ -15669,7 +16417,7 @@
       "wrapper": {
         "name": "set_cdo_array_element_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4889,
+        "line": 5003,
         "params": [
           {
             "name": "asset_path",
@@ -15797,7 +16545,7 @@
       "wrapper": {
         "name": "set_cdo_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4732,
+        "line": 4846,
         "params": [
           {
             "name": "asset_path",
@@ -15911,7 +16659,7 @@
       "wrapper": {
         "name": "set_expression_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4276,
+        "line": 4390,
         "params": [
           {
             "name": "asset_path",
@@ -16034,7 +16782,7 @@
       "wrapper": {
         "name": "set_instance_parameter",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4483,
+        "line": 4597,
         "params": [
           {
             "name": "asset_path",
@@ -16153,7 +16901,7 @@
       "wrapper": {
         "name": "set_material_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4217,
+        "line": 4331,
         "params": [
           {
             "name": "asset_path",
@@ -16271,7 +17019,7 @@
       "wrapper": {
         "name": "set_pin_default",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5258,
+        "line": 5372,
         "params": [
           {
             "name": "asset_path",
@@ -16403,7 +17151,7 @@
       "wrapper": {
         "name": "set_slot_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3985,
+        "line": 4099,
         "params": [
           {
             "name": "asset_path",
@@ -16522,7 +17270,7 @@
       "wrapper": {
         "name": "set_variable_default",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5378,
+        "line": 5492,
         "params": [
           {
             "name": "asset_path",
@@ -16640,7 +17388,7 @@
       "wrapper": {
         "name": "set_widget_properties",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 4054,
+        "line": 4168,
         "params": [
           {
             "name": "asset_path",
@@ -16754,7 +17502,7 @@
       "wrapper": {
         "name": "set_widget_property",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3953,
+        "line": 4067,
         "params": [
           {
             "name": "asset_path",
@@ -17411,7 +18159,7 @@
       "wrapper": {
         "name": "task_cancel",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3778,
+        "line": 3892,
         "params": [
           {
             "name": "task_id",
@@ -17482,7 +18230,7 @@
       "wrapper": {
         "name": "task_events",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3732,
+        "line": 3846,
         "params": [
           {
             "name": "task_id",
@@ -17586,7 +18334,7 @@
       "wrapper": {
         "name": "task_events_wait",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3754,
+        "line": 3868,
         "params": [
           {
             "name": "task_id",
@@ -17680,7 +18428,7 @@
       "wrapper": {
         "name": "task_result",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3716,
+        "line": 3830,
         "params": [
           {
             "name": "task_id",
@@ -17744,7 +18492,7 @@
       "wrapper": {
         "name": "task_status",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3700,
+        "line": 3814,
         "params": [
           {
             "name": "task_id",
@@ -17827,7 +18575,7 @@
       "wrapper": {
         "name": "task_submit",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 3676,
+        "line": 3790,
         "params": [
           {
             "name": "command",
@@ -17913,7 +18661,7 @@
       "wrapper": {
         "name": "ue_class_lookup",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1683,
+        "line": 1797,
         "params": [
           {
             "name": "class_name",
@@ -17986,7 +18734,7 @@
       "wrapper": {
         "name": "ue_docs_search",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 1659,
+        "line": 1773,
         "params": [
           {
             "name": "query",
@@ -18083,7 +18831,7 @@
       "wrapper": {
         "name": "viewport_capture",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 2883,
+        "line": 2997,
         "params": [
           {
             "name": "output_path",

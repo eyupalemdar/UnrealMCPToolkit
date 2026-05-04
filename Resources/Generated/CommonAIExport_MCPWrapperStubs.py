@@ -151,6 +151,88 @@ def get_test_log(log_path: str = '', max_lines: int = 300) -> str:
     return _format_response(_send_command("get_test_log", params))
 
 
+def project_info() -> str:
+    """Generated stub for TCP command `project_info` (Project)."""
+    params = None
+    return _format_response(_send_command("project_info"))
+
+
+def project_plugin_list(include_enabled_plugins: bool = False) -> str:
+    """Generated stub for TCP command `project_plugin_list` (Project)."""
+    params = {
+        "include_enabled_plugins": include_enabled_plugins,
+    }
+    return _format_response(_send_command("project_plugin_list", params))
+
+
+def project_plugin_set_enabled(plugin_name: str, enabled: bool = True, create_backup: bool = True, allow_unknown_plugin: bool = False, scope: str = 'write', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `project_plugin_set_enabled` (Project)."""
+    params = {
+        "plugin_name": plugin_name,
+        "enabled": enabled,
+        "create_backup": create_backup,
+        "allow_unknown_plugin": allow_unknown_plugin,
+    }
+    return _format_response(_send_command("project_plugin_set_enabled", params, _request_meta(scope, dry_run)))
+
+
+def project_module_list() -> str:
+    """Generated stub for TCP command `project_module_list` (Project)."""
+    params = None
+    return _format_response(_send_command("project_module_list"))
+
+
+def project_config_get(section: str, key: str, config_name: str = 'Engine') -> str:
+    """Generated stub for TCP command `project_config_get` (ProjectConfig)."""
+    params = {
+        "section": section,
+        "key": key,
+        "config_name": config_name,
+    }
+    return _format_response(_send_command("project_config_get", params))
+
+
+def project_config_set(section: str, key: str, value: str, config_name: str = 'Engine', create_backup: bool = True, scope: str = 'write', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `project_config_set` (ProjectConfig)."""
+    params = {
+        "section": section,
+        "key": key,
+        "value": value,
+        "config_name": config_name,
+        "create_backup": create_backup,
+    }
+    return _format_response(_send_command("project_config_set", params, _request_meta(scope, dry_run)))
+
+
+def project_config_delete(section: str, key: str, config_name: str = 'Engine', create_backup: bool = True, scope: str = 'write', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `project_config_delete` (ProjectConfig)."""
+    params = {
+        "section": section,
+        "key": key,
+        "config_name": config_name,
+        "create_backup": create_backup,
+    }
+    return _format_response(_send_command("project_config_delete", params, _request_meta(scope, dry_run)))
+
+
+def project_config_list_sections(config_name: str = 'Engine') -> str:
+    """Generated stub for TCP command `project_config_list_sections` (ProjectConfig)."""
+    params = {
+        "config_name": config_name,
+    }
+    return _format_response(_send_command("project_config_list_sections", params))
+
+
+def project_config_list_keys(section: str, config_name: str = 'Engine', include_values: bool = False) -> str:
+    """Generated stub for TCP command `project_config_list_keys` (ProjectConfig)."""
+    params = {
+        "section": section,
+        "config_name": config_name,
+        "include_values": include_values,
+    }
+    return _format_response(_send_command("project_config_list_keys", params))
+
+
 def task_submit(command: str, params: dict | None = None, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `task_submit` (AsyncJob)."""
     params = {

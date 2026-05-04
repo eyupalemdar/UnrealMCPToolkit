@@ -1530,6 +1530,120 @@ def get_test_log(log_path: str = "", max_lines: int = 300) -> str:
 
 
 @mcp.tool()
+def project_info() -> str:
+    """Read current .uproject metadata, modules, target platforms, and plugin references."""
+    return _send_generated_tcp_tool("project_info")
+
+
+@mcp.tool()
+def project_plugin_list(include_enabled_plugins: bool = False) -> str:
+    """List .uproject plugin references and optionally all currently enabled engine/project plugins."""
+    return _send_generated_tcp_tool("project_plugin_list", {
+        "include_enabled_plugins": include_enabled_plugins,
+    })
+
+
+@mcp.tool()
+def project_plugin_set_enabled(
+    plugin_name: str,
+    enabled: bool = True,
+    create_backup: bool = True,
+    allow_unknown_plugin: bool = False,
+    scope: str = "write",
+    dry_run: bool = False,
+) -> str:
+    """Set a plugin reference's Enabled flag in the current .uproject file."""
+    return _send_generated_tcp_tool("project_plugin_set_enabled", {
+        "plugin_name": plugin_name,
+        "enabled": enabled,
+        "create_backup": create_backup,
+        "allow_unknown_plugin": allow_unknown_plugin,
+        "scope": scope,
+        "dry_run": dry_run,
+    })
+
+
+@mcp.tool()
+def project_module_list() -> str:
+    """List C++ module descriptors declared in the current .uproject file."""
+    return _send_generated_tcp_tool("project_module_list")
+
+
+@mcp.tool()
+def project_config_get(section: str, key: str, config_name: str = "Engine") -> str:
+    """Read a key from a project Default*.ini config file."""
+    return _send_generated_tcp_tool("project_config_get", {
+        "section": section,
+        "key": key,
+        "config_name": config_name,
+    })
+
+
+@mcp.tool()
+def project_config_set(
+    section: str,
+    key: str,
+    value: str,
+    config_name: str = "Engine",
+    create_backup: bool = True,
+    scope: str = "write",
+    dry_run: bool = False,
+) -> str:
+    """Set a string value in a project Default*.ini config file."""
+    return _send_generated_tcp_tool("project_config_set", {
+        "section": section,
+        "key": key,
+        "value": value,
+        "config_name": config_name,
+        "create_backup": create_backup,
+        "scope": scope,
+        "dry_run": dry_run,
+    })
+
+
+@mcp.tool()
+def project_config_delete(
+    section: str,
+    key: str,
+    config_name: str = "Engine",
+    create_backup: bool = True,
+    scope: str = "write",
+    dry_run: bool = False,
+) -> str:
+    """Remove a key from a project Default*.ini config file."""
+    return _send_generated_tcp_tool("project_config_delete", {
+        "section": section,
+        "key": key,
+        "config_name": config_name,
+        "create_backup": create_backup,
+        "scope": scope,
+        "dry_run": dry_run,
+    })
+
+
+@mcp.tool()
+def project_config_list_sections(config_name: str = "Engine") -> str:
+    """List sections in a project Default*.ini config file."""
+    return _send_generated_tcp_tool("project_config_list_sections", {
+        "config_name": config_name,
+    })
+
+
+@mcp.tool()
+def project_config_list_keys(
+    section: str,
+    config_name: str = "Engine",
+    include_values: bool = False,
+) -> str:
+    """List keys in a project Default*.ini section."""
+    return _send_generated_tcp_tool("project_config_list_keys", {
+        "section": section,
+        "config_name": config_name,
+        "include_values": include_values,
+    })
+
+
+@mcp.tool()
 def commonai_resources_list() -> str:
     """
     List CommonAIExport resource URIs exposed by this MCP wrapper.
