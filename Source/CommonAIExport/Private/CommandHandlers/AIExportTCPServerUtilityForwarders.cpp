@@ -57,6 +57,36 @@ FString FAIExportTCPServer::HandleSourceControlDiff(TSharedPtr<FJsonObject> Para
 	return CommonAIExport::CommandHandlers::Workflow::HandleSourceControlDiff(Params);
 }
 
+FString FAIExportTCPServer::HandleBuildProject(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Workflow::HandleBuildProject(Params);
+}
+
+FString FAIExportTCPServer::HandleGenerateProjectFiles(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Workflow::HandleGenerateProjectFiles(Params);
+}
+
+FString FAIExportTCPServer::HandleCookProject(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Workflow::HandleCookProject(Params);
+}
+
+FString FAIExportTCPServer::HandleListTests(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Workflow::HandleListTests(Params);
+}
+
+FString FAIExportTCPServer::HandleRunTests(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Workflow::HandleRunTests(Params);
+}
+
+FString FAIExportTCPServer::HandleGetTestLog(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Workflow::HandleGetTestLog(Params);
+}
+
 FString FAIExportTCPServer::HandleEditorLogRead(TSharedPtr<FJsonObject> Params)
 {
 	return CommonAIExport::CommandHandlers::Workflow::HandleEditorLogRead(Params);

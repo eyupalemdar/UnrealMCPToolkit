@@ -30,7 +30,7 @@ from generate_mcp_artifacts import (
 PLUGIN_ROOT = Path(__file__).resolve().parents[2]
 CPP_SERVER = PLUGIN_ROOT / "Source" / "CommonAIExport" / "Private" / "AIExportTCPServer.cpp"
 MCP_CLIENT = PLUGIN_ROOT / "MCPClient" / "ai_widget_mcp_client.py"
-AI_REFERENCE = PLUGIN_ROOT / "AI_REFERENCE.md"
+AI_REFERENCE = PLUGIN_ROOT / "Docs" / "Reference" / "AI_REFERENCE.md"
 
 CPP_COMMAND_RE = re.compile(r'AI_COMMAND_(?:NO_|OPTIONAL_)?PARAMS(?:_SCOPE)?\("([^"]+)"')
 PY_TOOL_RE = re.compile(r"^@mcp\.tool\(\)")

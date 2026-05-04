@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 129
-- MCP tools: 146
-- Categories: 24
+- TCP commands: 145
+- MCP tools: 164
+- Categories: 26
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
@@ -24,6 +24,7 @@
 | `CDO` | 2 |
 | `CDOArray` | 4 |
 | `DataAsset` | 1 |
+| `DataTable` | 6 |
 | `Editor` | 2 |
 | `EditorActor` | 4 |
 | `EditorLevel` | 2 |
@@ -33,11 +34,12 @@
 | `Input` | 3 |
 | `Material` | 15 |
 | `PIE` | 3 |
+| `Reflection` | 4 |
 | `RuntimeInspector` | 22 |
 | `Utility` | 5 |
 | `Widget` | 11 |
 | `WidgetPreview` | 1 |
-| `Workflow` | 6 |
+| `Workflow` | 12 |
 
 ## TCP Commands
 
@@ -53,6 +55,12 @@
 | `source_control_log` | `Workflow` | `read` | false | false | false | 30 |
 | `source_control_show` | `Workflow` | `read` | false | false | false | 30 |
 | `source_control_diff` | `Workflow` | `read` | false | false | false | 30 |
+| `build_project` | `Workflow` | `write` | true | true | true | 1200 |
+| `generate_project_files` | `Workflow` | `write` | true | true | true | 300 |
+| `cook_project` | `Workflow` | `write` | true | true | true | 1800 |
+| `list_tests` | `Workflow` | `read` | false | false | true | 300 |
+| `run_tests` | `Workflow` | `read` | false | false | true | 1800 |
+| `get_test_log` | `Workflow` | `read` | false | false | false | 30 |
 | `task_submit` | `AsyncJob` | `read` | false | false | false | 0 |
 | `task_status` | `AsyncJob` | `read` | false | false | false | 0 |
 | `task_result` | `AsyncJob` | `read` | false | false | false | 0 |
@@ -114,6 +122,10 @@
 | `set_cdo_array_element_property` | `CDOArray` | `write` | true | true | false | 60 |
 | `remove_cdo_array_element` | `CDOArray` | `write` | true | true | false | 60 |
 | `get_cdo_array_length` | `CDOArray` | `read` | false | false | false | 60 |
+| `object_query` | `Reflection` | `read` | false | false | false | 60 |
+| `object_get_property` | `Reflection` | `read` | false | false | false | 60 |
+| `object_set_property` | `Reflection` | `write` | true | true | false | 60 |
+| `object_call_function` | `Reflection` | `write` | true | true | false | 60 |
 | `add_event_node` | `BlueprintGraph` | `write` | true | true | false | 60 |
 | `add_custom_event` | `BlueprintGraph` | `write` | true | true | false | 60 |
 | `add_function_call` | `BlueprintGraph` | `write` | true | true | false | 60 |
@@ -149,6 +161,12 @@
 | `save_material_instance` | `Material` | `write` | true | true | false | 60 |
 | `get_material_instance_info` | `Material` | `read` | false | false | false | 60 |
 | `save_data_asset` | `DataAsset` | `write` | true | true | false | 60 |
+| `create_datatable` | `DataTable` | `write` | true | true | false | 60 |
+| `get_datatable_info` | `DataTable` | `read` | false | false | false | 60 |
+| `read_datatable_rows` | `DataTable` | `read` | false | false | false | 60 |
+| `add_datatable_row` | `DataTable` | `write` | true | true | false | 60 |
+| `remove_datatable_row` | `DataTable` | `write` | true | true | false | 60 |
+| `import_datatable_csv` | `DataTable` | `write` | true | true | false | 60 |
 | `create_asset` | `Asset` | `write` | true | true | false | 60 |
 | `set_asset_property` | `Asset` | `write` | true | true | false | 60 |
 | `get_asset_properties` | `Asset` | `read` | false | false | false | 60 |
@@ -192,3 +210,5 @@
 - `mcp_server_metadata_export`
 - `native_http_status`
 - `native_mcp_probe`
+- `ue_class_lookup`
+- `ue_docs_search`

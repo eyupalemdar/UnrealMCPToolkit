@@ -5,9 +5,11 @@
 #include "CommandHandlers/AIExportAssetCommands.h"
 #include "CommandHandlers/AIExportAssetLifecycleCommands.h"
 #include "CommandHandlers/AIExportCDOCommands.h"
+#include "CommandHandlers/AIExportDataTableCommands.h"
 #include "CommandHandlers/AIExportDataAssetCommands.h"
 #include "CommandHandlers/AIExportImportCommands.h"
 #include "CommandHandlers/AIExportInputCommands.h"
+#include "CommandHandlers/AIExportReflectionCommands.h"
 #include "CommandHandlers/AIExportWidgetPreviewCommands.h"
 
 #include "Dom/JsonObject.h"
@@ -55,6 +57,26 @@ FString FAIExportTCPServer::HandleRemoveCDOArrayElement(TSharedPtr<FJsonObject> 
 FString FAIExportTCPServer::HandleGetCDOArrayLength(TSharedPtr<FJsonObject> Params)
 {
 	return CommonAIExport::CommandHandlers::CDO::HandleGetCDOArrayLength(Params);
+}
+
+FString FAIExportTCPServer::HandleObjectQuery(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Reflection::HandleObjectQuery(Params);
+}
+
+FString FAIExportTCPServer::HandleObjectGetProperty(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Reflection::HandleObjectGetProperty(Params);
+}
+
+FString FAIExportTCPServer::HandleObjectSetProperty(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Reflection::HandleObjectSetProperty(Params);
+}
+
+FString FAIExportTCPServer::HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::Reflection::HandleObjectCallFunction(Params);
 }
 
 FString FAIExportTCPServer::HandleCreateAsset(TSharedPtr<FJsonObject> Params)
@@ -160,4 +182,34 @@ FString FAIExportTCPServer::HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> P
 FString FAIExportTCPServer::HandleReloadAsset(TSharedPtr<FJsonObject> Params)
 {
 	return CommonAIExport::CommandHandlers::AssetLifecycle::HandleReloadAsset(Params);
+}
+
+FString FAIExportTCPServer::HandleCreateDataTable(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::DataTable::HandleCreateDataTable(Params);
+}
+
+FString FAIExportTCPServer::HandleGetDataTableInfo(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::DataTable::HandleGetDataTableInfo(Params);
+}
+
+FString FAIExportTCPServer::HandleReadDataTableRows(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::DataTable::HandleReadDataTableRows(Params);
+}
+
+FString FAIExportTCPServer::HandleAddDataTableRow(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::DataTable::HandleAddDataTableRow(Params);
+}
+
+FString FAIExportTCPServer::HandleRemoveDataTableRow(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::DataTable::HandleRemoveDataTableRow(Params);
+}
+
+FString FAIExportTCPServer::HandleImportDataTableCsv(TSharedPtr<FJsonObject> Params)
+{
+	return CommonAIExport::CommandHandlers::DataTable::HandleImportDataTableCsv(Params);
 }

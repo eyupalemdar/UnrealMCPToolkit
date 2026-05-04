@@ -317,6 +317,138 @@ int32 ReadClampedIntField(TSharedPtr<FJsonObject> Params, const TCHAR* FieldName
 	}
 	return FMath::Clamp(static_cast<int32>(NumberValue), MinValue, MaxValue);
 }
+
+FString ResolveProjectFilePath(TSharedPtr<FJsonObject> Params)
+{
+	FString ProjectFile = FPaths::GetProjectFilePath();
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("project_file"), ProjectFile);
+	}
+	if (ProjectFile.IsEmpty())
+	{
+		const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+		TArray<FString> ProjectFiles;
+		IFileManager::Get().FindFiles(ProjectFiles, *FPaths::Combine(ProjectDir, TEXT("*.uproject")), true, false);
+		if (ProjectFiles.Num() > 0)
+		{
+			ProjectFile = FPaths::Combine(ProjectDir, ProjectFiles[0]);
+		}
+	}
+	return FPaths::ConvertRelativePathToFull(ProjectFile);
+}
+
+FString EngineBatchFile(const FString& FileName)
+{
+	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::EngineDir(), TEXT("Build"), TEXT("BatchFiles"), FileName));
+}
+
+FString EngineEditorCmdExecutable()
+{
+#if PLATFORM_WINDOWS
+	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::EngineDir(), TEXT("Binaries"), TEXT("Win64"), TEXT("UnrealEditor-Cmd.exe")));
+#elif PLATFORM_MAC
+	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::EngineDir(), TEXT("Binaries"), TEXT("Mac"), TEXT("UnrealEditor-Cmd")));
+#else
+	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::EngineDir(), TEXT("Binaries"), TEXT("Linux"), TEXT("UnrealEditor-Cmd")));
+#endif
+}
+
+FString WorkflowLogDir()
+{
+	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("CommonAIExport"), TEXT("Workflow")));
+}
+
+FString TimestampedWorkflowLogPath(const FString& Prefix)
+{
+	const FString Timestamp = FDateTime::UtcNow().ToString(TEXT("%Y%m%d_%H%M%S"));
+	return FPaths::Combine(WorkflowLogDir(), FString::Printf(TEXT("%s_%s.log"), *Prefix, *Timestamp));
+}
+
+struct FWorkflowProcessResult
+{
+	bool bLaunched = false;
+	int32 ReturnCode = -1;
+	FString Executable;
+	FString Arguments;
+	FString WorkingDir;
+	FString StdOut;
+	FString StdErr;
+};
+
+FWorkflowProcessResult RunWorkflowProcess(const FString& Executable, const FString& Arguments, const FString& WorkingDir)
+{
+	FWorkflowProcessResult Result;
+	Result.Executable = Executable;
+	Result.Arguments = Arguments;
+	Result.WorkingDir = WorkingDir;
+	Result.bLaunched = FPlatformProcess::ExecProcess(*Executable, *Arguments, &Result.ReturnCode, &Result.StdOut, &Result.StdErr, *WorkingDir);
+	return Result;
+}
+
+FWorkflowProcessResult RunBatchFile(const FString& BatchFile, const FString& Arguments, const FString& WorkingDir)
+{
+#if PLATFORM_WINDOWS
+	FString ComSpec = FPlatformMisc::GetEnvironmentVariable(TEXT("ComSpec"));
+	if (ComSpec.IsEmpty())
+	{
+		ComSpec = TEXT("cmd.exe");
+	}
+	return RunWorkflowProcess(ComSpec, FString::Printf(TEXT("/C %s %s"), *QuoteProcessArgument(BatchFile), *Arguments), WorkingDir);
+#else
+	return RunWorkflowProcess(BatchFile, Arguments, WorkingDir);
+#endif
+}
+
+TSharedPtr<FJsonObject> BuildWorkflowProcessJson(const FWorkflowProcessResult& Result, const FString& ProjectFile)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetBoolField(TEXT("available"), Result.bLaunched);
+	Data->SetBoolField(TEXT("succeeded"), Result.bLaunched && Result.ReturnCode == 0);
+	Data->SetNumberField(TEXT("return_code"), Result.ReturnCode);
+	Data->SetStringField(TEXT("executable"), Result.Executable);
+	Data->SetStringField(TEXT("arguments"), Result.Arguments);
+	Data->SetStringField(TEXT("working_dir"), Result.WorkingDir);
+	Data->SetStringField(TEXT("project_file"), ProjectFile);
+	Data->SetStringField(TEXT("stdout"), Result.StdOut);
+	Data->SetStringField(TEXT("stderr"), Result.StdErr);
+	return Data;
+}
+
+FString ReadWorkflowLogFile(const FString& RequestedPath, int32 MaxLines, FString& OutLogPath)
+{
+	FString WorkflowLogPath = RequestedPath;
+	const FString LogDir = WorkflowLogDir();
+	if (WorkflowLogPath.IsEmpty())
+	{
+		TArray<FString> Files;
+		IFileManager::Get().FindFiles(Files, *FPaths::Combine(LogDir, TEXT("*.log")), true, false);
+		Files.Sort();
+		if (Files.Num() > 0)
+		{
+			WorkflowLogPath = FPaths::Combine(LogDir, Files.Last());
+		}
+	}
+	WorkflowLogPath = FPaths::ConvertRelativePathToFull(WorkflowLogPath);
+	OutLogPath = WorkflowLogPath;
+
+	FString Contents;
+	if (!FFileHelper::LoadFileToString(Contents, *WorkflowLogPath, FFileHelper::EHashOptions::None, FILEREAD_AllowWrite))
+	{
+		return FString();
+	}
+
+	TArray<FString> Lines;
+	Contents.ParseIntoArrayLines(Lines, false);
+	const int32 StartIndex = FMath::Max(0, Lines.Num() - MaxLines);
+
+	FString Tail;
+	for (int32 Index = StartIndex; Index < Lines.Num(); ++Index)
+	{
+		Tail += Lines[Index] + LINE_TERMINATOR;
+	}
+	return Tail;
+}
 }
 
 namespace CommonAIExport::CommandHandlers::Workflow
@@ -680,5 +812,180 @@ FString HandleEditorLogRead(TSharedPtr<FJsonObject> Params)
 	return CreateSuccessResponse(Data);
 }
 
+FString HandleBuildProject(TSharedPtr<FJsonObject> Params)
+{
+	FString ProjectFile = ResolveProjectFilePath(Params);
+	if (ProjectFile.IsEmpty() || !IFileManager::Get().FileExists(*ProjectFile))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Project file not found: %s"), *ProjectFile));
+	}
+
+	FString Target = FString(FApp::GetProjectName()) + TEXT("Editor");
+	FString Platform = TEXT("Win64");
+	FString Configuration = TEXT("Development");
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("target"), Target);
+		Params->TryGetStringField(TEXT("platform"), Platform);
+		Params->TryGetStringField(TEXT("configuration"), Configuration);
+	}
+
+	const FString BuildScript = EngineBatchFile(PLATFORM_WINDOWS ? TEXT("Build.bat") : TEXT("Build.sh"));
+	const FString Arguments = FString::Printf(
+		TEXT("%s %s %s -Project=%s -WaitMutex -NoHotReloadFromIDE"),
+		*QuoteProcessArgument(Target),
+		*QuoteProcessArgument(Platform),
+		*QuoteProcessArgument(Configuration),
+		*QuoteProcessArgument(ProjectFile));
+
+	const FWorkflowProcessResult Result = RunBatchFile(BuildScript, Arguments, FPaths::GetPath(ProjectFile));
+	TSharedPtr<FJsonObject> Data = BuildWorkflowProcessJson(Result, ProjectFile);
+	Data->SetStringField(TEXT("target"), Target);
+	Data->SetStringField(TEXT("platform"), Platform);
+	Data->SetStringField(TEXT("configuration"), Configuration);
+	Data->SetStringField(TEXT("script"), BuildScript);
+	return CreateSuccessResponse(Data);
+}
+
+FString HandleGenerateProjectFiles(TSharedPtr<FJsonObject> Params)
+{
+	FString ProjectFile = ResolveProjectFilePath(Params);
+	if (ProjectFile.IsEmpty() || !IFileManager::Get().FileExists(*ProjectFile))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Project file not found: %s"), *ProjectFile));
+	}
+
+	const FString Script = EngineBatchFile(PLATFORM_WINDOWS ? TEXT("GenerateProjectFiles.bat") : TEXT("GenerateProjectFiles.sh"));
+	const FString Arguments = FString::Printf(TEXT("-project=%s -game -engine"), *QuoteProcessArgument(ProjectFile));
+	const FWorkflowProcessResult Result = RunBatchFile(Script, Arguments, FPaths::GetPath(ProjectFile));
+	TSharedPtr<FJsonObject> Data = BuildWorkflowProcessJson(Result, ProjectFile);
+	Data->SetStringField(TEXT("script"), Script);
+	return CreateSuccessResponse(Data);
+}
+
+FString HandleCookProject(TSharedPtr<FJsonObject> Params)
+{
+	FString ProjectFile = ResolveProjectFilePath(Params);
+	if (ProjectFile.IsEmpty() || !IFileManager::Get().FileExists(*ProjectFile))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Project file not found: %s"), *ProjectFile));
+	}
+
+	FString TargetPlatform = TEXT("Win64");
+	FString ClientConfig = TEXT("Development");
+	FString Map;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("target_platform"), TargetPlatform);
+		Params->TryGetStringField(TEXT("client_config"), ClientConfig);
+		Params->TryGetStringField(TEXT("map"), Map);
+	}
+
+	const FString Script = EngineBatchFile(PLATFORM_WINDOWS ? TEXT("RunUAT.bat") : TEXT("RunUAT.sh"));
+	FString Arguments = FString::Printf(
+		TEXT("BuildCookRun -project=%s -noP4 -cook -skipstage -nocompileeditor -targetplatform=%s -clientconfig=%s"),
+		*QuoteProcessArgument(ProjectFile),
+		*QuoteProcessArgument(TargetPlatform),
+		*QuoteProcessArgument(ClientConfig));
+	if (!Map.IsEmpty())
+	{
+		Arguments += TEXT(" -map=") + QuoteProcessArgument(Map);
+	}
+
+	const FWorkflowProcessResult Result = RunBatchFile(Script, Arguments, FPaths::GetPath(ProjectFile));
+	TSharedPtr<FJsonObject> Data = BuildWorkflowProcessJson(Result, ProjectFile);
+	Data->SetStringField(TEXT("script"), Script);
+	Data->SetStringField(TEXT("target_platform"), TargetPlatform);
+	Data->SetStringField(TEXT("client_config"), ClientConfig);
+	Data->SetStringField(TEXT("map"), Map);
+	return CreateSuccessResponse(Data);
+}
+
+FString HandleListTests(TSharedPtr<FJsonObject> Params)
+{
+	FString ProjectFile = ResolveProjectFilePath(Params);
+	if (ProjectFile.IsEmpty() || !IFileManager::Get().FileExists(*ProjectFile))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Project file not found: %s"), *ProjectFile));
+	}
+
+	IFileManager::Get().MakeDirectory(*WorkflowLogDir(), true);
+	const FString WorkflowLogPath = TimestampedWorkflowLogPath(TEXT("ListTests"));
+	const FString EditorCmd = EngineEditorCmdExecutable();
+	const FString Arguments = FString::Printf(
+		TEXT("%s -unattended -nop4 -nosplash -nullrhi -ExecCmds=%s -log=%s"),
+		*QuoteProcessArgument(ProjectFile),
+		*QuoteProcessArgument(TEXT("Automation List;Quit")),
+		*QuoteProcessArgument(WorkflowLogPath));
+
+	const FWorkflowProcessResult Result = RunWorkflowProcess(EditorCmd, Arguments, FPaths::GetPath(ProjectFile));
+	TSharedPtr<FJsonObject> Data = BuildWorkflowProcessJson(Result, ProjectFile);
+	Data->SetStringField(TEXT("log_path"), WorkflowLogPath);
+	return CreateSuccessResponse(Data);
+}
+
+FString HandleRunTests(TSharedPtr<FJsonObject> Params)
+{
+	FString ProjectFile = ResolveProjectFilePath(Params);
+	if (ProjectFile.IsEmpty() || !IFileManager::Get().FileExists(*ProjectFile))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Project file not found: %s"), *ProjectFile));
+	}
+
+	FString TestFilter = TEXT("Project");
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("test_filter"), TestFilter);
+	}
+	if (TestFilter.TrimStartAndEnd().IsEmpty())
+	{
+		TestFilter = TEXT("Project");
+	}
+
+	IFileManager::Get().MakeDirectory(*WorkflowLogDir(), true);
+	const FString WorkflowLogPath = TimestampedWorkflowLogPath(TEXT("RunTests"));
+	const FString ReportPath = FPaths::Combine(WorkflowLogDir(), TEXT("AutomationReports"));
+	IFileManager::Get().MakeDirectory(*ReportPath, true);
+
+	const FString EditorCmd = EngineEditorCmdExecutable();
+	const FString ExecCmds = FString::Printf(TEXT("Automation RunTests %s;Quit"), *TestFilter);
+	const FString Arguments = FString::Printf(
+		TEXT("%s -unattended -nop4 -nosplash -nullrhi -ExecCmds=%s -ReportOutputPath=%s -log=%s"),
+		*QuoteProcessArgument(ProjectFile),
+		*QuoteProcessArgument(ExecCmds),
+		*QuoteProcessArgument(ReportPath),
+		*QuoteProcessArgument(WorkflowLogPath));
+
+	const FWorkflowProcessResult Result = RunWorkflowProcess(EditorCmd, Arguments, FPaths::GetPath(ProjectFile));
+	TSharedPtr<FJsonObject> Data = BuildWorkflowProcessJson(Result, ProjectFile);
+	Data->SetStringField(TEXT("test_filter"), TestFilter);
+	Data->SetStringField(TEXT("log_path"), WorkflowLogPath);
+	Data->SetStringField(TEXT("report_path"), ReportPath);
+	return CreateSuccessResponse(Data);
+}
+
+FString HandleGetTestLog(TSharedPtr<FJsonObject> Params)
+{
+	FString RequestedWorkflowLogPath;
+	int32 MaxLines = 300;
+	if (Params.IsValid())
+	{
+		Params->TryGetStringField(TEXT("log_path"), RequestedWorkflowLogPath);
+		MaxLines = ReadClampedIntField(Params, TEXT("max_lines"), 300, 1, 10000);
+	}
+
+	FString ResolvedLogPath;
+	const FString Tail = ReadWorkflowLogFile(RequestedWorkflowLogPath, MaxLines, ResolvedLogPath);
+	if (Tail.IsEmpty())
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Could not read workflow log: %s"), *ResolvedLogPath));
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("log_path"), ResolvedLogPath);
+	Data->SetNumberField(TEXT("max_lines"), MaxLines);
+	Data->SetStringField(TEXT("tail"), Tail);
+	return CreateSuccessResponse(Data);
+}
 
 }

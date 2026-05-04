@@ -18,7 +18,7 @@ void FCommonAIExportModule::StartupModule()
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(
 		this, &FCommonAIExportModule::RegisterContextMenu));
 
-	// Start TCP server for external commands (Claude Code, Python scripts)
+	// Start TCP server for external automation commands.
 	FAIExportTCPServerManager::Start();
 }
 

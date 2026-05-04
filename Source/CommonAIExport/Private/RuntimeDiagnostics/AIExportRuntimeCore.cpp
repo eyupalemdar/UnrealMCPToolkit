@@ -11,6 +11,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
 
 namespace CommonAIExport::RuntimeDiagnostics
 {
@@ -52,10 +53,10 @@ TSharedPtr<FJsonObject> BuildPlayerList(TSharedPtr<FJsonObject> Params)
 			ControllerJson->SetStringField(TEXT("path"), Controller->GetPathName());
 			ControllerJson->SetStringField(TEXT("class"), Controller->GetClass() ? Controller->GetClass()->GetPathName() : TEXT(""));
 			ControllerJson->SetBoolField(TEXT("is_local_controller"), Controller->IsLocalController());
-			if (Controller->PlayerState)
+			if (APlayerState* PlayerState = Controller->PlayerState.Get())
 			{
-				ControllerJson->SetStringField(TEXT("player_state_name"), Controller->PlayerState->GetPlayerName());
-				ControllerJson->SetStringField(TEXT("player_state_class"), Controller->PlayerState->GetClass() ? Controller->PlayerState->GetClass()->GetPathName() : TEXT(""));
+				ControllerJson->SetStringField(TEXT("player_state_name"), PlayerState->GetPlayerName());
+				ControllerJson->SetStringField(TEXT("player_state_class"), PlayerState->GetClass() ? PlayerState->GetClass()->GetPathName() : TEXT(""));
 			}
 			if (APawn* Pawn = Controller->GetPawn())
 			{

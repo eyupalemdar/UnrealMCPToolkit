@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T12:40:12.806416Z",
-  "tool_count": 146,
+  "generated_at_utc": "2026-05-04T14:11:18.234182Z",
+  "tool_count": 164,
   "tools": {
     "ping": {
       "type": "object",
@@ -291,6 +291,218 @@
         "name_status": {
           "type": "boolean",
           "default": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Workflow",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 30
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "build_project": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "type": "string",
+          "default": ""
+        },
+        "platform": {
+          "type": "string",
+          "default": "Win64"
+        },
+        "configuration": {
+          "type": "string",
+          "default": "Development"
+        },
+        "project_file": {
+          "type": "string",
+          "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": "write"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Workflow",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": true,
+        "timeout_seconds": 1200
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "generate_project_files": {
+      "type": "object",
+      "properties": {
+        "project_file": {
+          "type": "string",
+          "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": "write"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Workflow",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": true,
+        "timeout_seconds": 300
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "cook_project": {
+      "type": "object",
+      "properties": {
+        "project_file": {
+          "type": "string",
+          "default": ""
+        },
+        "target_platform": {
+          "type": "string",
+          "default": "Win64"
+        },
+        "client_config": {
+          "type": "string",
+          "default": "Development"
+        },
+        "map": {
+          "type": "string",
+          "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": "write"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Workflow",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": true,
+        "timeout_seconds": 1800
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "list_tests": {
+      "type": "object",
+      "properties": {
+        "project_file": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Workflow",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": true,
+        "timeout_seconds": 300
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "run_tests": {
+      "type": "object",
+      "properties": {
+        "test_filter": {
+          "type": "string",
+          "default": "Project"
+        },
+        "project_file": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Workflow",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": true,
+        "timeout_seconds": 1800
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "get_test_log": {
+      "type": "object",
+      "properties": {
+        "log_path": {
+          "type": "string",
+          "default": ""
+        },
+        "max_lines": {
+          "type": "integer",
+          "default": 300
         }
       },
       "required": [],
@@ -3030,6 +3242,288 @@
         "idempotentHint": true
       }
     },
+    "object_query": {
+      "type": "object",
+      "properties": {
+        "object_path": {
+          "type": "string",
+          "default": ""
+        },
+        "asset_path": {
+          "type": "string",
+          "default": ""
+        },
+        "class_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "selected_actor": {
+          "type": "boolean",
+          "default": false
+        },
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "include_properties": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_values": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_functions": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_components": {
+          "type": "boolean",
+          "default": true
+        },
+        "limit": {
+          "type": "integer",
+          "default": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Reflection",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "object_get_property": {
+      "type": "object",
+      "properties": {
+        "property_path": {
+          "type": "string"
+        },
+        "object_path": {
+          "type": "string",
+          "default": ""
+        },
+        "asset_path": {
+          "type": "string",
+          "default": ""
+        },
+        "class_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "selected_actor": {
+          "type": "boolean",
+          "default": false
+        },
+        "world": {
+          "type": "string",
+          "default": "auto"
+        }
+      },
+      "required": [
+        "property_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Reflection",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "object_set_property": {
+      "type": "object",
+      "properties": {
+        "property_path": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "object_path": {
+          "type": "string",
+          "default": ""
+        },
+        "asset_path": {
+          "type": "string",
+          "default": ""
+        },
+        "class_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "selected_actor": {
+          "type": "boolean",
+          "default": false
+        },
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "property_path",
+        "value"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Reflection",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "object_call_function": {
+      "type": "object",
+      "properties": {
+        "function_name": {
+          "type": "string"
+        },
+        "args": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "object_path": {
+          "type": "string",
+          "default": ""
+        },
+        "asset_path": {
+          "type": "string",
+          "default": ""
+        },
+        "class_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "selected_actor": {
+          "type": "boolean",
+          "default": false
+        },
+        "world": {
+          "type": "string",
+          "default": "auto"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "function_name"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Reflection",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
     "add_event_node": {
       "type": "object",
       "properties": {
@@ -4589,6 +5083,249 @@
         "source": "tcp_command",
         "schema_source": "python_mcp_signature",
         "category": "DataAsset",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "create_datatable": {
+      "type": "object",
+      "properties": {
+        "package_path": {
+          "type": "string"
+        },
+        "asset_name": {
+          "type": "string"
+        },
+        "row_struct_path": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "package_path",
+        "asset_name",
+        "row_struct_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "DataTable",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "get_datatable_info": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "DataTable",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "read_datatable_rows": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "row_name": {
+          "type": "string",
+          "default": ""
+        },
+        "limit": {
+          "type": "integer",
+          "default": 1000
+        }
+      },
+      "required": [
+        "asset_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "DataTable",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "add_datatable_row": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "row_name": {
+          "type": "string"
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "save": {
+          "type": "boolean",
+          "default": true
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "asset_path",
+        "row_name",
+        "values"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "DataTable",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "remove_datatable_row": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "row_name": {
+          "type": "string"
+        },
+        "save": {
+          "type": "boolean",
+          "default": true
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "asset_path",
+        "row_name"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "DataTable",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "import_datatable_csv": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "csv_text": {
+          "type": "string",
+          "default": ""
+        },
+        "csv_file_path": {
+          "type": "string",
+          "default": ""
+        },
+        "save": {
+          "type": "boolean",
+          "default": true
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "asset_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "DataTable",
         "required_scope": "write",
         "mutating": true,
         "supports_dry_run": true,
@@ -6243,6 +6980,74 @@
       "type": "object",
       "properties": {},
       "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "python_client_only",
+        "schema_source": "python_mcp_signature",
+        "category": "Client",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "ue_class_lookup": {
+      "type": "object",
+      "properties": {
+        "class_name": {
+          "type": "string"
+        },
+        "max_results": {
+          "type": "integer",
+          "default": 6
+        }
+      },
+      "required": [
+        "class_name"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "python_client_only",
+        "schema_source": "python_mcp_signature",
+        "category": "Client",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "ue_docs_search": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "default": ""
+        },
+        "max_results": {
+          "type": "integer",
+          "default": 8
+        },
+        "max_chars": {
+          "type": "integer",
+          "default": 1200
+        }
+      },
+      "required": [
+        "query"
+      ],
       "additionalProperties": false,
       "x-commonai": {
         "source": "python_client_only",

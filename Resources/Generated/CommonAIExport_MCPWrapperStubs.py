@@ -95,6 +95,62 @@ def source_control_diff(provider: str = 'auto', repo_path: str = '', path: str =
     return _format_response(_send_command("source_control_diff", params))
 
 
+def build_project(target: str = '', platform: str = 'Win64', configuration: str = 'Development', project_file: str = '', scope: str = 'write', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `build_project` (Workflow)."""
+    params = {
+        "target": target,
+        "platform": platform,
+        "configuration": configuration,
+        "project_file": project_file,
+    }
+    return _format_response(_send_command("build_project", params, _request_meta(scope, dry_run)))
+
+
+def generate_project_files(project_file: str = '', scope: str = 'write', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `generate_project_files` (Workflow)."""
+    params = {
+        "project_file": project_file,
+    }
+    return _format_response(_send_command("generate_project_files", params, _request_meta(scope, dry_run)))
+
+
+def cook_project(project_file: str = '', target_platform: str = 'Win64', client_config: str = 'Development', map: str = '', scope: str = 'write', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `cook_project` (Workflow)."""
+    params = {
+        "project_file": project_file,
+        "target_platform": target_platform,
+        "client_config": client_config,
+        "map": map,
+    }
+    return _format_response(_send_command("cook_project", params, _request_meta(scope, dry_run)))
+
+
+def list_tests(project_file: str = '') -> str:
+    """Generated stub for TCP command `list_tests` (Workflow)."""
+    params = {
+        "project_file": project_file,
+    }
+    return _format_response(_send_command("list_tests", params))
+
+
+def run_tests(test_filter: str = 'Project', project_file: str = '') -> str:
+    """Generated stub for TCP command `run_tests` (Workflow)."""
+    params = {
+        "test_filter": test_filter,
+        "project_file": project_file,
+    }
+    return _format_response(_send_command("run_tests", params))
+
+
+def get_test_log(log_path: str = '', max_lines: int = 300) -> str:
+    """Generated stub for TCP command `get_test_log` (Workflow)."""
+    params = {
+        "log_path": log_path,
+        "max_lines": max_lines,
+    }
+    return _format_response(_send_command("get_test_log", params))
+
+
 def task_submit(command: str, params: dict | None = None, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `task_submit` (AsyncJob)."""
     params = {
@@ -792,6 +848,76 @@ def get_cdo_array_length(asset_path: str, array_name: str) -> str:
     return _format_response(_send_command("get_cdo_array_length", params))
 
 
+def object_query(object_path: str = '', asset_path: str = '', class_path: str = '', actor_path: str = '', actor_label: str = '', actor_name: str = '', selected_actor: bool = False, world: str = 'auto', include_properties: bool = True, include_values: bool = True, include_functions: bool = True, include_components: bool = True, limit: int = 200) -> str:
+    """Generated stub for TCP command `object_query` (Reflection)."""
+    params = {
+        "object_path": object_path,
+        "asset_path": asset_path,
+        "class_path": class_path,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "selected_actor": selected_actor,
+        "world": world,
+        "include_properties": include_properties,
+        "include_values": include_values,
+        "include_functions": include_functions,
+        "include_components": include_components,
+        "limit": limit,
+    }
+    return _format_response(_send_command("object_query", params))
+
+
+def object_get_property(property_path: str, object_path: str = '', asset_path: str = '', class_path: str = '', actor_path: str = '', actor_label: str = '', actor_name: str = '', selected_actor: bool = False, world: str = 'auto') -> str:
+    """Generated stub for TCP command `object_get_property` (Reflection)."""
+    params = {
+        "property_path": property_path,
+        "object_path": object_path,
+        "asset_path": asset_path,
+        "class_path": class_path,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "selected_actor": selected_actor,
+        "world": world,
+    }
+    return _format_response(_send_command("object_get_property", params))
+
+
+def object_set_property(property_path: str, value: str, object_path: str = '', asset_path: str = '', class_path: str = '', actor_path: str = '', actor_label: str = '', actor_name: str = '', selected_actor: bool = False, world: str = 'auto', scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `object_set_property` (Reflection)."""
+    params = {
+        "property_path": property_path,
+        "value": value,
+        "object_path": object_path,
+        "asset_path": asset_path,
+        "class_path": class_path,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "selected_actor": selected_actor,
+        "world": world,
+    }
+    return _format_response(_send_command("object_set_property", params, _request_meta(scope, dry_run)))
+
+
+def object_call_function(function_name: str, args: dict | None = None, object_path: str = '', asset_path: str = '', class_path: str = '', actor_path: str = '', actor_label: str = '', actor_name: str = '', selected_actor: bool = False, world: str = 'auto', scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `object_call_function` (Reflection)."""
+    params = {
+        "function_name": function_name,
+        "args": args,
+        "object_path": object_path,
+        "asset_path": asset_path,
+        "class_path": class_path,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "selected_actor": selected_actor,
+        "world": world,
+    }
+    return _format_response(_send_command("object_call_function", params, _request_meta(scope, dry_run)))
+
+
 def add_event_node(asset_path: str, event_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_event_node` (BlueprintGraph)."""
     params = {
@@ -1163,6 +1289,66 @@ def save_data_asset(asset_path: str, scope: str = '', dry_run: bool = False) -> 
         "asset_path": asset_path,
     }
     return _format_response(_send_command("save_data_asset", params, _request_meta(scope, dry_run)))
+
+
+def create_datatable(package_path: str, asset_name: str, row_struct_path: str, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `create_datatable` (DataTable)."""
+    params = {
+        "package_path": package_path,
+        "asset_name": asset_name,
+        "row_struct_path": row_struct_path,
+    }
+    return _format_response(_send_command("create_datatable", params, _request_meta(scope, dry_run)))
+
+
+def get_datatable_info(asset_path: str) -> str:
+    """Generated stub for TCP command `get_datatable_info` (DataTable)."""
+    params = {
+        "asset_path": asset_path,
+    }
+    return _format_response(_send_command("get_datatable_info", params))
+
+
+def read_datatable_rows(asset_path: str, row_name: str = '', limit: int = 1000) -> str:
+    """Generated stub for TCP command `read_datatable_rows` (DataTable)."""
+    params = {
+        "asset_path": asset_path,
+        "row_name": row_name,
+        "limit": limit,
+    }
+    return _format_response(_send_command("read_datatable_rows", params))
+
+
+def add_datatable_row(asset_path: str, row_name: str, values: dict, save: bool = True, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `add_datatable_row` (DataTable)."""
+    params = {
+        "asset_path": asset_path,
+        "row_name": row_name,
+        "values": values,
+        "save": save,
+    }
+    return _format_response(_send_command("add_datatable_row", params, _request_meta(scope, dry_run)))
+
+
+def remove_datatable_row(asset_path: str, row_name: str, save: bool = True, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `remove_datatable_row` (DataTable)."""
+    params = {
+        "asset_path": asset_path,
+        "row_name": row_name,
+        "save": save,
+    }
+    return _format_response(_send_command("remove_datatable_row", params, _request_meta(scope, dry_run)))
+
+
+def import_datatable_csv(asset_path: str, csv_text: str = '', csv_file_path: str = '', save: bool = True, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `import_datatable_csv` (DataTable)."""
+    params = {
+        "asset_path": asset_path,
+        "csv_text": csv_text,
+        "csv_file_path": csv_file_path,
+        "save": save,
+    }
+    return _format_response(_send_command("import_datatable_csv", params, _request_meta(scope, dry_run)))
 
 
 def create_asset(package_path: str, asset_name: str, asset_type: str, properties: dict | None = None, scope: str = '', dry_run: bool = False) -> str:

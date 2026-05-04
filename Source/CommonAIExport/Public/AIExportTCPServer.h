@@ -15,7 +15,7 @@
 
 /**
  * TCP Server Runnable for AI Export commands.
- * Listens on port 55560 for JSON commands from external tools (Claude Code, Python scripts).
+ * Listens on port 55560 for JSON commands from external tools and Python scripts.
  *
  * Supported commands:
  * - ping: Connection test
@@ -211,6 +211,12 @@ private:
 	FString HandleSourceControlLog(TSharedPtr<class FJsonObject> Params);
 	FString HandleSourceControlShow(TSharedPtr<class FJsonObject> Params);
 	FString HandleSourceControlDiff(TSharedPtr<class FJsonObject> Params);
+	FString HandleBuildProject(TSharedPtr<class FJsonObject> Params);
+	FString HandleGenerateProjectFiles(TSharedPtr<class FJsonObject> Params);
+	FString HandleCookProject(TSharedPtr<class FJsonObject> Params);
+	FString HandleListTests(TSharedPtr<class FJsonObject> Params);
+	FString HandleRunTests(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetTestLog(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskSubmit(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskStatus(TSharedPtr<class FJsonObject> Params);
 	FString HandleTaskResult(TSharedPtr<class FJsonObject> Params);
@@ -280,6 +286,10 @@ private:
 	FString HandleSetCDOArrayElementProperty(TSharedPtr<class FJsonObject> Params);
 	FString HandleRemoveCDOArrayElement(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetCDOArrayLength(TSharedPtr<class FJsonObject> Params);
+	FString HandleObjectQuery(TSharedPtr<class FJsonObject> Params);
+	FString HandleObjectGetProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleObjectSetProperty(TSharedPtr<class FJsonObject> Params);
+	FString HandleObjectCallFunction(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Blueprint Graph */
 	FString HandleAddEventNode(TSharedPtr<class FJsonObject> Params);
@@ -325,6 +335,12 @@ private:
 
 	/** Command handlers — Data Asset */
 	FString HandleSaveDataAsset(TSharedPtr<class FJsonObject> Params);
+	FString HandleCreateDataTable(TSharedPtr<class FJsonObject> Params);
+	FString HandleGetDataTableInfo(TSharedPtr<class FJsonObject> Params);
+	FString HandleReadDataTableRows(TSharedPtr<class FJsonObject> Params);
+	FString HandleAddDataTableRow(TSharedPtr<class FJsonObject> Params);
+	FString HandleRemoveDataTableRow(TSharedPtr<class FJsonObject> Params);
+	FString HandleImportDataTableCsv(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Generic Asset Factory */
 	FString HandleCreateAsset(TSharedPtr<class FJsonObject> Params);

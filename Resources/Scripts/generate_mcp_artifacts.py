@@ -26,7 +26,7 @@ SERVER_METADATA_PATH = GENERATED_DIR / "CommonAIExport_server.json"
 WRAPPER_SPEC_PATH = GENERATED_DIR / "CommonAIExport_WrapperSpec.json"
 WRAPPER_STUBS_PATH = GENERATED_DIR / "CommonAIExport_MCPWrapperStubs.py"
 WRAPPER_RUNTIME_PATH = GENERATED_DIR / "CommonAIExport_MCPWrapperRuntime.py"
-AI_REFERENCE_PATH = PLUGIN_ROOT / "AI_REFERENCE.md"
+AI_REFERENCE_PATH = PLUGIN_ROOT / "Docs" / "Reference" / "AI_REFERENCE.md"
 
 AI_REFERENCE_SUMMARY_BEGIN = "<!-- BEGIN COMMONAI GENERATED TOOL SUMMARY -->"
 AI_REFERENCE_SUMMARY_END = "<!-- END COMMONAI GENERATED TOOL SUMMARY -->"
@@ -46,6 +46,8 @@ CLIENT_ONLY_TOOLS = {
     "commonai_prompt_get",
     "guarded_build_status",
     "client_scope_policy",
+    "ue_docs_search",
+    "ue_class_lookup",
     "mcp_server_metadata_export",
     "native_http_status",
     "native_mcp_probe",
@@ -882,7 +884,7 @@ def build_server_metadata(command_manifest: dict, tool_schemas: dict) -> dict:
         "schema_version": 1,
         "name": "commonai-export",
         "display_name": "CommonAIExport",
-        "description": "Project-local Unreal Editor automation MCP bridge for ProjectOkey.",
+        "description": "Project-local Unreal Editor automation MCP bridge for Unreal Engine projects.",
         "version": "0.4.1",
         "generated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "transports": {

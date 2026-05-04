@@ -2,14 +2,14 @@
 """
 AI Widget Builder MCP Server
 
-MCP server that wraps CommonAIExport TCP commands for Claude Code integration.
+MCP server that wraps CommonAIExport TCP commands for MCP-compatible clients.
 Provides tools for creating and manipulating Widget Blueprints in Unreal Editor.
 
 Port Discovery:
     Reads {ProjectDir}/Intermediate/AIExport_port.txt automatically.
 
 Usage:
-    Add to Claude Code settings (.claude/settings.json):
+    Add to your MCP client settings:
     {
         "mcpServers": {
             "widget-builder": {
@@ -112,6 +112,8 @@ CLIENT_ONLY_TOOLS = {
     "commonai_prompt_get",
     "guarded_build_status",
     "client_scope_policy",
+    "ue_docs_search",
+    "ue_class_lookup",
     "mcp_server_metadata_export",
     "native_http_status",
     "native_mcp_probe",
@@ -881,6 +883,109 @@ def _target_code_path(target_project_dir: str, relative_path: str, target_subdir
     return (root / subdir / Path(relative_path).name).resolve() if subdir else (root / Path(relative_path).name).resolve()
 
 
+def _doc_search_roots() -> list[Path]:
+    """Return local documentation roots for UE/project/plugin API lookup."""
+    roots: list[Path] = [
+        _SCRIPT_DIR.parent / "Docs",
+        Path(PROJECT_DIR).resolve() / "Docs",
+        Path(PROJECT_DIR).resolve() / "Saved" / "AIResearch" / "UnrealMCP",
+    ]
+    env_roots = os.environ.get("COMMONAI_UE_DOC_ROOTS", "")
+    for item in env_roots.split(os.pathsep):
+        item = item.strip()
+        if item:
+            roots.append(Path(item).expanduser())
+
+    result: list[Path] = []
+    seen: set[Path] = set()
+    for root in roots:
+        try:
+            resolved = root.resolve()
+        except OSError:
+            continue
+        if resolved.exists() and resolved not in seen:
+            seen.add(resolved)
+            result.append(resolved)
+    return result
+
+
+def _doc_search_files(max_files: int = 8000) -> list[Path]:
+    """Enumerate local docs without indexing generated/binary-heavy folders."""
+    blocked_parts = {".git", "node_modules", "Intermediate", "Binaries", "DerivedDataCache", ".venv", "venv"}
+    files: list[Path] = []
+    for root in _doc_search_roots():
+        for path in root.rglob("*"):
+            if len(files) >= max_files:
+                return files
+            if not path.is_file() or path.suffix.lower() not in {".md", ".txt", ".json"}:
+                continue
+            if any(part in blocked_parts for part in path.parts):
+                continue
+            files.append(path)
+    return files
+
+
+def _score_doc_text(query_terms: list[str], path: Path, text: str, category: str = "") -> int:
+    haystack = f"{path.as_posix()}\n{text}".lower()
+    score = 0
+    for term in query_terms:
+        if not term:
+            continue
+        score += haystack.count(term) * 4
+        if term in path.name.lower():
+            score += 20
+    if category and category.lower() in haystack:
+        score += 12
+    return score
+
+
+def _make_doc_snippet(text: str, query_terms: list[str], max_chars: int) -> str:
+    lower = text.lower()
+    hit_index = -1
+    for term in query_terms:
+        if term:
+            hit_index = lower.find(term)
+            if hit_index >= 0:
+                break
+    if hit_index < 0:
+        hit_index = 0
+    start = max(0, hit_index - max_chars // 3)
+    end = min(len(text), start + max_chars)
+    return text[start:end].strip()
+
+
+def _search_local_docs(query: str, category: str = "", max_results: int = 8, max_chars: int = 1200) -> dict:
+    query_terms = [part.lower() for part in query.replace("_", " ").split() if part.strip()]
+    if not query_terms:
+        return {"success": False, "error": "query must not be empty"}
+
+    results: list[dict] = []
+    for path in _doc_search_files():
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        score = _score_doc_text(query_terms, path, text, category)
+        if score <= 0:
+            continue
+        results.append({
+            "score": score,
+            "path": str(path),
+            "name": path.name,
+            "snippet": _make_doc_snippet(text, query_terms, max_chars),
+        })
+
+    results.sort(key=lambda item: item["score"], reverse=True)
+    return {
+        "success": True,
+        "query": query,
+        "category": category,
+        "root_count": len(_doc_search_roots()),
+        "returned_count": min(len(results), max_results),
+        "results": results[:max_results],
+    }
+
+
 COMMONAI_RESOURCES = {
     "commonai://project/status": {
         "name": "Project Status",
@@ -1039,7 +1144,7 @@ def _server_metadata() -> dict:
     return {
         "name": "commonai-export",
         "display_name": "CommonAIExport",
-        "description": "Project-local Unreal Editor automation MCP bridge for ProjectOkey.",
+        "description": "Project-local Unreal Editor automation MCP bridge for Unreal Engine projects.",
         "version": "0.4.0",
         "protocol": {
             "current_transport": "stdio FastMCP wrapper over localhost TCP JSON",
@@ -1347,6 +1452,84 @@ def source_control_diff(
 
 
 @mcp.tool()
+def build_project(
+    target: str = "",
+    platform: str = "Win64",
+    configuration: str = "Development",
+    project_file: str = "",
+    scope: str = "write",
+    dry_run: bool = False,
+) -> str:
+    """Run Unreal Build Tool for the current project."""
+    return _send_generated_tcp_tool("build_project", {
+        "target": target,
+        "platform": platform,
+        "configuration": configuration,
+        "project_file": project_file,
+        "scope": scope,
+        "dry_run": dry_run,
+    })
+
+
+@mcp.tool()
+def generate_project_files(
+    project_file: str = "",
+    scope: str = "write",
+    dry_run: bool = False,
+) -> str:
+    """Generate IDE project files through the engine batch script."""
+    return _send_generated_tcp_tool("generate_project_files", {
+        "project_file": project_file,
+        "scope": scope,
+        "dry_run": dry_run,
+    })
+
+
+@mcp.tool()
+def cook_project(
+    project_file: str = "",
+    target_platform: str = "Win64",
+    client_config: str = "Development",
+    map: str = "",
+    scope: str = "write",
+    dry_run: bool = False,
+) -> str:
+    """Run a cook-only BuildCookRun pass for the project."""
+    return _send_generated_tcp_tool("cook_project", {
+        "project_file": project_file,
+        "target_platform": target_platform,
+        "client_config": client_config,
+        "map": map,
+        "scope": scope,
+        "dry_run": dry_run,
+    })
+
+
+@mcp.tool()
+def list_tests(project_file: str = "") -> str:
+    """List Unreal automation tests using UnrealEditor-Cmd."""
+    return _send_generated_tcp_tool("list_tests", {"project_file": project_file})
+
+
+@mcp.tool()
+def run_tests(test_filter: str = "Project", project_file: str = "") -> str:
+    """Run Unreal automation tests using UnrealEditor-Cmd."""
+    return _send_generated_tcp_tool("run_tests", {
+        "test_filter": test_filter,
+        "project_file": project_file,
+    })
+
+
+@mcp.tool()
+def get_test_log(log_path: str = "", max_lines: int = 300) -> str:
+    """Read the latest CommonAIExport workflow test log tail."""
+    return _send_generated_tcp_tool("get_test_log", {
+        "log_path": log_path,
+        "max_lines": max_lines,
+    })
+
+
+@mcp.tool()
 def commonai_resources_list() -> str:
     """
     List CommonAIExport resource URIs exposed by this MCP wrapper.
@@ -1470,6 +1653,45 @@ def client_scope_policy() -> str:
         "client_policy": _client_scope_policy_state(),
         "scope_rank": SCOPE_RANK,
     })
+
+
+@mcp.tool()
+def ue_docs_search(
+    query: str,
+    category: str = "",
+    max_results: int = 8,
+    max_chars: int = 1200,
+) -> str:
+    """
+    Search local Unreal, project, plugin, and research documentation roots.
+
+    Args:
+        query: Natural-language or API-symbol query.
+        category: Optional category text such as blueprint, niagara, or networking.
+        max_results: Maximum matching files returned.
+        max_chars: Maximum snippet characters per result.
+    """
+    return _format_response(_search_local_docs(
+        query,
+        category,
+        max(1, min(int(max_results), 25)),
+        max(200, min(int(max_chars), 4000)),
+    ))
+
+
+@mcp.tool()
+def ue_class_lookup(class_name: str, max_results: int = 6) -> str:
+    """
+    Look up a UE class or struct by name in local docs.
+
+    Args:
+        class_name: Class/struct name such as UDataTable, UWorld, or FGameplayTag.
+        max_results: Maximum matching docs returned.
+    """
+    query = class_name.strip()
+    if not query:
+        return _format_response({"success": False, "error": "class_name must not be empty"})
+    return _format_response(_search_local_docs(query, "", max(1, min(int(max_results), 20)), 1800))
 
 
 @mcp.tool()
@@ -4345,6 +4567,76 @@ def save_data_asset(
 
 
 # =============================================================================
+# DATATABLE
+# =============================================================================
+
+@mcp.tool()
+def create_datatable(
+    package_path: str,
+    asset_name: str,
+    row_struct_path: str,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """Create a DataTable asset with a specific row struct."""
+    return _send_generated_tcp_tool("create_datatable", locals())
+
+
+@mcp.tool()
+def get_datatable_info(asset_path: str) -> str:
+    """Inspect DataTable row struct and row names."""
+    return _send_generated_tcp_tool("get_datatable_info", locals())
+
+
+@mcp.tool()
+def read_datatable_rows(
+    asset_path: str,
+    row_name: str = "",
+    limit: int = 1000,
+) -> str:
+    """Read DataTable rows as ImportText-compatible field values."""
+    return _send_generated_tcp_tool("read_datatable_rows", locals())
+
+
+@mcp.tool()
+def add_datatable_row(
+    asset_path: str,
+    row_name: str,
+    values: dict,
+    save: bool = True,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """Add or update a DataTable row from property-name to ImportText value mappings."""
+    return _send_generated_tcp_tool("add_datatable_row", locals())
+
+
+@mcp.tool()
+def remove_datatable_row(
+    asset_path: str,
+    row_name: str,
+    save: bool = True,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """Remove a row from a DataTable."""
+    return _send_generated_tcp_tool("remove_datatable_row", locals())
+
+
+@mcp.tool()
+def import_datatable_csv(
+    asset_path: str,
+    csv_text: str = "",
+    csv_file_path: str = "",
+    save: bool = True,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """Replace DataTable contents from CSV text or a CSV file path."""
+    return _send_generated_tcp_tool("import_datatable_csv", locals())
+
+
+# =============================================================================
 # ASSET IMPORT
 # =============================================================================
 
@@ -4472,6 +4764,84 @@ def get_cdo_properties(asset_path: str) -> str:
         JSON with property name -> value pairs.
     """
     return _send_generated_tcp_tool("get_cdo_properties", locals())
+
+
+# =============================================================================
+# GENERAL UOBJECT REFLECTION
+# =============================================================================
+
+@mcp.tool()
+def object_query(
+    object_path: str = "",
+    asset_path: str = "",
+    class_path: str = "",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    selected_actor: bool = False,
+    world: str = "auto",
+    include_properties: bool = True,
+    include_values: bool = True,
+    include_functions: bool = True,
+    include_components: bool = True,
+    limit: int = 200,
+) -> str:
+    """Inspect any loaded UObject, asset, class, actor, or selected actor."""
+    return _send_generated_tcp_tool("object_query", locals())
+
+
+@mcp.tool()
+def object_get_property(
+    property_path: str,
+    object_path: str = "",
+    asset_path: str = "",
+    class_path: str = "",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    selected_actor: bool = False,
+    world: str = "auto",
+) -> str:
+    """Read a reflected property path from any resolved UObject."""
+    return _send_generated_tcp_tool("object_get_property", locals())
+
+
+@mcp.tool()
+def object_set_property(
+    property_path: str,
+    value: str,
+    object_path: str = "",
+    asset_path: str = "",
+    class_path: str = "",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    selected_actor: bool = False,
+    world: str = "auto",
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """Set a reflected property path on any resolved UObject using ImportText value format."""
+    return _send_generated_tcp_tool("object_set_property", locals())
+
+
+@mcp.tool()
+def object_call_function(
+    function_name: str,
+    args: dict | None = None,
+    object_path: str = "",
+    asset_path: str = "",
+    class_path: str = "",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    selected_actor: bool = False,
+    world: str = "auto",
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """Call a reflected UObject function and return any out params or return value."""
+    return _send_generated_tcp_tool("object_call_function", locals())
 
 
 # =============================================================================
@@ -5569,7 +5939,7 @@ def capture_widget_preview(
     Render a Widget Blueprint to PNG file(s) at one or more resolutions.
 
     Primary use case: IFTP verify loop — compare UE rendering with the Pencil source
-    across multiple screen ratios (16:9, 21:9, 9:16, 4:3). Claude Code can read the
+    across multiple screen ratios (16:9, 21:9, 9:16, 4:3). MCP clients can read the
     resulting PNG via the Read tool and visually compare with Pencil get_screenshot.
 
     Args:

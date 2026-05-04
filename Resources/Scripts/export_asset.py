@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Asset Export Wrapper for Claude Code
+Asset Export Wrapper for MCP-compatible automation clients
 
 Main interface script for exporting and simplifying UE asset content.
-Claude Code calls this script to get readable asset information.
+Automation clients call this script to get readable asset information.
 
 Current Mode: Manual Export (user copies from UE editor)
 Future Mode: Automated via AIExportCommandlet
@@ -17,20 +17,20 @@ Usage:
 
 Output:
     Creates simplified file in Dev/AIExports/ folder
-    Returns the path to the simplified file for Claude to read
+    Returns the path to the simplified file for the client to read
 
 Workflow (Current):
     1. User: Opens asset in UE editor
     2. User: Copies content (Ctrl+C on nodes/class defaults)
     3. User: Pastes to Dev/AIExports/<AssetName>_raw.txt
-    4. Claude: Calls this script to simplify
-    5. Claude: Reads the simplified output
+    4. Client: Calls this script to simplify
+    5. Client: Reads the simplified output
 
 Workflow (Future with Commandlet):
-    1. Claude: Calls this script with --asset flag
+    1. Client: Calls this script with --asset flag
     2. Script: Runs UE Commandlet (headless)
     3. Script: Calls simplifier on raw output
-    4. Claude: Reads the simplified output
+    4. Client: Reads the simplified output
 """
 
 import sys
@@ -205,14 +205,14 @@ def main():
 
         simplified_file = simplify_file(input_file)
 
-    # Output result for Claude Code
+    # Output result for automation clients.
     print("")
     print("=" * 60)
     print("EXPORT COMPLETE")
     print("=" * 60)
     print(f"Simplified file: {simplified_file}")
     print("")
-    print("Claude Code can now read this file:")
+    print("The automation client can now read this file:")
     print(f"  Read {simplified_file}")
 
 

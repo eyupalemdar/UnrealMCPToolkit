@@ -1,11 +1,11 @@
 {
   "schema_version": 3,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T12:40:12.785133Z",
+  "generated_at_utc": "2026-05-04T14:11:18.210831Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
-  "generator": "Plugins/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
-  "command_count": 129,
-  "category_count": 24,
+  "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
+  "command_count": 145,
+  "category_count": 26,
   "categories": {
     "AnimBlueprint": 2,
     "Asset": 14,
@@ -17,6 +17,7 @@
     "CDO": 2,
     "CDOArray": 4,
     "DataAsset": 1,
+    "DataTable": 6,
     "Editor": 2,
     "EditorActor": 4,
     "EditorLevel": 2,
@@ -26,11 +27,12 @@
     "Input": 3,
     "Material": 15,
     "PIE": 3,
+    "Reflection": 4,
     "RuntimeInspector": 22,
     "Utility": 5,
     "Widget": 11,
     "WidgetPreview": 1,
-    "Workflow": 6
+    "Workflow": 12
   },
   "supported_scopes": [
     "read",
@@ -50,7 +52,7 @@
       "async_candidate": false,
       "handler": "HandlePing",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 164
     },
     {
@@ -64,7 +66,7 @@
       "async_candidate": false,
       "handler": "HandleListCommands",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 165
     },
     {
@@ -78,7 +80,7 @@
       "async_candidate": false,
       "handler": "HandleServerStatus",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 166
     },
     {
@@ -92,7 +94,7 @@
       "async_candidate": false,
       "handler": "HandleEditorIdentity",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 167
     },
     {
@@ -106,7 +108,7 @@
       "async_candidate": false,
       "handler": "HandleCommandManifestExport",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 168
     },
     {
@@ -120,7 +122,7 @@
       "async_candidate": false,
       "handler": "HandleProjectStatus",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 169
     },
     {
@@ -134,7 +136,7 @@
       "async_candidate": false,
       "handler": "HandleSourceControlStatus",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 170
     },
     {
@@ -148,7 +150,7 @@
       "async_candidate": false,
       "handler": "HandleSourceControlLog",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 171
     },
     {
@@ -162,7 +164,7 @@
       "async_candidate": false,
       "handler": "HandleSourceControlShow",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 172
     },
     {
@@ -176,8 +178,92 @@
       "async_candidate": false,
       "handler": "HandleSourceControlDiff",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
       "line": 173
+    },
+    {
+      "name": "build_project",
+      "category": "Workflow",
+      "requires_params": false,
+      "mutating": true,
+      "timeout_seconds": 1200,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": true,
+      "handler": "HandleBuildProject",
+      "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 174
+    },
+    {
+      "name": "generate_project_files",
+      "category": "Workflow",
+      "requires_params": false,
+      "mutating": true,
+      "timeout_seconds": 300,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": true,
+      "handler": "HandleGenerateProjectFiles",
+      "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 175
+    },
+    {
+      "name": "cook_project",
+      "category": "Workflow",
+      "requires_params": false,
+      "mutating": true,
+      "timeout_seconds": 1800,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": true,
+      "handler": "HandleCookProject",
+      "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 176
+    },
+    {
+      "name": "list_tests",
+      "category": "Workflow",
+      "requires_params": false,
+      "mutating": false,
+      "timeout_seconds": 300,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": true,
+      "handler": "HandleListTests",
+      "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 177
+    },
+    {
+      "name": "run_tests",
+      "category": "Workflow",
+      "requires_params": false,
+      "mutating": false,
+      "timeout_seconds": 1800,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": true,
+      "handler": "HandleRunTests",
+      "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 178
+    },
+    {
+      "name": "get_test_log",
+      "category": "Workflow",
+      "requires_params": false,
+      "mutating": false,
+      "timeout_seconds": 30,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleGetTestLog",
+      "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 179
     },
     {
       "name": "task_submit",
@@ -190,8 +276,8 @@
       "async_candidate": false,
       "handler": "HandleTaskSubmit",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 174
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 180
     },
     {
       "name": "task_status",
@@ -204,8 +290,8 @@
       "async_candidate": false,
       "handler": "HandleTaskStatus",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 175
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 181
     },
     {
       "name": "task_result",
@@ -218,8 +304,8 @@
       "async_candidate": false,
       "handler": "HandleTaskResult",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 176
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 182
     },
     {
       "name": "task_cancel",
@@ -232,8 +318,8 @@
       "async_candidate": false,
       "handler": "HandleTaskCancel",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 177
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 183
     },
     {
       "name": "task_events",
@@ -246,8 +332,8 @@
       "async_candidate": false,
       "handler": "HandleTaskEvents",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 178
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 184
     },
     {
       "name": "task_events_wait",
@@ -260,8 +346,8 @@
       "async_candidate": false,
       "handler": "HandleTaskEventsWait",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 179
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 185
     },
     {
       "name": "export_widget",
@@ -274,8 +360,8 @@
       "async_candidate": false,
       "handler": "HandleExportWidget",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 180
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 186
     },
     {
       "name": "export_blueprint",
@@ -288,8 +374,8 @@
       "async_candidate": false,
       "handler": "HandleExportBlueprint",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 181
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 187
     },
     {
       "name": "list_supported_types",
@@ -302,8 +388,8 @@
       "async_candidate": false,
       "handler": "HandleListSupportedTypes",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 182
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 188
     },
     {
       "name": "editor_world_info",
@@ -316,8 +402,8 @@
       "async_candidate": false,
       "handler": "HandleEditorWorldInfo",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 184
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 190
     },
     {
       "name": "runtime_world_info",
@@ -330,8 +416,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeWorldInfo",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 185
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 191
     },
     {
       "name": "runtime_player_list",
@@ -344,8 +430,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimePlayerList",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 186
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 192
     },
     {
       "name": "runtime_component_list",
@@ -358,8 +444,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeComponentList",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 187
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 193
     },
     {
       "name": "runtime_diagnostics",
@@ -372,8 +458,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 188
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 194
     },
     {
       "name": "runtime_input_routing",
@@ -386,8 +472,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeInputRouting",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 189
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 195
     },
     {
       "name": "runtime_replication_diagnostics",
@@ -400,8 +486,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeReplicationDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 190
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 196
     },
     {
       "name": "runtime_ability_system_diagnostics",
@@ -414,8 +500,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeAbilitySystemDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 191
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 197
     },
     {
       "name": "runtime_ai_perception_diagnostics",
@@ -428,8 +514,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeAIPerceptionDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 192
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 198
     },
     {
       "name": "runtime_ai_controller_diagnostics",
@@ -442,8 +528,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeAIControllerDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 193
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 199
     },
     {
       "name": "runtime_eqs_diagnostics",
@@ -456,8 +542,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeEQSDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 194
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 200
     },
     {
       "name": "runtime_gameplay_tags_diagnostics",
@@ -470,8 +556,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeGameplayTagsDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 195
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 201
     },
     {
       "name": "runtime_commonui_diagnostics",
@@ -484,8 +570,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeCommonUIDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 196
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 202
     },
     {
       "name": "runtime_audio_diagnostics",
@@ -498,8 +584,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeAudioDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 197
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 203
     },
     {
       "name": "runtime_navigation_diagnostics",
@@ -512,8 +598,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeNavigationDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 198
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 204
     },
     {
       "name": "runtime_asset_streaming_diagnostics",
@@ -526,8 +612,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeAssetStreamingDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 199
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 205
     },
     {
       "name": "runtime_async_load_diagnostics",
@@ -540,8 +626,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeAsyncLoadDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 200
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 206
     },
     {
       "name": "runtime_game_instance_diagnostics",
@@ -554,8 +640,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeGameInstanceDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 201
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 207
     },
     {
       "name": "runtime_level_travel_diagnostics",
@@ -568,8 +654,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeLevelTravelDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 202
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 208
     },
     {
       "name": "runtime_multiplayer_connection_diagnostics",
@@ -582,8 +668,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeMultiplayerConnectionDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 203
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 209
     },
     {
       "name": "runtime_tick_timer_latent_diagnostics",
@@ -596,8 +682,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeTickTimerLatentDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 204
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 210
     },
     {
       "name": "runtime_scheduler_performance_diagnostics",
@@ -610,8 +696,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimeSchedulerPerformanceDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 205
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 211
     },
     {
       "name": "runtime_physics_collision_diagnostics",
@@ -624,8 +710,8 @@
       "async_candidate": false,
       "handler": "HandleRuntimePhysicsCollisionDiagnostics",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 206
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 212
     },
     {
       "name": "actor_list",
@@ -638,8 +724,8 @@
       "async_candidate": false,
       "handler": "HandleActorList",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 207
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 213
     },
     {
       "name": "actor_spawn",
@@ -652,8 +738,8 @@
       "async_candidate": false,
       "handler": "HandleActorSpawn",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 208
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 214
     },
     {
       "name": "actor_set_transform",
@@ -666,8 +752,8 @@
       "async_candidate": false,
       "handler": "HandleActorSetTransform",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 209
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 215
     },
     {
       "name": "actor_delete",
@@ -680,8 +766,8 @@
       "async_candidate": false,
       "handler": "HandleActorDelete",
       "descriptor_macro": "AI_COMMAND_PARAMS_SCOPE",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 210
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 216
     },
     {
       "name": "level_open",
@@ -694,8 +780,8 @@
       "async_candidate": false,
       "handler": "HandleLevelOpen",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 211
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 217
     },
     {
       "name": "level_save_current",
@@ -708,8 +794,8 @@
       "async_candidate": false,
       "handler": "HandleLevelSaveCurrent",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS_SCOPE",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 212
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 218
     },
     {
       "name": "pie_status",
@@ -722,8 +808,8 @@
       "async_candidate": false,
       "handler": "HandlePIEStatus",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 213
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 219
     },
     {
       "name": "pie_start",
@@ -736,8 +822,8 @@
       "async_candidate": false,
       "handler": "HandlePIEStart",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS_SCOPE",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 214
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 220
     },
     {
       "name": "pie_stop",
@@ -750,8 +836,8 @@
       "async_candidate": false,
       "handler": "HandlePIEStop",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS_SCOPE",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 215
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 221
     },
     {
       "name": "editor_console_command",
@@ -764,8 +850,8 @@
       "async_candidate": false,
       "handler": "HandleEditorConsoleCommand",
       "descriptor_macro": "AI_COMMAND_PARAMS_SCOPE",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 216
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 222
     },
     {
       "name": "editor_log_read",
@@ -778,8 +864,8 @@
       "async_candidate": false,
       "handler": "HandleEditorLogRead",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 217
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 223
     },
     {
       "name": "viewport_capture",
@@ -792,8 +878,8 @@
       "async_candidate": false,
       "handler": "HandleViewportCapture",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 218
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 224
     },
     {
       "name": "create_widget_blueprint",
@@ -806,8 +892,8 @@
       "async_candidate": false,
       "handler": "HandleCreateWidgetBlueprint",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 220
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 226
     },
     {
       "name": "add_widget",
@@ -820,8 +906,8 @@
       "async_candidate": false,
       "handler": "HandleAddWidget",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 221
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 227
     },
     {
       "name": "remove_widget",
@@ -834,8 +920,8 @@
       "async_candidate": false,
       "handler": "HandleRemoveWidget",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 222
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 228
     },
     {
       "name": "move_widget",
@@ -848,8 +934,8 @@
       "async_candidate": false,
       "handler": "HandleMoveWidget",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 223
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 229
     },
     {
       "name": "set_widget_property",
@@ -862,8 +948,8 @@
       "async_candidate": false,
       "handler": "HandleSetWidgetProperty",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 224
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 230
     },
     {
       "name": "set_slot_property",
@@ -876,8 +962,8 @@
       "async_candidate": false,
       "handler": "HandleSetSlotProperty",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 225
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 231
     },
     {
       "name": "set_canvas_slot_layout",
@@ -890,8 +976,8 @@
       "async_candidate": false,
       "handler": "HandleSetCanvasSlotLayout",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 226
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 232
     },
     {
       "name": "set_widget_properties",
@@ -904,8 +990,8 @@
       "async_candidate": false,
       "handler": "HandleSetWidgetProperties",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 227
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 233
     },
     {
       "name": "compile_and_save",
@@ -918,8 +1004,8 @@
       "async_candidate": false,
       "handler": "HandleCompileAndSave",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 228
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 234
     },
     {
       "name": "get_widget_tree",
@@ -932,8 +1018,8 @@
       "async_candidate": false,
       "handler": "HandleGetWidgetTree",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 229
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 235
     },
     {
       "name": "list_widget_classes",
@@ -946,8 +1032,8 @@
       "async_candidate": false,
       "handler": "HandleListWidgetClasses",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 230
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 236
     },
     {
       "name": "set_cdo_property",
@@ -960,8 +1046,8 @@
       "async_candidate": true,
       "handler": "HandleSetCDOProperty",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 232
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 238
     },
     {
       "name": "get_cdo_properties",
@@ -974,8 +1060,8 @@
       "async_candidate": false,
       "handler": "HandleGetCDOProperties",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 233
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 239
     },
     {
       "name": "add_cdo_array_element",
@@ -988,8 +1074,8 @@
       "async_candidate": false,
       "handler": "HandleAddCDOArrayElement",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 234
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 240
     },
     {
       "name": "set_cdo_array_element_property",
@@ -1002,8 +1088,8 @@
       "async_candidate": false,
       "handler": "HandleSetCDOArrayElementProperty",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 235
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 241
     },
     {
       "name": "remove_cdo_array_element",
@@ -1016,8 +1102,8 @@
       "async_candidate": false,
       "handler": "HandleRemoveCDOArrayElement",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 236
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 242
     },
     {
       "name": "get_cdo_array_length",
@@ -1030,8 +1116,64 @@
       "async_candidate": false,
       "handler": "HandleGetCDOArrayLength",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 237
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 243
+    },
+    {
+      "name": "object_query",
+      "category": "Reflection",
+      "requires_params": true,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleObjectQuery",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 244
+    },
+    {
+      "name": "object_get_property",
+      "category": "Reflection",
+      "requires_params": true,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleObjectGetProperty",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 245
+    },
+    {
+      "name": "object_set_property",
+      "category": "Reflection",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleObjectSetProperty",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 246
+    },
+    {
+      "name": "object_call_function",
+      "category": "Reflection",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleObjectCallFunction",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 247
     },
     {
       "name": "add_event_node",
@@ -1044,8 +1186,8 @@
       "async_candidate": false,
       "handler": "HandleAddEventNode",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 239
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 249
     },
     {
       "name": "add_custom_event",
@@ -1058,8 +1200,8 @@
       "async_candidate": false,
       "handler": "HandleAddCustomEvent",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 240
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 250
     },
     {
       "name": "add_function_call",
@@ -1072,8 +1214,8 @@
       "async_candidate": false,
       "handler": "HandleAddFunctionCallNode",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 241
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 251
     },
     {
       "name": "add_variable_get_node",
@@ -1086,8 +1228,8 @@
       "async_candidate": false,
       "handler": "HandleAddVariableGetNode",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 242
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 252
     },
     {
       "name": "add_variable_set_node",
@@ -1100,8 +1242,8 @@
       "async_candidate": false,
       "handler": "HandleAddVariableSetNode",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 243
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 253
     },
     {
       "name": "add_make_struct_node",
@@ -1114,8 +1256,8 @@
       "async_candidate": false,
       "handler": "HandleAddMakeStructNode",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 244
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 254
     },
     {
       "name": "add_branch_node",
@@ -1128,8 +1270,8 @@
       "async_candidate": false,
       "handler": "HandleAddBranchNode",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 245
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 255
     },
     {
       "name": "ensure_function_graph",
@@ -1142,8 +1284,8 @@
       "async_candidate": false,
       "handler": "HandleEnsureFunctionGraph",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 246
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 256
     },
     {
       "name": "add_call_parent_function",
@@ -1156,8 +1298,8 @@
       "async_candidate": false,
       "handler": "HandleAddCallParentFunction",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 247
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 257
     },
     {
       "name": "connect_pins",
@@ -1170,8 +1312,8 @@
       "async_candidate": false,
       "handler": "HandleConnectPins",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 248
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 258
     },
     {
       "name": "set_pin_default",
@@ -1184,8 +1326,8 @@
       "async_candidate": false,
       "handler": "HandleSetPinDefault",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 249
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 259
     },
     {
       "name": "remove_graph_node",
@@ -1198,8 +1340,8 @@
       "async_candidate": false,
       "handler": "HandleRemoveGraphNode",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 250
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 260
     },
     {
       "name": "get_graph",
@@ -1212,8 +1354,8 @@
       "async_candidate": false,
       "handler": "HandleGetGraph",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 251
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 261
     },
     {
       "name": "list_graphs",
@@ -1226,8 +1368,8 @@
       "async_candidate": false,
       "handler": "HandleListGraphs",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 252
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 262
     },
     {
       "name": "add_variable",
@@ -1240,8 +1382,8 @@
       "async_candidate": false,
       "handler": "HandleAddVariable",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 254
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 264
     },
     {
       "name": "set_variable_default",
@@ -1254,8 +1396,8 @@
       "async_candidate": false,
       "handler": "HandleSetVariableDefault",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 255
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 265
     },
     {
       "name": "remove_variable",
@@ -1268,8 +1410,8 @@
       "async_candidate": false,
       "handler": "HandleRemoveVariable",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 256
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 266
     },
     {
       "name": "get_variables",
@@ -1282,8 +1424,8 @@
       "async_candidate": false,
       "handler": "HandleGetVariables",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 257
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 267
     },
     {
       "name": "reparent_blueprint",
@@ -1296,8 +1438,8 @@
       "async_candidate": false,
       "handler": "HandleReparentBlueprint",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 258
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 268
     },
     {
       "name": "create_material",
@@ -1310,8 +1452,8 @@
       "async_candidate": false,
       "handler": "HandleCreateMaterial",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 260
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 270
     },
     {
       "name": "set_material_property",
@@ -1324,8 +1466,8 @@
       "async_candidate": false,
       "handler": "HandleSetMaterialProperty",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 261
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 271
     },
     {
       "name": "add_expression",
@@ -1338,8 +1480,8 @@
       "async_candidate": false,
       "handler": "HandleAddExpression",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 262
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 272
     },
     {
       "name": "set_expression_property",
@@ -1352,8 +1494,8 @@
       "async_candidate": false,
       "handler": "HandleSetExpressionProperty",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 263
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 273
     },
     {
       "name": "connect_expressions",
@@ -1366,8 +1508,8 @@
       "async_candidate": false,
       "handler": "HandleConnectExpressions",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 264
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 274
     },
     {
       "name": "connect_to_material_property",
@@ -1380,8 +1522,8 @@
       "async_candidate": false,
       "handler": "HandleConnectToMaterialProperty",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 265
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 275
     },
     {
       "name": "disconnect_input",
@@ -1394,8 +1536,8 @@
       "async_candidate": false,
       "handler": "HandleDisconnectInput",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 266
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 276
     },
     {
       "name": "remove_expression",
@@ -1408,8 +1550,8 @@
       "async_candidate": false,
       "handler": "HandleRemoveExpression",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 267
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 277
     },
     {
       "name": "compile_material",
@@ -1422,8 +1564,8 @@
       "async_candidate": true,
       "handler": "HandleCompileMaterial",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 268
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 278
     },
     {
       "name": "get_material_graph",
@@ -1436,8 +1578,8 @@
       "async_candidate": false,
       "handler": "HandleGetMaterialGraph",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 269
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 279
     },
     {
       "name": "list_expression_classes",
@@ -1450,8 +1592,8 @@
       "async_candidate": false,
       "handler": "HandleListExpressionClasses",
       "descriptor_macro": "AI_COMMAND_NO_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 270
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 280
     },
     {
       "name": "create_material_instance",
@@ -1464,8 +1606,8 @@
       "async_candidate": false,
       "handler": "HandleCreateMaterialInstance",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 271
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 281
     },
     {
       "name": "set_instance_parameter",
@@ -1478,8 +1620,8 @@
       "async_candidate": false,
       "handler": "HandleSetInstanceParameter",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 272
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 282
     },
     {
       "name": "save_material_instance",
@@ -1492,8 +1634,8 @@
       "async_candidate": false,
       "handler": "HandleSaveMaterialInstance",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 273
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 283
     },
     {
       "name": "get_material_instance_info",
@@ -1506,8 +1648,8 @@
       "async_candidate": false,
       "handler": "HandleGetMaterialInstanceInfo",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 274
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 284
     },
     {
       "name": "save_data_asset",
@@ -1520,8 +1662,92 @@
       "async_candidate": false,
       "handler": "HandleSaveDataAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 276
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 286
+    },
+    {
+      "name": "create_datatable",
+      "category": "DataTable",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleCreateDataTable",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 287
+    },
+    {
+      "name": "get_datatable_info",
+      "category": "DataTable",
+      "requires_params": true,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleGetDataTableInfo",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 288
+    },
+    {
+      "name": "read_datatable_rows",
+      "category": "DataTable",
+      "requires_params": true,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleReadDataTableRows",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 289
+    },
+    {
+      "name": "add_datatable_row",
+      "category": "DataTable",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleAddDataTableRow",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 290
+    },
+    {
+      "name": "remove_datatable_row",
+      "category": "DataTable",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleRemoveDataTableRow",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 291
+    },
+    {
+      "name": "import_datatable_csv",
+      "category": "DataTable",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleImportDataTableCsv",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 292
     },
     {
       "name": "create_asset",
@@ -1534,8 +1760,8 @@
       "async_candidate": false,
       "handler": "HandleCreateAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 278
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 294
     },
     {
       "name": "set_asset_property",
@@ -1548,8 +1774,8 @@
       "async_candidate": false,
       "handler": "HandleSetAssetProperty",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 279
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 295
     },
     {
       "name": "get_asset_properties",
@@ -1562,8 +1788,8 @@
       "async_candidate": false,
       "handler": "HandleGetAssetProperties",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 280
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 296
     },
     {
       "name": "asset_exists",
@@ -1576,8 +1802,8 @@
       "async_candidate": false,
       "handler": "HandleAssetExists",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 281
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 297
     },
     {
       "name": "scan_asset_paths",
@@ -1590,8 +1816,8 @@
       "async_candidate": false,
       "handler": "HandleScanAssetPaths",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 282
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 298
     },
     {
       "name": "asset_search",
@@ -1604,8 +1830,8 @@
       "async_candidate": false,
       "handler": "HandleAssetSearch",
       "descriptor_macro": "AI_COMMAND_OPTIONAL_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 283
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 299
     },
     {
       "name": "asset_validate_light",
@@ -1618,8 +1844,8 @@
       "async_candidate": false,
       "handler": "HandleAssetValidateLight",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 284
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 300
     },
     {
       "name": "save_asset",
@@ -1632,8 +1858,8 @@
       "async_candidate": false,
       "handler": "HandleSaveAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 285
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 301
     },
     {
       "name": "rename_asset",
@@ -1646,8 +1872,8 @@
       "async_candidate": true,
       "handler": "HandleRenameAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 286
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 302
     },
     {
       "name": "get_referencers",
@@ -1660,8 +1886,8 @@
       "async_candidate": false,
       "handler": "HandleGetReferencers",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 287
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 303
     },
     {
       "name": "get_dependencies",
@@ -1674,8 +1900,8 @@
       "async_candidate": false,
       "handler": "HandleGetDependencies",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 288
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 304
     },
     {
       "name": "delete_asset",
@@ -1688,8 +1914,8 @@
       "async_candidate": true,
       "handler": "HandleDeleteAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS_SCOPE",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 289
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 305
     },
     {
       "name": "list_redirectors",
@@ -1702,8 +1928,8 @@
       "async_candidate": false,
       "handler": "HandleListRedirectors",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 290
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 306
     },
     {
       "name": "fixup_redirectors",
@@ -1716,8 +1942,8 @@
       "async_candidate": true,
       "handler": "HandleFixupRedirectors",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 291
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 307
     },
     {
       "name": "add_input_mapping",
@@ -1730,8 +1956,8 @@
       "async_candidate": false,
       "handler": "HandleAddInputMapping",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 293
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 309
     },
     {
       "name": "remove_input_mapping",
@@ -1744,8 +1970,8 @@
       "async_candidate": false,
       "handler": "HandleRemoveInputMapping",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 294
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 310
     },
     {
       "name": "get_input_mappings",
@@ -1758,8 +1984,8 @@
       "async_candidate": false,
       "handler": "HandleGetInputMappings",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 295
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 311
     },
     {
       "name": "create_anim_blueprint",
@@ -1772,8 +1998,8 @@
       "async_candidate": false,
       "handler": "HandleCreateAnimBlueprint",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 297
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 313
     },
     {
       "name": "get_anim_blueprint_info",
@@ -1786,8 +2012,8 @@
       "async_candidate": false,
       "handler": "HandleGetAnimBlueprintInfo",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 298
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 314
     },
     {
       "name": "import_texture",
@@ -1800,8 +2026,8 @@
       "async_candidate": false,
       "handler": "HandleImportTexture",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 300
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 316
     },
     {
       "name": "import_font",
@@ -1814,8 +2040,8 @@
       "async_candidate": false,
       "handler": "HandleImportFont",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 301
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 317
     },
     {
       "name": "capture_widget_preview",
@@ -1828,8 +2054,8 @@
       "async_candidate": true,
       "handler": "HandleCaptureWidgetPreview",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 303
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 319
     },
     {
       "name": "reload_asset",
@@ -1842,8 +2068,8 @@
       "async_candidate": false,
       "handler": "HandleReloadAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS",
-      "source": "Plugins/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 304
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 320
     }
   ]
 }
