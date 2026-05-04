@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CommandDispatch/AIExportCommandDispatch.h"
 #include "CommandHandlers/AIExportAsyncJobStore.h"
 #include "CommandHandlers/AIExportUtilityCommands.h"
 #include "HttpMcp/AIExportHttpMcpServer.h"
@@ -171,34 +172,17 @@ private:
 		FString (FAIExportTCPServer::*NoParamsHandler)();
 	};
 
-	struct FAICommandContext
-	{
-		FString RequestId;
-		FString ClientId;
-		FString SessionId;
-		FString Scope;
-		int32 TimeoutSeconds = 0;
-		bool bDryRun = false;
-		bool bCancellationRequested = false;
-	};
-
 	/** Registered TCP command descriptors used for dispatch and introspection */
 	static const TArray<FCommandDescriptor>& GetCommandDescriptors();
 
 	/** Find a registered command descriptor by protocol command name */
 	static const FCommandDescriptor* FindCommandDescriptor(const FString& CommandType);
 
-	/** Build request context metadata from a command envelope */
-	FAICommandContext BuildCommandContext(TSharedPtr<class FJsonObject> RootObject, const FCommandDescriptor& Descriptor) const;
-
-	/** Validate whether a request context can invoke the descriptor */
-	bool ValidateCommandScope(const FCommandDescriptor& Descriptor, const FAICommandContext& Context, FString& OutError) const;
+	/** Convert the private handler descriptor to the shared dispatch shape */
+	static CommonAIExport::CommandDispatch::FAIExportCommandDescriptor BuildDispatchDescriptor(const FCommandDescriptor& Descriptor);
 
 	/** Dispatch a descriptor after validation has completed */
 	FString DispatchCommand(const FCommandDescriptor& Descriptor, TSharedPtr<class FJsonObject> Params);
-
-	/** Create a generic dry-run response for mutating commands */
-	FString CreateDryRunResponse(const FCommandDescriptor& Descriptor, const FAICommandContext& Context);
 
 	/** Build utility/status context passed to the utility command module */
 	CommonAIExport::CommandHandlers::Utility::FAIExportUtilityContext BuildUtilityContext() const;
