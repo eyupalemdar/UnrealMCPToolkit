@@ -46,6 +46,10 @@ Current audit notes:
 - `spline_authoring` remains command-handler owned for now because it edits live
   editor actor/component state. Add a spline builder only if spline authoring
   grows beyond this command family or starts producing reusable spline assets.
+- `data_tables` uses `UAIDataTableBuilder` because DataTable creation, row
+  mutation, and CSV import are reusable asset authoring. It does not need a
+  dedicated exporter unless DataTable is added to canonical `export_asset`
+  coverage.
 - Static Mesh, Skeletal Mesh, Animation, Niagara, Sequencer, Landscape, Foliage,
   PCG, and level-structure commands are currently read-only diagnostics, so
   adding Builders or Exporters would duplicate the existing command response

@@ -424,7 +424,7 @@
         "import_datatable_csv"
       ],
       "client_tools": [],
-      "extension_policy": "Extend this capability for row-structured table operations and imports."
+      "extension_policy": "Extend this capability for row-structured table operations and imports. DataTable asset creation, row mutation, and CSV import belong in UAIDataTableBuilder rather than CommandHandlers."
     },
     {
       "id": "asset_authoring_registry",
