@@ -1,0 +1,100 @@
+{
+  "$schema": "tspec-v1",
+  "screen": "ExampleMenu",
+  "pencilFile": "Art/UI/ExampleMenu.pen",
+  "pencilFrameId": "example-menu-frame",
+  "referenceAnalysis": "Docs/UI_ReferenceAnalysis/ExampleMenu.reference_analysis.md",
+  "mode": "hybrid",
+  "wbpPath": "/Game/UI/Menu/W_ExampleMenu",
+  "parentClass": "/Script/CommonUI.CommonActivatableWidget",
+  "commonUi": {
+    "baseClass": "UCommonActivatableWidget",
+    "layer": "UI.Layer.Menu",
+    "inputConfig": "Menu",
+    "backAction": "UI.Action.Back",
+    "focusRoot": "PrimaryButton"
+  },
+  "rootShell": {
+    "type": "hybrid-adaptive",
+    "referenceSize": [1920, 1080],
+    "bgColor": "(R=0.02,G=0.025,B=0.03,A=1.0)"
+  },
+  "designSystem": {
+    "dependencies": [],
+    "debt": []
+  },
+  "sourceIntent": {
+    "layout": "Full-screen menu with safe-zone constrained content."
+  },
+  "nodes": [
+    {
+      "name": "Root_Overlay",
+      "parentName": "",
+      "widgetClass": "Overlay",
+      "shellRole": "root",
+      "children": ["BG_Image", "Content_SafeZone"]
+    },
+    {
+      "name": "BG_Image",
+      "parentName": "Root_Overlay",
+      "widgetClass": "Image",
+      "shellRole": "background"
+    },
+    {
+      "name": "Content_SafeZone",
+      "parentName": "Root_Overlay",
+      "widgetClass": "SafeZone",
+      "shellRole": "safe-zone",
+      "children": ["MainCanvas"]
+    },
+    {
+      "name": "MainCanvas",
+      "parentName": "Content_SafeZone",
+      "widgetClass": "CanvasPanel",
+      "shellRole": "content-root",
+      "children": ["TitleText", "PrimaryButton"]
+    },
+    {
+      "name": "TitleText",
+      "parentName": "MainCanvas",
+      "widgetClass": "CommonTextBlock",
+      "properties": {
+        "Text": "Example Menu"
+      },
+      "slot": {
+        "canvas": {
+          "anchors": [0.5, 0.2, 0.5, 0.2],
+          "alignment": [0.5, 0.5],
+          "offsets": [-300, -40, 600, 80]
+        }
+      }
+    },
+    {
+      "name": "PrimaryButton",
+      "parentName": "MainCanvas",
+      "widgetClass": "CommonButtonBase",
+      "slot": {
+        "canvas": {
+          "anchors": [0.5, 0.5, 0.5, 0.5],
+          "alignment": [0.5, 0.5],
+          "offsets": [-160, -32, 320, 64]
+        }
+      }
+    }
+  ],
+  "verification": {
+    "captures": [
+      { "label": "16x9", "width": 1920, "height": 1080, "expectation": "Reference layout" },
+      { "label": "21x9", "width": 2560, "height": 1080, "expectation": "No unsafe clipping" },
+      { "label": "4x3", "width": 1440, "height": 1080, "expectation": "Safe-zone compliant" }
+    ],
+    "structural": [
+      "get_widget_tree matches TSpec"
+    ],
+    "input": [
+      "Back action routes through CommonUI"
+    ]
+  },
+  "openQuestions": []
+}
+

@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://commonaiexport.local/schemas/tspec-v1.schema.json",
+  "title": "CommonAIExport UI Transfer Spec",
+  "type": "object",
+  "required": [
+    "$schema",
+    "screen",
+    "pencilFile",
+    "pencilFrameId",
+    "mode",
+    "wbpPath",
+    "parentClass",
+    "rootShell",
+    "nodes"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "tspec-v1"
+    },
+    "screen": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pencilFile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pencilFrameId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "referenceAnalysis": {
+      "type": "string"
+    },
+    "mode": {
+      "enum": ["letterbox", "hybrid", "adaptive"]
+    },
+    "wbpPath": {
+      "type": "string",
+      "pattern": "^/Game/"
+    },
+    "parentClass": {
+      "type": "string",
+      "minLength": 1
+    },
+    "commonUi": {
+      "type": "object",
+      "properties": {
+        "baseClass": { "type": "string" },
+        "layer": { "type": "string" },
+        "inputConfig": { "type": "string" },
+        "backAction": { "type": "string" },
+        "focusRoot": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "rootShell": {
+      "type": "object",
+      "required": ["type", "referenceSize"],
+      "properties": {
+        "type": {
+          "enum": ["letterbox-default", "hybrid-adaptive", "adaptive-default"]
+        },
+        "referenceSize": {
+          "type": "array",
+          "prefixItems": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "integer", "minimum": 1 }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "bgColor": { "type": "string" },
+        "bgImagePath": { "type": "string" },
+        "bgMaterialPath": { "type": "string" },
+        "comment": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "designSystem": {
+      "type": "object",
+      "properties": {
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "debt": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "sourceIntent": {
+      "type": ["object", "array"]
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "parentName", "widgetClass"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "pencilNodeId": { "type": "string" },
+          "parentName": { "type": "string" },
+          "widgetClass": { "type": "string", "minLength": 1 },
+          "shellRole": { "type": "string" },
+          "comment": { "type": "string" },
+          "size": { "type": "object", "additionalProperties": true },
+          "properties": { "type": "object", "additionalProperties": true },
+          "stateProps": { "type": "object", "additionalProperties": true },
+          "slot": {
+            "type": "object",
+            "properties": {
+              "parentContainer": { "type": "string" },
+              "hAlign": { "type": "string" },
+              "vAlign": { "type": "string" },
+              "padding": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 4,
+                "maxItems": 4
+              },
+              "size": { "type": "object", "additionalProperties": true },
+              "canvas": {
+                "type": "object",
+                "properties": {
+                  "anchors": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "minItems": 4,
+                    "maxItems": 4
+                  },
+                  "alignment": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "offsets": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "minItems": 4,
+                    "maxItems": 4
+                  },
+                  "sizeToContent": { "type": "boolean" }
+                },
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": true
+          },
+          "children": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "captures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "width", "height"],
+            "properties": {
+              "label": { "type": "string" },
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 },
+              "expectation": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "structural": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "input": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "openQuestions": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

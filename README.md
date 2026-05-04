@@ -11,10 +11,19 @@ Copy the `CommonAIExport` folder to your project's `Plugins/` directory and rebu
 Start your Unreal Engine project. **The editor must remain open** during the export process - the TCP server runs inside the editor.
 
 ### Step 3: Configure Your AI Assistant
-Tell your AI assistant (Claude Code, GPT, etc.) to read the `AI_QUICKSTART.md` file in this plugin. This file contains:
+Tell your AI assistant (Claude Code, GPT, etc.) to read the `Docs/Usage/AI_QUICKSTART.md` file in this plugin. This file contains:
 - How to connect to the TCP server
 - Available export commands
 - Output path conventions
+
+For UI transfer or Widget Blueprint mutation work, also read
+`Docs/AI_UI_Transfer/README.md`. The plugin includes a portable TSpec workflow under
+`Docs/UI_TSpec/` and `Docs/AI_UI_Transfer/`; validate specs before WBP mutation
+with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
+```
 
 ### Step 4: Customize Settings (Optional)
 Open **Project Settings → Plugins → Common AI Export** to configure:

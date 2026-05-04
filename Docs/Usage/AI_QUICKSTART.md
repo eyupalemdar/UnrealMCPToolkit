@@ -9,7 +9,7 @@ When configured in Claude Code's MCP settings, 118 tools become available with `
 
 **MCP Client**: `Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py`
 
-For full tool reference: **[AI_REFERENCE.md](AI_REFERENCE.md)**
+For full tool reference: **[AI_REFERENCE.md](../Reference/AI_REFERENCE.md)**
 
 ### 2. Direct TCP (For scripts, other AI tools)
 
@@ -55,6 +55,16 @@ python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py
 # Optional live-editor runtime smoke
 python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py
 python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py --mutating-smoke
+```
+
+For UI transfer/TSpec validation:
+
+```powershell
+# From the plugin repository
+powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
+
+# From a host Unreal project where the plugin is installed
+powershell -ExecutionPolicy Bypass -File Plugins/CommonAIExport/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
 ```
 
 ```bash
@@ -122,4 +132,4 @@ Generated class:  WidgetBlueprintGeneratedClass'/Game/UI/Path/W_Widget.W_Widget_
 
 ---
 
-For comprehensive documentation: **[AI_REFERENCE.md](AI_REFERENCE.md)** | **[README.md](README.md)**
+For comprehensive documentation: **[AI_REFERENCE.md](../Reference/AI_REFERENCE.md)** | **[README.md](../../README.md)**

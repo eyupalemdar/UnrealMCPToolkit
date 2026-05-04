@@ -1,0 +1,50 @@
+{
+  "$schema": "tspec-v1",
+  "screen": "<ScreenName>",
+  "pencilFile": "Art/UI/<file>.pen",
+  "pencilFrameId": "<frameId>",
+  "referenceAnalysis": "Docs/UI_ReferenceAnalysis/<screen>.reference_analysis.md",
+  "mode": "letterbox",
+  "wbpPath": "/Game/UI/<Folder>/W_<Screen>",
+  "parentClass": "/Script/CommonUI.CommonActivatableWidget",
+  "commonUi": {
+    "baseClass": "<HostProjectBaseClass>",
+    "layer": "<HostProjectLayerTag>",
+    "inputConfig": "Menu",
+    "backAction": "UI.Action.Back",
+    "focusRoot": "<InitialFocusWidget>"
+  },
+  "rootShell": {
+    "type": "letterbox-default",
+    "referenceSize": [1920, 1080],
+    "bgImagePath": "/Game/UI/<Path>/<Texture>.<Texture>"
+  },
+  "designSystem": {
+    "dependencies": [],
+    "debt": []
+  },
+  "sourceIntent": {},
+  "nodes": [
+    {
+      "name": "Root_Overlay",
+      "parentName": "",
+      "widgetClass": "Overlay",
+      "shellRole": "root"
+    }
+  ],
+  "verification": {
+    "captures": [
+      { "label": "16x9", "width": 1920, "height": 1080, "expectation": "Reference layout" },
+      { "label": "21x9_landscape_phone", "width": 2560, "height": 1080, "expectation": "No unsafe clipping" },
+      { "label": "16x10_tablet", "width": 1920, "height": 1200, "expectation": "Tablet-safe layout" },
+      { "label": "4x3_ipad", "width": 1440, "height": 1080, "expectation": "Safe-zone compliant" }
+    ],
+    "structural": [
+      "get_widget_tree matches TSpec"
+    ],
+    "input": [
+      "Back action routes through CommonUI"
+    ]
+  },
+  "openQuestions": []
+}
