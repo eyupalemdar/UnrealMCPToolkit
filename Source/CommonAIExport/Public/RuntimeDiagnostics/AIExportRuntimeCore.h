@@ -9,6 +9,5 @@ namespace CommonAIExport::RuntimeDiagnostics
 {
 TSharedPtr<FJsonObject> BuildWorldInfo(TSharedPtr<FJsonObject> Params);
 TSharedPtr<FJsonObject> BuildPlayerList(TSharedPtr<FJsonObject> Params);
-TSharedPtr<FJsonObject> BuildComponentList(TSharedPtr<FJsonObject> Params);
 TSharedPtr<FJsonObject> BuildRuntimeDiagnostics(TSharedPtr<FJsonObject> Params);
 }

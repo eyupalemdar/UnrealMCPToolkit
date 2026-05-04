@@ -338,7 +338,7 @@ def runtime_player_list(world: str = 'auto') -> str:
     return _format_response(_send_command("runtime_player_list", params))
 
 
-def runtime_component_list(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', actor_class_filter: str = '', component_class_filter: str = '', limit: int = 500) -> str:
+def runtime_component_list(world: str = 'auto', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', actor_class_filter: str = '', component_class_filter: str = '', limit: int = 500, include_scene_details: bool = False, include_hierarchy: bool = False, hierarchy_depth: int = 16, hierarchy_actor_limit: int = 10, hierarchy_component_limit: int = 250) -> str:
     """Generated stub for TCP command `runtime_component_list` (RuntimeInspector)."""
     params = {
         "world": world,
@@ -349,6 +349,11 @@ def runtime_component_list(world: str = 'auto', actor_path: str = '', actor_labe
         "actor_class_filter": actor_class_filter,
         "component_class_filter": component_class_filter,
         "limit": limit,
+        "include_scene_details": include_scene_details,
+        "include_hierarchy": include_hierarchy,
+        "hierarchy_depth": hierarchy_depth,
+        "hierarchy_actor_limit": hierarchy_actor_limit,
+        "hierarchy_component_limit": hierarchy_component_limit,
     }
     return _format_response(_send_command("runtime_component_list", params))
 

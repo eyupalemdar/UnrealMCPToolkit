@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T15:03:37.163749Z",
+  "generated_at_utc": "2026-05-04T15:22:55.201591Z",
   "tool_count": 178,
   "tools": {
     "ping": {
@@ -1230,6 +1230,26 @@
         "limit": {
           "type": "integer",
           "default": 500
+        },
+        "include_scene_details": {
+          "type": "boolean",
+          "default": false
+        },
+        "include_hierarchy": {
+          "type": "boolean",
+          "default": false
+        },
+        "hierarchy_depth": {
+          "type": "integer",
+          "default": 16
+        },
+        "hierarchy_actor_limit": {
+          "type": "integer",
+          "default": 10
+        },
+        "hierarchy_component_limit": {
+          "type": "integer",
+          "default": 250
         }
       },
       "required": [],

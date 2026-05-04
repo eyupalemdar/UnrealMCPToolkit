@@ -529,7 +529,7 @@ inherit the same scope/dry-run model exposed through `list_commands`.
 | `editor_world_info()` | Inspect current editor world, package/map filename, level list, actor count, and PIE state |
 | `runtime_world_info(world?)` | Inspect PIE/runtime world metadata, falling back to editor world in auto mode |
 | `runtime_player_list(world?)` | List runtime player controllers, local players, and possessed pawns |
-| `runtime_component_list(world?, actor_path?, actor_label?, actor_name?, name_filter?, actor_class_filter?, component_class_filter?, limit?)` | List actor components in PIE/runtime or editor worlds |
+| `runtime_component_list(world?, actor_path?, actor_label?, actor_name?, name_filter?, actor_class_filter?, component_class_filter?, limit?, include_scene_details?, include_hierarchy?, hierarchy_depth?, hierarchy_actor_limit?, hierarchy_component_limit?)` | List actor components in PIE/runtime or editor worlds, optionally with scene transforms, mesh refs, ISM counts, and hierarchy |
 | `runtime_diagnostics(world?, actor_path?, actor_label?, actor_name?, include_components?, component_limit?)` | Capture a focused PIE/runtime diagnostics snapshot with world, player, warning, and optional actor/component details |
 | `runtime_input_routing(world?)` | Inspect player controller input components, EnhancedInput subsystem state, and CommonInput local-player state |
 | `runtime_replication_diagnostics(world?, actor_path?, actor_label?, actor_name?, name_filter?, class_filter?, include_components?, actor_limit?, component_limit?)` | Inspect actor replication roles, dormancy, relevancy flags, movement replication, and replicated component state |
@@ -567,7 +567,8 @@ inherit the same scope/dry-run model exposed through `list_commands`.
 editor_world_info()
 runtime_world_info()
 runtime_player_list()
-runtime_component_list(limit=25)
+runtime_component_list(limit=25, include_scene_details=True)
+runtime_component_list(actor_label="BP_DebugPawn", include_hierarchy=True, include_scene_details=True)
 runtime_diagnostics(component_limit=25)
 actor_list(limit=10)
 

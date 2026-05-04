@@ -2675,6 +2675,11 @@ def runtime_component_list(
     actor_class_filter: str = "",
     component_class_filter: str = "",
     limit: int = 500,
+    include_scene_details: bool = False,
+    include_hierarchy: bool = False,
+    hierarchy_depth: int = 16,
+    hierarchy_actor_limit: int = 10,
+    hierarchy_component_limit: int = 250,
 ) -> str:
     """
     List actor components from the selected runtime or editor world.
@@ -2688,14 +2693,25 @@ def runtime_component_list(
         actor_class_filter: Optional substring matched against actor class path.
         component_class_filter: Optional substring matched against component class path.
         limit: Maximum component records returned. The TCP server clamps this.
+        include_scene_details: Include scene-component transforms, mobility,
+            attachment, mesh references, and ISM instance counts.
+        include_hierarchy: Include scene component hierarchy per matched actor.
+        hierarchy_depth: Maximum root-to-child hierarchy depth when hierarchy is requested.
+        hierarchy_actor_limit: Maximum matched actors with returned hierarchy.
+        hierarchy_component_limit: Maximum hierarchy component nodes returned.
 
     Returns:
-        JSON with component records, owner metadata, matched count, and
-        truncation state.
+        JSON with component records, optional scene details, optional component
+        hierarchies, owner metadata, matched count, and truncation state.
     """
     params = {
         "world": world,
         "limit": limit,
+        "include_scene_details": include_scene_details,
+        "include_hierarchy": include_hierarchy,
+        "hierarchy_depth": hierarchy_depth,
+        "hierarchy_actor_limit": hierarchy_actor_limit,
+        "hierarchy_component_limit": hierarchy_component_limit,
     }
     if actor_path:
         params["actor_path"] = actor_path

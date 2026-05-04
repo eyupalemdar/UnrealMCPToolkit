@@ -152,7 +152,7 @@
         "runtime_physics_collision_diagnostics"
       ],
       "client_tools": [],
-      "extension_policy": "Add read-only PIE/runtime diagnostics here. Mutating gameplay control should be a separate reviewed capability."
+      "extension_policy": "Add read-only PIE/runtime diagnostics here. runtime_component_list owns actor component lists, scene details, and hierarchy inspection; mutating gameplay control should be a separate reviewed capability."
     },
     {
       "id": "editor_world_console",

@@ -96,6 +96,17 @@ def _failures() -> list[str]:
         if schema.get("additionalProperties") is not False:
             failures.append(f"{tool_name}: generated schema must be strict with additionalProperties=false")
 
+    runtime_component_props = schemas["tools"].get("runtime_component_list", {}).get("properties", {})
+    for prop_name in (
+        "include_scene_details",
+        "include_hierarchy",
+        "hierarchy_depth",
+        "hierarchy_actor_limit",
+        "hierarchy_component_limit",
+    ):
+        if prop_name not in runtime_component_props:
+            failures.append(f"runtime_component_list schema missing {prop_name}")
+
     if COMMAND_MANIFEST_PATH.exists():
         generated_manifest = json.loads(COMMAND_MANIFEST_PATH.read_text(encoding="utf-8"))
         generated_names = [command["name"] for command in generated_manifest.get("commands", [])]

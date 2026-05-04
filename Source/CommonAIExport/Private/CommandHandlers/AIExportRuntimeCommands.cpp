@@ -4,6 +4,7 @@
 #include "CommandHandlers/AIExportCommandResponse.h"
 #include "RuntimeDiagnostics/AIExportRuntimeAI.h"
 #include "RuntimeDiagnostics/AIExportRuntimeAudio.h"
+#include "RuntimeDiagnostics/AIExportRuntimeComponents.h"
 #include "RuntimeDiagnostics/AIExportRuntimeCore.h"
 #include "RuntimeDiagnostics/AIExportRuntimeEQS.h"
 #include "RuntimeDiagnostics/AIExportRuntimeFramework.h"
