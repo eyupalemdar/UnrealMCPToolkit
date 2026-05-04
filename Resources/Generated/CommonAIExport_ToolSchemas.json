@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T16:42:59.237553Z",
-  "tool_count": 191,
+  "generated_at_utc": "2026-05-04T17:04:35.721001Z",
+  "tool_count": 193,
   "tools": {
     "ping": {
       "type": "object",
@@ -7286,6 +7286,127 @@
         "source": "tcp_command",
         "schema_source": "python_mcp_signature",
         "category": "Foliage",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "pcg_graph_info": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "include_nodes": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_pins": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_edges": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_settings": {
+          "type": "boolean",
+          "default": true
+        },
+        "node_limit": {
+          "type": "integer",
+          "default": 200
+        },
+        "pin_limit": {
+          "type": "integer",
+          "default": 64
+        },
+        "edge_limit": {
+          "type": "integer",
+          "default": 500
+        },
+        "setting_property_limit": {
+          "type": "integer",
+          "default": 40
+        }
+      },
+      "required": [
+        "asset_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "PCG",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "pcg_component_info": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "editor"
+        },
+        "actor_path": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_label": {
+          "type": "string",
+          "default": ""
+        },
+        "actor_name": {
+          "type": "string",
+          "default": ""
+        },
+        "name_filter": {
+          "type": "string",
+          "default": ""
+        },
+        "component_name": {
+          "type": "string",
+          "default": ""
+        },
+        "include_graph": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_resources": {
+          "type": "boolean",
+          "default": false
+        },
+        "component_limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "resource_limit": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "PCG",
         "required_scope": "read",
         "mutating": false,
         "supports_dry_run": false,

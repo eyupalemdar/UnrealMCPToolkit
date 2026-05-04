@@ -6367,6 +6367,43 @@ def foliage_type_settings(foliage_type_path: str) -> str:
 
 
 # =============================================================================
+# PCG DIAGNOSTICS
+# =============================================================================
+
+@mcp.tool()
+def pcg_graph_info(
+    asset_path: str,
+    include_nodes: bool = True,
+    include_pins: bool = True,
+    include_edges: bool = True,
+    include_settings: bool = True,
+    node_limit: int = 200,
+    pin_limit: int = 64,
+    edge_limit: int = 500,
+    setting_property_limit: int = 40,
+) -> str:
+    """Inspect PCGGraph nodes, pins, edges, and settings."""
+    return _send_generated_tcp_tool("pcg_graph_info", locals())
+
+
+@mcp.tool()
+def pcg_component_info(
+    world: str = "editor",
+    actor_path: str = "",
+    actor_label: str = "",
+    actor_name: str = "",
+    name_filter: str = "",
+    component_name: str = "",
+    include_graph: bool = True,
+    include_resources: bool = False,
+    component_limit: int = 100,
+    resource_limit: int = 100,
+) -> str:
+    """Inspect PCGComponents and generation state in a world."""
+    return _send_generated_tcp_tool("pcg_component_info", locals())
+
+
+# =============================================================================
 # WIDGET PREVIEW CAPTURE
 # =============================================================================
 

@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T16:42:59.310016Z",
+  "generated_at_utc": "2026-05-04T17:04:35.794004Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 191,
-  "tcp_command_count": 172,
+  "tool_count": 193,
+  "tcp_command_count": 174,
   "client_only_count": 19,
-  "wrapper_count": 191,
+  "wrapper_count": 193,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -4079,7 +4079,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6374,
+        "line": 6411,
         "params": [
           {
             "name": "asset_path",
@@ -11543,6 +11543,342 @@
       },
       "calls_expected_tcp_command": true
     },
+    "pcg_component_info": {
+      "name": "pcg_component_info",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "pcg_component_info",
+      "literal_send_commands": [
+        "pcg_component_info"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "world": {
+            "type": "string",
+            "default": "editor"
+          },
+          "actor_path": {
+            "type": "string",
+            "default": ""
+          },
+          "actor_label": {
+            "type": "string",
+            "default": ""
+          },
+          "actor_name": {
+            "type": "string",
+            "default": ""
+          },
+          "name_filter": {
+            "type": "string",
+            "default": ""
+          },
+          "component_name": {
+            "type": "string",
+            "default": ""
+          },
+          "include_graph": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_resources": {
+            "type": "boolean",
+            "default": false
+          },
+          "component_limit": {
+            "type": "integer",
+            "default": 100
+          },
+          "resource_limit": {
+            "type": "integer",
+            "default": 100
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "PCG",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "pcg_component_info",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6390,
+        "params": [
+          {
+            "name": "world",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "'editor'",
+            "default_value": "editor",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "actor_path",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "actor_label",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "actor_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "name_filter",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "component_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_graph",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_resources",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "component_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "resource_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "100",
+            "default_value": 100,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "pcg_component_info"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "pcg_graph_info": {
+      "name": "pcg_graph_info",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "pcg_graph_info",
+      "literal_send_commands": [
+        "pcg_graph_info"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "asset_path": {
+            "type": "string"
+          },
+          "include_nodes": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_pins": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_edges": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_settings": {
+            "type": "boolean",
+            "default": true
+          },
+          "node_limit": {
+            "type": "integer",
+            "default": 200
+          },
+          "pin_limit": {
+            "type": "integer",
+            "default": 64
+          },
+          "edge_limit": {
+            "type": "integer",
+            "default": 500
+          },
+          "setting_property_limit": {
+            "type": "integer",
+            "default": 40
+          }
+        },
+        "required": [
+          "asset_path"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "PCG",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "pcg_graph_info",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6374,
+        "params": [
+          {
+            "name": "asset_path",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "include_nodes",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_pins",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_edges",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_settings",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "node_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "pin_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "64",
+            "default_value": 64,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "edge_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "500",
+            "default_value": 500,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "setting_property_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "40",
+            "default_value": 40,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "pcg_graph_info"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
     "pie_start": {
       "name": "pie_start",
       "source": "tcp_command",
@@ -13049,7 +13385,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6454,
+        "line": 6491,
         "params": [
           {
             "name": "asset_path",

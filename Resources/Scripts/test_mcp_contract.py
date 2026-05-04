@@ -116,6 +116,7 @@ def _failures() -> list[str]:
         "landscape_sample_height": ("x", "y"),
         "foliage_sample_instances": ("x", "y"),
         "foliage_type_settings": ("foliage_type_path",),
+        "pcg_graph_info": ("asset_path",),
     }.items():
         props = schemas["tools"].get(tool_name, {}).get("properties", {})
         for prop_name in required_props:

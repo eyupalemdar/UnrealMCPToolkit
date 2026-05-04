@@ -339,6 +339,8 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_OPTIONAL_PARAMS("foliage_info", "Foliage", false, 60, HandleFoliageInfo),
 		AI_COMMAND_PARAMS("foliage_sample_instances", "Foliage", false, 60, HandleFoliageSampleInstances),
 		AI_COMMAND_PARAMS("foliage_type_settings", "Foliage", false, 60, HandleFoliageTypeSettings),
+		AI_COMMAND_PARAMS("pcg_graph_info", "PCG", false, 60, HandlePCGGraphInfo),
+		AI_COMMAND_OPTIONAL_PARAMS("pcg_component_info", "PCG", false, 60, HandlePCGComponentInfo),
 
 		AI_COMMAND_PARAMS("import_texture", "Import", true, 60, HandleImportTexture),
 		AI_COMMAND_PARAMS("import_font", "Import", true, 60, HandleImportFont),

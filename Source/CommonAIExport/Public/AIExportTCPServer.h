@@ -131,6 +131,10 @@
  * - foliage_sample_instances: Sample Foliage instance transforms around a world-space point
  * - foliage_type_settings: Inspect a FoliageType asset's placement/rendering settings
  *
+ * PCG commands:
+ * - pcg_graph_info: Inspect PCGGraph nodes, pins, edges, and settings
+ * - pcg_component_info: Inspect PCGComponents and generation state in a world
+ *
  * Asset Import commands:
  * - import_texture: Import a texture file from disk into Content Browser
  * - import_font: Import font files (TTF/OTF) and create a Composite Font asset
@@ -423,6 +427,10 @@ private:
 	FString HandleFoliageInfo(TSharedPtr<class FJsonObject> Params);
 	FString HandleFoliageSampleInstances(TSharedPtr<class FJsonObject> Params);
 	FString HandleFoliageTypeSettings(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers - PCG */
+	FString HandlePCGGraphInfo(TSharedPtr<class FJsonObject> Params);
+	FString HandlePCGComponentInfo(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Asset Import */
 	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);

@@ -543,6 +543,19 @@
       "extension_policy": "Use this capability for AInstancedFoliageActor, UFoliageType, foliage settings, HISM component summaries, and bounded instance sampling diagnostics. Generic actor/component summaries stay in editor_actor_operations/runtime_diagnostics; foliage painting, erasure, or type mutation must be a separately reviewed mutating capability."
     },
     {
+      "id": "pcg_diagnostics",
+      "domain": "world",
+      "title": "PCG graph and component diagnostics",
+      "status": "native",
+      "category_tags": ["PCG"],
+      "commands": [
+        "pcg_graph_info",
+        "pcg_component_info"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for PCGGraph node/pin/edge semantics, PCG settings snapshots, and PCGComponent generation state. asset_search owns generic PCG asset discovery; runtime_component_list owns generic component summaries; PCG graph authoring, generation, cleanup, and mutation must be separately reviewed mutating capabilities."
+    },
+    {
       "id": "client_editor_bridge",
       "domain": "client",
       "title": "MCP client multi-editor bridge",

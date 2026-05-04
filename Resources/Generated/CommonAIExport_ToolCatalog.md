@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 172
-- MCP tools: 191
-- Categories: 33
+- TCP commands: 174
+- MCP tools: 193
+- Categories: 34
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
@@ -36,6 +36,7 @@
 | `Input` | 3 |
 | `Landscape` | 2 |
 | `Material` | 15 |
+| `PCG` | 2 |
 | `PIE` | 3 |
 | `Project` | 4 |
 | `ProjectConfig` | 5 |
@@ -220,6 +221,8 @@
 | `foliage_info` | `Foliage` | `read` | false | false | false | 60 |
 | `foliage_sample_instances` | `Foliage` | `read` | false | false | false | 60 |
 | `foliage_type_settings` | `Foliage` | `read` | false | false | false | 60 |
+| `pcg_graph_info` | `PCG` | `read` | false | false | false | 60 |
+| `pcg_component_info` | `PCG` | `read` | false | false | false | 60 |
 | `import_texture` | `Import` | `write` | true | true | false | 60 |
 | `import_font` | `Import` | `write` | true | true | false | 60 |
 | `capture_widget_preview` | `WidgetPreview` | `read` | false | false | true | 120 |

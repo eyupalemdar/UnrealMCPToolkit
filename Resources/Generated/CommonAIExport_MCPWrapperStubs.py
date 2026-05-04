@@ -1853,6 +1853,39 @@ def foliage_type_settings(foliage_type_path: str) -> str:
     return _format_response(_send_command("foliage_type_settings", params))
 
 
+def pcg_graph_info(asset_path: str, include_nodes: bool = True, include_pins: bool = True, include_edges: bool = True, include_settings: bool = True, node_limit: int = 200, pin_limit: int = 64, edge_limit: int = 500, setting_property_limit: int = 40) -> str:
+    """Generated stub for TCP command `pcg_graph_info` (PCG)."""
+    params = {
+        "asset_path": asset_path,
+        "include_nodes": include_nodes,
+        "include_pins": include_pins,
+        "include_edges": include_edges,
+        "include_settings": include_settings,
+        "node_limit": node_limit,
+        "pin_limit": pin_limit,
+        "edge_limit": edge_limit,
+        "setting_property_limit": setting_property_limit,
+    }
+    return _format_response(_send_command("pcg_graph_info", params))
+
+
+def pcg_component_info(world: str = 'editor', actor_path: str = '', actor_label: str = '', actor_name: str = '', name_filter: str = '', component_name: str = '', include_graph: bool = True, include_resources: bool = False, component_limit: int = 100, resource_limit: int = 100) -> str:
+    """Generated stub for TCP command `pcg_component_info` (PCG)."""
+    params = {
+        "world": world,
+        "actor_path": actor_path,
+        "actor_label": actor_label,
+        "actor_name": actor_name,
+        "name_filter": name_filter,
+        "component_name": component_name,
+        "include_graph": include_graph,
+        "include_resources": include_resources,
+        "component_limit": component_limit,
+        "resource_limit": resource_limit,
+    }
+    return _format_response(_send_command("pcg_component_info", params))
+
+
 def import_texture(source_path: str, package_path: str, asset_name: str = '', compression: str = 'UserInterface2D', srgb: bool = True, mip_gen: str = 'NoMipmaps', lod_group: str = 'UI', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `import_texture` (Import)."""
     params = {

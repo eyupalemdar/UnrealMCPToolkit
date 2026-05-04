@@ -50,6 +50,7 @@ public class CommonAIExport : ModuleRules
 			"RenderCore",  // For FlushRenderingCommands (widget preview capture)
 			"Landscape",  // For landscape proxy/component diagnostics
 			"Foliage",  // For foliage actor/type diagnostics
+			"PCG",  // For PCG graph/component diagnostics
 			"LevelSequence",  // For LevelSequence/Sequencer asset inspection
 			"MovieScene",  // For UWidgetAnimation export
 			"MovieSceneTracks",  // For section types (FloatSection, ColorSection, etc.)
