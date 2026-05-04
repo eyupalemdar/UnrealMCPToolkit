@@ -1,14 +1,14 @@
 # AI UI Transfer Entry Point
 
 This is the tool-agnostic entry point for Reference Image -> Pencil -> Unreal
-Engine 5.7 UI transfer using CommonAIExport.
+Engine 5.7 UI transfer using MCPToolkit.
 
 Any AI agent working on this flow must start here:
 
 1. Read `Docs/AI_SESSION_HANDOFF.md`.
 2. Read `Docs/AI_UI_Transfer/START_HERE.md`.
 3. Read `Docs/CommonUI_Architecture.md` for CommonUI/UMG rules.
-4. Read `Docs/Reference/AI_REFERENCE.md` for CommonAIExport MCP and TCP tool syntax.
+4. Read `Docs/Reference/AI_REFERENCE.md` for MCPToolkit MCP and TCP tool syntax.
 5. Use `Docs/UI_TSpec/tspec.schema.json` and
    `Resources/Scripts/ValidateUITSpecs.ps1` before mutating any Widget
    Blueprint.

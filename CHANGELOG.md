@@ -1,6 +1,15 @@
 # Changelog
 
-## 2026-05-05 - CommonAIExport Unreal Automation Layering Pass
+## 2026-05-05 - Unreal MCP Toolkit Rename
+
+Renamed the plugin identity from CommonAIExport to Unreal MCP Toolkit with
+`MCPToolkit` as the module name, `MCT` as the C++ type prefix, and
+`MCPTOOLKIT_API` as the module API macro. Added CoreRedirects for reflected
+types so existing projects can migrate old `/Script/CommonAIExport` references.
+New HTTP/MCP env variables use `MCPTOOLKIT_*`, with old `COMMONAI_*` and
+`COMMONAIEXPORT_*` names kept as compatibility fallbacks.
+
+## 2026-05-05 - MCPToolkit Unreal Automation Layering Pass
 
 ### Changelist 1 - Agent And UI Transfer Guardrails
 
@@ -64,7 +73,7 @@ Commits:
 
 Added canonical DataTable export support and made supported export types
 registry-driven. DataTable rows and row struct metadata are now covered by
-`UAIDataTableExporter`, with docs synced to the new export surface.
+`UMCTDataTableExporter`, with docs synced to the new export surface.
 
 Commits:
 - `516ca82` docs: record command layering audit
@@ -85,7 +94,7 @@ Commits:
 ### Changelist 7 - Commandlet Export And Widget Reordering
 
 Completed the Python export wrapper path so automation clients can run the
-existing `AIExport` commandlet directly instead of falling back to manual copy
+existing `MCTExport` commandlet directly instead of falling back to manual copy
 instructions. The wrapper now resolves the host project, UnrealEditor-Cmd,
 output directory, commandlet mode, and simplified output path while preserving
 manual `_raw.txt` simplification.

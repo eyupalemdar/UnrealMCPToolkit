@@ -23,7 +23,7 @@ When validating a host project's TSpecs from an installed plugin, pass the host
 root and spec directory explicitly:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File Plugins/CommonAIExport/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
+powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
 ```
 
 Do not learn UE/UMG/CommonUI component behavior by trial and error in the target

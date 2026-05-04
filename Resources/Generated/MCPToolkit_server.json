@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "name": "unreal-mcp-toolkit",
+  "display_name": "Unreal MCP Toolkit",
+  "description": "AI-powered Unreal Editor automation, asset export, diagnostics, and Blueprint/UI tooling.",
+  "version": "0.4.1",
+  "generated_at_utc": "2026-05-04T23:09:08.127754Z",
+  "transports": {
+    "stdio": {
+      "command": "python",
+      "args": [
+        "Plugins/MCPToolkit/MCPClient/ai_widget_mcp_client.py"
+      ]
+    },
+    "native_http_mcp": {
+      "discovery_file": "Intermediate/MCTExport_http_port.txt",
+      "path": "/mcp",
+      "bind": "127.0.0.1",
+      "protocol_version": "2025-06-18",
+      "supports_sessions": true,
+      "supports_pagination": true,
+      "optional_bearer_token_env": "MCPTOOLKIT_HTTP_TOKEN",
+      "legacy_bearer_token_env": [
+        "COMMONAI_MCP_HTTP_TOKEN",
+        "COMMONAIEXPORT_HTTP_TOKEN"
+      ]
+    }
+  },
+  "tools": {
+    "total": 198,
+    "tcp_commands": 179,
+    "client_only": [
+      "asset_transfer_execute",
+      "asset_transfer_plan",
+      "asset_transfer_verify",
+      "client_scope_policy",
+      "code_transfer_execute",
+      "code_transfer_plan",
+      "code_transfer_verify",
+      "commonai_prompt_get",
+      "commonai_prompts_list",
+      "commonai_resource_read",
+      "commonai_resources_list",
+      "editor_call",
+      "editors_list",
+      "guarded_build_status",
+      "mcp_server_metadata_export",
+      "native_http_status",
+      "native_mcp_probe",
+      "ue_class_lookup",
+      "ue_docs_search"
+    ],
+    "schemas": "Resources/Generated/MCPToolkit_ToolSchemas.json",
+    "wrapper_spec": "Resources/Generated/MCPToolkit_WrapperSpec.json",
+    "wrapper_stubs": "Resources/Generated/MCPToolkit_MCPWrapperStubs.py",
+    "wrapper_runtime": "Resources/Generated/MCPToolkit_MCPWrapperRuntime.py",
+    "schema_source": "Python MCP wrapper signatures",
+    "strict_parameter_schemas": true,
+    "wrapper_drift_checked": true,
+    "generated_runtime_imported": true
+  },
+  "resources": [
+    "commonai://project/status",
+    "commonai://commands/manifest",
+    "commonai://editors/list",
+    "commonai://tasks/events",
+    "commonai://logs/latest",
+    "commonai://audit/http"
+  ],
+  "prompts": [
+    "asset_safety_review",
+    "blueprint_graph_inspection",
+    "build_fix_test",
+    "multi_editor_transfer",
+    "runtime_debug_triage",
+    "ui_transfer_validation"
+  ],
+  "security": {
+    "localhost_only": true,
+    "scopes": [
+      "read",
+      "write",
+      "destructive"
+    ],
+    "dry_run": true,
+    "destructive_requires_explicit_scope": true,
+    "allowed_origins_env": "MCPTOOLKIT_HTTP_ALLOWED_ORIGINS",
+    "legacy_allowed_origins_env": [
+      "COMMONAI_MCP_HTTP_ALLOWED_ORIGINS",
+      "COMMONAIEXPORT_HTTP_ALLOWED_ORIGINS"
+    ]
+  }
+}

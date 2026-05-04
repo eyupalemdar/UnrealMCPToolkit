@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Runtime smoke tests for a live CommonAIExport editor instance."""
+"""Runtime smoke tests for a live MCPToolkit editor instance."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def _project_root() -> Path:
     if env_root:
         return Path(env_root).resolve()
     cwd = Path.cwd().resolve()
-    if (cwd / "Intermediate" / "AIExport_port.txt").exists():
+    if (cwd / "Intermediate" / "MCTExport_port.txt").exists():
         return cwd
     for parent in Path(__file__).resolve().parents:
         if (parent / "Intermediate").exists() and any(parent.glob("*.uproject")):
@@ -75,7 +75,11 @@ def _send_tcp(port: int, payload: dict, timeout: int = 30) -> dict:
 def _http_request(port: int, path: str, payload: dict | None = None, headers: dict | None = None, method: str | None = None) -> dict:
     url = f"http://127.0.0.1:{port}{path}"
     request_headers = {"MCP-Protocol-Version": MCP_PROTOCOL_VERSION}
-    token = os.environ.get("COMMONAI_MCP_HTTP_TOKEN") or os.environ.get("COMMONAIEXPORT_HTTP_TOKEN")
+    token = (
+        os.environ.get("MCPTOOLKIT_HTTP_TOKEN")
+        or os.environ.get("COMMONAI_MCP_HTTP_TOKEN")
+        or os.environ.get("COMMONAIEXPORT_HTTP_TOKEN")
+    )
     if token:
         request_headers["Authorization"] = f"Bearer {token.strip()}"
     if headers:
@@ -155,8 +159,8 @@ def _asset_exists(tcp_port: int, asset_path: str) -> bool:
 
 def _scan_smoke_asset_path(tcp_port: int) -> None:
     _assert_tcp_success(
-        _tcp_command(tcp_port, "scan_asset_paths", {"path": "/Game/CommonAIExport/_Smoke", "force_rescan": True}, timeout=60),
-        "scan_asset_paths /Game/CommonAIExport/_Smoke",
+        _tcp_command(tcp_port, "scan_asset_paths", {"path": "/Game/MCPToolkit/_Smoke", "force_rescan": True}, timeout=60),
+        "scan_asset_paths /Game/MCPToolkit/_Smoke",
     )
 
 
@@ -193,8 +197,8 @@ def _cleanup_smoke_asset(tcp_port: int, asset_path: str, *, allow_missing: bool 
 
 def _run_mutating_widget_smoke(tcp_port: int) -> dict:
     """Create, mutate, compile, inspect, and delete an isolated smoke WBP."""
-    package_path = "/Game/CommonAIExport/_Smoke"
-    asset_name = "W_CommonAIExportRuntimeSmoke"
+    package_path = "/Game/MCPToolkit/_Smoke"
+    asset_name = "W_MCPToolkitRuntimeSmoke"
     asset_path = f"{package_path}/{asset_name}"
 
     cleanup = _cleanup_smoke_asset(tcp_port, asset_path)
@@ -233,7 +237,7 @@ def _run_mutating_widget_smoke(tcp_port: int) -> dict:
                     "asset_path": smoke_asset_path,
                     "widget_name": "SmokeText",
                     "property_name": "Text",
-                    "value": 'NSLOCTEXT("CommonAIExport", "RuntimeSmoke", "Runtime Smoke")',
+                    "value": 'NSLOCTEXT("MCPToolkit", "RuntimeSmoke", "Runtime Smoke")',
                 },
             ),
             "set_widget_property Text",
@@ -312,8 +316,8 @@ def _run_mutating_widget_smoke(tcp_port: int) -> dict:
 
 def _run_mutating_material_smoke(tcp_port: int) -> dict:
     """Create, mutate, inspect, and delete an isolated smoke Material."""
-    package_path = "/Game/CommonAIExport/_Smoke"
-    asset_name = "M_CommonAIExportRuntimeSmoke"
+    package_path = "/Game/MCPToolkit/_Smoke"
+    asset_name = "M_MCPToolkitRuntimeSmoke"
     asset_path = f"{package_path}/{asset_name}"
 
     cleanup = _cleanup_smoke_asset(tcp_port, asset_path)
@@ -386,8 +390,8 @@ def _run_mutating_material_smoke(tcp_port: int) -> dict:
 
 def _run_mutating_asset_smoke(tcp_port: int) -> dict:
     """Create, save, inspect, and delete an isolated generic asset."""
-    package_path = "/Game/CommonAIExport/_Smoke"
-    asset_name = "IA_CommonAIExportRuntimeSmoke"
+    package_path = "/Game/MCPToolkit/_Smoke"
+    asset_name = "IA_MCPToolkitRuntimeSmoke"
     asset_path = f"{package_path}/{asset_name}"
 
     cleanup = _cleanup_smoke_asset(tcp_port, asset_path)
@@ -429,8 +433,8 @@ def _run_mutating_asset_smoke(tcp_port: int) -> dict:
 
 
 def run_smoke(mutating_smoke: bool = False) -> dict:
-    tcp_port = _read_port("AIExport_port.txt", DEFAULT_TCP_PORT)
-    http_port = _read_port("AIExport_http_port.txt", 0)
+    tcp_port = _read_port("MCTExport_port.txt", DEFAULT_TCP_PORT)
+    http_port = _read_port("MCTExport_http_port.txt", 0)
     _assert(http_port > 0, "native HTTP port file missing")
 
     ping = _send_tcp(tcp_port, {"type": "ping"})
@@ -449,7 +453,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         {
             "protocolVersion": MCP_PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": {"name": "CommonAIExport runtime smoke", "version": "1.0"},
+            "clientInfo": {"name": "MCPToolkit runtime smoke", "version": "1.0"},
         },
     )
     _assert(initialize["success"], "MCP initialize failed")
@@ -486,12 +490,12 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         {
             "type": "actor_delete",
             "meta": {"scope": "destructive", "dry_run": True},
-            "params": {"actor_name": "CommonAIExport_RuntimeSmoke_NoActor"},
+            "params": {"actor_name": "MCPToolkit_RuntimeSmoke_NoActor"},
         },
     )
     _assert(bool(dry_delete.get("success") and dry_delete.get("data", {}).get("dry_run")), "destructive dry-run failed")
 
-    no_scope_delete = _send_tcp(tcp_port, {"type": "delete_asset", "params": {"asset_path": "/Game/CommonAIExport/RuntimeSmokeMissing"}})
+    no_scope_delete = _send_tcp(tcp_port, {"type": "delete_asset", "params": {"asset_path": "/Game/MCPToolkit/RuntimeSmokeMissing"}})
     _assert(not no_scope_delete.get("success") and "destructive" in no_scope_delete.get("error", ""), "destructive scope gate failed")
 
     runtime_diagnostics = _assert_tcp_success(
@@ -960,7 +964,7 @@ def main() -> int:
     parser.add_argument(
         "--mutating-smoke",
         action="store_true",
-        help="Create, compile, inspect, and delete an isolated /Game/CommonAIExport/_Smoke test WBP.",
+        help="Create, compile, inspect, and delete an isolated /Game/MCPToolkit/_Smoke test WBP.",
     )
     args = parser.parse_args()
 

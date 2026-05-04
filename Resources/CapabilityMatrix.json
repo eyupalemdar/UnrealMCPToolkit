@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "server": "CommonAIExport",
-  "description": "Canonical capability coverage matrix for the CommonAIExport Unreal automation surface. Contract checks require every native TCP command and every client-only MCP tool to appear exactly once.",
+  "server": "MCPToolkit",
+  "description": "Canonical capability coverage matrix for the MCPToolkit Unreal automation surface. Contract checks require every native TCP command and every client-only MCP tool to appear exactly once.",
   "coverage_policy": {
     "tcp_commands": "exactly_once",
     "client_only_tools": "exactly_once"
@@ -119,7 +119,7 @@
         "import_font"
       ],
       "client_tools": [],
-      "extension_policy": "Extend this capability for additional Unreal import factories that ingest files from disk. File validation, package creation, factory calls, and save/registry updates belong in UAIAssetImportBuilder rather than CommandHandlers."
+      "extension_policy": "Extend this capability for additional Unreal import factories that ingest files from disk. File validation, package creation, factory calls, and save/registry updates belong in UMCTAssetImportBuilder rather than CommandHandlers."
     },
     {
       "id": "runtime_diagnostics",
@@ -369,7 +369,7 @@
         "blueprint_component_set_property"
       ],
       "client_tools": [],
-      "extension_policy": "Use this capability for Actor Blueprint SCS component authoring. SCS mutation belongs in UAIBlueprintComponentBuilder rather than CommandHandlers. Runtime component inspection stays under runtime_diagnostics; Widget tree composition stays under widget_blueprint_authoring."
+      "extension_policy": "Use this capability for Actor Blueprint SCS component authoring. SCS mutation belongs in UMCTBlueprintComponentBuilder rather than CommandHandlers. Runtime component inspection stays under runtime_diagnostics; Widget tree composition stays under widget_blueprint_authoring."
     },
     {
       "id": "material_graph_and_instances",
@@ -424,7 +424,7 @@
         "import_datatable_csv"
       ],
       "client_tools": [],
-      "extension_policy": "Extend this capability for row-structured table operations and imports. DataTable asset creation, row mutation, and CSV import belong in UAIDataTableBuilder rather than CommandHandlers; canonical export_asset coverage belongs in UAIDataTableExporter."
+      "extension_policy": "Extend this capability for row-structured table operations and imports. DataTable asset creation, row mutation, and CSV import belong in UMCTDataTableBuilder rather than CommandHandlers; canonical export_asset coverage belongs in UMCTDataTableExporter."
     },
     {
       "id": "asset_authoring_registry",
@@ -449,7 +449,7 @@
         "fixup_redirectors"
       ],
       "client_tools": [],
-      "extension_policy": "Use this capability for generic asset lifecycle and registry work. Asset creation and generic property mutation are covered by UAIAssetFactory/UAIDataAssetBuilder; keep rename/delete/redirector lifecycle operations command-owned unless they become shared typed-builder logic. Prefer specialized Widget, Material, DataTable, or Import capabilities for typed workflows."
+      "extension_policy": "Use this capability for generic asset lifecycle and registry work. Asset creation and generic property mutation are covered by UMCTAssetFactory/UMCTDataAssetBuilder; keep rename/delete/redirector lifecycle operations command-owned unless they become shared typed-builder logic. Prefer specialized Widget, Material, DataTable, or Import capabilities for typed workflows."
     },
     {
       "id": "asset_lifecycle_reload",

@@ -1,6 +1,6 @@
 # Tool Capability Matrix
 
-This is the canonical CommonAIExport/Pencil MCP behavior matrix for UI transfer.
+This is the canonical MCPToolkit/Pencil MCP behavior matrix for UI transfer.
 Update this file when a behavior is observed twice or when a tool contract
 changes.
 
@@ -41,7 +41,7 @@ do not silently collapse the design into a worse structure.
 
 1. Reduce the issue to a minimal repro: asset paths, tool call, expected result,
    actual result.
-2. Classify it as one of: invalid TSpec, missing asset, CommonAIExport tool
+2. Classify it as one of: invalid TSpec, missing asset, MCPToolkit tool
    defect, Unreal editor state/cache issue, or unsupported design request.
 3. Update this matrix when the behavior is confirmed.
 4. Prefer a tool/plugin fix over a design fallback.

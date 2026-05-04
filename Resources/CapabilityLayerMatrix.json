@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "server": "CommonAIExport",
+  "server": "MCPToolkit",
   "description": "Builder/Exporter layering decisions for every capability in Resources/CapabilityMatrix.json. This file is intentionally explicit so new command families must declare whether domain logic stays command-owned, moves into Builders, or gets canonical Exporters coverage.",
   "coverage_policy": {
     "capabilities": "exactly_once"
@@ -9,7 +9,7 @@
     {
       "capability": "utility_command_contract",
       "mode": "command_owned",
-      "command_handlers": ["AIExportUtilityCommands"],
+      "command_handlers": ["MCTUtilityCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Protocol, identity, and manifest commands are transport/control-plane concerns."
@@ -17,7 +17,7 @@
     {
       "capability": "workflow_source_control_build_test",
       "mode": "command_owned",
-      "command_handlers": ["AIExportWorkflowCommands"],
+      "command_handlers": ["MCTWorkflowCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Source control, logs, build, cook, and test commands orchestrate external workflows rather than Unreal asset construction."
@@ -25,7 +25,7 @@
     {
       "capability": "project_introspection_and_plugins",
       "mode": "command_owned",
-      "command_handlers": ["AIExportProjectCommands"],
+      "command_handlers": ["MCTProjectCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Project descriptor, plugin, and module operations are project-file orchestration."
@@ -33,7 +33,7 @@
     {
       "capability": "project_config_mutation",
       "mode": "command_owned",
-      "command_handlers": ["AIExportProjectCommands"],
+      "command_handlers": ["MCTProjectCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Config edits are structured .ini operations, not Unreal asset builder work."
@@ -41,7 +41,7 @@
     {
       "capability": "async_task_queue",
       "mode": "command_owned",
-      "command_handlers": ["AIExportAsyncCommands"],
+      "command_handlers": ["MCTAsyncCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Async queue commands wrap command dispatch and event state."
@@ -49,35 +49,35 @@
     {
       "capability": "export_introspection",
       "mode": "exporter_backed",
-      "command_handlers": ["AIExportExportCommands"],
+      "command_handlers": ["MCTExportCommands"],
       "builders": [],
       "exporters": [
-        "UAIWidgetBlueprintExporter",
-        "UAIAnimBlueprintExporter",
-        "UAIBlueprintExporter",
-        "UAIWorldExporter",
-        "UAIDataAssetExporter",
-        "UAIDataTableExporter",
-        "UAIInputExporter",
-        "UAIAudioExporter",
-        "UAITextureExporter",
-        "UAIPhysicalMaterialExporter",
-        "UAIMaterialExporter"
+        "UMCTWidgetBlueprintExporter",
+        "UMCTAnimBlueprintExporter",
+        "UMCTBlueprintExporter",
+        "UMCTWorldExporter",
+        "UMCTDataAssetExporter",
+        "UMCTDataTableExporter",
+        "UMCTInputExporter",
+        "UMCTAudioExporter",
+        "UMCTTextureExporter",
+        "UMCTPhysicalMaterialExporter",
+        "UMCTMaterialExporter"
       ],
       "rationale": "Canonical asset serialization is owned by registered Exporters and surfaced through export commands."
     },
     {
       "capability": "import_asset_files",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportImportCommands"],
-      "builders": ["UAIAssetImportBuilder"],
+      "command_handlers": ["MCTImportCommands"],
+      "builders": ["UMCTAssetImportBuilder"],
       "exporters": [],
       "rationale": "External file ingestion creates persistent Unreal assets through reusable import builder logic."
     },
     {
       "capability": "runtime_diagnostics",
       "mode": "command_owned",
-      "command_handlers": ["AIExportRuntimeCommands"],
+      "command_handlers": ["MCTRuntimeCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Runtime diagnostics are scoped read-only snapshots, not reusable asset authoring or canonical asset exports."
@@ -85,7 +85,7 @@
     {
       "capability": "editor_world_console",
       "mode": "command_owned",
-      "command_handlers": ["AIExportEditorCommands"],
+      "command_handlers": ["MCTEditorCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Editor world metadata and console execution operate on live editor state."
@@ -93,7 +93,7 @@
     {
       "capability": "editor_actor_operations",
       "mode": "command_owned",
-      "command_handlers": ["AIExportEditorCommands"],
+      "command_handlers": ["MCTEditorCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Actor spawn, transform, and delete mutate the live editor world rather than persistent asset definitions."
@@ -101,7 +101,7 @@
     {
       "capability": "editor_level_operations",
       "mode": "command_owned",
-      "command_handlers": ["AIExportEditorCommands", "AIExportLevelStructureCommands"],
+      "command_handlers": ["MCTEditorCommands", "MCTLevelStructureCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Level lifecycle and level-structure diagnostics are editor/world operations."
@@ -109,7 +109,7 @@
     {
       "capability": "editor_pie_control",
       "mode": "command_owned",
-      "command_handlers": ["AIExportEditorCommands"],
+      "command_handlers": ["MCTEditorCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "PIE lifecycle is editor session control."
@@ -117,7 +117,7 @@
     {
       "capability": "editor_viewport_capture",
       "mode": "command_owned",
-      "command_handlers": ["AIExportEditorCommands"],
+      "command_handlers": ["MCTEditorCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Viewport capture reads editor presentation state and writes image output."
@@ -125,15 +125,15 @@
     {
       "capability": "widget_blueprint_authoring",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportWidgetCommands"],
-      "builders": ["UAIWidgetBlueprintBuilder"],
+      "command_handlers": ["MCTWidgetCommands"],
+      "builders": ["UMCTWidgetBlueprintBuilder"],
       "exporters": [],
       "rationale": "Widget Blueprint tree creation and mutation belong in the reusable Widget builder."
     },
     {
       "capability": "widget_preview_capture",
       "mode": "command_owned",
-      "command_handlers": ["AIExportWidgetPreviewCommands"],
+      "command_handlers": ["MCTWidgetPreviewCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Preview capture instantiates design-time/runtime widget state and renders screenshots."
@@ -141,95 +141,95 @@
     {
       "capability": "cdo_property_access",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportCDOCommands"],
-      "builders": ["UAIWidgetBlueprintBuilder", "UAIDataAssetBuilder"],
+      "command_handlers": ["MCTExportCDOCommands"],
+      "builders": ["UMCTWidgetBlueprintBuilder", "UMCTDataAssetBuilder"],
       "exporters": [],
       "rationale": "CDO/property mutation delegates typed property writes to existing asset builders."
     },
     {
       "capability": "cdo_array_access",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportCDOCommands"],
-      "builders": ["UAIWidgetBlueprintBuilder", "UAIDataAssetBuilder"],
+      "command_handlers": ["MCTExportCDOCommands"],
+      "builders": ["UMCTWidgetBlueprintBuilder", "UMCTDataAssetBuilder"],
       "exporters": [],
       "rationale": "Array edits reuse the same typed property mutation helpers as scalar CDO access."
     },
     {
       "capability": "reflection_object_access",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportReflectionCommands"],
-      "builders": ["UAIDataAssetBuilder"],
+      "command_handlers": ["MCTReflectionCommands"],
+      "builders": ["UMCTDataAssetBuilder"],
       "exporters": [],
       "rationale": "Common reflected object writes reuse import-text property mutation helpers."
     },
     {
       "capability": "blueprint_graph_editing",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportBlueprintGraphCommands"],
-      "builders": ["UAIBlueprintGraphBuilder"],
+      "command_handlers": ["MCTBlueprintGraphCommands"],
+      "builders": ["UMCTBlueprintGraphBuilder"],
       "exporters": [],
       "rationale": "K2 graph node, pin, variable, and graph mutations are reusable Blueprint builder operations."
     },
     {
       "capability": "blueprint_variables",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportBlueprintGraphCommands"],
-      "builders": ["UAIBlueprintGraphBuilder"],
+      "command_handlers": ["MCTBlueprintGraphCommands"],
+      "builders": ["UMCTBlueprintGraphBuilder"],
       "exporters": [],
       "rationale": "Blueprint member variable lifecycle is implemented by the graph builder."
     },
     {
       "capability": "blueprint_parenting",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportWidgetCommands"],
-      "builders": ["UAIWidgetBlueprintBuilder"],
+      "command_handlers": ["MCTWidgetCommands"],
+      "builders": ["UMCTWidgetBlueprintBuilder"],
       "exporters": [],
       "rationale": "Blueprint reparenting is an asset compatibility mutation handled by the Widget/Blueprint builder path."
     },
     {
       "capability": "blueprint_components",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportBlueprintComponentCommands"],
-      "builders": ["UAIBlueprintComponentBuilder"],
+      "command_handlers": ["MCTBlueprintComponentCommands"],
+      "builders": ["UMCTBlueprintComponentBuilder"],
       "exporters": [],
       "rationale": "Actor Blueprint SCS component mutation belongs in the component builder."
     },
     {
       "capability": "material_graph_and_instances",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportMaterialCommands"],
-      "builders": ["UAIMaterialBuilder"],
+      "command_handlers": ["MCTMaterialCommands"],
+      "builders": ["UMCTMaterialBuilder"],
       "exporters": [],
       "rationale": "Material graph and material instance operations are reusable asset authoring."
     },
     {
       "capability": "data_assets",
       "mode": "builder_and_exporter",
-      "command_handlers": ["AIExportDataAssetCommands"],
-      "builders": ["UAIDataAssetBuilder"],
-      "exporters": ["UAIDataAssetExporter"],
+      "command_handlers": ["MCTDataAssetCommands"],
+      "builders": ["UMCTDataAssetBuilder"],
+      "exporters": ["UMCTDataAssetExporter"],
       "rationale": "DataAsset persistence uses builder helpers and DataAsset canonical export is supported by the exporter registry."
     },
     {
       "capability": "data_tables",
       "mode": "builder_and_exporter",
-      "command_handlers": ["AIExportDataTableCommands"],
-      "builders": ["UAIDataTableBuilder"],
-      "exporters": ["UAIDataTableExporter"],
+      "command_handlers": ["MCTDataTableCommands"],
+      "builders": ["UMCTDataTableBuilder"],
+      "exporters": ["UMCTDataTableExporter"],
       "rationale": "DataTable asset creation, row mutation, CSV import, and canonical row export are reusable domain layers."
     },
     {
       "capability": "asset_authoring_registry",
       "mode": "builder_backed",
-      "command_handlers": ["AIExportAssetCommands"],
-      "builders": ["UAIAssetFactory", "UAIDataAssetBuilder"],
+      "command_handlers": ["MCTAssetCommands"],
+      "builders": ["UMCTAssetFactory", "UMCTDataAssetBuilder"],
       "exporters": [],
       "rationale": "Generic asset creation and import-text property mutation use asset factory and data asset helpers; lifecycle operations remain command-owned inside this capability."
     },
     {
       "capability": "asset_lifecycle_reload",
       "mode": "command_owned",
-      "command_handlers": ["AIExportAssetLifecycleCommands"],
+      "command_handlers": ["MCTAssetLifecycleCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Reload/cache refresh commands are editor lifecycle operations."
@@ -237,7 +237,7 @@
     {
       "capability": "static_mesh_diagnostics",
       "mode": "command_owned",
-      "command_handlers": ["AIExportStaticMeshCommands"],
+      "command_handlers": ["MCTStaticMeshCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "StaticMesh info is targeted diagnostics, not canonical asset serialization or mesh mutation."
@@ -245,7 +245,7 @@
     {
       "capability": "skeletal_mesh_diagnostics",
       "mode": "command_owned",
-      "command_handlers": ["AIExportSkeletalMeshCommands"],
+      "command_handlers": ["MCTSkeletalMeshCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "SkeletalMesh info is targeted diagnostics, not canonical asset serialization or skeletal mesh mutation."
@@ -253,23 +253,23 @@
     {
       "capability": "input_settings",
       "mode": "builder_and_exporter",
-      "command_handlers": ["AIExportInputCommands"],
-      "builders": ["UAIAssetFactory"],
-      "exporters": ["UAIInputExporter"],
+      "command_handlers": ["MCTInputCommands"],
+      "builders": ["UMCTAssetFactory"],
+      "exporters": ["UMCTInputExporter"],
       "rationale": "Input mapping mutation uses asset factory helpers; InputAction and InputMappingContext canonical export is registry-backed."
     },
     {
       "capability": "anim_blueprints",
       "mode": "builder_and_exporter",
-      "command_handlers": ["AIExportAnimBlueprintCommands"],
-      "builders": ["UAIAnimBlueprintBuilder"],
-      "exporters": ["UAIAnimBlueprintExporter"],
+      "command_handlers": ["MCTAnimBlueprintCommands"],
+      "builders": ["UMCTAnimBlueprintBuilder"],
+      "exporters": ["UMCTAnimBlueprintExporter"],
       "rationale": "Animation Blueprint creation and info use builder logic, with canonical AnimBlueprint export covered by the exporter registry."
     },
     {
       "capability": "animation_asset_diagnostics",
       "mode": "command_owned",
-      "command_handlers": ["AIExportAnimationAssetCommands"],
+      "command_handlers": ["MCTAnimationAssetCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Animation asset info is targeted read-only diagnostics."
@@ -277,7 +277,7 @@
     {
       "capability": "sequencer_assets",
       "mode": "command_owned",
-      "command_handlers": ["AIExportSequencerCommands"],
+      "command_handlers": ["MCTSequencerCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Sequencer info is scoped MovieScene diagnostics, not sequence authoring or canonical export."
@@ -285,7 +285,7 @@
     {
       "capability": "spline_authoring",
       "mode": "command_owned",
-      "command_handlers": ["AIExportSplineCommands"],
+      "command_handlers": ["MCTSplineCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Spline commands currently edit live editor actor/component state."
@@ -293,7 +293,7 @@
     {
       "capability": "landscape_diagnostics",
       "mode": "command_owned",
-      "command_handlers": ["AIExportLandscapeCommands"],
+      "command_handlers": ["MCTLandscapeCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Landscape commands are bounded read-only world diagnostics."
@@ -301,7 +301,7 @@
     {
       "capability": "foliage_diagnostics",
       "mode": "command_owned",
-      "command_handlers": ["AIExportFoliageCommands"],
+      "command_handlers": ["MCTFoliageCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Foliage commands are bounded read-only world diagnostics."
@@ -309,7 +309,7 @@
     {
       "capability": "pcg_diagnostics",
       "mode": "command_owned",
-      "command_handlers": ["AIExportPCGCommands"],
+      "command_handlers": ["MCTPCGCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "PCG commands inspect graph and component state without mutating PCG assets."
@@ -317,7 +317,7 @@
     {
       "capability": "niagara_asset_diagnostics",
       "mode": "command_owned",
-      "command_handlers": ["AIExportNiagaraCommands"],
+      "command_handlers": ["MCTNiagaraCommands"],
       "builders": [],
       "exporters": [],
       "rationale": "Niagara commands inspect systems, emitters, scripts, and renderer metadata without authoring VFX assets."

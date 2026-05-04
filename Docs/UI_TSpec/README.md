@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
 From a host Unreal project:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File Plugins/CommonAIExport/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
+powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
 ```
 
 ## Mode Contract

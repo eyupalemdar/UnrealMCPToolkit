@@ -2,7 +2,7 @@
 """
 AI Export TCP Client
 
-Connects to CommonAIExport TCP server in Unreal Editor to export assets.
+Connects to MCPToolkit TCP server in Unreal Editor to export assets.
 Automatically discovers server port from discovery file.
 
 Usage:
@@ -20,7 +20,7 @@ Usage:
 
 Port Discovery:
     The client automatically finds the server port by:
-    1. Reading {ProjectDir}/Intermediate/AIExport_port.txt
+    1. Reading {ProjectDir}/Intermediate/MCTExport_port.txt
     2. Searching upward from current directory for port file
     3. Falling back to default port 55560
 """
@@ -37,16 +37,16 @@ TIMEOUT = 60  # seconds
 
 
 def find_port_file_upward(start_dir=None):
-    """Search upward from start_dir looking for Intermediate/AIExport_port.txt"""
+    """Search upward from start_dir looking for Intermediate/MCTExport_port.txt"""
     current = Path(start_dir) if start_dir else Path.cwd()
 
     for _ in range(10):  # Limit search depth
-        port_file = current / "Intermediate" / "AIExport_port.txt"
+        port_file = current / "Intermediate" / "MCTExport_port.txt"
         if port_file.exists():
             return port_file
 
         # Also check if we're inside plugin directory
-        port_file = current.parent / "Intermediate" / "AIExport_port.txt"
+        port_file = current.parent / "Intermediate" / "MCTExport_port.txt"
         if port_file.exists():
             return port_file
 
@@ -63,13 +63,13 @@ def get_port(project_dir=None):
     Get the TCP server port.
 
     Priority:
-    1. Explicit project_dir/Intermediate/AIExport_port.txt
+    1. Explicit project_dir/Intermediate/MCTExport_port.txt
     2. Search upward from current directory
     3. Default port 55560
     """
     # 1. Check explicit project directory
     if project_dir:
-        port_file = Path(project_dir) / "Intermediate" / "AIExport_port.txt"
+        port_file = Path(project_dir) / "Intermediate" / "MCTExport_port.txt"
         if port_file.exists():
             try:
                 return int(port_file.read_text().strip())

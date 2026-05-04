@@ -85,7 +85,7 @@ powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
 When running from a host project that keeps specs elsewhere:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File Plugins/CommonAIExport/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
+powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
 ```
 
 The TSpec must include:
@@ -129,10 +129,10 @@ guessing. The agent must stop the current mutation path and record:
 - the exact tool call and asset path
 - expected result
 - actual result
-- whether the issue is TSpec, asset, CommonAIExport, editor cache, or unsupported
+- whether the issue is TSpec, asset, MCPToolkit, editor cache, or unsupported
   UE behavior
 
-Then prefer a CommonAIExport/tool fix or a TSpec correction. Fallbacks that
+Then prefer a MCPToolkit/tool fix or a TSpec correction. Fallbacks that
 reduce structure require an explicit TSpec deviation.
 
 ## Verification

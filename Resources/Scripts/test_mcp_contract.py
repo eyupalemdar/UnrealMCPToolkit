@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static tests for CommonAIExport MCP descriptors and generated artifacts."""
+"""Static tests for MCPToolkit MCP descriptors and generated artifacts."""
 
 from __future__ import annotations
 
@@ -848,12 +848,12 @@ def _failures() -> list[str]:
 def main() -> int:
     failures = _failures()
     if failures:
-        print("CommonAIExport MCP static tests failed:")
+        print("MCPToolkit MCP static tests failed:")
         for failure in failures:
             print(f"  - {failure}")
         return 1
 
-    print("CommonAIExport MCP static tests passed")
+    print("MCPToolkit MCP static tests passed")
     return 0
 
 

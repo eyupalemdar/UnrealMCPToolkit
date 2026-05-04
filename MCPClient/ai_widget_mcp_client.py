@@ -2,11 +2,11 @@
 """
 AI Widget Builder MCP Server
 
-MCP server that wraps CommonAIExport TCP commands for MCP-compatible clients.
+MCP server that wraps MCPToolkit TCP commands for MCP-compatible clients.
 Provides tools for creating and manipulating Widget Blueprints in Unreal Editor.
 
 Port Discovery:
-    Reads {ProjectDir}/Intermediate/AIExport_port.txt automatically.
+    Reads {ProjectDir}/Intermediate/MCTExport_port.txt automatically.
 
 Usage:
     Add to your MCP client settings:
@@ -14,7 +14,7 @@ Usage:
         "mcpServers": {
             "widget-builder": {
                 "command": "python",
-                "args": ["<ProjectDir>/Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py"]
+                "args": ["<ProjectDir>/Plugins/MCPToolkit/MCPClient/ai_widget_mcp_client.py"]
             }
         }
     }
@@ -35,7 +35,7 @@ from fastmcp import FastMCP
 
 mcp = FastMCP("widget-builder", instructions="""
 Widget Blueprint Builder for Unreal Engine.
-Creates and manipulates Widget Blueprints via the CommonAIExport TCP server.
+Creates and manipulates Widget Blueprints via the MCPToolkit TCP server.
 
 Typical workflow:
 1. create_widget_blueprint - Create a new WBP asset
@@ -84,7 +84,7 @@ AnimBlueprint workflow:
 DEFAULT_PORT = 55560
 TIMEOUT = 60
 
-# Derive project dir from script location: <ProjectDir>/Plugins/CommonAIExport/MCPClient/this_script.py
+# Derive project dir from script location: <ProjectDir>/Plugins/MCPToolkit/MCPClient/this_script.py
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _DEFAULT_PROJECT_DIR = str(_SCRIPT_DIR.parent.parent.parent)
 PROJECT_DIR = os.environ.get("UE_PROJECT_DIR", _DEFAULT_PROJECT_DIR)
@@ -92,8 +92,8 @@ _GENERATED_DIR = _SCRIPT_DIR.parent / "Resources" / "Generated"
 if str(_GENERATED_DIR) not in sys.path:
     sys.path.insert(0, str(_GENERATED_DIR))
 try:
-    from CommonAIExport_MCPWrapperRuntime import GENERATED_TCP_WRAPPERS as _GENERATED_TCP_WRAPPERS
-    from CommonAIExport_MCPWrapperRuntime import build_tcp_call as _build_generated_tcp_call
+    from MCPToolkit_MCPWrapperRuntime import GENERATED_TCP_WRAPPERS as _GENERATED_TCP_WRAPPERS
+    from MCPToolkit_MCPWrapperRuntime import build_tcp_call as _build_generated_tcp_call
 except Exception:
     _GENERATED_TCP_WRAPPERS = {}
     _build_generated_tcp_call = None
@@ -140,7 +140,7 @@ def _load_tool_metadata() -> dict[str, dict]:
     if _TOOL_METADATA_CACHE is not None:
         return _TOOL_METADATA_CACHE
 
-    path = _SCRIPT_DIR.parent / "Resources" / "Generated" / "CommonAIExport_ToolSchemas.json"
+    path = _SCRIPT_DIR.parent / "Resources" / "Generated" / "MCPToolkit_ToolSchemas.json"
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -166,7 +166,7 @@ def _client_scope_policy_state() -> dict:
         "approval_command": os.environ.get("COMMONAI_MCP_APPROVAL_COMMAND", "").strip(),
         "approval_min_scope": approval_min_scope if approval_min_scope in SCOPE_RANK else "write",
         "known_tool_count": len(metadata),
-        "metadata_source": "Resources/Generated/CommonAIExport_ToolSchemas.json" if metadata else "",
+        "metadata_source": "Resources/Generated/MCPToolkit_ToolSchemas.json" if metadata else "",
     }
 
 
@@ -253,18 +253,18 @@ def _check_client_scope_policy(command_name: str, params: dict | None, meta: dic
 
 
 def _registry_dirs() -> list[Path]:
-    """Return candidate global CommonAIExport editor registry directories."""
+    """Return candidate global MCPToolkit editor registry directories."""
     candidates: list[Path] = []
 
     local_app_data = os.environ.get("LOCALAPPDATA")
     if local_app_data:
-        candidates.append(Path(local_app_data) / "CommonAIExport" / "Editors")
+        candidates.append(Path(local_app_data) / "MCPToolkit" / "Editors")
 
     app_data = os.environ.get("APPDATA")
     if app_data:
-        candidates.append(Path(app_data) / "CommonAIExport" / "Editors")
+        candidates.append(Path(app_data) / "MCPToolkit" / "Editors")
 
-    candidates.append(Path.home() / "AppData" / "Local" / "CommonAIExport" / "Editors")
+    candidates.append(Path.home() / "AppData" / "Local" / "MCPToolkit" / "Editors")
 
     seen: set[Path] = set()
     result: list[Path] = []
@@ -278,7 +278,7 @@ def _registry_dirs() -> list[Path]:
 
 def _find_port() -> int:
     """Discover TCP server port from port file."""
-    port_file = Path(PROJECT_DIR) / "Intermediate" / "AIExport_port.txt"
+    port_file = Path(PROJECT_DIR) / "Intermediate" / "MCTExport_port.txt"
     if port_file.exists():
         try:
             return int(port_file.read_text().strip())
@@ -288,7 +288,7 @@ def _find_port() -> int:
     # Search upward from current directory
     current = Path.cwd()
     for _ in range(10):
-        pf = current / "Intermediate" / "AIExport_port.txt"
+        pf = current / "Intermediate" / "MCTExport_port.txt"
         if pf.exists():
             try:
                 return int(pf.read_text().strip())
@@ -304,7 +304,7 @@ def _find_port() -> int:
 
 def _find_http_port() -> int:
     """Discover native HTTP/MCP server port from port file."""
-    port_file = Path(PROJECT_DIR) / "Intermediate" / "AIExport_http_port.txt"
+    port_file = Path(PROJECT_DIR) / "Intermediate" / "MCTExport_http_port.txt"
     if port_file.exists():
         try:
             return int(port_file.read_text().strip())
@@ -316,7 +316,11 @@ def _find_http_port() -> int:
 def _http_headers(extra: dict | None = None) -> dict:
     """Build headers for native localhost HTTP/MCP calls."""
     headers = {"MCP-Protocol-Version": "2025-06-18"}
-    token = os.environ.get("COMMONAI_MCP_HTTP_TOKEN") or os.environ.get("COMMONAIEXPORT_HTTP_TOKEN")
+    token = (
+        os.environ.get("MCPTOOLKIT_HTTP_TOKEN")
+        or os.environ.get("COMMONAI_MCP_HTTP_TOKEN")
+        or os.environ.get("COMMONAIEXPORT_HTTP_TOKEN")
+    )
     if token:
         headers["Authorization"] = f"Bearer {token.strip()}"
     if extra:
@@ -358,7 +362,7 @@ def _http_json_request(path: str, payload: dict | None = None, timeout: int = 30
 
 
 def _build_command(cmd_type: str, params: dict | None = None, meta: dict | None = None) -> dict:
-    """Build a CommonAIExport TCP command envelope."""
+    """Build a MCPToolkit TCP command envelope."""
     command = {"type": cmd_type}
     if params is not None:
         command["params"] = params
@@ -368,7 +372,7 @@ def _build_command(cmd_type: str, params: dict | None = None, meta: dict | None 
 
 
 def _send_command_to_port(port: int, cmd_type: str, params: dict | None = None, meta: dict | None = None) -> dict:
-    """Send a TCP command to a specific CommonAIExport editor port."""
+    """Send a TCP command to a specific MCPToolkit editor port."""
     policy_error = _check_client_scope_policy(cmd_type, params, meta)
     if policy_error:
         return policy_error
@@ -403,7 +407,7 @@ def _send_command_to_port(port: int, cmd_type: str, params: dict | None = None, 
         return {"success": False, "error": "No response from server"}
 
     except ConnectionRefusedError:
-        return {"success": False, "error": f"Connection refused on port {port}. Is Unreal Editor running with CommonAIExport?"}
+        return {"success": False, "error": f"Connection refused on port {port}. Is Unreal Editor running with MCPToolkit?"}
     except socket.timeout:
         return {"success": False, "error": "Connection timed out"}
     except Exception as e:
@@ -411,7 +415,7 @@ def _send_command_to_port(port: int, cmd_type: str, params: dict | None = None, 
 
 
 def _send_command(cmd_type: str, params: dict | None = None, meta: dict | None = None) -> dict:
-    """Send a TCP command to the default CommonAIExport server."""
+    """Send a TCP command to the default MCPToolkit server."""
     return _send_command_to_port(_find_port(), cmd_type, params, meta)
 
 
@@ -447,7 +451,7 @@ def _default_editor_entry() -> dict:
     return {
         "schema_version": 1,
         "editor_id": f"default-{Path(project_dir).name}-{port}",
-        "server": "CommonAIExport",
+        "server": "MCPToolkit",
         "host": "127.0.0.1",
         "port": port,
         "project_name": Path(project_dir).name,
@@ -459,7 +463,7 @@ def _default_editor_entry() -> dict:
 
 
 def _read_registry_entries() -> list[dict]:
-    """Read global CommonAIExport editor registry files."""
+    """Read global MCPToolkit editor registry files."""
     entries: list[dict] = []
     seen_keys: set[tuple[str, int]] = set()
 
@@ -569,7 +573,7 @@ def _resolve_editor(editor_id: str = "", project_dir: str = "", port: int = 0) -
     if not matches:
         return None, {
             "success": False,
-            "error": "No live CommonAIExport editor matched the requested target",
+            "error": "No live MCPToolkit editor matched the requested target",
             "requested": {
                 "editor_id": editor_id,
                 "project_dir": project_dir,
@@ -581,7 +585,7 @@ def _resolve_editor(editor_id: str = "", project_dir: str = "", port: int = 0) -
     if len(matches) > 1:
         return None, {
             "success": False,
-            "error": "Multiple live CommonAIExport editors matched; pass editor_id or port",
+            "error": "Multiple live MCPToolkit editors matched; pass editor_id or port",
             "matches": matches,
         }
 
@@ -989,7 +993,7 @@ def _search_local_docs(query: str, category: str = "", max_results: int = 8, max
 COMMONAI_RESOURCES = {
     "commonai://project/status": {
         "name": "Project Status",
-        "description": "Current CommonAIExport project/editor status.",
+        "description": "Current MCPToolkit project/editor status.",
         "mime_type": "application/json",
     },
     "commonai://commands/manifest": {
@@ -999,7 +1003,7 @@ COMMONAI_RESOURCES = {
     },
     "commonai://editors/list": {
         "name": "Editor Registry",
-        "description": "Live CommonAIExport editor registry entries.",
+        "description": "Live MCPToolkit editor registry entries.",
         "mime_type": "application/json",
     },
     "commonai://tasks/events": {
@@ -1014,7 +1018,7 @@ COMMONAI_RESOURCES = {
     },
     "commonai://audit/http": {
         "name": "HTTP MCP Audit",
-        "description": "Recent CommonAIExport native HTTP/MCP audit JSONL events.",
+        "description": "Recent MCPToolkit native HTTP/MCP audit JSONL events.",
         "mime_type": "application/json",
     },
 }
@@ -1080,7 +1084,7 @@ COMMONAI_PROMPTS = {
 
 
 def _resource_payload(uri: str) -> dict:
-    """Read a CommonAIExport resource-like payload."""
+    """Read a MCPToolkit resource-like payload."""
     if uri == "commonai://project/status":
         return _send_command("project_status")
     if uri == "commonai://commands/manifest":
@@ -1096,7 +1100,7 @@ def _resource_payload(uri: str) -> dict:
     if uri == "commonai://logs/latest":
         return _send_command("editor_log_read", {"max_lines": 200})
     if uri == "commonai://audit/http":
-        audit_path = Path(PROJECT_DIR).resolve() / "Saved" / "Logs" / "CommonAIExport_HTTP_Audit.jsonl"
+        audit_path = Path(PROJECT_DIR).resolve() / "Saved" / "Logs" / "MCPToolkit_HTTP_Audit.jsonl"
         if not audit_path.exists():
             return {
                 "success": True,
@@ -1120,14 +1124,14 @@ def _resource_payload(uri: str) -> dict:
             "returned_count": len(events),
             "events": events,
         }
-    return {"success": False, "error": f"Unknown CommonAIExport resource URI: {uri}"}
+    return {"success": False, "error": f"Unknown MCPToolkit resource URI: {uri}"}
 
 
 def _prompt_payload(name: str, asset_path: str = "") -> dict:
     """Read a prompt template payload."""
     descriptor = COMMONAI_PROMPTS.get(name)
     if not descriptor:
-        return {"success": False, "error": f"Unknown CommonAIExport prompt: {name}"}
+        return {"success": False, "error": f"Unknown MCPToolkit prompt: {name}"}
     template = descriptor["template"]
     if "{asset_path}" in template:
         template = template.format(asset_path=asset_path or "<asset_path>")
@@ -1140,31 +1144,32 @@ def _prompt_payload(name: str, asset_path: str = "") -> dict:
 
 
 def _server_metadata() -> dict:
-    """Build MCP registry-style metadata for CommonAIExport."""
+    """Build MCP registry-style metadata for MCPToolkit."""
     return {
-        "name": "commonai-export",
-        "display_name": "CommonAIExport",
-        "description": "Project-local Unreal Editor automation MCP bridge for Unreal Engine projects.",
+        "name": "unreal-mcp-toolkit",
+        "display_name": "Unreal MCP Toolkit",
+        "description": "AI-powered Unreal Editor automation, asset export, diagnostics, and Blueprint/UI tooling.",
         "version": "0.4.0",
         "protocol": {
             "current_transport": "stdio FastMCP wrapper over localhost TCP JSON",
             "native_http_mcp": {
-                "discovery_file": "Intermediate/AIExport_http_port.txt",
+                "discovery_file": "Intermediate/MCTExport_http_port.txt",
                 "path": "/mcp",
                 "protocol_version": "2025-06-18",
                 "supports_sessions": True,
                 "supports_pagination": True,
-                "optional_bearer_token_env": "COMMONAI_MCP_HTTP_TOKEN",
+                "optional_bearer_token_env": "MCPTOOLKIT_HTTP_TOKEN",
+                "legacy_bearer_token_env": ["COMMONAI_MCP_HTTP_TOKEN", "COMMONAIEXPORT_HTTP_TOKEN"],
             },
         },
         "project_dir": str(Path(PROJECT_DIR).resolve()),
         "tools": {
             "tcp_manifest": "commonai://commands/manifest",
             "client_only": sorted(CLIENT_ONLY_TOOLS),
-            "generated_schemas": "Plugins/CommonAIExport/Resources/Generated/CommonAIExport_ToolSchemas.json",
-            "wrapper_spec": "Plugins/CommonAIExport/Resources/Generated/CommonAIExport_WrapperSpec.json",
-            "wrapper_stubs": "Plugins/CommonAIExport/Resources/Generated/CommonAIExport_MCPWrapperStubs.py",
-            "wrapper_runtime": "Plugins/CommonAIExport/Resources/Generated/CommonAIExport_MCPWrapperRuntime.py",
+            "generated_schemas": "Plugins/MCPToolkit/Resources/Generated/MCPToolkit_ToolSchemas.json",
+            "wrapper_spec": "Plugins/MCPToolkit/Resources/Generated/MCPToolkit_WrapperSpec.json",
+            "wrapper_stubs": "Plugins/MCPToolkit/Resources/Generated/MCPToolkit_MCPWrapperStubs.py",
+            "wrapper_runtime": "Plugins/MCPToolkit/Resources/Generated/MCPToolkit_MCPWrapperRuntime.py",
             "generated_runtime_wrapper_count": len(_GENERATED_TCP_WRAPPERS),
         },
         "resources": list(COMMONAI_RESOURCES.keys()),
@@ -1174,38 +1179,39 @@ def _server_metadata() -> dict:
             "scopes": ["read", "write", "destructive"],
             "dry_run": True,
             "destructive_requires_explicit_scope": True,
-            "allowed_origins_env": "COMMONAI_MCP_HTTP_ALLOWED_ORIGINS",
+            "allowed_origins_env": "MCPTOOLKIT_HTTP_ALLOWED_ORIGINS",
+            "legacy_allowed_origins_env": ["COMMONAI_MCP_HTTP_ALLOWED_ORIGINS", "COMMONAIEXPORT_HTTP_ALLOWED_ORIGINS"],
         },
     }
 
 
 @mcp.resource("commonai://project/status", mime_type="application/json")
 def commonai_project_status_resource() -> str:
-    """CommonAIExport project/editor status resource."""
+    """MCPToolkit project/editor status resource."""
     return _format_response(_resource_payload("commonai://project/status"))
 
 
 @mcp.resource("commonai://commands/manifest", mime_type="application/json")
 def commonai_command_manifest_resource() -> str:
-    """CommonAIExport command manifest resource."""
+    """MCPToolkit command manifest resource."""
     return _format_response(_resource_payload("commonai://commands/manifest"))
 
 
 @mcp.resource("commonai://editors/list", mime_type="application/json")
 def commonai_editors_resource() -> str:
-    """CommonAIExport editor registry resource."""
+    """MCPToolkit editor registry resource."""
     return _format_response(_resource_payload("commonai://editors/list"))
 
 
 @mcp.resource("commonai://logs/latest", mime_type="application/json")
 def commonai_latest_log_resource() -> str:
-    """CommonAIExport latest project log resource."""
+    """MCPToolkit latest project log resource."""
     return _format_response(_resource_payload("commonai://logs/latest"))
 
 
 @mcp.resource("commonai://audit/http", mime_type="application/json")
 def commonai_http_audit_resource() -> str:
-    """CommonAIExport native HTTP/MCP audit resource."""
+    """MCPToolkit native HTTP/MCP audit resource."""
     return _format_response(_resource_payload("commonai://audit/http"))
 
 
@@ -1258,7 +1264,7 @@ def ping() -> str:
 @mcp.tool()
 def list_commands() -> str:
     """
-    List registered CommonAIExport TCP commands.
+    List registered MCPToolkit TCP commands.
 
     Returns:
         JSON with command names, categories, parameter requirements, mutation
@@ -1270,7 +1276,7 @@ def list_commands() -> str:
 @mcp.tool()
 def server_status() -> str:
     """
-    Get CommonAIExport server runtime status.
+    Get MCPToolkit server runtime status.
 
     Returns:
         JSON with server identity, port, command count, scope model, transport
@@ -1335,7 +1341,7 @@ def source_control_status(
         provider: "auto", "dv"/"diversion", or "git". Auto prefers Diversion
                   when a .diversion folder exists in repo_path.
         repo_path: Optional project-relative or absolute directory under the
-                   project. Use "Plugins/CommonAIExport" for the GitHub repo.
+                   project. Use "Plugins/MCPToolkit" for the GitHub repo.
         path: Optional repo-relative file or directory path.
         no_limit: For Diversion, request full status output.
 
@@ -1368,7 +1374,7 @@ def source_control_log(
     Args:
         provider: "auto", "dv"/"diversion", or "git".
         repo_path: Optional project-relative repo directory. Use
-                   "Plugins/CommonAIExport" for the plugin GitHub repo.
+                   "Plugins/MCPToolkit" for the plugin GitHub repo.
         path: Optional repo-relative file or directory path.
         limit: Maximum commits returned. The TCP server clamps this value.
         oneline: Request compact one-line history when supported.
@@ -1522,7 +1528,7 @@ def run_tests(test_filter: str = "Project", project_file: str = "") -> str:
 
 @mcp.tool()
 def get_test_log(log_path: str = "", max_lines: int = 300) -> str:
-    """Read the latest CommonAIExport workflow test log tail."""
+    """Read the latest MCPToolkit workflow test log tail."""
     return _send_generated_tcp_tool("get_test_log", {
         "log_path": log_path,
         "max_lines": max_lines,
@@ -1646,7 +1652,7 @@ def project_config_list_keys(
 @mcp.tool()
 def commonai_resources_list() -> str:
     """
-    List CommonAIExport resource URIs exposed by this MCP wrapper.
+    List MCPToolkit resource URIs exposed by this MCP wrapper.
 
     Returns:
         JSON with resource uri, name, description, and mime_type.
@@ -1666,7 +1672,7 @@ def commonai_resources_list() -> str:
 @mcp.tool()
 def commonai_resource_read(uri: str) -> str:
     """
-    Read a CommonAIExport resource URI.
+    Read a MCPToolkit resource URI.
 
     Args:
         uri: One of commonai_resources_list().resources[].uri.
@@ -1680,7 +1686,7 @@ def commonai_resource_read(uri: str) -> str:
 @mcp.tool()
 def commonai_prompts_list() -> str:
     """
-    List CommonAIExport reusable prompt templates.
+    List MCPToolkit reusable prompt templates.
 
     Returns:
         JSON with prompt names and descriptions.
@@ -1699,7 +1705,7 @@ def commonai_prompts_list() -> str:
 @mcp.tool()
 def commonai_prompt_get(name: str, asset_path: str = "") -> str:
     """
-    Get a CommonAIExport prompt template.
+    Get a MCPToolkit prompt template.
 
     Args:
         name: Prompt name from commonai_prompts_list().
@@ -1752,7 +1758,7 @@ def guarded_build_status(tail_lines: int = 120) -> str:
 @mcp.tool()
 def client_scope_policy() -> str:
     """
-    Inspect process-local CommonAIExport MCP client scope policy.
+    Inspect process-local MCPToolkit MCP client scope policy.
 
     Configure with environment variables:
     COMMONAI_MCP_CLIENT_MAX_SCOPE, COMMONAI_MCP_REQUIRE_EXPLICIT_SCOPE,
@@ -1811,7 +1817,7 @@ def ue_class_lookup(class_name: str, max_results: int = 6) -> str:
 @mcp.tool()
 def mcp_server_metadata_export(output_path: str = "") -> str:
     """
-    Export MCP registry-style metadata for CommonAIExport.
+    Export MCP registry-style metadata for MCPToolkit.
 
     Args:
         output_path: Optional output JSON path under the project directory.
@@ -1820,7 +1826,7 @@ def mcp_server_metadata_export(output_path: str = "") -> str:
         JSON with metadata and output_path.
     """
     project_root = Path(PROJECT_DIR).resolve()
-    target = (project_root / "Saved" / "AIManifests" / "CommonAIExport_server.json").resolve()
+    target = (project_root / "Saved" / "AIManifests" / "MCPToolkit_server.json").resolve()
     if output_path:
         candidate = Path(output_path)
         if not candidate.is_absolute():
@@ -1871,7 +1877,7 @@ def native_mcp_probe() -> str:
         "params": {
             "protocolVersion": "2025-06-18",
             "capabilities": {},
-            "clientInfo": {"name": "CommonAIExport MCP Probe", "version": "1.0"},
+            "clientInfo": {"name": "MCPToolkit MCP Probe", "version": "1.0"},
         },
     })
     session_id = (
@@ -1928,7 +1934,7 @@ def native_mcp_probe() -> str:
 @mcp.tool()
 def editors_list(include_stale: bool = False) -> str:
     """
-    List live Unreal Editor instances running CommonAIExport.
+    List live Unreal Editor instances running MCPToolkit.
 
     Args:
         include_stale: If True, include stale registry entries whose TCP port
@@ -1962,10 +1968,10 @@ def editor_call(
     dry_run: bool = False,
 ) -> str:
     """
-    Route any CommonAIExport TCP command to a selected Unreal Editor instance.
+    Route any MCPToolkit TCP command to a selected Unreal Editor instance.
 
     Args:
-        command: CommonAIExport TCP command name, e.g. "server_status".
+        command: MCPToolkit TCP command name, e.g. "server_status".
         params: Optional command params object.
         editor_id: Target editor id from editors_list.
         project_dir: Target project directory from editors_list.
@@ -3845,7 +3851,7 @@ def task_submit(
     dry_run: bool = False,
 ) -> str:
     """
-    Submit a CommonAIExport command for async background execution.
+    Submit a MCPToolkit command for async background execution.
 
     Args:
         command: TCP/MCP command name to run, e.g. "capture_widget_preview".

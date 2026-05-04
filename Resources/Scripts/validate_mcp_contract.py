@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate CommonAIExport TCP command descriptors against MCP tool wrappers."""
+"""Validate MCPToolkit TCP command descriptors against MCP tool wrappers."""
 
 from __future__ import annotations
 
@@ -31,11 +31,11 @@ from generate_mcp_artifacts import (
 )
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[2]
-CPP_SERVER = PLUGIN_ROOT / "Source" / "CommonAIExport" / "Private" / "AIExportTCPServer.cpp"
+CPP_SERVER = PLUGIN_ROOT / "Source" / "MCPToolkit" / "Private" / "MCTTcpServer.cpp"
 MCP_CLIENT = PLUGIN_ROOT / "MCPClient" / "ai_widget_mcp_client.py"
 AI_REFERENCE = PLUGIN_ROOT / "Docs" / "Reference" / "AI_REFERENCE.md"
 
-CPP_COMMAND_RE = re.compile(r'AI_COMMAND_(?:NO_|OPTIONAL_)?PARAMS(?:_SCOPE)?\("([^"]+)"')
+CPP_COMMAND_RE = re.compile(r'MCT_COMMAND_(?:NO_|OPTIONAL_)?PARAMS(?:_SCOPE)?\("([^"]+)"')
 PY_TOOL_RE = re.compile(r"^@mcp\.tool\(\)")
 PY_DEF_RE = re.compile(r"^def ([a-zA-Z_][a-zA-Z0-9_]*)\(")
 DOC_COUNT_RES = (
@@ -184,9 +184,9 @@ def _validate_generated_artifacts(expected_tcp_commands: list[str], expected_mcp
     if f"- TCP commands: {len(expected_tcp_commands)}" not in catalog_text or f"- MCP tools: {expected_mcp_count}" not in catalog_text:
         errors.append("Generated tool catalog count summary is stale; run generate_mcp_artifacts.py")
     if (
-        "CommonAIExport_WrapperSpec.json" not in catalog_text
-        or "CommonAIExport_MCPWrapperStubs.py" not in catalog_text
-        or "CommonAIExport_MCPWrapperRuntime.py" not in catalog_text
+        "MCPToolkit_WrapperSpec.json" not in catalog_text
+        or "MCPToolkit_MCPWrapperStubs.py" not in catalog_text
+        or "MCPToolkit_MCPWrapperRuntime.py" not in catalog_text
     ):
         errors.append("Generated tool catalog wrapper summary is stale; run generate_mcp_artifacts.py")
 
@@ -243,7 +243,7 @@ def main() -> int:
             )
 
     if errors:
-        print("CommonAIExport MCP contract validation failed:")
+        print("MCPToolkit MCP contract validation failed:")
         for error in errors:
             print(f"  - {error}")
         print(f"C++ commands: {len(cpp_commands)}")
@@ -256,7 +256,7 @@ def main() -> int:
         return 1
 
     print(
-        "CommonAIExport MCP contract valid: "
+        "MCPToolkit MCP contract valid: "
         f"{len(cpp_commands)} TCP commands, {len(mcp_tools)} MCP tools, docs count {expected_count}"
     )
     return 0

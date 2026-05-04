@@ -1,6 +1,6 @@
 # CommonUI Architecture Notes
 
-CommonAIExport does not impose a game-specific UI framework, but UI transfer
+MCPToolkit does not impose a game-specific UI framework, but UI transfer
 work should preserve the host project's CommonUI architecture.
 
 ## Rules

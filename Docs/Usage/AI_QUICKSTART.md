@@ -1,41 +1,43 @@
-# CommonAIExport — AI Quick Start
+# Unreal MCP Toolkit - AI Quick Start
 
 ## Two Ways to Use
 
 ### 1. MCP Tools (Recommended)
 
-CommonAIExport includes a **Python MCP server** that wraps the TCP protocol.
-When configured in an MCP-capable AI assistant, 118 tools become available with `mcp__widget-builder__` prefix.
+MCPToolkit includes a **Python MCP server** that wraps the TCP protocol.
+When configured in an MCP-capable AI assistant, the generated tool surface becomes available with the `mcp__widget-builder__` prefix.
 
-**MCP Client**: `Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py`
+**MCP Client**: `Plugins/MCPToolkit/MCPClient/ai_widget_mcp_client.py`
 
 For full tool reference: **[AI_REFERENCE.md](../Reference/AI_REFERENCE.md)**
 
 ### 2. Direct TCP (For scripts, other AI tools)
 
-Raw TCP JSON protocol on `127.0.0.1` — port from `{ProjectDir}/Intermediate/AIExport_port.txt`.
+Raw TCP JSON protocol on `127.0.0.1` — port from `{ProjectDir}/Intermediate/MCTExport_port.txt`.
 
 ```json
 {"type": "command_name", "params": {"key": "value"}}
 ```
 
 The native C++ HTTP/MCP endpoint is also available on `127.0.0.1`; its port is
-written to `{ProjectDir}/Intermediate/AIExport_http_port.txt`. Set
-`COMMONAI_MCP_HTTP_TOKEN` before launching the editor to require bearer auth on
+written to `{ProjectDir}/Intermediate/MCTExport_http_port.txt`. Set
+`MCPTOOLKIT_HTTP_TOKEN` before launching the editor to require bearer auth on
 HTTP requests. `/mcp initialize` returns a `Mcp-Session-Id` header and
 `tools/list` supports cursor pagination. `DELETE /mcp` releases a session;
 `COMMONAI_MCP_SESSION_TTL_SECONDS` controls expiry and
-`COMMONAI_MCP_HTTP_ALLOWED_ORIGINS` controls the local CORS allow-list.
-HTTP audit events are written to `Saved/Logs/CommonAIExport_HTTP_Audit.jsonl`;
-set `COMMONAI_MCP_HTTP_AUDIT=0` to disable that log.
+`MCPTOOLKIT_HTTP_ALLOWED_ORIGINS` controls the local CORS allow-list.
+HTTP audit events are written to `Saved/Logs/MCPToolkit_HTTP_Audit.jsonl`;
+set `MCPTOOLKIT_HTTP_AUDIT=0` to disable that log. Existing `COMMONAI_*`
+and `COMMONAIEXPORT_*` HTTP env names remain supported as compatibility
+fallbacks.
 
 ---
 
 ## Prerequisites
 
 1. **Unreal Editor must be running** — TCP server runs inside the Editor
-2. **Port file exists**: `{ProjectDir}/Intermediate/AIExport_port.txt`
-3. **Multi-editor discovery**: each editor with the plugin writes `%LOCALAPPDATA%/CommonAIExport/Editors/*.json`
+2. **Port file exists**: `{ProjectDir}/Intermediate/MCTExport_port.txt`
+3. **Multi-editor discovery**: each editor with the plugin writes `%LOCALAPPDATA%/MCPToolkit/Editors/*.json`
 
 ---
 
@@ -46,15 +48,15 @@ set `COMMONAI_MCP_HTTP_AUDIT=0` to disable that log.
 ping  # Returns "pong"
 
 # Via TCP (Python)
-python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py ping
-python Plugins/CommonAIExport/Resources/Scripts/ai_export_client.py list_commands
+python Plugins/MCPToolkit/Resources/Scripts/ai_export_client.py ping
+python Plugins/MCPToolkit/Resources/Scripts/ai_export_client.py list_commands
 
 # Regenerate and validate manifest/schema/docs artifacts
-python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py
+python Plugins/MCPToolkit/Resources/Scripts/preflight_mcp.py
 
 # Optional live-editor runtime smoke
-python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py
-python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py --mutating-smoke
+python Plugins/MCPToolkit/Resources/Scripts/smoke_mcp_runtime.py
+python Plugins/MCPToolkit/Resources/Scripts/smoke_mcp_runtime.py --mutating-smoke
 ```
 
 For UI transfer/TSpec validation:
@@ -64,7 +66,7 @@ For UI transfer/TSpec validation:
 powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
 
 # From a host Unreal project where the plugin is installed
-powershell -ExecutionPolicy Bypass -File Plugins/CommonAIExport/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
+powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
 ```
 
 ```bash
@@ -105,7 +107,7 @@ code_transfer_plan(source_paths=["Source/OkeyGame/Public/MyClass.h"], source_edi
 | **Inspect Project Health** | Search assets, run light asset validation, read editor logs, source-control status, guarded build status |
 | **Use Context Resources** | Read CommonAI resources/prompts and export MCP metadata/command manifests |
 | **Probe Native HTTP/MCP** | Check C++ localhost HTTP health and JSON-RPC MCP tools/list |
-| **Multi-Editor** | Discover open UE projects and route CommonAIExport commands to a selected editor |
+| **Multi-Editor** | Discover open UE projects and route MCPToolkit commands to a selected editor |
 | **Transfer Code** | Plan, copy, and verify C++/config files with hash/collision checks |
 
 ---

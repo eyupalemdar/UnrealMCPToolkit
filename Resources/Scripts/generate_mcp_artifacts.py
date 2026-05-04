@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate CommonAIExport MCP manifest, schemas, catalog, and server metadata."""
+"""Generate MCPToolkit MCP manifest, schemas, catalog, and server metadata."""
 
 from __future__ import annotations
 
@@ -15,17 +15,18 @@ from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[2]
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
-CPP_SERVER = PLUGIN_ROOT / "Source" / "CommonAIExport" / "Private" / "AIExportTCPServer.cpp"
+PLUGIN_SOURCE_LABEL = "MCPToolkit"
+CPP_SERVER = PLUGIN_ROOT / "Source" / "MCPToolkit" / "Private" / "MCTTcpServer.cpp"
 MCP_CLIENT = PLUGIN_ROOT / "MCPClient" / "ai_widget_mcp_client.py"
 GENERATED_DIR = PLUGIN_ROOT / "Resources" / "Generated"
 
-COMMAND_MANIFEST_PATH = GENERATED_DIR / "CommonAIExport_CommandManifest.json"
-TOOL_SCHEMAS_PATH = GENERATED_DIR / "CommonAIExport_ToolSchemas.json"
-TOOL_CATALOG_PATH = GENERATED_DIR / "CommonAIExport_ToolCatalog.md"
-SERVER_METADATA_PATH = GENERATED_DIR / "CommonAIExport_server.json"
-WRAPPER_SPEC_PATH = GENERATED_DIR / "CommonAIExport_WrapperSpec.json"
-WRAPPER_STUBS_PATH = GENERATED_DIR / "CommonAIExport_MCPWrapperStubs.py"
-WRAPPER_RUNTIME_PATH = GENERATED_DIR / "CommonAIExport_MCPWrapperRuntime.py"
+COMMAND_MANIFEST_PATH = GENERATED_DIR / "MCPToolkit_CommandManifest.json"
+TOOL_SCHEMAS_PATH = GENERATED_DIR / "MCPToolkit_ToolSchemas.json"
+TOOL_CATALOG_PATH = GENERATED_DIR / "MCPToolkit_ToolCatalog.md"
+SERVER_METADATA_PATH = GENERATED_DIR / "MCPToolkit_server.json"
+WRAPPER_SPEC_PATH = GENERATED_DIR / "MCPToolkit_WrapperSpec.json"
+WRAPPER_STUBS_PATH = GENERATED_DIR / "MCPToolkit_MCPWrapperStubs.py"
+WRAPPER_RUNTIME_PATH = GENERATED_DIR / "MCPToolkit_MCPWrapperRuntime.py"
 AI_REFERENCE_PATH = PLUGIN_ROOT / "Docs" / "Reference" / "AI_REFERENCE.md"
 CAPABILITY_MATRIX_PATH = PLUGIN_ROOT / "Resources" / "CapabilityMatrix.json"
 CAPABILITY_LAYER_MATRIX_PATH = PLUGIN_ROOT / "Resources" / "CapabilityLayerMatrix.json"
@@ -93,28 +94,28 @@ COMMONAI_PROMPTS = [
 
 MACRO_PATTERNS = (
     (
-        "AI_COMMAND_PARAMS_SCOPE",
+        "MCT_COMMAND_PARAMS_SCOPE",
         re.compile(
-            r'AI_COMMAND_PARAMS_SCOPE\("([^"]+)",\s*"([^"]+)",\s*(true|false),\s*(\d+),\s*"([^"]+)",\s*(true|false),\s*(true|false),\s*(\w+)\)'
+            r'MCT_COMMAND_PARAMS_SCOPE\("([^"]+)",\s*"([^"]+)",\s*(true|false),\s*(\d+),\s*"([^"]+)",\s*(true|false),\s*(true|false),\s*(\w+)\)'
         ),
     ),
     (
-        "AI_COMMAND_NO_PARAMS_SCOPE",
+        "MCT_COMMAND_NO_PARAMS_SCOPE",
         re.compile(
-            r'AI_COMMAND_NO_PARAMS_SCOPE\("([^"]+)",\s*"([^"]+)",\s*(true|false),\s*(\d+),\s*"([^"]+)",\s*(true|false),\s*(true|false),\s*(\w+)\)'
+            r'MCT_COMMAND_NO_PARAMS_SCOPE\("([^"]+)",\s*"([^"]+)",\s*(true|false),\s*(\d+),\s*"([^"]+)",\s*(true|false),\s*(true|false),\s*(\w+)\)'
         ),
     ),
     (
-        "AI_COMMAND_OPTIONAL_PARAMS",
-        re.compile(r'AI_COMMAND_OPTIONAL_PARAMS\("([^"]+)",\s*"([^"]+)",\s*(true|false),\s*(\d+),\s*(\w+)\)'),
+        "MCT_COMMAND_OPTIONAL_PARAMS",
+        re.compile(r'MCT_COMMAND_OPTIONAL_PARAMS\("([^"]+)",\s*"([^"]+)",\s*(true|false),\s*(\d+),\s*(\w+)\)'),
     ),
     (
-        "AI_COMMAND_PARAMS",
-        re.compile(r'AI_COMMAND_PARAMS\("([^"]+)",\s*"([^"]+)",\s*(true|false),\s*(\d+),\s*(\w+)\)'),
+        "MCT_COMMAND_PARAMS",
+        re.compile(r'MCT_COMMAND_PARAMS\("([^"]+)",\s*"([^"]+)",\s*(true|false),\s*(\d+),\s*(\w+)\)'),
     ),
     (
-        "AI_COMMAND_NO_PARAMS",
-        re.compile(r'AI_COMMAND_NO_PARAMS\("([^"]+)",\s*"([^"]+)",\s*(\d+),\s*(\w+)\)'),
+        "MCT_COMMAND_NO_PARAMS",
+        re.compile(r'MCT_COMMAND_NO_PARAMS\("([^"]+)",\s*"([^"]+)",\s*(\d+),\s*(\w+)\)'),
     ),
 )
 
@@ -125,6 +126,10 @@ PY_DEF_RE = re.compile(r"^def ([a-zA-Z_][a-zA-Z0-9_]*)\(")
 def _project_relative(path: Path) -> str:
     """Return a stable project-relative path, even when executed through a sandbox mirror."""
     resolved = path.resolve()
+    try:
+        return f"{PLUGIN_SOURCE_LABEL}/{resolved.relative_to(PLUGIN_ROOT).as_posix()}"
+    except ValueError:
+        pass
     try:
         return str(resolved.relative_to(PROJECT_ROOT)).replace("\\", "/")
     except ValueError:
@@ -170,7 +175,7 @@ def _matrix_string_list(item: dict, field_name: str, label: str, errors: list[st
 
 
 def _validate_command_handler_stems(names: list[str], label: str, errors: list[str]) -> None:
-    handler_dir = PLUGIN_ROOT / "Source" / "CommonAIExport" / "Private" / "CommandHandlers"
+    handler_dir = PLUGIN_ROOT / "Source" / "MCPToolkit" / "Private" / "CommandHandlers"
     for name in names:
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
             errors.append(f"{label}: command handler name must be a file stem: {name}")
@@ -182,7 +187,7 @@ def _validate_command_handler_stems(names: list[str], label: str, errors: list[s
 
 
 def _validate_layer_classes(names: list[str], kind: str, label: str, errors: list[str]) -> None:
-    source_dir = PLUGIN_ROOT / "Source" / "CommonAIExport"
+    source_dir = PLUGIN_ROOT / "Source" / "MCPToolkit"
     plural = "Builders" if kind == "builder" else "Exporters"
 
     for name in names:
@@ -214,8 +219,8 @@ def validate_capability_layer_matrix(matrix: dict, path: Path = CAPABILITY_LAYER
 
     if layer_matrix.get("schema_version") != 1:
         errors.append("Capability layer matrix schema_version must be 1")
-    if layer_matrix.get("server") != "CommonAIExport":
-        errors.append("Capability layer matrix server must be CommonAIExport")
+    if layer_matrix.get("server") != "MCPToolkit":
+        errors.append("Capability layer matrix server must be MCPToolkit")
 
     coverage_policy = layer_matrix.get("coverage_policy", {})
     if not isinstance(coverage_policy, dict):
@@ -321,8 +326,8 @@ def validate_capability_matrix(command_manifest: dict, path: Path = CAPABILITY_M
 
     if matrix.get("schema_version") != 1:
         errors.append("Capability matrix schema_version must be 1")
-    if matrix.get("server") != "CommonAIExport":
-        errors.append("Capability matrix server must be CommonAIExport")
+    if matrix.get("server") != "MCPToolkit":
+        errors.append("Capability matrix server must be MCPToolkit")
 
     coverage_policy = matrix.get("coverage_policy", {})
     if not isinstance(coverage_policy, dict):
@@ -411,11 +416,11 @@ def validate_capability_matrix(command_manifest: dict, path: Path = CAPABILITY_M
 
 
 def parse_cpp_descriptors() -> list[dict]:
-    """Parse FCommandDescriptor macro calls from AIExportTCPServer.cpp."""
+    """Parse FCommandDescriptor macro calls from MCTTcpServer.cpp."""
     descriptors: list[dict] = []
     for line_number, line in enumerate(CPP_SERVER.read_text(encoding="utf-8").splitlines(), start=1):
         stripped = line.strip().rstrip(",")
-        if not stripped.startswith("AI_COMMAND_"):
+        if not stripped.startswith("MCT_COMMAND_"):
             continue
 
         for macro_name, pattern in MACRO_PATTERNS:
@@ -424,20 +429,20 @@ def parse_cpp_descriptors() -> list[dict]:
                 continue
 
             values = match.groups()
-            if macro_name == "AI_COMMAND_PARAMS_SCOPE":
+            if macro_name == "MCT_COMMAND_PARAMS_SCOPE":
                 name, category, mutating, timeout, scope, dry_run, async_candidate, handler = values
                 requires_params = True
-            elif macro_name == "AI_COMMAND_NO_PARAMS_SCOPE":
+            elif macro_name == "MCT_COMMAND_NO_PARAMS_SCOPE":
                 name, category, mutating, timeout, scope, dry_run, async_candidate, handler = values
                 requires_params = False
-            elif macro_name == "AI_COMMAND_OPTIONAL_PARAMS":
+            elif macro_name == "MCT_COMMAND_OPTIONAL_PARAMS":
                 name, category, mutating, timeout, handler = values
                 mutating_bool = _bool(mutating)
                 scope = "write" if mutating_bool else "read"
                 dry_run = "true" if mutating_bool else "false"
                 async_candidate = "true" if int(timeout) >= 120 else "false"
                 requires_params = False
-            elif macro_name == "AI_COMMAND_PARAMS":
+            elif macro_name == "MCT_COMMAND_PARAMS":
                 name, category, mutating, timeout, handler = values
                 mutating_bool = _bool(mutating)
                 scope = "write" if mutating_bool else "read"
@@ -850,9 +855,9 @@ def build_wrapper_spec(command_manifest: dict, tool_schemas: dict) -> dict:
 
     return {
         "schema_version": 1,
-        "server": "CommonAIExport",
+        "server": "MCPToolkit",
         "generated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
+        "manifest_source": "FMCTTcpServer::GetCommandDescriptors",
         "generator": _project_relative(Path(__file__)),
         "wrapper_source": _project_relative(MCP_CLIENT),
         "tool_count": len(tools),
@@ -881,7 +886,7 @@ def _signature_text(params: list[dict]) -> str:
 def build_wrapper_stubs(command_manifest: dict, wrapper_spec: dict) -> str:
     """Generate reviewable Python wrapper stubs from descriptor and signature metadata."""
     lines = [
-        '"""Generated CommonAIExport MCP wrapper stubs.',
+        '"""Generated MCPToolkit MCP wrapper stubs.',
         "",
         "This file is generated by Resources/Scripts/generate_mcp_artifacts.py.",
         "It is a review/regeneration aid and is not imported by the MCP client.",
@@ -1011,7 +1016,7 @@ def build_wrapper_runtime(command_manifest: dict, wrapper_spec: dict) -> str:
         }
 
     lines = [
-        '"""Generated CommonAIExport MCP wrapper runtime registry.',
+        '"""Generated MCPToolkit MCP wrapper runtime registry.',
         "",
         "This file is generated by Resources/Scripts/generate_mcp_artifacts.py.",
         "The MCP client imports it for selected pass-through wrappers.",
@@ -1088,9 +1093,9 @@ def build_command_manifest() -> dict:
     categories = Counter(descriptor["category"] for descriptor in descriptors)
     return {
         "schema_version": 3,
-        "server": "CommonAIExport",
+        "server": "MCPToolkit",
         "generated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
+        "manifest_source": "FMCTTcpServer::GetCommandDescriptors",
         "generator": _project_relative(Path(__file__)),
         "command_count": len(descriptors),
         "category_count": len(categories),
@@ -1154,7 +1159,7 @@ def build_tool_schemas(command_manifest: dict) -> dict:
 
     return {
         "schema_version": 1,
-        "server": "CommonAIExport",
+        "server": "MCPToolkit",
         "generated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "tool_count": len(schemas),
         "tools": schemas,
@@ -1164,34 +1169,35 @@ def build_tool_schemas(command_manifest: dict) -> dict:
 def build_server_metadata(command_manifest: dict, tool_schemas: dict) -> dict:
     return {
         "schema_version": 1,
-        "name": "commonai-export",
-        "display_name": "CommonAIExport",
-        "description": "Project-local Unreal Editor automation MCP bridge for Unreal Engine projects.",
+        "name": "unreal-mcp-toolkit",
+        "display_name": "Unreal MCP Toolkit",
+        "description": "AI-powered Unreal Editor automation, asset export, diagnostics, and Blueprint/UI tooling.",
         "version": "0.4.1",
         "generated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "transports": {
             "stdio": {
                 "command": "python",
-                "args": ["Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py"],
+                "args": ["Plugins/MCPToolkit/MCPClient/ai_widget_mcp_client.py"],
             },
             "native_http_mcp": {
-                "discovery_file": "Intermediate/AIExport_http_port.txt",
+                "discovery_file": "Intermediate/MCTExport_http_port.txt",
                 "path": "/mcp",
                 "bind": "127.0.0.1",
                 "protocol_version": "2025-06-18",
                 "supports_sessions": True,
                 "supports_pagination": True,
-                "optional_bearer_token_env": "COMMONAI_MCP_HTTP_TOKEN",
+                "optional_bearer_token_env": "MCPTOOLKIT_HTTP_TOKEN",
+                "legacy_bearer_token_env": ["COMMONAI_MCP_HTTP_TOKEN", "COMMONAIEXPORT_HTTP_TOKEN"],
             },
         },
         "tools": {
             "total": tool_schemas["tool_count"],
             "tcp_commands": command_manifest["command_count"],
             "client_only": sorted(CLIENT_ONLY_TOOLS),
-            "schemas": "Resources/Generated/CommonAIExport_ToolSchemas.json",
-            "wrapper_spec": "Resources/Generated/CommonAIExport_WrapperSpec.json",
-            "wrapper_stubs": "Resources/Generated/CommonAIExport_MCPWrapperStubs.py",
-            "wrapper_runtime": "Resources/Generated/CommonAIExport_MCPWrapperRuntime.py",
+            "schemas": "Resources/Generated/MCPToolkit_ToolSchemas.json",
+            "wrapper_spec": "Resources/Generated/MCPToolkit_WrapperSpec.json",
+            "wrapper_stubs": "Resources/Generated/MCPToolkit_MCPWrapperStubs.py",
+            "wrapper_runtime": "Resources/Generated/MCPToolkit_MCPWrapperRuntime.py",
             "schema_source": "Python MCP wrapper signatures",
             "strict_parameter_schemas": True,
             "wrapper_drift_checked": True,
@@ -1204,24 +1210,25 @@ def build_server_metadata(command_manifest: dict, tool_schemas: dict) -> dict:
             "scopes": ["read", "write", "destructive"],
             "dry_run": True,
             "destructive_requires_explicit_scope": True,
-            "allowed_origins_env": "COMMONAI_MCP_HTTP_ALLOWED_ORIGINS",
+            "allowed_origins_env": "MCPTOOLKIT_HTTP_ALLOWED_ORIGINS",
+            "legacy_allowed_origins_env": ["COMMONAI_MCP_HTTP_ALLOWED_ORIGINS", "COMMONAIEXPORT_HTTP_ALLOWED_ORIGINS"],
         },
     }
 
 
 def build_tool_catalog(command_manifest: dict, tool_schemas: dict) -> str:
     lines = [
-        "# CommonAIExport Generated Tool Catalog",
+        "# MCPToolkit Generated Tool Catalog",
         "",
-        "> Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.",
+        "> Generated from `FMCTTcpServer::GetCommandDescriptors`; do not edit by hand.",
         "",
         f"- TCP commands: {command_manifest['command_count']}",
         f"- MCP tools: {tool_schemas['tool_count']}",
         f"- Categories: {command_manifest['category_count']}",
         "- Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures",
-        "- Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`",
-        "- Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`",
-        "- Wrapper runtime: `Resources/Generated/CommonAIExport_MCPWrapperRuntime.py`",
+        "- Wrapper registry: `Resources/Generated/MCPToolkit_WrapperSpec.json`",
+        "- Wrapper stubs: `Resources/Generated/MCPToolkit_MCPWrapperStubs.py`",
+        "- Wrapper runtime: `Resources/Generated/MCPToolkit_MCPWrapperRuntime.py`",
         "",
         "## Categories",
         "",
@@ -1279,7 +1286,7 @@ def build_ai_reference_tool_summary(command_manifest: dict, tool_schemas: dict) 
         f"- Client-only MCP tools: `{source_counts.get('python_client_only', 0)}`",
         f"- Total MCP tools: `{tool_schemas['tool_count']}`",
         f"- Categories: `{command_manifest['category_count']}`",
-        "- Full generated catalog: `Resources/Generated/CommonAIExport_ToolCatalog.md`",
+        "- Full generated catalog: `Resources/Generated/MCPToolkit_ToolCatalog.md`",
         "",
         "| Category | Count |",
         "|---|---:|",

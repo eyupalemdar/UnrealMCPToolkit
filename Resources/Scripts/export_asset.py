@@ -8,7 +8,7 @@ The script supports two workflows:
     python export_asset.py --asset /Game/Blueprints/BP_Player
 
 Manual mode simplifies an existing raw export file. Asset mode runs the
-CommonAIExport AIExport commandlet through UnrealEditor-Cmd and returns the
+MCPToolkit MCTExport commandlet through UnrealEditor-Cmd and returns the
 simplified export path.
 """
 
@@ -281,7 +281,7 @@ def run_commandlet(
     command = [
         str(editor_cmd),
         str(project_file),
-        "-run=AIExport",
+        "-run=MCTExport",
         f"-asset={normalized_asset_path}",
         f"-output={output_dir}",
         commandlet_mode_switch(mode),
@@ -310,7 +310,7 @@ def run_commandlet(
         print(result.stderr, end="" if result.stderr.endswith("\n") else "\n", file=sys.stderr)
 
     if result.returncode != 0:
-        raise ExportError(f"AIExport commandlet failed with exit code {result.returncode}")
+        raise ExportError(f"MCTExport commandlet failed with exit code {result.returncode}")
 
     parsed_paths = parse_exported_paths(combined_output)
     expected_paths = expected_export_paths(output_dir, normalized_asset_path)
@@ -368,7 +368,7 @@ def print_available_simplifiers() -> None:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Export Unreal assets through CommonAIExport or simplify an existing raw export.",
+        description="Export Unreal assets through MCPToolkit or simplify an existing raw export.",
     )
     parser.add_argument(
         "raw_file",

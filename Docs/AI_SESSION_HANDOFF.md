@@ -2,16 +2,16 @@
 
 Last updated: 2026-05-04
 
-This plugin copy starts from CommonAIExport Git commit:
+This plugin copy starts from MCPToolkit Git commit:
 
 ```text
 7065f53a1c290a6123f671aed79bcd9e81149b53
-feat: modularize CommonAIExport TCP server
+feat: modularize MCPToolkit TCP server
 ```
 
 ## Current State
 
-- `AIExportTCPServer.cpp` has been reduced to core server ownership: port
+- `MCTTcpServer.cpp` has been reduced to core server ownership: port
   discovery, command descriptors, descriptor-to-dispatch conversion, dispatch,
   HTTP/TCP lifecycle/callback wiring, registry file handling, and JSON response
   helpers.
@@ -24,7 +24,7 @@ feat: modularize CommonAIExport TCP server
   tests, preflight, guarded C++ build, and a final live-editor mutating smoke:
   `OkeyGame-7424-55560`, TCP `55560`, HTTP `55610`.
 - ProjectOkey root submissions for that work were:
-  `dv.commit.553` (`CommonAIExport: modularize TCP server dispatch`) and
+  `dv.commit.553` (`MCPToolkit: modularize TCP server dispatch`) and
   `dv.commit.554` (`docs: update AI session handoff`).
 
 ## Plugin-Local UI Transfer Package
@@ -43,10 +43,10 @@ plugin is installed into a host Unreal project.
 
 ## Next Useful Work
 
-- Keep `AIExportTCPServer.cpp` mostly core unless a small cohesive ownership
+- Keep `MCTTcpServer.cpp` mostly core unless a small cohesive ownership
   group emerges.
 - If extending the plugin for UI workflows, add TSpec-aware helper commands only
   after preserving the existing contract/static/preflight/smoke test chain.
 - For production WBP changes in any host project, create or update the TSpec,
-  run the validator, then mutate through CommonAIExport tools.
+  run the validator, then mutate through MCPToolkit tools.
 

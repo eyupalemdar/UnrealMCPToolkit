@@ -44,7 +44,7 @@ for example:
 
 If an MCP/tool call blocks the build, stop the current mutation path and report
 a minimal repro: exact tool call, asset path, expected result, actual result,
-and classification: TSpec issue, missing asset, CommonAIExport defect, editor
+and classification: TSpec issue, missing asset, MCPToolkit defect, editor
 cache issue, or unsupported UE behavior. Do not silently inline or simplify the
 design unless the TSpec records that deviation.
 

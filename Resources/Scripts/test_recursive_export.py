@@ -3,7 +3,7 @@
 Recursive Export Test: B_ShooterGame_Elimination
 
 BFS-walks all /Game/ asset references starting from a root blueprint,
-exports each via the CommonAIExport TCP server, and validates outputs.
+exports each via the MCPToolkit TCP server, and validates outputs.
 
 Usage:
     MSYS_NO_PATHCONV=1 py -3 test_recursive_export.py
@@ -343,11 +343,11 @@ def run_recursive_export(root_path: str, max_assets: int):
     if not ping.get("success"):
         print(f"ERROR: Cannot reach TCP server on port {port}")
         print(f"  {ping.get('error', 'Unknown error')}")
-        print("  Is Unreal Editor running with CommonAIExport plugin?")
+        print("  Is Unreal Editor running with MCPToolkit plugin?")
         sys.exit(1)
 
     server_info = ping.get("data", {})
-    print(f"Connected to {server_info.get('server', 'AIExport')} on port {server_info.get('port', port)}")
+    print(f"Connected to {server_info.get('server', 'MCTExport')} on port {server_info.get('port', port)}")
     print(f"Root asset: {root_path}")
     print(f"Max assets: {max_assets}")
     print()

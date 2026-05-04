@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://commonaiexport.local/schemas/tspec-v1.schema.json",
-  "title": "CommonAIExport UI Transfer Spec",
+  "$id": "https://unreal-mcp-toolkit.local/schemas/tspec-v1.schema.json",
+  "title": "MCPToolkit UI Transfer Spec",
   "type": "object",
   "required": [
     "$schema",

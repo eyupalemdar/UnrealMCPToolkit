@@ -1,11 +1,11 @@
-# CommonAIExport
+# Unreal MCP Toolkit
 
-Export Unreal Engine assets to simplified text format for AI analysis.
+AI-powered Unreal Editor automation, asset export, diagnostics, and Blueprint/UI tooling.
 
 ## Getting Started
 
 ### Step 1: Install Plugin
-Copy the `CommonAIExport` folder to your project's `Plugins/` directory and rebuild the project.
+Copy the `MCPToolkit` folder to your project's `Plugins/` directory and rebuild the project.
 
 ### Step 2: Launch Unreal Editor
 Start your Unreal Engine project. **The editor must remain open** during the export process - the TCP server runs inside the editor.
@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
 ```
 
 ### Step 4: Customize Settings (Optional)
-Open **Project Settings → Plugins → Common AI Export** to configure:
+Open **Project Settings → Plugins → Unreal MCP Toolkit** to configure:
 - Output directory
 - Export mode (Raw/Simplified/Both)
 - Python path
@@ -41,7 +41,7 @@ You can also export assets directly from the editor without AI:
 
 ## Overview
 
-CommonAIExport converts UE assets into text format that AI assistants can read and understand. It works as a C++ and Python hybrid system: C++ exports assets to raw text, Python scripts simplify this text for AI consumption.
+MCPToolkit converts UE assets into text format that AI assistants can read and understand. It works as a C++ and Python hybrid system: C++ exports assets to raw text, Python scripts simplify this text for AI consumption.
 
 **Requirements:**
 - Unreal Engine 5.x
@@ -76,50 +76,50 @@ Simplification is done by Python scripts that restructure stripped data into AI-
 ## Plugin Structure (v4.0 - Modular Architecture)
 
 ```
-CommonAIExport/
-├── CommonAIExport.uplugin
+MCPToolkit/
+├── MCPToolkit.uplugin
 ├── README.md                            # This file
-├── Source/CommonAIExport/
+├── Source/MCPToolkit/
 │   ├── Public/
-│   │   ├── AIExportFunctionLibrary.h    # Thin facade (delegates to exporters)
-│   │   ├── AIExportCommandlet.h         # Headless export
-│   │   ├── AIExportSettings.h           # Editor settings
-│   │   ├── AIExportContextMenu.h        # Context menu
-│   │   ├── AIExportTCPServer.h          # TCP server for AI tools
-│   │   ├── AIExporterRegistry.h         # Exporter management (singleton)
-│   │   ├── CommonAIExportModule.h       # Module interface
+│   │   ├── MCTExportFunctionLibrary.h    # Thin facade (delegates to exporters)
+│   │   ├── MCTExportCommandlet.h         # Headless export
+│   │   ├── MCTSettings.h           # Editor settings
+│   │   ├── MCTExportContextMenu.h        # Context menu
+│   │   ├── MCTTcpServer.h          # TCP server for AI tools
+│   │   ├── MCTExporterRegistry.h         # Exporter management (singleton)
+│   │   ├── MCTModule.h       # Module interface
 │   │   └── Exporters/                   # Modular exporters (Strategy Pattern)
-│   │       ├── AIExporterBase.h         # Abstract base class
-│   │       ├── AIBlueprintExporter.h    # UBlueprint (Priority: 50)
-│   │       ├── AIWidgetBlueprintExporter.h  # UWidgetBlueprint (Priority: 100)
-│   │       ├── AIDataAssetExporter.h    # UDataAsset (Priority: 40)
-│   │       ├── AIDataTableExporter.h    # UDataTable (Priority: 50)
-│   │       ├── AIInputExporter.h        # InputAction/IMC (Priority: 50)
-│   │       ├── AIAudioExporter.h        # Audio assets (Priority: 50)
-│   │       ├── AIWorldExporter.h        # UWorld/Map (Priority: 50)
-│   │       ├── AIPhysicalMaterialExporter.h  # PhysicalMaterial (Priority: 46)
-│   │       ├── AIMaterialExporter.h     # Material/MaterialInstance (Priority: 45)
-│   │       └── AITextureExporter.h      # Texture assets (Priority: 50)
+│   │       ├── MCTExporterBase.h         # Abstract base class
+│   │       ├── MCTBlueprintExporter.h    # UBlueprint (Priority: 50)
+│   │       ├── MCTWidgetBlueprintExporter.h  # UWidgetBlueprint (Priority: 100)
+│   │       ├── MCTDataAssetExporter.h    # UDataAsset (Priority: 40)
+│   │       ├── MCTDataTableExporter.h    # UDataTable (Priority: 50)
+│   │       ├── MCTInputExporter.h        # InputAction/IMC (Priority: 50)
+│   │       ├── MCTAudioExporter.h        # Audio assets (Priority: 50)
+│   │       ├── MCTWorldExporter.h        # UWorld/Map (Priority: 50)
+│   │       ├── MCTPhysicalMaterialExporter.h  # PhysicalMaterial (Priority: 46)
+│   │       ├── MCTMaterialExporter.h     # Material/MaterialInstance (Priority: 45)
+│   │       └── MCTTextureExporter.h      # Texture assets (Priority: 50)
 │   └── Private/
-│       ├── AIExportFunctionLibrary.cpp
-│       ├── AIExportCommandlet.cpp
-│       ├── AIExportSettings.cpp
-│       ├── AIExportContextMenu.cpp      # Right-click menu
-│       ├── AIExportTCPServer.cpp        # TCP server implementation
-│       ├── AIExporterRegistry.cpp       # Exporter registration
-│       ├── CommonAIExportModule.cpp
+│       ├── MCTExportFunctionLibrary.cpp
+│       ├── MCTExportCommandlet.cpp
+│       ├── MCTSettings.cpp
+│       ├── MCTExportContextMenu.cpp      # Right-click menu
+│       ├── MCTTcpServer.cpp        # TCP server implementation
+│       ├── MCTExporterRegistry.cpp       # Exporter registration
+│       ├── MCTModule.cpp
 │       └── Exporters/                   # Exporter implementations
-│           ├── AIExporterBase.cpp       # Common helpers (property/graph export)
-│           ├── AIBlueprintExporter.cpp
-│           ├── AIWidgetBlueprintExporter.cpp
-│           ├── AIDataAssetExporter.cpp
-│           ├── AIDataTableExporter.cpp
-│           ├── AIInputExporter.cpp
-│           ├── AIAudioExporter.cpp
-│           ├── AIWorldExporter.cpp      # Map/World export
-│           ├── AIPhysicalMaterialExporter.cpp  # PhysicalMaterial export
-│           ├── AIMaterialExporter.cpp   # Material/MaterialInstance export
-│           └── AITextureExporter.cpp    # Texture export
+│           ├── MCTExporterBase.cpp       # Common helpers (property/graph export)
+│           ├── MCTBlueprintExporter.cpp
+│           ├── MCTWidgetBlueprintExporter.cpp
+│           ├── MCTDataAssetExporter.cpp
+│           ├── MCTDataTableExporter.cpp
+│           ├── MCTInputExporter.cpp
+│           ├── MCTAudioExporter.cpp
+│           ├── MCTWorldExporter.cpp      # Map/World export
+│           ├── MCTPhysicalMaterialExporter.cpp  # PhysicalMaterial export
+│           ├── MCTMaterialExporter.cpp   # Material/MaterialInstance export
+│           └── MCTTextureExporter.cpp    # Texture export
 └── Resources/
     └── Scripts/                         # Python simplifier scripts
         ├── simplify_asset.py            # Main dispatcher (detects asset type)
@@ -140,9 +140,9 @@ The plugin uses a **Strategy Pattern with Registry** for extensible asset export
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    AIExporterRegistry (Singleton)               │
+│                    MCTExporterRegistry (Singleton)               │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │  FindExporterForAsset(Asset) -> UAIExporterBase*        │    │
+│  │  FindExporterForAsset(Asset) -> UMCTExporterBase*        │    │
 │  │  Checks exporters by priority (highest first)           │    │
 │  └─────────────────────────────────────────────────────────┘    │
 │                              │                                   │
@@ -155,15 +155,15 @@ The plugin uses a **Strategy Pattern with Registry** for extensible asset export
 │ └─────────────┘  └─────────────────────┘  └──────────────────┘ │
 │       ▲                      ▲                      ▲          │
 │       └──────────────────────┴──────────────────────┘          │
-│                   All inherit UAIExporterBase                   │
+│                   All inherit UMCTExporterBase                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 **Adding a New Exporter:**
 
-1. Create class inheriting `UAIExporterBase`
+1. Create class inheriting `UMCTExporterBase`
 2. Implement: `CanExport()`, `GetSupportedClasses()`, `Export()`, `GetPriority()`
-3. Register in `AIExporterRegistry::RegisterDefaultExporters()`
+3. Register in `MCTExporterRegistry::RegisterDefaultExporters()`
 
 ## Python Simplifier System
 
@@ -197,7 +197,7 @@ The plugin uses a **Strategy Pattern with Registry** for extensible asset export
 ### Commandlet (Headless)
 
 ```powershell
-UnrealEditor-Cmd.exe "Project.uproject" -run=AIExport -asset="/Game/UI/W_Menu" -both -nullrhi -unattended -nosplash -nopause
+UnrealEditor-Cmd.exe "Project.uproject" -run=MCTExport -asset="/Game/UI/W_Menu" -both -nullrhi -unattended -nosplash -nopause
 ```
 
 #### Parameters
@@ -214,24 +214,24 @@ UnrealEditor-Cmd.exe "Project.uproject" -run=AIExport -asset="/Game/UI/W_Menu" -
 
 | Asset Type | Exporter Class | Priority | Status |
 |------------|----------------|----------|--------|
-| Widget Blueprint | `UAIWidgetBlueprintExporter` | 100 | ✅ |
-| Animation Blueprint | `UAIAnimBlueprintExporter` | 90 | ✅ |
-| Blueprint | `UAIBlueprintExporter` | 50 | ✅ |
-| World/Map | `UAIWorldExporter` | 50 | ✅ |
-| Input Action | `UAIInputExporter` | 50 | ✅ |
-| Input Mapping Context | `UAIInputExporter` | 50 | ✅ |
-| Audio (SoundClass, etc.) | `UAIAudioExporter` | 50 | ✅ |
-| Texture | `UAITextureExporter` | 50 | ✅ |
-| DataTable | `UAIDataTableExporter` | 50 | ✅ |
-| **PhysicalMaterial** | `UAIPhysicalMaterialExporter` | 46 | ✅ **NEW** |
-| Material/MaterialInstance | `UAIMaterialExporter` | 45 | ✅ |
-| DataAsset | `UAIDataAssetExporter` | 40 | ✅ |
+| Widget Blueprint | `UMCTWidgetBlueprintExporter` | 100 | ✅ |
+| Animation Blueprint | `UMCTAnimBlueprintExporter` | 90 | ✅ |
+| Blueprint | `UMCTBlueprintExporter` | 50 | ✅ |
+| World/Map | `UMCTWorldExporter` | 50 | ✅ |
+| Input Action | `UMCTInputExporter` | 50 | ✅ |
+| Input Mapping Context | `UMCTInputExporter` | 50 | ✅ |
+| Audio (SoundClass, etc.) | `UMCTAudioExporter` | 50 | ✅ |
+| Texture | `UMCTTextureExporter` | 50 | ✅ |
+| DataTable | `UMCTDataTableExporter` | 50 | ✅ |
+| **PhysicalMaterial** | `UMCTPhysicalMaterialExporter` | 46 | ✅ **NEW** |
+| Material/MaterialInstance | `UMCTMaterialExporter` | 45 | ✅ |
+| DataAsset | `UMCTDataAssetExporter` | 40 | ✅ |
 
 > **Priority:** Higher values are checked first. WidgetBlueprint (100) takes precedence over generic Blueprint (50).
 
 ### World/Map Export (v4.0)
 
-`UAIWorldExporter` exports UWorld (Map/Level) assets with:
+`UMCTWorldExporter` exports UWorld (Map/Level) assets with:
 
 - **World Metadata**: Name, type, path, level count, actor count
 - **World Settings**: Standard settings + **Custom Properties** (non-default values like DefaultGameplayExperience)
@@ -459,7 +459,7 @@ TRANSITIONS:
 
 ## Cross-Project Usage
 
-CommonAIExport can be used in other projects:
+MCPToolkit can be used in other projects:
 
 1. Copy plugin folder to target project's `Plugins/` directory
 2. Recompile project
@@ -469,14 +469,14 @@ CommonAIExport can be used in other projects:
 
 ## API Reference
 
-### UAIExporterRegistry (v4.0 - NEW)
+### UMCTExporterRegistry (v4.0 - NEW)
 
 ```cpp
 // Get singleton instance
-static UAIExporterRegistry* Get();
+static UMCTExporterRegistry* Get();
 
 // Find appropriate exporter for asset (checks by priority)
-UAIExporterBase* FindExporterForAsset(UObject* Asset) const;
+UMCTExporterBase* FindExporterForAsset(UObject* Asset) const;
 
 // Check if any exporter can handle this asset
 bool IsAssetSupported(UObject* Asset) const;
@@ -485,10 +485,10 @@ bool IsAssetSupported(UObject* Asset) const;
 TArray<UClass*> GetAllSupportedClasses() const;
 
 // Register a new exporter
-void RegisterExporter(TSubclassOf<UAIExporterBase> ExporterClass);
+void RegisterExporter(TSubclassOf<UMCTExporterBase> ExporterClass);
 ```
 
-### UAIExporterBase (Abstract)
+### UMCTExporterBase (Abstract)
 
 ```cpp
 // Can this exporter handle the asset?
@@ -507,7 +507,7 @@ virtual int32 GetPriority() const { return 50; }
 virtual FString GetExporterDisplayName() const;
 ```
 
-### UAIExportFunctionLibrary (Facade)
+### UMCTExportFunctionLibrary (Facade)
 
 ```cpp
 // Check if asset type is supported (delegates to Registry)
@@ -517,12 +517,12 @@ static bool IsAssetTypeSupported(UObject* Asset);
 static FString ExportAssetContent(UObject* Asset, bool bFilterDefaults = true);
 
 // Single asset export to file
-static bool ExportAsset(UObject* Asset, FAIExportResult& OutResult);
+static bool ExportAsset(UObject* Asset, FMCTExportResult& OutResult);
 
 // Multiple asset export
 static int32 ExportAssets(const TArray<FAssetData>& Assets,
-                          FOnAIExportProgress OnProgress,
-                          TArray<FAIExportResult>& OutResults);
+                          FOnMCTExportProgress OnProgress,
+                          TArray<FMCTExportResult>& OutResults);
 
 // Run Python simplifier
 static bool RunSimplifier(const FString& RawFilePath, FString& OutSimplifiedPath);
@@ -534,11 +534,11 @@ static FString GetOutputDirectory();
 static FString GetSimplifierScriptPath();
 ```
 
-### FAIExportResult
+### FMCTExportResult
 
 ```cpp
 USTRUCT()
-struct FAIExportResult
+struct FMCTExportResult
 {
     bool bSuccess;
     FString RawFilePath;
@@ -551,7 +551,7 @@ struct FAIExportResult
 
 ## Editor Settings
 
-Project Settings → Plugins → AI Export:
+Project Settings -> Plugins -> Unreal MCP Toolkit:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -644,11 +644,11 @@ FAnimNode_Base* GetFNode();
 
 ### TCP Server
 
-CommonAIExport runs a TCP server for external tool integration (AI assistants, scripts, etc.)
+MCPToolkit runs a TCP server for external tool integration (AI assistants, scripts, etc.)
 
 **Port Discovery:**
 - Searches ports 55560-55600 to avoid conflicts with multiple projects
-- Port is written to: `{ProjectDir}/Intermediate/AIExport_port.txt`
+- Port is written to: `{ProjectDir}/Intermediate/MCTExport_port.txt`
 
 **Request Format:** JSON with `type` and `params` fields
 
@@ -762,7 +762,7 @@ def export_asset(asset_path, output_dir, port=55560):
         return json.loads(response)
 
 # Read port from file
-with open("D:/Project/Intermediate/AIExport_port.txt") as f:
+with open("D:/Project/Intermediate/MCTExport_port.txt") as f:
     port = int(f.read().strip())
 
 # Export DataAsset (works with export_blueprint!)
@@ -787,7 +787,7 @@ Simplified mode runs Python simplifier. Make sure Python is installed.
 
 ### "Python not found" or simplifier error
 1. Ensure Python is in PATH: `python --version`
-2. Or set Project Settings → Plugins → AI Export → Python Path
+2. Or set Project Settings -> Plugins -> Unreal MCP Toolkit -> Python Path
 3. Example: `C:/Python311/python.exe`
 
 ### Simplified file not created
@@ -809,7 +809,7 @@ Simplified mode runs Python simplifier. Make sure Python is installed.
 ### Changelog
 
 **v4.2.0** - PhysicalMaterial Export Support
-- **NEW:** `UAIPhysicalMaterialExporter` - Export `UPhysicalMaterial` and all subclasses (Priority: 46)
+- **NEW:** `UMCTPhysicalMaterialExporter` - Export `UPhysicalMaterial` and all subclasses (Priority: 46)
 - **FEATURE:** Reflection-based export via `ExportObjectProperties()` — subclass fields (e.g., `UPhysicalMaterialWithTags.Tags`) exported automatically without compile-time dependency
 - **FEATURE:** Python simplification reuses `dataasset_simplify.py` with `=== PHYSICAL MATERIAL:` header detection
 - **DEPENDENCY:** Added `PhysicsCore` module to Build.cs
@@ -832,13 +832,13 @@ Simplified mode runs Python simplifier. Make sure Python is installed.
 
 **v4.0** - Modular Architecture + World/Map Export
 - **BREAKING:** Refactored to Strategy Pattern with Registry architecture
-- **NEW:** `UAIWorldExporter` - Export UWorld (Map/Level) assets with actors, world settings, streaming levels
-- **NEW:** `UAIExporterRegistry` - Singleton for managing exporters by priority
-- **NEW:** `UAIExporterBase` - Abstract base class for all exporters
-- **REFACTORED:** `AIExportFunctionLibrary` is now a thin facade (~500 lines, was ~2100)
+- **NEW:** `UMCTWorldExporter` - Export UWorld (Map/Level) assets with actors, world settings, streaming levels
+- **NEW:** `UMCTExporterRegistry` - Singleton for managing exporters by priority
+- **NEW:** `UMCTExporterBase` - Abstract base class for all exporters
+- **REFACTORED:** `MCTExportFunctionLibrary` is now a thin facade (~500 lines, was ~2100)
 - **SEPARATED:** Individual exporter files for Blueprint, Widget, DataAsset, Input, Audio, World
 - Each exporter has priority (higher = checked first): WidgetBP(100) > Blueprint(50) > DataAsset(40)
-- Extensible: Add custom exporters by inheriting `UAIExporterBase` and registering
+- Extensible: Add custom exporters by inheriting `UMCTExporterBase` and registering
 
 **v3.4** - Audio Asset Export Support
 - Implemented full audio asset export: SoundClass, SoundSubmix, SoundConcurrency, SoundAttenuation, SoundControlBus, SoundControlBusMix, SoundModulationPatch
@@ -851,7 +851,7 @@ Simplified mode runs Python simplifier. Make sure Python is installed.
 
 **v3.2** - Port Discovery + Folder Structure + AI Tool Integration
 - Automatic port discovery (55560-55600 range) to avoid conflicts with multiple projects
-- Port file written to `{ProjectDir}/Intermediate/AIExport_port.txt`
+- Port file written to `{ProjectDir}/Intermediate/MCTExport_port.txt`
 - Export folder structure now mirrors Content folder (e.g., `/Game/UI/W_Widget` → `Dev/AIExports/Game/UI/`)
 - Added `ai_export_client.py` Python client for TCP communication
 - Added AI assistant instruction documentation

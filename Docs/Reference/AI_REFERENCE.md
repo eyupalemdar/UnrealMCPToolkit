@@ -1,4 +1,4 @@
-# CommonAIExport — AI Reference Guide
+# MCPToolkit — AI Reference Guide
 
 > **Read this file to understand ALL plugin capabilities in one place.**
 > 198 MCP tools across 37 TCP command categories plus client-only tools. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
@@ -14,12 +14,12 @@ AI Assistant ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE 
                                         BP Graph Builder  CDO Properties  Asset Import
 ```
 
-- **MCP Client**: `Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py`
-- **TCP Server**: Runs inside UE Editor, port 55560-55600 (auto-discovery via `Intermediate/AIExport_port.txt`)
-- **Multi-editor registry**: each editor writes identity to `%LOCALAPPDATA%/CommonAIExport/Editors/*.json`
+- **MCP Client**: `Plugins/MCPToolkit/MCPClient/ai_widget_mcp_client.py`
+- **TCP Server**: Runs inside UE Editor, port 55560-55600 (auto-discovery via `Intermediate/MCTExport_port.txt`)
+- **Multi-editor registry**: each editor writes identity to `%LOCALAPPDATA%/MCPToolkit/Editors/*.json`
 - **All tools use `mcp__widget-builder__` prefix** when called from an MCP client
 - **Property values use UE ImportText format** (same format the export system produces)
-- **Contract validation**: `python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py`
+- **Contract validation**: `python Plugins/MCPToolkit/Resources/Scripts/preflight_mcp.py`
 
 ---
 
@@ -37,8 +37,8 @@ AI Assistant ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE 
 | `source_control_log(provider?, repo_path?, path?, limit?, oneline?, since?, until?, ref?)` | Read recent Diversion/Git history from the editor process |
 | `source_control_show(provider?, repo_path?, ref?, name_status?)` | Show a Diversion/Git revision summary |
 | `source_control_diff(provider?, repo_path?, path?, base?, compare?, name_status?)` | Read read-only Diversion/Git diff output |
-| `editors_list(include_stale?)` | List live Unreal Editor instances with CommonAIExport loaded |
-| `editor_call(command, params?, editor_id?, project_dir?, port?, scope?, dry_run?)` | Route any CommonAIExport command to a selected editor |
+| `editors_list(include_stale?)` | List live Unreal Editor instances with MCPToolkit loaded |
+| `editor_call(command, params?, editor_id?, project_dir?, port?, scope?, dry_run?)` | Route any MCPToolkit command to a selected editor |
 | `asset_transfer_plan(source_asset_path, source_editor_id?, target_editor_id?, ...)` | Read-only cross-project asset transfer plan with dependencies, target existence, and collision analysis |
 | `asset_transfer_execute(source_asset_path, ..., scope?, dry_run?, overwrite?)` | Copy planned package files between project Content folders, then scan/verify target |
 | `asset_transfer_verify(source_asset_path, source_editor_id?, target_editor_id?, ...)` | Read-only verification that planned packages exist in target |
@@ -696,7 +696,7 @@ handler touches the editor.
 
 ## 25. Multi-Editor Routing
 
-When the same CommonAIExport plugin is loaded in multiple Unreal Editor
+When the same MCPToolkit plugin is loaded in multiple Unreal Editor
 projects, each editor writes a global registry entry. The Python MCP server can
 discover those entries and route commands to a selected target without changing
 the existing TCP protocol.
@@ -704,7 +704,7 @@ the existing TCP protocol.
 | Tool | Purpose |
 |------|---------|
 | `editors_list(include_stale?)` | Discover live editor instances and their project path, port, PID, engine/plugin version, and capabilities |
-| `editor_call(command, params?, editor_id?, project_dir?, port?, scope?, dry_run?)` | Execute any CommonAIExport command against a selected editor |
+| `editor_call(command, params?, editor_id?, project_dir?, port?, scope?, dry_run?)` | Execute any MCPToolkit command against a selected editor |
 | `asset_transfer_plan(source_asset_path, source_editor_id?, target_editor_id?, source_project_dir?, target_project_dir?, source_port?, target_port?, target_asset_path?, max_depth?, max_assets?)` | Build a read-only transfer plan before any copy/import work |
 | `asset_transfer_execute(source_asset_path, ..., scope?, dry_run?, overwrite?, allow_same_editor?)` | Copy planned package files, scan target asset paths, and run verify |
 | `asset_transfer_verify(source_asset_path, source_editor_id?, target_editor_id?, ...)` | Verify planned packages exist in the target project |
@@ -785,7 +785,7 @@ be followed by Build.cs/module/API macro review and the guarded build workflow.
 
 ### Scope model
 
-CommonAIExport now exposes command safety metadata through `list_commands`.
+MCPToolkit now exposes command safety metadata through `list_commands`.
 Scopes are ordered as `read < write < destructive`. Legacy TCP calls without
 metadata keep implicit `write` scope for backward compatibility, but
 `destructive` commands require an explicit top-level `meta.scope="destructive"`.
@@ -838,7 +838,7 @@ task_result("...")
 |------|---------|
 | `project_status()` | Read editor/project status including repo markers, log count, build-log presence, and world/PIE state |
 | `source_control_status(provider?, repo_path?, path?, no_limit?)` | Run read-only Diversion/Git status from the editor process |
-| `source_control_log(provider?, repo_path?, path?, limit?, oneline?, since?, until?, ref?)` | Read recent Diversion/Git history; use `repo_path="Plugins/CommonAIExport"` for the plugin Git repo |
+| `source_control_log(provider?, repo_path?, path?, limit?, oneline?, since?, until?, ref?)` | Read recent Diversion/Git history; use `repo_path="Plugins/MCPToolkit"` for the plugin Git repo |
 | `source_control_show(provider?, repo_path?, ref?, name_status?)` | Show a Diversion/Git commit or current revision summary |
 | `source_control_diff(provider?, repo_path?, path?, base?, compare?, name_status?)` | Read read-only Diversion/Git diff output |
 | `editor_log_read(max_lines?, filter?, log_name?)` | Read recent project log lines from `Saved/Logs`, optionally filtered |
@@ -856,31 +856,31 @@ task_result("...")
 | `commonai_prompt_get(name, asset_path?)` | Read a prompt template such as `build_fix_test`, `asset_safety_review`, `multi_editor_transfer`, `ui_transfer_validation`, `blueprint_graph_inspection`, or `runtime_debug_triage` |
 | `command_manifest_export(output_path?)` | Write the active command descriptor manifest to JSON under the project |
 | `client_scope_policy()` | Inspect client-side max-scope, explicit-scope, and approval-hook policy |
-| `mcp_server_metadata_export(output_path?)` | Write registry-style CommonAIExport MCP metadata under the project |
+| `mcp_server_metadata_export(output_path?)` | Write registry-style MCPToolkit MCP metadata under the project |
 | `native_http_status()` | Probe native C++ HTTP `/commonai/health` endpoint |
 | `native_mcp_probe()` | Probe native C++ `/mcp` JSON-RPC initialize and paginated tools/list using MCP session headers |
 
 Generated artifacts are checked by the contract validator and live under
-`Plugins/CommonAIExport/Resources/Generated/`:
+`Plugins/MCPToolkit/Resources/Generated/`:
 
-- `CommonAIExport_CommandManifest.json`
-- `CommonAIExport_ToolSchemas.json`
-- `CommonAIExport_ToolCatalog.md`
-- `CommonAIExport_server.json`
-- `CommonAIExport_WrapperSpec.json`
-- `CommonAIExport_MCPWrapperStubs.py`
-- `CommonAIExport_MCPWrapperRuntime.py`
+- `MCPToolkit_CommandManifest.json`
+- `MCPToolkit_ToolSchemas.json`
+- `MCPToolkit_ToolCatalog.md`
+- `MCPToolkit_server.json`
+- `MCPToolkit_WrapperSpec.json`
+- `MCPToolkit_MCPWrapperStubs.py`
+- `MCPToolkit_MCPWrapperRuntime.py`
 
 Capability ownership is checked by `Resources/CapabilityMatrix.json`; see
 `Docs/Reference/CAPABILITY_MATRIX.md`. Every native TCP command and every
 client-only MCP tool must be assigned to exactly one capability before the
 contract validator passes.
 
-`CommonAIExport_WrapperSpec.json` binds each TCP descriptor to the Python MCP
+`MCPToolkit_WrapperSpec.json` binds each TCP descriptor to the Python MCP
 wrapper function, records the wrapper signature and payload inclusion rules,
 and fails validation when a wrapper is missing or calls the wrong TCP command.
-`CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
-wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
+`MCPToolkit_MCPWrapperStubs.py` is a generated review aid for the next
+wrapper-generation pass. `MCPToolkit_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
 now covers all 161 TCP wrappers: read-only payload wrappers, the safe write-scope set
 (editor/level/actor/PIE/viewport, Asset/DataAsset/Input, Import,
@@ -898,18 +898,18 @@ if wrapper metadata falls back to unresolved `conditional` rules.
 Regenerate them with:
 
 ```powershell
-python Plugins/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py
-python Plugins/CommonAIExport/Resources/Scripts/validate_mcp_contract.py
-python Plugins/CommonAIExport/Resources/Scripts/test_mcp_contract.py
-python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py
-python Plugins/CommonAIExport/Resources/Scripts/smoke_mcp_runtime.py --mutating-smoke
+python Plugins/MCPToolkit/Resources/Scripts/generate_mcp_artifacts.py
+python Plugins/MCPToolkit/Resources/Scripts/validate_mcp_contract.py
+python Plugins/MCPToolkit/Resources/Scripts/test_mcp_contract.py
+python Plugins/MCPToolkit/Resources/Scripts/smoke_mcp_runtime.py
+python Plugins/MCPToolkit/Resources/Scripts/smoke_mcp_runtime.py --mutating-smoke
 ```
 
 For the non-runtime preflight, use the wrapper:
 
 ```powershell
-python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py
-python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py --runtime-smoke --mutating-smoke
+python Plugins/MCPToolkit/Resources/Scripts/preflight_mcp.py
+python Plugins/MCPToolkit/Resources/Scripts/preflight_mcp.py --runtime-smoke --mutating-smoke
 ```
 
 ### Example: Read recent errors
@@ -917,7 +917,7 @@ python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py --runtime-smoke
 ```python
 project_status()
 source_control_status()
-source_control_status(provider="git", repo_path="Plugins/CommonAIExport")
+source_control_status(provider="git", repo_path="Plugins/MCPToolkit")
 guarded_build_status()
 editor_log_read(max_lines=500, filter="Error")
 commonai_resource_read("commonai://commands/manifest")
@@ -928,17 +928,19 @@ native_mcp_probe()
 ```
 
 The native HTTP/MCP endpoint is localhost-only by default. Set
-`COMMONAI_MCP_HTTP_TOKEN` before launching the editor to require
+`MCPTOOLKIT_HTTP_TOKEN` before launching the editor to require
 `Authorization: Bearer <token>` for HTTP requests. The Python probe tools read
 the same environment variable automatically. `/mcp initialize` returns a
 `Mcp-Session-Id` response header and `tools/list` supports `nextCursor`
 pagination. `DELETE /mcp` with the same session header releases the session;
 sessions expire after `COMMONAI_MCP_SESSION_TTL_SECONDS` seconds, defaulting to
-3600. Set `COMMONAI_MCP_HTTP_ALLOWED_ORIGINS` to a comma-separated origin list
+3600. Set `MCPTOOLKIT_HTTP_ALLOWED_ORIGINS` to a comma-separated origin list
 when a browser-based local client needs something beyond the default localhost
 origins. HTTP/MCP requests are written as token-safe JSONL audit events to
-`Saved/Logs/CommonAIExport_HTTP_Audit.jsonl`; set `COMMONAI_MCP_HTTP_AUDIT=0`
-before launching the editor to disable audit logging.
+`Saved/Logs/MCPToolkit_HTTP_Audit.jsonl`; set `MCPTOOLKIT_HTTP_AUDIT=0`
+before launching the editor to disable audit logging. Existing `COMMONAI_*`
+and `COMMONAIEXPORT_*` HTTP env names remain supported as compatibility
+fallbacks.
 
 Client-side scope policy is process-local and preserves existing behavior by
 default. Set `COMMONAI_MCP_CLIENT_MAX_SCOPE=read` or `write` to block
@@ -993,7 +995,7 @@ First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets
 - Client-only MCP tools: `19`
 - Total MCP tools: `198`
 - Categories: `38`
-- Full generated catalog: `Resources/Generated/CommonAIExport_ToolCatalog.md`
+- Full generated catalog: `Resources/Generated/MCPToolkit_ToolCatalog.md`
 
 | Category | Count |
 |---|---:|

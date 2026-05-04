@@ -9,7 +9,7 @@ Do not experiment on the target screen. For an unfamiliar or uncertain
 component, use this order:
 
 1. Read the component recipe.
-2. Read the CommonAIExport tool reference and capability matrix.
+2. Read the MCPToolkit tool reference and capability matrix.
 3. Read the targeted Unreal Engine source files.
 4. Build a tiny probe Widget Blueprint.
 5. Update the recipe/matrix, then apply the TSpec to the production WBP.
@@ -67,7 +67,7 @@ repro:
 - exact MCP call
 - expected result
 - actual result
-- classification: TSpec issue, missing asset, CommonAIExport defect, editor
+- classification: TSpec issue, missing asset, MCPToolkit defect, editor
   cache issue, or unsupported UE behavior
 
 ## Production Rule

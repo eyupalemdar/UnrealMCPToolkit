@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the CommonAIExport MCP artifact and contract preflight checks."""
+"""Run the MCPToolkit MCP artifact and contract preflight checks."""
 
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ VALIDATE = SCRIPT_DIR / "validate_mcp_contract.py"
 STATIC_TESTS = SCRIPT_DIR / "test_mcp_contract.py"
 RUNTIME_SMOKE = SCRIPT_DIR / "smoke_mcp_runtime.py"
 MCP_CLIENT = PLUGIN_ROOT / "MCPClient" / "ai_widget_mcp_client.py"
-GENERATED_WRAPPER_STUBS = PLUGIN_ROOT / "Resources" / "Generated" / "CommonAIExport_MCPWrapperStubs.py"
-GENERATED_WRAPPER_RUNTIME = PLUGIN_ROOT / "Resources" / "Generated" / "CommonAIExport_MCPWrapperRuntime.py"
+GENERATED_WRAPPER_STUBS = PLUGIN_ROOT / "Resources" / "Generated" / "MCPToolkit_MCPWrapperStubs.py"
+GENERATED_WRAPPER_RUNTIME = PLUGIN_ROOT / "Resources" / "Generated" / "MCPToolkit_MCPWrapperRuntime.py"
 
 PY_COMPILE_TARGETS = [
     MCP_CLIENT,
@@ -84,7 +84,7 @@ def main() -> int:
         if exit_code != 0:
             return exit_code
 
-    print("\nCommonAIExport MCP preflight passed")
+    print("\nMCPToolkit MCP preflight passed")
     return 0
 
 
