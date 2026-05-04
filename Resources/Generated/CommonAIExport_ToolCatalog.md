@@ -2,8 +2,8 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 174
-- MCP tools: 193
+- TCP commands: 175
+- MCP tools: 194
 - Categories: 34
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
@@ -28,7 +28,7 @@
 | `DataTable` | 6 |
 | `Editor` | 2 |
 | `EditorActor` | 4 |
-| `EditorLevel` | 2 |
+| `EditorLevel` | 3 |
 | `EditorViewport` | 1 |
 | `Export` | 3 |
 | `Foliage` | 3 |
@@ -116,6 +116,7 @@
 | `actor_delete` | `EditorActor` | `destructive` | true | true | false | 60 |
 | `level_open` | `EditorLevel` | `write` | true | true | false | 60 |
 | `level_save_current` | `EditorLevel` | `write` | true | true | false | 60 |
+| `level_structure_info` | `EditorLevel` | `read` | false | false | false | 60 |
 | `pie_status` | `PIE` | `read` | false | false | false | 0 |
 | `pie_start` | `PIE` | `write` | true | true | false | 30 |
 | `pie_stop` | `PIE` | `write` | true | true | false | 30 |

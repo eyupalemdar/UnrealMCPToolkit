@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T17:04:35.721001Z",
-  "tool_count": 193,
+  "generated_at_utc": "2026-05-04T17:47:24.705053Z",
+  "tool_count": 194,
   "tools": {
     "ping": {
       "type": "object",
@@ -2652,6 +2652,68 @@
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false
+      }
+    },
+    "level_structure_info": {
+      "type": "object",
+      "properties": {
+        "world": {
+          "type": "string",
+          "default": "editor"
+        },
+        "include_streaming_levels": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_world_partition": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_data_layers": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_level_instances": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_hlod": {
+          "type": "boolean",
+          "default": true
+        },
+        "level_limit": {
+          "type": "integer",
+          "default": 200
+        },
+        "data_layer_limit": {
+          "type": "integer",
+          "default": 200
+        },
+        "level_instance_limit": {
+          "type": "integer",
+          "default": 200
+        },
+        "hlod_limit": {
+          "type": "integer",
+          "default": 200
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "EditorLevel",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
       }
     },
     "pie_status": {

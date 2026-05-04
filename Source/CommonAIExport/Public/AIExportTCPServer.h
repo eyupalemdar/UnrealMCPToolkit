@@ -131,6 +131,9 @@
  * - foliage_sample_instances: Sample Foliage instance transforms around a world-space point
  * - foliage_type_settings: Inspect a FoliageType asset's placement/rendering settings
  *
+ * Level Structure commands:
+ * - level_structure_info: Inspect streaming levels, World Partition, Data Layers, Level Instances, and HLOD
+ *
  * PCG commands:
  * - pcg_graph_info: Inspect PCGGraph nodes, pins, edges, and settings
  * - pcg_component_info: Inspect PCGComponents and generation state in a world
@@ -293,6 +296,7 @@ private:
 	FString HandleActorDelete(TSharedPtr<class FJsonObject> Params);
 	FString HandleLevelOpen(TSharedPtr<class FJsonObject> Params);
 	FString HandleLevelSaveCurrent();
+	FString HandleLevelStructureInfo(TSharedPtr<class FJsonObject> Params);
 	FString HandlePIEStatus();
 	FString HandlePIEStart();
 	FString HandlePIEStop();

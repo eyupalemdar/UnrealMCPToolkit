@@ -185,15 +185,16 @@
     {
       "id": "editor_level_operations",
       "domain": "editor",
-      "title": "Level open and save operations",
+      "title": "Level open, save, and structure diagnostics",
       "status": "native",
       "category_tags": ["EditorLevel"],
       "commands": [
         "level_open",
-        "level_save_current"
+        "level_save_current",
+        "level_structure_info"
       ],
       "client_tools": [],
-      "extension_policy": "Add map and level package lifecycle operations here when they operate on editor-loaded levels."
+      "extension_policy": "Use this capability for editor-loaded level package lifecycle and read-only level structure diagnostics, including streaming sublevels, World Partition, Data Layers, Level Instances, and HLOD. Runtime travel state stays under runtime_diagnostics."
     },
     {
       "id": "editor_pie_control",

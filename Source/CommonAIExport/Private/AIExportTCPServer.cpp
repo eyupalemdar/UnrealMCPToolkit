@@ -225,6 +225,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_PARAMS_SCOPE("actor_delete", "EditorActor", true, 60, "destructive", true, false, HandleActorDelete),
 		AI_COMMAND_PARAMS("level_open", "EditorLevel", true, 60, HandleLevelOpen),
 		AI_COMMAND_NO_PARAMS_SCOPE("level_save_current", "EditorLevel", true, 60, "write", true, false, HandleLevelSaveCurrent),
+		AI_COMMAND_OPTIONAL_PARAMS("level_structure_info", "EditorLevel", false, 60, HandleLevelStructureInfo),
 		AI_COMMAND_NO_PARAMS("pie_status", "PIE", 0, HandlePIEStatus),
 		AI_COMMAND_NO_PARAMS_SCOPE("pie_start", "PIE", true, 30, "write", true, false, HandlePIEStart),
 		AI_COMMAND_NO_PARAMS_SCOPE("pie_stop", "PIE", true, 30, "write", true, false, HandlePIEStop),

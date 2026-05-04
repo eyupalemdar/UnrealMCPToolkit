@@ -715,6 +715,23 @@ def level_save_current(scope: str = '', dry_run: bool = False) -> str:
     return _format_response(_send_command("level_save_current", params, _request_meta(scope, dry_run)))
 
 
+def level_structure_info(world: str = 'editor', include_streaming_levels: bool = True, include_world_partition: bool = True, include_data_layers: bool = True, include_level_instances: bool = True, include_hlod: bool = True, level_limit: int = 200, data_layer_limit: int = 200, level_instance_limit: int = 200, hlod_limit: int = 200) -> str:
+    """Generated stub for TCP command `level_structure_info` (EditorLevel)."""
+    params = {
+        "world": world,
+        "include_streaming_levels": include_streaming_levels,
+        "include_world_partition": include_world_partition,
+        "include_data_layers": include_data_layers,
+        "include_level_instances": include_level_instances,
+        "include_hlod": include_hlod,
+        "level_limit": level_limit,
+        "data_layer_limit": data_layer_limit,
+        "level_instance_limit": level_instance_limit,
+        "hlod_limit": hlod_limit,
+    }
+    return _format_response(_send_command("level_structure_info", params))
+
+
 def pie_status() -> str:
     """Generated stub for TCP command `pie_status` (PIE)."""
     params = None

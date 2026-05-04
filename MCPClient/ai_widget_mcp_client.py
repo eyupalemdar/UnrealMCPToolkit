@@ -2912,6 +2912,41 @@ def level_save_current(
 
 
 @mcp.tool()
+def level_structure_info(
+    world: str = "editor",
+    include_streaming_levels: bool = True,
+    include_world_partition: bool = True,
+    include_data_layers: bool = True,
+    include_level_instances: bool = True,
+    include_hlod: bool = True,
+    level_limit: int = 200,
+    data_layer_limit: int = 200,
+    level_instance_limit: int = 200,
+    hlod_limit: int = 200,
+) -> str:
+    """
+    Inspect the loaded level structure without mutating the editor world.
+
+    Args:
+        world: World selector: "editor", "pie", "runtime", "play", or "auto".
+        include_streaming_levels: Include ULevelStreaming objects and loaded levels.
+        include_world_partition: Include World Partition status and bounds.
+        include_data_layers: Include Data Layer instances and editor/runtime states.
+        include_level_instances: Include Level Instance actors and source assets.
+        include_hlod: Include classic and World Partition HLOD actors.
+        level_limit: Maximum loaded/streaming levels returned.
+        data_layer_limit: Maximum Data Layer instances returned.
+        level_instance_limit: Maximum Level Instance actors returned.
+        hlod_limit: Maximum HLOD actors returned.
+
+    Returns:
+        JSON with world, level, streaming, World Partition, Data Layer, Level
+        Instance, and HLOD diagnostics.
+    """
+    return _send_generated_tcp_tool("level_structure_info", locals())
+
+
+@mcp.tool()
 def pie_status() -> str:
     """
     Get Play-In-Editor runtime state.
