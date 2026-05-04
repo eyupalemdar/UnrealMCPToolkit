@@ -19,7 +19,6 @@ Any AI agent working on this flow must start here:
 For a copy/paste session starter, use
 `Docs/AI_UI_Transfer/AGENT_BOOTSTRAP_PROMPT.md`.
 
-Tool-specific files such as `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.claude/*`,
-and `.codex/*` should point back here. The canonical workflow is under
-`Docs/AI_UI_Transfer/` and `Docs/UI_TSpec/`.
-
+Tool-specific files such as `AGENTS.md`, `GEMINI.md`, `.codex/*`, or other
+assistant-specific instruction files should point back here. The canonical
+workflow is under `Docs/AI_UI_Transfer/` and `Docs/UI_TSpec/`.

@@ -2,10 +2,10 @@
 
 ## Two Ways to Use
 
-### 1. MCP Tools (Recommended for Claude Code)
+### 1. MCP Tools (Recommended)
 
 CommonAIExport includes a **Python MCP server** that wraps the TCP protocol.
-When configured in Claude Code's MCP settings, 118 tools become available with `mcp__widget-builder__` prefix.
+When configured in an MCP-capable AI assistant, 118 tools become available with `mcp__widget-builder__` prefix.
 
 **MCP Client**: `Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py`
 

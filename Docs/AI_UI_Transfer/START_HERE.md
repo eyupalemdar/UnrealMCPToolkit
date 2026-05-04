@@ -1,7 +1,7 @@
 # START HERE: Reference Image -> Pencil -> UE 5.7
 
-This workflow is agent-neutral. Claude, Codex, Gemini CLI, Kimi Code, or any
-other agent should follow the same contract.
+This workflow is agent-neutral. Codex, Gemini CLI, Kimi Code, or any other agent
+should follow the same contract.
 
 ## Goal
 
@@ -145,4 +145,3 @@ No final answer before:
 - `capture_widget_preview` using TSpec capture matrix
 - Pencil screenshot comparison when available
 - fidelity/progress log update in the host project
-

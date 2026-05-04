@@ -1,7 +1,7 @@
 # Agent Bootstrap Prompt
 
-Use this prompt when starting Claude, Codex, Gemini CLI, Kimi Code, or another
-agent for Reference Image -> Pencil -> UE work.
+Use this prompt when starting Codex, Gemini CLI, Kimi Code, or another agent for
+Reference Image -> Pencil -> UE work.
 
 ```text
 You are working in this repository on the Reference Image -> Pencil -> Unreal

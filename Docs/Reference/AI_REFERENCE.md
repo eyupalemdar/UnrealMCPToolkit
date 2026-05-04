@@ -1,4 +1,4 @@
-# CommonAIExport — Claude Reference Guide
+# CommonAIExport — AI Reference Guide
 
 > **Read this file to understand ALL plugin capabilities in one place.**
 > 146 MCP tools across 24 TCP command categories plus client-only tools. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
@@ -6,7 +6,7 @@
 ## Architecture
 
 ```
-Claude Code ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE Editor (C++ TCP Server)
+AI Assistant ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE Editor (C++ TCP Server)
                                                               │
                                               ┌───────────────┼───────────────┐
                                               │               │               │
@@ -17,7 +17,7 @@ Claude Code ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE E
 - **MCP Client**: `Plugins/CommonAIExport/MCPClient/ai_widget_mcp_client.py`
 - **TCP Server**: Runs inside UE Editor, port 55560-55600 (auto-discovery via `Intermediate/AIExport_port.txt`)
 - **Multi-editor registry**: each editor writes identity to `%LOCALAPPDATA%/CommonAIExport/Editors/*.json`
-- **All tools use `mcp__widget-builder__` prefix** when called from Claude Code
+- **All tools use `mcp__widget-builder__` prefix** when called from an MCP client
 - **Property values use UE ImportText format** (same format the export system produces)
 - **Contract validation**: `python Plugins/CommonAIExport/Resources/Scripts/preflight_mcp.py`
 
@@ -422,7 +422,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ## 14. Widget Preview Capture (IFTP verify loop)
 
-Renders a Widget Blueprint to a PNG file (or files, one per ratio) so Claude can
+Renders a Widget Blueprint to a PNG file (or files, one per ratio) so an AI assistant can
 visually compare UE output with the Pencil source across multiple screen ratios.
 
 | Tool | Purpose |
@@ -453,11 +453,11 @@ capture_widget_preview(
 # → 4 PNG files written, one per ratio. Each includes label suffix in filename.
 ```
 
-### Claude workflow
+### AI assistant workflow
 1. `capture_widget_preview(...)` returns JSON with `png_path` entries.
-2. Use the `Read` tool on each `png_path` — Claude reads PNG as an image (multimodal).
+2. Use the `Read` tool on each `png_path` — the assistant reads PNG as an image (multimodal).
 3. Compare visually with the Pencil reference (from `mcp__pencil__get_screenshot`).
-4. Write findings to `.claude/docs/ui-fidelity-log.md`.
+4. Write findings to `Docs/AI_UI_Transfer/ui-fidelity-log.md`.
 
 ### Technical details
 - Uses `FWidgetRenderer` + `UTextureRenderTarget2D` → `IImageWrapper` (PNG).

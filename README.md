@@ -1,6 +1,6 @@
 # CommonAIExport
 
-Export Unreal Engine assets to simplified text format for AI analysis (Claude Code, GPT, etc.)
+Export Unreal Engine assets to simplified text format for AI analysis.
 
 ## Getting Started
 
@@ -11,7 +11,7 @@ Copy the `CommonAIExport` folder to your project's `Plugins/` directory and rebu
 Start your Unreal Engine project. **The editor must remain open** during the export process - the TCP server runs inside the editor.
 
 ### Step 3: Configure Your AI Assistant
-Tell your AI assistant (Claude Code, GPT, etc.) to read the `Docs/Usage/AI_QUICKSTART.md` file in this plugin. This file contains:
+Tell your AI assistant to read the `Docs/Usage/AI_QUICKSTART.md` file in this plugin. This file contains:
 - How to connect to the TCP server
 - Available export commands
 - Output path conventions
@@ -41,7 +41,7 @@ You can also export assets directly from the editor without AI:
 
 ## Overview
 
-CommonAIExport converts UE assets into text format that Claude Code can read and understand. It works as a C++ and Python hybrid system: C++ exports assets to raw text, Python scripts simplify this text for AI consumption.
+CommonAIExport converts UE assets into text format that AI assistants can read and understand. It works as a C++ and Python hybrid system: C++ exports assets to raw text, Python scripts simplify this text for AI consumption.
 
 **Requirements:**
 - Unreal Engine 5.x
@@ -57,7 +57,7 @@ CommonAIExport converts UE assets into text format that Claude Code can read and
 └─────────────────┘     └──────────────────┘     │  UE text format  │     │  AI-ready       │
         │                                         └──────────────────┘     └─────────────────┘
         │                                                                         │
-   Context Menu                                                              Claude Code
+   Context Menu                                                              AI Assistant
    "Export for AI"                                                           reads & understands
 ```
 
@@ -85,7 +85,7 @@ CommonAIExport/
 │   │   ├── AIExportCommandlet.h         # Headless export
 │   │   ├── AIExportSettings.h           # Editor settings
 │   │   ├── AIExportContextMenu.h        # Context menu
-│   │   ├── AIExportTCPServer.h          # TCP server for Claude Code
+│   │   ├── AIExportTCPServer.h          # TCP server for AI tools
 │   │   ├── AIExporterRegistry.h         # Exporter management (singleton)
 │   │   ├── CommonAIExportModule.h       # Module interface
 │   │   └── Exporters/                   # Modular exporters (Strategy Pattern)
@@ -129,7 +129,7 @@ CommonAIExport/
         ├── ability_simplify.py          # Gameplay Ability simplifier
         ├── material_simplify.py         # Material/MaterialInstance simplifier
         ├── export_asset.py              # Export utility script
-        └── ai_export_client.py          # TCP client for Claude Code
+        └── ai_export_client.py          # TCP client for AI tools
 ```
 
 ### Modular Exporter Architecture (v4.0)
@@ -462,7 +462,7 @@ CommonAIExport can be used in other projects:
 2. Recompile project
 3. Ensure Python is installed on the system
 4. Export assets
-5. Give simplified files to Claude
+5. Give simplified files to your AI assistant
 
 ## API Reference
 
@@ -641,7 +641,7 @@ FAnimNode_Base* GetFNode();
 
 ### TCP Server
 
-CommonAIExport runs a TCP server for external tool integration (Claude Code, etc.)
+CommonAIExport runs a TCP server for external tool integration (AI assistants, scripts, etc.)
 
 **Port Discovery:**
 - Searches ports 55560-55600 to avoid conflicts with multiple projects
@@ -845,12 +845,12 @@ Simplified mode runs Python simplifier. Make sure Python is installed.
 **v3.3** - Planned Audio Asset Support
 - Added planned support table for audio assets (SoundClass, SoundSubmix, SoundControlBus, etc.)
 
-**v3.2** - Port Discovery + Folder Structure + Claude Code Integration
+**v3.2** - Port Discovery + Folder Structure + AI Tool Integration
 - Automatic port discovery (55560-55600 range) to avoid conflicts with multiple projects
 - Port file written to `{ProjectDir}/Intermediate/AIExport_port.txt`
 - Export folder structure now mirrors Content folder (e.g., `/Game/UI/W_Widget` → `Dev/AIExports/Game/UI/`)
 - Added `ai_export_client.py` Python client for TCP communication
-- Added Claude Code instructions files (`.claude/instructions.md`, `Docs/ClaudeCode_Guide.md`)
+- Added AI assistant instruction documentation
 
 **v3.1** - AnimBlueprint header improvements
 - Added ParentClass to AnimBlueprint export (shows custom derived AnimInstance classes)
