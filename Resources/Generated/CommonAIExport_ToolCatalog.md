@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 178
-- MCP tools: 197
-- Categories: 37
+- TCP commands: 179
+- MCP tools: 198
+- Categories: 38
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
@@ -37,6 +37,7 @@
 | `Input` | 3 |
 | `Landscape` | 2 |
 | `Material` | 15 |
+| `Niagara` | 1 |
 | `PCG` | 2 |
 | `PIE` | 3 |
 | `Project` | 4 |
@@ -230,6 +231,7 @@
 | `foliage_type_settings` | `Foliage` | `read` | false | false | false | 60 |
 | `pcg_graph_info` | `PCG` | `read` | false | false | false | 60 |
 | `pcg_component_info` | `PCG` | `read` | false | false | false | 60 |
+| `niagara_asset_info` | `Niagara` | `read` | false | false | false | 60 |
 | `import_texture` | `Import` | `write` | true | true | false | 60 |
 | `import_font` | `Import` | `write` | true | true | false | 60 |
 | `capture_widget_preview` | `WidgetPreview` | `read` | false | false | true | 120 |

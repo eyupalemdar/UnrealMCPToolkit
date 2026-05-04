@@ -6571,6 +6571,53 @@ def pcg_component_info(
     return _send_generated_tcp_tool("pcg_component_info", locals())
 
 
+@mcp.tool()
+def niagara_asset_info(
+    asset_path: str,
+    include_emitters: bool = True,
+    include_renderers: bool = True,
+    include_scripts: bool = True,
+    include_parameters: bool = True,
+    include_properties: bool = False,
+    include_asset_registry: bool = True,
+    emitter_limit: int = 64,
+    renderer_limit: int = 128,
+    script_limit: int = 128,
+    parameter_limit: int = 256,
+    attribute_limit: int = 256,
+    data_interface_limit: int = 128,
+    function_limit: int = 128,
+    property_limit: int = 80,
+    string_limit: int = 512,
+) -> str:
+    """
+    Inspect a NiagaraSystem, NiagaraEmitter, or NiagaraScript asset without mutating it.
+
+    Args:
+        asset_path: Niagara asset path, e.g. "/Game/VFX/NS_Explosion".
+        include_emitters: Include NiagaraSystem emitter handles and emitter data.
+        include_renderers: Include renderer class, sim target, motion vector, and bound attribute data.
+        include_scripts: Include system/emitter script compile and VM executable summaries.
+        include_parameters: Include exposed, renderer binding, and rapid iteration parameter stores.
+        include_properties: Include bounded reflected editable renderer properties.
+        include_asset_registry: Include Asset Registry identity metadata.
+        emitter_limit: Maximum emitter handles returned.
+        renderer_limit: Maximum renderer entries returned.
+        script_limit: Maximum script entries returned.
+        parameter_limit: Maximum parameters returned per parameter store.
+        attribute_limit: Maximum VM or renderer attributes returned per list.
+        data_interface_limit: Maximum data interface entries returned per script.
+        function_limit: Maximum external VM function entries returned per script.
+        property_limit: Maximum reflected renderer properties returned.
+        string_limit: Maximum length for reflected property and compile error strings.
+
+    Returns:
+        JSON with Niagara asset identity, parameters, emitters, renderers, scripts,
+        VM compile state, attributes, data interfaces, and resource size diagnostics.
+    """
+    return _send_generated_tcp_tool("niagara_asset_info", locals())
+
+
 # =============================================================================
 # WIDGET PREVIEW CAPTURE
 # =============================================================================

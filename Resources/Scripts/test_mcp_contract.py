@@ -117,6 +117,7 @@ def _failures() -> list[str]:
         "foliage_sample_instances": ("x", "y"),
         "foliage_type_settings": ("foliage_type_path",),
         "pcg_graph_info": ("asset_path",),
+        "niagara_asset_info": ("asset_path",),
         "static_mesh_info": ("asset_path",),
         "skeletal_mesh_info": ("asset_path",),
         "animation_asset_info": ("asset_path",),

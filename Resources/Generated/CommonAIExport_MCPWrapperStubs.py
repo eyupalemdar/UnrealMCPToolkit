@@ -1968,6 +1968,29 @@ def pcg_component_info(world: str = 'editor', actor_path: str = '', actor_label:
     return _format_response(_send_command("pcg_component_info", params))
 
 
+def niagara_asset_info(asset_path: str, include_emitters: bool = True, include_renderers: bool = True, include_scripts: bool = True, include_parameters: bool = True, include_properties: bool = False, include_asset_registry: bool = True, emitter_limit: int = 64, renderer_limit: int = 128, script_limit: int = 128, parameter_limit: int = 256, attribute_limit: int = 256, data_interface_limit: int = 128, function_limit: int = 128, property_limit: int = 80, string_limit: int = 512) -> str:
+    """Generated stub for TCP command `niagara_asset_info` (Niagara)."""
+    params = {
+        "asset_path": asset_path,
+        "include_emitters": include_emitters,
+        "include_renderers": include_renderers,
+        "include_scripts": include_scripts,
+        "include_parameters": include_parameters,
+        "include_properties": include_properties,
+        "include_asset_registry": include_asset_registry,
+        "emitter_limit": emitter_limit,
+        "renderer_limit": renderer_limit,
+        "script_limit": script_limit,
+        "parameter_limit": parameter_limit,
+        "attribute_limit": attribute_limit,
+        "data_interface_limit": data_interface_limit,
+        "function_limit": function_limit,
+        "property_limit": property_limit,
+        "string_limit": string_limit,
+    }
+    return _format_response(_send_command("niagara_asset_info", params))
+
+
 def import_texture(source_path: str, package_path: str, asset_name: str = '', compression: str = 'UserInterface2D', srgb: bool = True, mip_gen: str = 'NoMipmaps', lod_group: str = 'UI', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `import_texture` (Import)."""
     params = {

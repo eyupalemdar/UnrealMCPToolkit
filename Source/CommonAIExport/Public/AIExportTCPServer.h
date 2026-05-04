@@ -141,6 +141,9 @@
  * - pcg_graph_info: Inspect PCGGraph nodes, pins, edges, and settings
  * - pcg_component_info: Inspect PCGComponents and generation state in a world
  *
+ * Niagara commands:
+ * - niagara_asset_info: Inspect NiagaraSystem, NiagaraEmitter, and NiagaraScript diagnostics
+ *
  * Static Mesh commands:
  * - static_mesh_info: Inspect StaticMesh LODs, sections, materials, sockets, collision, and Nanite data
  *
@@ -447,6 +450,9 @@ private:
 	/** Command handlers - PCG */
 	FString HandlePCGGraphInfo(TSharedPtr<class FJsonObject> Params);
 	FString HandlePCGComponentInfo(TSharedPtr<class FJsonObject> Params);
+
+	/** Command handlers - Niagara */
+	FString HandleNiagaraAssetInfo(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Asset Import */
 	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);

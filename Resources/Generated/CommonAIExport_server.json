@@ -4,7 +4,7 @@
   "display_name": "CommonAIExport",
   "description": "Project-local Unreal Editor automation MCP bridge for Unreal Engine projects.",
   "version": "0.4.1",
-  "generated_at_utc": "2026-05-04T18:35:05.193040Z",
+  "generated_at_utc": "2026-05-04T18:48:37.378606Z",
   "transports": {
     "stdio": {
       "command": "python",
@@ -23,8 +23,8 @@
     }
   },
   "tools": {
-    "total": 197,
-    "tcp_commands": 178,
+    "total": 198,
+    "tcp_commands": 179,
     "client_only": [
       "asset_transfer_execute",
       "asset_transfer_plan",

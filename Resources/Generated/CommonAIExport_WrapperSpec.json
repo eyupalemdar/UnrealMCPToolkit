@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T18:35:05.192816Z",
+  "generated_at_utc": "2026-05-04T18:48:37.378309Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 197,
-  "tcp_command_count": 178,
+  "tool_count": 198,
+  "tcp_command_count": 179,
   "client_only_count": 19,
-  "wrapper_count": 197,
+  "wrapper_count": 198,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -4345,7 +4345,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6579,
+        "line": 6626,
         "params": [
           {
             "name": "asset_path",
@@ -11199,6 +11199,259 @@
         "literal_send_commands": []
       }
     },
+    "niagara_asset_info": {
+      "name": "niagara_asset_info",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "niagara_asset_info",
+      "literal_send_commands": [
+        "niagara_asset_info"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "asset_path": {
+            "type": "string"
+          },
+          "include_emitters": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_renderers": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_scripts": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_parameters": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_properties": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_asset_registry": {
+            "type": "boolean",
+            "default": true
+          },
+          "emitter_limit": {
+            "type": "integer",
+            "default": 64
+          },
+          "renderer_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "script_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "parameter_limit": {
+            "type": "integer",
+            "default": 256
+          },
+          "attribute_limit": {
+            "type": "integer",
+            "default": 256
+          },
+          "data_interface_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "function_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "property_limit": {
+            "type": "integer",
+            "default": 80
+          },
+          "string_limit": {
+            "type": "integer",
+            "default": 512
+          }
+        },
+        "required": [
+          "asset_path"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Niagara",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "niagara_asset_info",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6575,
+        "params": [
+          {
+            "name": "asset_path",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "include_emitters",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_renderers",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_scripts",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_parameters",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_properties",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_asset_registry",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "emitter_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "64",
+            "default_value": 64,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "renderer_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "script_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "parameter_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "256",
+            "default_value": 256,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "attribute_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "256",
+            "default_value": 256,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "data_interface_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "function_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "property_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "80",
+            "default_value": 80,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "string_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "512",
+            "default_value": 512,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "niagara_asset_info"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
     "object_call_function": {
       "name": "object_call_function",
       "source": "tcp_command",
@@ -13825,7 +14078,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6659,
+        "line": 6706,
         "params": [
           {
             "name": "asset_path",

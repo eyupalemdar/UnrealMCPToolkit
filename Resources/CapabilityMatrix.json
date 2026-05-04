@@ -593,6 +593,18 @@
       "extension_policy": "Use this capability for PCGGraph node/pin/edge semantics, PCG settings snapshots, and PCGComponent generation state. asset_search owns generic PCG asset discovery; runtime_component_list owns generic component summaries; PCG graph authoring, generation, cleanup, and mutation must be separately reviewed mutating capabilities."
     },
     {
+      "id": "niagara_asset_diagnostics",
+      "domain": "vfx",
+      "title": "Niagara system, emitter, and script diagnostics",
+      "status": "native",
+      "category_tags": ["Niagara"],
+      "commands": [
+        "niagara_asset_info"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for typed read-only NiagaraSystem, NiagaraEmitter, and NiagaraScript inspection, including exposed parameters, emitter handles, renderer summaries, script compile state, VM attributes, data interfaces, and bounded reflected renderer properties. Generic listing stays in asset_search; Niagara creation, spawning, parameter mutation, module editing, HLSL extraction, and scratch module authoring must be separately reviewed."
+    },
+    {
       "id": "client_editor_bridge",
       "domain": "client",
       "title": "MCP client multi-editor bridge",

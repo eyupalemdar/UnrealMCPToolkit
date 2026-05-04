@@ -345,6 +345,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 		AI_COMMAND_PARAMS("foliage_type_settings", "Foliage", false, 60, HandleFoliageTypeSettings),
 		AI_COMMAND_PARAMS("pcg_graph_info", "PCG", false, 60, HandlePCGGraphInfo),
 		AI_COMMAND_OPTIONAL_PARAMS("pcg_component_info", "PCG", false, 60, HandlePCGComponentInfo),
+		AI_COMMAND_PARAMS("niagara_asset_info", "Niagara", false, 60, HandleNiagaraAssetInfo),
 
 		AI_COMMAND_PARAMS("import_texture", "Import", true, 60, HandleImportTexture),
 		AI_COMMAND_PARAMS("import_font", "Import", true, 60, HandleImportFont),

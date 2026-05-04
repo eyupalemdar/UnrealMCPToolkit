@@ -1,11 +1,11 @@
 {
   "schema_version": 3,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T18:35:05.091895Z",
+  "generated_at_utc": "2026-05-04T18:48:37.265713Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
-  "command_count": 178,
-  "category_count": 37,
+  "command_count": 179,
+  "category_count": 38,
   "categories": {
     "AnimBlueprint": 2,
     "AnimationAsset": 1,
@@ -30,6 +30,7 @@
     "Input": 3,
     "Landscape": 2,
     "Material": 15,
+    "Niagara": 1,
     "PCG": 2,
     "PIE": 3,
     "Project": 4,
@@ -2489,6 +2490,20 @@
       "line": 347
     },
     {
+      "name": "niagara_asset_info",
+      "category": "Niagara",
+      "requires_params": true,
+      "mutating": false,
+      "timeout_seconds": 60,
+      "required_scope": "read",
+      "supports_dry_run": false,
+      "async_candidate": false,
+      "handler": "HandleNiagaraAssetInfo",
+      "descriptor_macro": "AI_COMMAND_PARAMS",
+      "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
+      "line": 348
+    },
+    {
       "name": "import_texture",
       "category": "Import",
       "requires_params": true,
@@ -2500,7 +2515,7 @@
       "handler": "HandleImportTexture",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 349
+      "line": 350
     },
     {
       "name": "import_font",
@@ -2514,7 +2529,7 @@
       "handler": "HandleImportFont",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 350
+      "line": 351
     },
     {
       "name": "capture_widget_preview",
@@ -2528,7 +2543,7 @@
       "handler": "HandleCaptureWidgetPreview",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 352
+      "line": 353
     },
     {
       "name": "reload_asset",
@@ -2542,7 +2557,7 @@
       "handler": "HandleReloadAsset",
       "descriptor_macro": "AI_COMMAND_PARAMS",
       "source": "MyGithub/CommonAIExport/Source/CommonAIExport/Private/AIExportTCPServer.cpp",
-      "line": 353
+      "line": 354
     }
   ]
 }

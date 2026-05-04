@@ -51,6 +51,7 @@ public class CommonAIExport : ModuleRules
 			"Landscape",  // For landscape proxy/component diagnostics
 			"Foliage",  // For foliage actor/type diagnostics
 			"PCG",  // For PCG graph/component diagnostics
+			"Niagara",  // For Niagara system/emitter/script diagnostics
 			"LevelSequence",  // For LevelSequence/Sequencer asset inspection
 			"MovieScene",  // For UWidgetAnimation export
 			"MovieSceneTracks",  // For section types (FloatSection, ColorSection, etc.)
