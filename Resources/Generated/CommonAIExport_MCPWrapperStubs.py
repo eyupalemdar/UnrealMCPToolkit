@@ -1716,6 +1716,29 @@ def static_mesh_info(asset_path: str, include_lods: bool = True, include_section
     return _format_response(_send_command("static_mesh_info", params))
 
 
+def skeletal_mesh_info(asset_path: str, include_lods: bool = True, include_sections: bool = True, include_materials: bool = True, include_sockets: bool = True, include_skeleton: bool = True, include_physics_asset: bool = True, include_bounds: bool = True, include_nanite: bool = True, lod_limit: int = 8, section_limit: int = 64, material_limit: int = 128, socket_limit: int = 128, bone_limit: int = 256, physics_body_limit: int = 128, constraint_limit: int = 128) -> str:
+    """Generated stub for TCP command `skeletal_mesh_info` (SkeletalMesh)."""
+    params = {
+        "asset_path": asset_path,
+        "include_lods": include_lods,
+        "include_sections": include_sections,
+        "include_materials": include_materials,
+        "include_sockets": include_sockets,
+        "include_skeleton": include_skeleton,
+        "include_physics_asset": include_physics_asset,
+        "include_bounds": include_bounds,
+        "include_nanite": include_nanite,
+        "lod_limit": lod_limit,
+        "section_limit": section_limit,
+        "material_limit": material_limit,
+        "socket_limit": socket_limit,
+        "bone_limit": bone_limit,
+        "physics_body_limit": physics_body_limit,
+        "constraint_limit": constraint_limit,
+    }
+    return _format_response(_send_command("skeletal_mesh_info", params))
+
+
 def add_input_mapping(asset_path: str, input_action_path: str, key: str, triggers: list[str] | None = None, modifiers: list[str] | None = None, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_input_mapping` (Input)."""
     params = {

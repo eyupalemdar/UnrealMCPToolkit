@@ -5922,6 +5922,53 @@ def static_mesh_info(
 
 
 @mcp.tool()
+def skeletal_mesh_info(
+    asset_path: str,
+    include_lods: bool = True,
+    include_sections: bool = True,
+    include_materials: bool = True,
+    include_sockets: bool = True,
+    include_skeleton: bool = True,
+    include_physics_asset: bool = True,
+    include_bounds: bool = True,
+    include_nanite: bool = True,
+    lod_limit: int = 8,
+    section_limit: int = 64,
+    material_limit: int = 128,
+    socket_limit: int = 128,
+    bone_limit: int = 256,
+    physics_body_limit: int = 128,
+    constraint_limit: int = 128,
+) -> str:
+    """
+    Inspect a SkeletalMesh asset without mutating it.
+
+    Args:
+        asset_path: SkeletalMesh path, e.g. "/Game/Characters/SK_Hero".
+        include_lods: Include render LOD summaries.
+        include_sections: Include per-section material, bone map, cloth, and render metadata.
+        include_materials: Include material slots and overlay materials.
+        include_sockets: Include mesh-only and active SkeletalMesh sockets.
+        include_skeleton: Include mesh and skeleton reference skeleton bone summaries.
+        include_physics_asset: Include PhysicsAsset bodies, constraints, and shadow PhysicsAsset refs.
+        include_bounds: Include current/imported bounds and bounds extensions.
+        include_nanite: Include SkeletalMesh Nanite settings and render data status.
+        lod_limit: Maximum LOD entries returned.
+        section_limit: Maximum section entries per LOD.
+        material_limit: Maximum material slots returned.
+        socket_limit: Maximum sockets returned per socket list.
+        bone_limit: Maximum bones returned per reference skeleton.
+        physics_body_limit: Maximum PhysicsAsset bodies returned.
+        constraint_limit: Maximum PhysicsAsset constraints returned.
+
+    Returns:
+        JSON with bounds, memory estimate, LODs, materials, sockets, skeleton,
+        physics asset, morph count, and Nanite diagnostics.
+    """
+    return _send_generated_tcp_tool("skeletal_mesh_info", locals())
+
+
+@mcp.tool()
 def asset_exists(asset_path: str) -> str:
     """
     Check whether an asset/package exists in the Asset Registry or on disk.

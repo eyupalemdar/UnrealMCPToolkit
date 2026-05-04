@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 176
-- MCP tools: 195
-- Categories: 35
+- TCP commands: 177
+- MCP tools: 196
+- Categories: 36
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
@@ -43,6 +43,7 @@
 | `Reflection` | 9 |
 | `RuntimeInspector` | 22 |
 | `Sequencer` | 1 |
+| `SkeletalMesh` | 1 |
 | `Spline` | 3 |
 | `StaticMesh` | 1 |
 | `Utility` | 5 |
@@ -210,6 +211,7 @@
 | `list_redirectors` | `Asset` | `read` | false | false | false | 60 |
 | `fixup_redirectors` | `Asset` | `write` | true | true | true | 120 |
 | `static_mesh_info` | `StaticMesh` | `read` | false | false | false | 60 |
+| `skeletal_mesh_info` | `SkeletalMesh` | `read` | false | false | false | 60 |
 | `add_input_mapping` | `Input` | `write` | true | true | false | 60 |
 | `remove_input_mapping` | `Input` | `write` | true | true | false | 60 |
 | `get_input_mappings` | `Input` | `read` | false | false | false | 60 |

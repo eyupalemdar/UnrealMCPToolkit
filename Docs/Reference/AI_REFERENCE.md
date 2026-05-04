@@ -1,7 +1,7 @@
 # CommonAIExport — AI Reference Guide
 
 > **Read this file to understand ALL plugin capabilities in one place.**
-> 195 MCP tools across 35 TCP command categories plus client-only tools. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
+> 196 MCP tools across 36 TCP command categories plus client-only tools. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
 
 ## Architecture
 
@@ -425,7 +425,15 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 12. Input Mapping Context
+## 12. Skeletal Mesh
+
+| Tool | Purpose |
+|------|---------|
+| `skeletal_mesh_info(asset_path, include_lods?, include_sections?, include_materials?, include_sockets?, include_skeleton?, include_physics_asset?, include_bounds?, include_nanite?, lod_limit?, section_limit?, material_limit?, socket_limit?, bone_limit?, physics_body_limit?, constraint_limit?)` | Inspect SkeletalMesh LODs, sections, material slots, sockets, reference skeletons, PhysicsAsset bodies/constraints, bounds, memory estimate, morph count, and Nanite state |
+
+---
+
+## 13. Input Mapping Context
 
 | Tool | Purpose |
 |------|---------|
@@ -435,7 +443,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 13. AnimBlueprint
+## 14. AnimBlueprint
 
 | Tool | Purpose |
 |------|---------|
@@ -444,7 +452,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 14. Sequencer
+## 15. Sequencer
 
 | Tool | Purpose |
 |------|---------|
@@ -452,7 +460,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 15. Spline
+## 16. Spline
 
 | Tool | Purpose |
 |------|---------|
@@ -462,7 +470,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 16. Landscape
+## 17. Landscape
 
 | Tool | Purpose |
 |------|---------|
@@ -471,7 +479,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 17. Foliage
+## 18. Foliage
 
 | Tool | Purpose |
 |------|---------|
@@ -481,7 +489,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 18. PCG
+## 19. PCG
 
 | Tool | Purpose |
 |------|---------|
@@ -490,7 +498,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 19. Asset Import
+## 20. Asset Import
 
 | Tool | Purpose |
 |------|---------|
@@ -499,7 +507,7 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 
 ---
 
-## 20. Widget Preview Capture (IFTP verify loop)
+## 21. Widget Preview Capture (IFTP verify loop)
 
 Renders a Widget Blueprint to a PNG file (or files, one per ratio) so an AI assistant can
 visually compare UE output with the Pencil source across multiple screen ratios.
@@ -559,7 +567,7 @@ capture_widget_preview(
 
 ---
 
-## 21. Asset Lifecycle
+## 22. Asset Lifecycle
 
 | Tool | Purpose |
 |------|---------|
@@ -597,7 +605,7 @@ reload_asset("/Game/UI/Menu/W_MainMenu_HF03d")
 
 ---
 
-## 22. Editor, Level, Actor and PIE
+## 23. Editor, Level, Actor and PIE
 
 These tools provide the first general editor automation package outside
 Widget/Material-specific workflows. They operate on the current editor world and
@@ -678,7 +686,7 @@ handler touches the editor.
 
 ---
 
-## 23. Multi-Editor Routing
+## 24. Multi-Editor Routing
 
 When the same CommonAIExport plugin is loaded in multiple Unreal Editor
 projects, each editor writes a global registry entry. The Python MCP server can
@@ -739,7 +747,7 @@ rewrites yet. Actual copy requires `scope="write"`. Overwrite requires
 
 ---
 
-## 24. Code Transfer
+## 25. Code Transfer
 
 | Tool | Purpose |
 |------|---------|
@@ -756,7 +764,7 @@ be followed by Build.cs/module/API macro review and the guarded build workflow.
 
 ---
 
-## 25. Async Jobs and Safety Metadata
+## 26. Async Jobs and Safety Metadata
 
 | Tool | Purpose |
 |------|---------|
@@ -816,7 +824,7 @@ task_result("...")
 
 ---
 
-## 26. Workflow and Logs
+## 27. Workflow and Logs
 
 | Tool | Purpose |
 |------|---------|
@@ -830,7 +838,7 @@ task_result("...")
 
 ---
 
-## 27. MCP Resources, Prompts, and Metadata
+## 28. MCP Resources, Prompts, and Metadata
 
 | Tool | Purpose |
 |------|---------|
@@ -866,7 +874,7 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 `CommonAIExport_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `CommonAIExport_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
-now covers all 159 TCP wrappers: read-only payload wrappers, the safe write-scope set
+now covers all 160 TCP wrappers: read-only payload wrappers, the safe write-scope set
 (editor/level/actor/PIE/viewport, Asset/DataAsset/Input, Import,
 AnimBlueprint, CDO/CDOArray, Material graph/MIC, Project/ProjectConfig,
 Blueprint graph/variable, Blueprint utility, and Widget wrappers), and the current destructive dry-run set
@@ -973,10 +981,10 @@ First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets
 <!-- BEGIN COMMONAI GENERATED TOOL SUMMARY -->
 > Generated by `Resources/Scripts/generate_mcp_artifacts.py`; do not edit this block by hand.
 
-- TCP commands: `176`
+- TCP commands: `177`
 - Client-only MCP tools: `19`
-- Total MCP tools: `195`
-- Categories: `35`
+- Total MCP tools: `196`
+- Categories: `36`
 - Full generated catalog: `Resources/Generated/CommonAIExport_ToolCatalog.md`
 
 | Category | Count |
@@ -1010,13 +1018,14 @@ First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets
 | `Reflection` | 9 |
 | `RuntimeInspector` | 22 |
 | `Sequencer` | 1 |
+| `SkeletalMesh` | 1 |
 | `Spline` | 3 |
 | `StaticMesh` | 1 |
 | `Utility` | 5 |
 | `Widget` | 11 |
 | `WidgetPreview` | 1 |
 | `Workflow` | 12 |
-| **Total** | **195** |
+| **Total** | **196** |
 
 <!-- END COMMONAI GENERATED TOOL SUMMARY -->
 
@@ -1058,4 +1067,4 @@ Exports go to `Dev/AIExports/` mirroring the Content folder structure:
 ---
 
 *Version: 5.2.0 - Last Updated: 2026-05-04*
-*195 MCP tools, covering Widget, Material, BP Graph, CDO, Reflection, DataTable, Asset, Import, Preview, Landscape, Foliage, PCG, StaticMesh and level-structure diagnostics, project/config operations, editor/level/actor/PIE/runtime inspector, class/struct/enum reflection, Gameplay Tags, AI Perception, AIController/Brain/Blackboard/PathFollowing diagnostics, EQS manager/query wrapper diagnostics, CommonUI runtime routing, audio device/component diagnostics, NavigationSystem/Recast NavMesh diagnostics, asset streaming, async load/progress diagnostics, async event long-polling, GameInstance/save-game state, level travel/session state, multiplayer connection diagnostics, tick/timer/latent-action state, scheduler/performance diagnostics, physics/collision diagnostics, logs/workflow source-control/build/test/cook status/history/diff, local UE docs lookup, resources/prompts, client scope policy, native HTTP/MCP probe, registry metadata, multi-editor routing, code transfer, async job, and contract introspection workflows*
+*196 MCP tools, covering Widget, Material, BP Graph, CDO, Reflection, DataTable, Asset, Import, Preview, Landscape, Foliage, PCG, StaticMesh and level-structure diagnostics, project/config operations, editor/level/actor/PIE/runtime inspector, class/struct/enum reflection, Gameplay Tags, AI Perception, AIController/Brain/Blackboard/PathFollowing diagnostics, EQS manager/query wrapper diagnostics, CommonUI runtime routing, audio device/component diagnostics, NavigationSystem/Recast NavMesh diagnostics, asset streaming, async load/progress diagnostics, async event long-polling, GameInstance/save-game state, level travel/session state, multiplayer connection diagnostics, tick/timer/latent-action state, scheduler/performance diagnostics, physics/collision diagnostics, logs/workflow source-control/build/test/cook status/history/diff, local UE docs lookup, resources/prompts, client scope policy, native HTTP/MCP probe, registry metadata, multi-editor routing, code transfer, async job, and contract introspection workflows*

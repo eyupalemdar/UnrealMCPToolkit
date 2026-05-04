@@ -141,6 +141,9 @@
  * Static Mesh commands:
  * - static_mesh_info: Inspect StaticMesh LODs, sections, materials, sockets, collision, and Nanite data
  *
+ * Skeletal Mesh commands:
+ * - skeletal_mesh_info: Inspect SkeletalMesh LODs, sections, materials, sockets, skeleton, physics, bounds, and Nanite data
+ *
  * Asset Import commands:
  * - import_texture: Import a texture file from disk into Content Browser
  * - import_font: Import font files (TTF/OTF) and create a Composite Font asset
@@ -410,6 +413,7 @@ private:
 	FString HandleListRedirectors(TSharedPtr<class FJsonObject> Params);
 	FString HandleFixupRedirectors(TSharedPtr<class FJsonObject> Params);
 	FString HandleStaticMeshInfo(TSharedPtr<class FJsonObject> Params);
+	FString HandleSkeletalMeshInfo(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Input Mapping Context */
 	FString HandleAddInputMapping(TSharedPtr<class FJsonObject> Params);

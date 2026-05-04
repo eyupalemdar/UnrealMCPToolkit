@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T18:01:14.333773Z",
-  "tool_count": 195,
+  "generated_at_utc": "2026-05-04T18:17:57.019289Z",
+  "tool_count": 196,
   "tools": {
     "ping": {
       "type": "object",
@@ -6722,6 +6722,93 @@
         "source": "tcp_command",
         "schema_source": "python_mcp_signature",
         "category": "StaticMesh",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "skeletal_mesh_info": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "include_lods": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_sections": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_materials": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_sockets": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_skeleton": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_physics_asset": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_bounds": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_nanite": {
+          "type": "boolean",
+          "default": true
+        },
+        "lod_limit": {
+          "type": "integer",
+          "default": 8
+        },
+        "section_limit": {
+          "type": "integer",
+          "default": 64
+        },
+        "material_limit": {
+          "type": "integer",
+          "default": 128
+        },
+        "socket_limit": {
+          "type": "integer",
+          "default": 128
+        },
+        "bone_limit": {
+          "type": "integer",
+          "default": 256
+        },
+        "physics_body_limit": {
+          "type": "integer",
+          "default": 128
+        },
+        "constraint_limit": {
+          "type": "integer",
+          "default": 128
+        }
+      },
+      "required": [
+        "asset_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "SkeletalMesh",
         "required_scope": "read",
         "mutating": false,
         "supports_dry_run": false,

@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T18:01:14.405195Z",
+  "generated_at_utc": "2026-05-04T18:17:57.091461Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 195,
-  "tcp_command_count": 176,
+  "tool_count": 196,
+  "tcp_command_count": 177,
   "client_only_count": 19,
-  "wrapper_count": 195,
+  "wrapper_count": 196,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -1752,7 +1752,7 @@
       "wrapper": {
         "name": "add_input_mapping",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6178,
+        "line": 6225,
         "params": [
           {
             "name": "asset_path",
@@ -2583,7 +2583,7 @@
       "wrapper": {
         "name": "asset_exists",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5925,
+        "line": 5972,
         "params": [
           {
             "name": "asset_path",
@@ -4079,7 +4079,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6483,
+        "line": 6530,
         "params": [
           {
             "name": "asset_path",
@@ -5884,7 +5884,7 @@
       "wrapper": {
         "name": "create_anim_blueprint",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6251,
+        "line": 6298,
         "params": [
           {
             "name": "package_path",
@@ -6608,7 +6608,7 @@
       "wrapper": {
         "name": "delete_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6135,
+        "line": 6182,
         "params": [
           {
             "name": "asset_path",
@@ -7630,7 +7630,7 @@
       "wrapper": {
         "name": "fixup_redirectors",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6042,
+        "line": 6089,
         "params": [
           {
             "name": "folder_path",
@@ -7730,7 +7730,7 @@
       "wrapper": {
         "name": "foliage_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6409,
+        "line": 6456,
         "params": [
           {
             "name": "world",
@@ -7852,7 +7852,7 @@
       "wrapper": {
         "name": "foliage_sample_instances",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6421,
+        "line": 6468,
         "params": [
           {
             "name": "x",
@@ -7973,7 +7973,7 @@
       "wrapper": {
         "name": "foliage_type_settings",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6436,
+        "line": 6483,
         "params": [
           {
             "name": "foliage_type_path",
@@ -8114,7 +8114,7 @@
       "wrapper": {
         "name": "get_anim_blueprint_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6278,
+        "line": 6325,
         "params": [
           {
             "name": "asset_path",
@@ -8417,7 +8417,7 @@
       "wrapper": {
         "name": "get_dependencies",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5990,
+        "line": 6037,
         "params": [
           {
             "name": "asset_path",
@@ -8555,7 +8555,7 @@
       "wrapper": {
         "name": "get_input_mappings",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6233,
+        "line": 6280,
         "params": [
           {
             "name": "asset_path",
@@ -8729,7 +8729,7 @@
       "wrapper": {
         "name": "get_referencers",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5967,
+        "line": 6014,
         "params": [
           {
             "name": "asset_path",
@@ -9475,7 +9475,7 @@
       "wrapper": {
         "name": "landscape_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6374,
+        "line": 6421,
         "params": [
           {
             "name": "world",
@@ -9643,7 +9643,7 @@
       "wrapper": {
         "name": "landscape_sample_height",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6392,
+        "line": 6439,
         "params": [
           {
             "name": "x",
@@ -10503,7 +10503,7 @@
       "wrapper": {
         "name": "list_redirectors",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6013,
+        "line": 6060,
         "params": [
           {
             "name": "folder_path",
@@ -11790,7 +11790,7 @@
       "wrapper": {
         "name": "pcg_component_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6462,
+        "line": 6509,
         "params": [
           {
             "name": "world",
@@ -11961,7 +11961,7 @@
       "wrapper": {
         "name": "pcg_graph_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6446,
+        "line": 6493,
         "params": [
           {
             "name": "asset_path",
@@ -13559,7 +13559,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6563,
+        "line": 6610,
         "params": [
           {
             "name": "asset_path",
@@ -14074,7 +14074,7 @@
       "wrapper": {
         "name": "remove_input_mapping",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6211,
+        "line": 6258,
         "params": [
           {
             "name": "asset_path",
@@ -14369,7 +14369,7 @@
       "wrapper": {
         "name": "rename_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6099,
+        "line": 6146,
         "params": [
           {
             "name": "asset_path",
@@ -18027,7 +18027,7 @@
       "wrapper": {
         "name": "save_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6079,
+        "line": 6126,
         "params": [
           {
             "name": "asset_path",
@@ -18287,7 +18287,7 @@
       "wrapper": {
         "name": "scan_asset_paths",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 5940,
+        "line": 5987,
         "params": [
           {
             "name": "paths",
@@ -18392,7 +18392,7 @@
       "wrapper": {
         "name": "sequencer_asset_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6296,
+        "line": 6343,
         "params": [
           {
             "name": "asset_path",
@@ -20039,6 +20039,259 @@
       },
       "calls_expected_tcp_command": true
     },
+    "skeletal_mesh_info": {
+      "name": "skeletal_mesh_info",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "skeletal_mesh_info",
+      "literal_send_commands": [
+        "skeletal_mesh_info"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "asset_path": {
+            "type": "string"
+          },
+          "include_lods": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_sections": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_materials": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_sockets": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_skeleton": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_physics_asset": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_bounds": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_nanite": {
+            "type": "boolean",
+            "default": true
+          },
+          "lod_limit": {
+            "type": "integer",
+            "default": 8
+          },
+          "section_limit": {
+            "type": "integer",
+            "default": 64
+          },
+          "material_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "socket_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "bone_limit": {
+            "type": "integer",
+            "default": 256
+          },
+          "physics_body_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "constraint_limit": {
+            "type": "integer",
+            "default": 128
+          }
+        },
+        "required": [
+          "asset_path"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "SkeletalMesh",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "skeletal_mesh_info",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 5925,
+        "params": [
+          {
+            "name": "asset_path",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "include_lods",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_sections",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_materials",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_sockets",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_skeleton",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_physics_asset",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_bounds",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_nanite",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "lod_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "8",
+            "default_value": 8,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "section_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "64",
+            "default_value": 64,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "material_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "socket_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "bone_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "256",
+            "default_value": 256,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "physics_body_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "constraint_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "skeletal_mesh_info"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
     "source_control_diff": {
       "name": "source_control_diff",
       "source": "tcp_command",
@@ -20687,7 +20940,7 @@
       "wrapper": {
         "name": "spline_actor_create",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6320,
+        "line": 6367,
         "params": [
           {
             "name": "actor_label",
@@ -20858,7 +21111,7 @@
       "wrapper": {
         "name": "spline_component_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6338,
+        "line": 6385,
         "params": [
           {
             "name": "actor_path",
@@ -21014,7 +21267,7 @@
       "wrapper": {
         "name": "spline_component_set_points",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6352,
+        "line": 6399,
         "params": [
           {
             "name": "points",

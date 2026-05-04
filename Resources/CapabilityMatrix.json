@@ -476,6 +476,18 @@
       "extension_policy": "Use this capability for typed StaticMesh asset inspection, including LODs, sections, material slots, sockets, BodySetup collision, bounds, memory estimates, and Nanite state. Generic asset registry and property access stay in asset_authoring_registry; mesh mutation/import/export workflows must be separately reviewed."
     },
     {
+      "id": "skeletal_mesh_diagnostics",
+      "domain": "asset",
+      "title": "SkeletalMesh asset diagnostics",
+      "status": "native",
+      "category_tags": ["SkeletalMesh"],
+      "commands": [
+        "skeletal_mesh_info"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for typed SkeletalMesh asset inspection, including LODs, sections, material slots, sockets, skeleton references, physics asset bodies/constraints, bounds, memory estimates, morph counts, and Nanite state. Generic asset registry and property access stay in asset_authoring_registry; skeletal mesh import, retargeting, socket mutation, and animation authoring must be separately reviewed."
+    },
+    {
       "id": "input_settings",
       "domain": "project",
       "title": "Project input mapping settings",
