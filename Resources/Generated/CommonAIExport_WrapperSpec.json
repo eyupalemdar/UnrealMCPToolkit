@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T15:41:34.259886Z",
+  "generated_at_utc": "2026-05-04T15:52:51.307247Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 182,
-  "tcp_command_count": 163,
+  "tool_count": 183,
+  "tcp_command_count": 164,
   "client_only_count": 19,
-  "wrapper_count": 182,
+  "wrapper_count": 183,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -4079,7 +4079,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6224,
+        "line": 6252,
         "params": [
           {
             "name": "asset_path",
@@ -12423,7 +12423,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6304,
+        "line": 6332,
         "params": [
           {
             "name": "asset_path",
@@ -17198,6 +17198,116 @@
         "returns": "str",
         "literal_send_commands": [
           "scan_asset_paths"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "sequencer_asset_info": {
+      "name": "sequencer_asset_info",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "sequencer_asset_info",
+      "literal_send_commands": [
+        "sequencer_asset_info"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "asset_path": {
+            "type": "string"
+          },
+          "include_sections": {
+            "type": "boolean",
+            "default": true
+          },
+          "binding_limit": {
+            "type": "integer",
+            "default": 200
+          },
+          "track_limit": {
+            "type": "integer",
+            "default": 200
+          },
+          "section_limit": {
+            "type": "integer",
+            "default": 500
+          }
+        },
+        "required": [
+          "asset_path"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Sequencer",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "sequencer_asset_info",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6224,
+        "params": [
+          {
+            "name": "asset_path",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "include_sections",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "binding_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "track_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "200",
+            "default_value": 200,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "section_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "500",
+            "default_value": 500,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "sequencer_asset_info"
         ]
       },
       "calls_expected_tcp_command": true

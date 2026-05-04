@@ -111,6 +111,7 @@ def _failures() -> list[str]:
         "blueprint_component_add": ("asset_path", "component_name", "component_class"),
         "blueprint_component_remove": ("asset_path", "component_name"),
         "blueprint_component_set_property": ("asset_path", "component_name", "property_path", "value"),
+        "sequencer_asset_info": ("asset_path",),
     }.items():
         props = schemas["tools"].get(tool_name, {}).get("properties", {})
         for prop_name in required_props:

@@ -490,6 +490,18 @@
       "extension_policy": "Extend this capability for animation Blueprint asset automation."
     },
     {
+      "id": "sequencer_assets",
+      "domain": "cinematics",
+      "title": "LevelSequence and MovieScene inspection",
+      "status": "native",
+      "category_tags": ["Sequencer"],
+      "commands": [
+        "sequencer_asset_info"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for Sequencer/LevelSequence asset introspection. Do not overlap with WidgetAnimation export or generic asset reflection when MovieScene bindings/tracks/sections are the workflow."
+    },
+    {
       "id": "client_editor_bridge",
       "domain": "client",
       "title": "MCP client multi-editor bridge",

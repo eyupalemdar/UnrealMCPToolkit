@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 163
-- MCP tools: 182
-- Categories: 29
+- TCP commands: 164
+- MCP tools: 183
+- Categories: 30
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
@@ -39,6 +39,7 @@
 | `ProjectConfig` | 5 |
 | `Reflection` | 9 |
 | `RuntimeInspector` | 22 |
+| `Sequencer` | 1 |
 | `Utility` | 5 |
 | `Widget` | 11 |
 | `WidgetPreview` | 1 |
@@ -207,6 +208,7 @@
 | `get_input_mappings` | `Input` | `read` | false | false | false | 60 |
 | `create_anim_blueprint` | `AnimBlueprint` | `write` | true | true | false | 60 |
 | `get_anim_blueprint_info` | `AnimBlueprint` | `read` | false | false | false | 60 |
+| `sequencer_asset_info` | `Sequencer` | `read` | false | false | false | 60 |
 | `import_texture` | `Import` | `write` | true | true | false | 60 |
 | `import_font` | `Import` | `write` | true | true | false | 60 |
 | `capture_widget_preview` | `WidgetPreview` | `read` | false | false | true | 120 |

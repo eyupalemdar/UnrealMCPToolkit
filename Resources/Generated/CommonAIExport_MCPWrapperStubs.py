@@ -1729,6 +1729,18 @@ def get_anim_blueprint_info(asset_path: str) -> str:
     return _format_response(_send_command("get_anim_blueprint_info", params))
 
 
+def sequencer_asset_info(asset_path: str, include_sections: bool = True, binding_limit: int = 200, track_limit: int = 200, section_limit: int = 500) -> str:
+    """Generated stub for TCP command `sequencer_asset_info` (Sequencer)."""
+    params = {
+        "asset_path": asset_path,
+        "include_sections": include_sections,
+        "binding_limit": binding_limit,
+        "track_limit": track_limit,
+        "section_limit": section_limit,
+    }
+    return _format_response(_send_command("sequencer_asset_info", params))
+
+
 def import_texture(source_path: str, package_path: str, asset_name: str = '', compression: str = 'UserInterface2D', srgb: bool = True, mip_gen: str = 'NoMipmaps', lod_group: str = 'UI', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `import_texture` (Import)."""
     params = {

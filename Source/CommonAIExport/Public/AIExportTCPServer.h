@@ -114,6 +114,9 @@
  * - create_anim_blueprint: Create AnimBlueprint with skeleton
  * - get_anim_blueprint_info: Get AnimBP info as JSON
  *
+ * Sequencer commands:
+ * - sequencer_asset_info: Inspect LevelSequence MovieScene bindings, tracks, and sections
+ *
  * Asset Import commands:
  * - import_texture: Import a texture file from disk into Content Browser
  * - import_font: Import font files (TTF/OTF) and create a Composite Font asset
@@ -390,6 +393,8 @@ private:
 	/** Command handlers — AnimBlueprint Builder */
 	FString HandleCreateAnimBlueprint(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetAnimBlueprintInfo(TSharedPtr<class FJsonObject> Params);
+	/** Command handlers - Sequencer */
+	FString HandleSequencerAssetInfo(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Asset Import */
 	FString HandleImportTexture(TSharedPtr<class FJsonObject> Params);

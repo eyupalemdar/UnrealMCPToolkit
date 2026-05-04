@@ -48,6 +48,7 @@ public class CommonAIExport : ModuleRules
 			"CommonInput",  // For CommonUI runtime input data during widget preview capture
 			"ImageWrapper",  // For PNG export (IImageWrapper)
 			"RenderCore",  // For FlushRenderingCommands (widget preview capture)
+			"LevelSequence",  // For LevelSequence/Sequencer asset inspection
 			"MovieScene",  // For UWidgetAnimation export
 			"MovieSceneTracks",  // For section types (FloatSection, ColorSection, etc.)
 			"PhysicsCore",  // For UPhysicalMaterial

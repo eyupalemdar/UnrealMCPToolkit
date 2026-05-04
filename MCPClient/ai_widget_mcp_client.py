@@ -6217,6 +6217,34 @@ def get_anim_blueprint_info(asset_path: str) -> str:
 
 
 # =============================================================================
+# SEQUENCER / LEVEL SEQUENCE INSPECTION
+# =============================================================================
+
+@mcp.tool()
+def sequencer_asset_info(
+    asset_path: str,
+    include_sections: bool = True,
+    binding_limit: int = 200,
+    track_limit: int = 200,
+    section_limit: int = 500,
+) -> str:
+    """
+    Inspect a LevelSequence asset's MovieScene bindings, tracks, and sections.
+
+    Args:
+        asset_path: Path to LevelSequence, e.g. "/Game/Cinematics/LS_Intro"
+        include_sections: Include per-section range/status summaries.
+        binding_limit: Maximum bindings to return.
+        track_limit: Maximum tracks to return across master and binding tracks.
+        section_limit: Maximum sections to return across emitted tracks.
+
+    Returns:
+        JSON with frame rates, playback range, binding metadata, tracks, and sections.
+    """
+    return _send_generated_tcp_tool("sequencer_asset_info", locals())
+
+
+# =============================================================================
 # WIDGET PREVIEW CAPTURE (IFTP verify loop — multi-ratio fidelity testing)
 # =============================================================================
 

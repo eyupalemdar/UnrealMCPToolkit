@@ -330,6 +330,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 
 		AI_COMMAND_PARAMS("create_anim_blueprint", "AnimBlueprint", true, 60, HandleCreateAnimBlueprint),
 		AI_COMMAND_PARAMS("get_anim_blueprint_info", "AnimBlueprint", false, 60, HandleGetAnimBlueprintInfo),
+		AI_COMMAND_PARAMS("sequencer_asset_info", "Sequencer", false, 60, HandleSequencerAssetInfo),
 
 		AI_COMMAND_PARAMS("import_texture", "Import", true, 60, HandleImportTexture),
 		AI_COMMAND_PARAMS("import_font", "Import", true, 60, HandleImportFont),
