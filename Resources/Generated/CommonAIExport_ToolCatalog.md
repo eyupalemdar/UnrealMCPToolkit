@@ -2,9 +2,9 @@
 
 > Generated from `FAIExportTCPServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 177
-- MCP tools: 196
-- Categories: 36
+- TCP commands: 178
+- MCP tools: 197
+- Categories: 37
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/CommonAIExport_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/CommonAIExport_MCPWrapperStubs.py`
@@ -15,6 +15,7 @@
 | Category | Count |
 |---|---:|
 | `AnimBlueprint` | 2 |
+| `AnimationAsset` | 1 |
 | `Asset` | 14 |
 | `AssetLifecycle` | 1 |
 | `AsyncJob` | 6 |
@@ -217,6 +218,7 @@
 | `get_input_mappings` | `Input` | `read` | false | false | false | 60 |
 | `create_anim_blueprint` | `AnimBlueprint` | `write` | true | true | false | 60 |
 | `get_anim_blueprint_info` | `AnimBlueprint` | `read` | false | false | false | 60 |
+| `animation_asset_info` | `AnimationAsset` | `read` | false | false | false | 60 |
 | `sequencer_asset_info` | `Sequencer` | `read` | false | false | false | 60 |
 | `spline_actor_create` | `Spline` | `write` | true | true | false | 60 |
 | `spline_component_info` | `Spline` | `read` | false | false | false | 60 |

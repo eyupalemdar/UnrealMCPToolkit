@@ -119,6 +119,7 @@ def _failures() -> list[str]:
         "pcg_graph_info": ("asset_path",),
         "static_mesh_info": ("asset_path",),
         "skeletal_mesh_info": ("asset_path",),
+        "animation_asset_info": ("asset_path",),
     }.items():
         props = schemas["tools"].get(tool_name, {}).get("properties", {})
         for prop_name in required_props:

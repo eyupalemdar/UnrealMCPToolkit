@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T18:17:57.019289Z",
-  "tool_count": 196,
+  "generated_at_utc": "2026-05-04T18:35:05.118467Z",
+  "tool_count": 197,
   "tools": {
     "ping": {
       "type": "object",
@@ -7018,6 +7018,97 @@
         "source": "tcp_command",
         "schema_source": "python_mcp_signature",
         "category": "AnimBlueprint",
+        "required_scope": "read",
+        "mutating": false,
+        "supports_dry_run": false,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "animation_asset_info": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "include_notifies": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_curves": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_montage": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_sequence": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_skeleton": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_data_model": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_markers": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_references": {
+          "type": "boolean",
+          "default": true
+        },
+        "notify_limit": {
+          "type": "integer",
+          "default": 128
+        },
+        "curve_limit": {
+          "type": "integer",
+          "default": 256
+        },
+        "marker_limit": {
+          "type": "integer",
+          "default": 128
+        },
+        "track_name_limit": {
+          "type": "integer",
+          "default": 256
+        },
+        "slot_limit": {
+          "type": "integer",
+          "default": 64
+        },
+        "section_limit": {
+          "type": "integer",
+          "default": 128
+        },
+        "segment_limit": {
+          "type": "integer",
+          "default": 128
+        },
+        "reference_limit": {
+          "type": "integer",
+          "default": 256
+        }
+      },
+      "required": [
+        "asset_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "AnimationAsset",
         "required_scope": "read",
         "mutating": false,
         "supports_dry_run": false,

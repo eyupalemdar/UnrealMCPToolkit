@@ -515,6 +515,18 @@
       "extension_policy": "Extend this capability for animation Blueprint asset automation."
     },
     {
+      "id": "animation_asset_diagnostics",
+      "domain": "animation",
+      "title": "Animation sequence and montage diagnostics",
+      "status": "native",
+      "category_tags": ["AnimationAsset"],
+      "commands": [
+        "animation_asset_info"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for typed read-only AnimSequence and AnimMontage asset inspection, including timing, skeletons, notifies, curves, data model tracks, sync markers, montage slots, sections, and referenced animations. AnimBlueprint graph/state-machine work remains in anim_blueprints and blueprint_graph_editing; animation authoring, retargeting, root-motion baking, and notify mutation must be separately reviewed."
+    },
+    {
       "id": "sequencer_assets",
       "domain": "cinematics",
       "title": "LevelSequence and MovieScene inspection",

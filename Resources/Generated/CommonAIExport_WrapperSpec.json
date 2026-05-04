@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "CommonAIExport",
-  "generated_at_utc": "2026-05-04T18:17:57.091461Z",
+  "generated_at_utc": "2026-05-04T18:35:05.192816Z",
   "manifest_source": "FAIExportTCPServer::GetCommandDescriptors",
   "generator": "MyGithub/CommonAIExport/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 196,
-  "tcp_command_count": 177,
+  "tool_count": 197,
+  "tcp_command_count": 178,
   "client_only_count": 19,
-  "wrapper_count": 196,
+  "wrapper_count": 197,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -2545,6 +2545,272 @@
       },
       "calls_expected_tcp_command": true
     },
+    "animation_asset_info": {
+      "name": "animation_asset_info",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "animation_asset_info",
+      "literal_send_commands": [
+        "animation_asset_info"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "asset_path": {
+            "type": "string"
+          },
+          "include_notifies": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_curves": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_montage": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_sequence": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_skeleton": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_data_model": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_markers": {
+            "type": "boolean",
+            "default": true
+          },
+          "include_references": {
+            "type": "boolean",
+            "default": true
+          },
+          "notify_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "curve_limit": {
+            "type": "integer",
+            "default": 256
+          },
+          "marker_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "track_name_limit": {
+            "type": "integer",
+            "default": 256
+          },
+          "slot_limit": {
+            "type": "integer",
+            "default": 64
+          },
+          "section_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "segment_limit": {
+            "type": "integer",
+            "default": 128
+          },
+          "reference_limit": {
+            "type": "integer",
+            "default": 256
+          }
+        },
+        "required": [
+          "asset_path"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "AnimationAsset",
+          "required_scope": "read",
+          "mutating": false,
+          "supports_dry_run": false,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true
+        }
+      },
+      "wrapper": {
+        "name": "animation_asset_info",
+        "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
+        "line": 6339,
+        "params": [
+          {
+            "name": "asset_path",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "include_notifies",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_curves",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_montage",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_sequence",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_skeleton",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_data_model",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_markers",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "include_references",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "notify_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "curve_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "256",
+            "default_value": 256,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "marker_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "track_name_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "256",
+            "default_value": 256,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "slot_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "64",
+            "default_value": 64,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "section_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "segment_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "128",
+            "default_value": 128,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "reference_limit",
+            "kind": "positional_or_keyword",
+            "annotation": "int",
+            "default": "256",
+            "default_value": 256,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "animation_asset_info"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
     "asset_exists": {
       "name": "asset_exists",
       "source": "tcp_command",
@@ -4079,7 +4345,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6530,
+        "line": 6579,
         "params": [
           {
             "name": "asset_path",
@@ -7730,7 +7996,7 @@
       "wrapper": {
         "name": "foliage_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6456,
+        "line": 6505,
         "params": [
           {
             "name": "world",
@@ -7852,7 +8118,7 @@
       "wrapper": {
         "name": "foliage_sample_instances",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6468,
+        "line": 6517,
         "params": [
           {
             "name": "x",
@@ -7973,7 +8239,7 @@
       "wrapper": {
         "name": "foliage_type_settings",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6483,
+        "line": 6532,
         "params": [
           {
             "name": "foliage_type_path",
@@ -9475,7 +9741,7 @@
       "wrapper": {
         "name": "landscape_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6421,
+        "line": 6470,
         "params": [
           {
             "name": "world",
@@ -9643,7 +9909,7 @@
       "wrapper": {
         "name": "landscape_sample_height",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6439,
+        "line": 6488,
         "params": [
           {
             "name": "x",
@@ -11790,7 +12056,7 @@
       "wrapper": {
         "name": "pcg_component_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6509,
+        "line": 6558,
         "params": [
           {
             "name": "world",
@@ -11961,7 +12227,7 @@
       "wrapper": {
         "name": "pcg_graph_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6493,
+        "line": 6542,
         "params": [
           {
             "name": "asset_path",
@@ -13559,7 +13825,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6610,
+        "line": 6659,
         "params": [
           {
             "name": "asset_path",
@@ -18392,7 +18658,7 @@
       "wrapper": {
         "name": "sequencer_asset_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6343,
+        "line": 6392,
         "params": [
           {
             "name": "asset_path",
@@ -20940,7 +21206,7 @@
       "wrapper": {
         "name": "spline_actor_create",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6367,
+        "line": 6416,
         "params": [
           {
             "name": "actor_label",
@@ -21111,7 +21377,7 @@
       "wrapper": {
         "name": "spline_component_info",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6385,
+        "line": 6434,
         "params": [
           {
             "name": "actor_path",
@@ -21267,7 +21533,7 @@
       "wrapper": {
         "name": "spline_component_set_points",
         "source": "MyGithub/CommonAIExport/MCPClient/ai_widget_mcp_client.py",
-        "line": 6399,
+        "line": 6448,
         "params": [
           {
             "name": "points",

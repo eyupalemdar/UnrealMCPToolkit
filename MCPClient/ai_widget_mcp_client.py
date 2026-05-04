@@ -6335,6 +6335,55 @@ def get_anim_blueprint_info(asset_path: str) -> str:
     return _send_generated_tcp_tool("get_anim_blueprint_info", locals())
 
 
+@mcp.tool()
+def animation_asset_info(
+    asset_path: str,
+    include_notifies: bool = True,
+    include_curves: bool = True,
+    include_montage: bool = True,
+    include_sequence: bool = True,
+    include_skeleton: bool = True,
+    include_data_model: bool = True,
+    include_markers: bool = True,
+    include_references: bool = True,
+    notify_limit: int = 128,
+    curve_limit: int = 256,
+    marker_limit: int = 128,
+    track_name_limit: int = 256,
+    slot_limit: int = 64,
+    section_limit: int = 128,
+    segment_limit: int = 128,
+    reference_limit: int = 256,
+) -> str:
+    """
+    Inspect an AnimSequence or AnimMontage asset without mutating it.
+
+    Args:
+        asset_path: Animation asset path, e.g. "/Game/Characters/Animations/A_Run".
+        include_notifies: Include animation notify and notify-state summaries.
+        include_curves: Include float curve names, flags, and key counts.
+        include_montage: Include montage sections, slots, and segment references.
+        include_sequence: Include AnimSequence root motion, additive, interpolation, and model data.
+        include_skeleton: Include target skeleton reference and bone counts.
+        include_data_model: Include AnimSequence source model frame/key/track counts.
+        include_markers: Include AnimSequence sync marker names.
+        include_references: Include referenced animation assets.
+        notify_limit: Maximum notifies returned.
+        curve_limit: Maximum float curves returned.
+        marker_limit: Maximum marker names returned.
+        track_name_limit: Maximum source bone track names returned.
+        slot_limit: Maximum montage slots returned.
+        section_limit: Maximum montage sections returned.
+        segment_limit: Maximum montage segments returned per slot.
+        reference_limit: Maximum referenced animation assets returned.
+
+    Returns:
+        JSON with timing, skeleton, notifies, curves, data model, references,
+        and montage-specific slots/sections when applicable.
+    """
+    return _send_generated_tcp_tool("animation_asset_info", locals())
+
+
 # =============================================================================
 # SEQUENCER / LEVEL SEQUENCE INSPECTION
 # =============================================================================

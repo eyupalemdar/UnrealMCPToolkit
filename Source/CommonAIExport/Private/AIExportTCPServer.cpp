@@ -333,6 +333,7 @@ const TArray<FAIExportTCPServer::FCommandDescriptor>& FAIExportTCPServer::GetCom
 
 		AI_COMMAND_PARAMS("create_anim_blueprint", "AnimBlueprint", true, 60, HandleCreateAnimBlueprint),
 		AI_COMMAND_PARAMS("get_anim_blueprint_info", "AnimBlueprint", false, 60, HandleGetAnimBlueprintInfo),
+		AI_COMMAND_PARAMS("animation_asset_info", "AnimationAsset", false, 60, HandleAnimationAssetInfo),
 		AI_COMMAND_PARAMS("sequencer_asset_info", "Sequencer", false, 60, HandleSequencerAssetInfo),
 		AI_COMMAND_PARAMS("spline_actor_create", "Spline", true, 60, HandleSplineActorCreate),
 		AI_COMMAND_PARAMS("spline_component_info", "Spline", false, 60, HandleSplineComponentInfo),

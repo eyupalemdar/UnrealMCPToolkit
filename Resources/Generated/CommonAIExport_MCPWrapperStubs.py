@@ -1787,6 +1787,30 @@ def get_anim_blueprint_info(asset_path: str) -> str:
     return _format_response(_send_command("get_anim_blueprint_info", params))
 
 
+def animation_asset_info(asset_path: str, include_notifies: bool = True, include_curves: bool = True, include_montage: bool = True, include_sequence: bool = True, include_skeleton: bool = True, include_data_model: bool = True, include_markers: bool = True, include_references: bool = True, notify_limit: int = 128, curve_limit: int = 256, marker_limit: int = 128, track_name_limit: int = 256, slot_limit: int = 64, section_limit: int = 128, segment_limit: int = 128, reference_limit: int = 256) -> str:
+    """Generated stub for TCP command `animation_asset_info` (AnimationAsset)."""
+    params = {
+        "asset_path": asset_path,
+        "include_notifies": include_notifies,
+        "include_curves": include_curves,
+        "include_montage": include_montage,
+        "include_sequence": include_sequence,
+        "include_skeleton": include_skeleton,
+        "include_data_model": include_data_model,
+        "include_markers": include_markers,
+        "include_references": include_references,
+        "notify_limit": notify_limit,
+        "curve_limit": curve_limit,
+        "marker_limit": marker_limit,
+        "track_name_limit": track_name_limit,
+        "slot_limit": slot_limit,
+        "section_limit": section_limit,
+        "segment_limit": segment_limit,
+        "reference_limit": reference_limit,
+    }
+    return _format_response(_send_command("animation_asset_info", params))
+
+
 def sequencer_asset_info(asset_path: str, include_sections: bool = True, binding_limit: int = 200, track_limit: int = 200, section_limit: int = 500) -> str:
     """Generated stub for TCP command `sequencer_asset_info` (Sequencer)."""
     params = {
