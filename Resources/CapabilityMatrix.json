@@ -119,7 +119,7 @@
         "import_font"
       ],
       "client_tools": [],
-      "extension_policy": "Extend this capability for additional Unreal import factories that ingest files from disk."
+      "extension_policy": "Extend this capability for additional Unreal import factories that ingest files from disk. File validation, package creation, factory calls, and save/registry updates belong in UAIAssetImportBuilder rather than CommandHandlers."
     },
     {
       "id": "runtime_diagnostics",

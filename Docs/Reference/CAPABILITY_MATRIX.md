@@ -50,6 +50,10 @@ Current audit notes:
   mutation, and CSV import are reusable asset authoring. It does not need a
   dedicated exporter unless DataTable is added to canonical `export_asset`
   coverage.
+- `import_asset_files` uses `UAIAssetImportBuilder` because external file
+  ingestion creates persistent Unreal assets and should not live in transport
+  handlers. Exporters are not involved; imported Texture and Font assets are
+  covered by their own read/export surfaces.
 - Static Mesh, Skeletal Mesh, Animation, Niagara, Sequencer, Landscape, Foliage,
   PCG, and level-structure commands are currently read-only diagnostics, so
   adding Builders or Exporters would duplicate the existing command response
