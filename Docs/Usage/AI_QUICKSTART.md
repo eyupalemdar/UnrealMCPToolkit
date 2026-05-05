@@ -67,7 +67,7 @@ For UI transfer/TSpec validation:
 powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
 
 # From a host Unreal project where the plugin is installed
-powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
+powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/UI_TSpecs
 ```
 
 ```bash
@@ -89,7 +89,7 @@ asset_search(path="/Game/UI", limit=20)
 editor_log_read(max_lines=200, filter="Error")
 asset_transfer_plan(source_asset_path="/Game/UI/Hud/W_MainMenu", source_editor_id="<source>", target_editor_id="<target>")
 asset_transfer_execute(source_asset_path="/Game/UI/Hud/W_MainMenu", source_editor_id="<source>", target_editor_id="<target>", scope="write", dry_run=False)
-code_transfer_plan(source_paths=["Source/OkeyGame/Public/MyClass.h"], source_editor_id="<source>", target_editor_id="<target>")
+code_transfer_plan(source_paths=["Source/ExampleProject/Public/MyClass.h"], source_editor_id="<source>", target_editor_id="<target>")
 ```
 
 ---

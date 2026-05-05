@@ -8,7 +8,7 @@
 - State behavior:
 - Color relationship:
 
-## Okey / Product Translation
+## Product Translation
 
 - Product-specific vocabulary:
 - Component choices:
@@ -36,4 +36,3 @@
 - Root shell:
 - Capture matrix:
 - Open design-system debt:
-

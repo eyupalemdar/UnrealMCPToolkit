@@ -23,7 +23,6 @@ Turkish overview: [README.tr.md](README.tr.md).
 | Goal | Document |
 |---|---|
 | Configure an AI assistant and run first commands | [Usage/AI_QUICKSTART.md](Usage/AI_QUICKSTART.md) |
-| Package UE 5.7 Win64 and Linux builds | [Usage/BUILD_PLUGIN.md](Usage/BUILD_PLUGIN.md) |
 | Understand asset export, formats, simplifiers, and commandlet usage | [Usage/EXPORT_SYSTEM.md](Usage/EXPORT_SYSTEM.md) |
 | See every tool and workflow gotcha in one place | [Reference/AI_REFERENCE.md](Reference/AI_REFERENCE.md) |
 | Review generated command and schema coverage | [../Resources/Generated/MCPToolkit_ToolCatalog.md](../Resources/Generated/MCPToolkit_ToolCatalog.md) |
@@ -85,7 +84,7 @@ powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
 From a host project with the plugin installed:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
+powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/UI_TSpecs
 ```
 
 ## Naming and Compatibility

@@ -936,7 +936,7 @@ FString FMCTHttpMcpServer::HandleMcpJsonRpc(const FString& RequestJson, const FS
 			Prompt->SetStringField(TEXT("description"), Description);
 			Prompts.Add(MakeShared<FJsonValueObject>(Prompt));
 		};
-		AddPrompt(TEXT("build_fix_test"), TEXT("Guarded ProjectOkey build/fix/test workflow"));
+		AddPrompt(TEXT("build_fix_test"), TEXT("Guarded project build/fix/test workflow"));
 		AddPrompt(TEXT("asset_safety_review"), TEXT("Review an Unreal asset before copying, deleting, or mutating it"));
 		AddPrompt(TEXT("multi_editor_transfer"), TEXT("Plan guarded transfer between open Unreal projects"));
 		AddPrompt(TEXT("ui_transfer_validation"), TEXT("Validate UI transfer tasks before production Widget Blueprint mutation"));
@@ -959,7 +959,7 @@ FString FMCTHttpMcpServer::HandleMcpJsonRpc(const FString& RequestJson, const FS
 		FString PromptText;
 		if (Name == TEXT("build_fix_test"))
 		{
-			PromptText = TEXT("Use the guarded build workflow. Do not use Live Coding. Relaunch Unreal Editor through the existing VS2022 OkeyGame.sln Local Windows Debugger/F5 session. Check project_status, guarded build logs, and editor logs before and after fixes.");
+			PromptText = TEXT("Use the host project's guarded build workflow. Do not use Live Coding. If the editor must be relaunched, use the host project's documented launch/debug workflow. Check project_status, guarded build logs, and editor logs before and after fixes.");
 		}
 		else if (Name == TEXT("asset_safety_review"))
 		{
@@ -971,7 +971,7 @@ FString FMCTHttpMcpServer::HandleMcpJsonRpc(const FString& RequestJson, const FS
 		}
 		else if (Name == TEXT("ui_transfer_validation"))
 		{
-			PromptText = TEXT("Before mutating production UI assets, read AI_UI_TRANSFER.md, Docs/AI_UI_Transfer/START_HERE.md, CommonUI architecture docs, and relevant component recipes. Ensure a TSpec exists and passes Scripts/ValidateUITSpecs.ps1. Probe uncertain components under /Game/UI/_AIProbe first.");
+			PromptText = TEXT("Before mutating production UI assets, read Docs/AI_UI_Transfer/README.md, Docs/AI_UI_Transfer/START_HERE.md, CommonUI architecture docs, and relevant component recipes. Ensure a TSpec exists and passes Resources/Scripts/ValidateUITSpecs.ps1. Probe uncertain components under /Game/UI/_AIProbe first.");
 		}
 		else if (Name == TEXT("blueprint_graph_inspection"))
 		{

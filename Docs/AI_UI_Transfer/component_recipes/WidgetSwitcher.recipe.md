@@ -10,10 +10,10 @@ one child should be visible/active at a time.
 Targeted UE source files:
 
 ```text
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\UMG\Public\Components\WidgetSwitcher.h
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\UMG\Private\Components\WidgetSwitcher.cpp
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\UMG\Public\Components\WidgetSwitcherSlot.h
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\UMG\Private\Components\WidgetSwitcherSlot.cpp
+<UE_ROOT>\Engine\Source\Runtime\UMG\Public\Components\WidgetSwitcher.h
+<UE_ROOT>\Engine\Source\Runtime\UMG\Private\Components\WidgetSwitcher.cpp
+<UE_ROOT>\Engine\Source\Runtime\UMG\Public\Components\WidgetSwitcherSlot.h
+<UE_ROOT>\Engine\Source\Runtime\UMG\Private\Components\WidgetSwitcherSlot.cpp
 ```
 
 Key facts:
@@ -62,4 +62,3 @@ Required checks:
 
 If this fails twice, stop and follow `../UE_COMPONENT_PROTOCOL.md` blocker
 handling.
-

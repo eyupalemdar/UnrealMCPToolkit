@@ -1027,11 +1027,11 @@ COMMONAI_PROMPTS = {
     "build_fix_test": {
         "description": "Guarded build-fix-test workflow for this project.",
         "template": (
-            "Use the guarded build workflow for ProjectOkey. Do not use Live Coding. "
+            "Use the host project's guarded build workflow. Do not use Live Coding. "
             "If the editor must be relaunched after a build, open it through the existing "
-            "VS2022 OkeyGame.sln Local Windows Debugger/F5 session. Check project_status, "
-            "guarded_build_status, editor_log_read(filter='Error'), then make the smallest "
-            "code change needed and rerun the contract/build checks."
+            "host project launch/debug workflow. Check project_status, guarded_build_status, "
+            "editor_log_read(filter='Error'), then make the smallest code change needed and "
+            "rerun the contract/build checks."
         ),
     },
     "asset_safety_review": {
@@ -1055,9 +1055,9 @@ COMMONAI_PROMPTS = {
     "ui_transfer_validation": {
         "description": "Validate a UI transfer task before touching production Widget Blueprints.",
         "template": (
-            "Before mutating production UI assets, read AI_UI_TRANSFER.md, "
+            "Before mutating production UI assets, read Docs/AI_UI_Transfer/README.md, "
             "Docs/AI_UI_Transfer/START_HERE.md, CommonUI architecture docs, and the relevant "
-            "component recipe. Ensure a TSpec exists and passes Scripts/ValidateUITSpecs.ps1. "
+            "component recipe. Ensure a TSpec exists and passes Resources/Scripts/ValidateUITSpecs.ps1. "
             "For uncertain components, use a probe WBP under /Game/UI/_AIProbe first, then update "
             "the recipe/matrix before touching production assets."
         ),
@@ -1076,8 +1076,8 @@ COMMONAI_PROMPTS = {
         "template": (
             "Start with project_status, server_status, pie_status, editor_log_read(filter='Error'), "
             "commonai_resource_read('commonai://audit/http'), and guarded_build_status. Reproduce in PIE "
-            "only when needed. Keep changes small, rerun smoke_mcp_runtime.py, and relaunch through VS2022 "
-            "Local Windows Debugger/F5 after guarded builds."
+            "only when needed. Keep changes small, rerun smoke_mcp_runtime.py when available, and "
+            "relaunch through the host project's documented launch workflow after guarded builds."
         ),
     },
 }
@@ -1217,7 +1217,7 @@ def commonai_http_audit_resource() -> str:
 
 @mcp.prompt("build_fix_test")
 def build_fix_test_prompt() -> str:
-    """Guarded ProjectOkey build/fix/test prompt."""
+    """Guarded project build/fix/test prompt."""
     return _prompt_payload("build_fix_test")["prompt"]
 
 
@@ -5214,7 +5214,7 @@ def add_cdo_array_element(
         array_name: Name of the TArray property on the CDO
         element_values: JSON object string of sub-property name -> value pairs.
                        Example: '{"TabNameID": "Play", "TabText": "NSLOCTEXT(\\"\\", \\"\\", \\"PLAY\\")"}'
-        class_name: Full class path for instanced UObject arrays (e.g. "/Script/OkeyGame.OkeyAction_ConfigureGameInstance").
+        class_name: Full class path for instanced UObject arrays (e.g. "/Script/YourProject.YourInstancedObject").
                    Leave empty for struct/simple type arrays.
         scope: Optional scope. Execution requires write scope when metadata is provided.
         dry_run: If True, validate scope and return without adding an element.

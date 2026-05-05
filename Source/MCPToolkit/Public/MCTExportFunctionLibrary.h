@@ -108,7 +108,7 @@ public:
 	/**
 	 * Export any supported asset type by path.
 	 * This is the primary function for TCP/external tool integration.
-	 * @param AssetPath Full asset path (e.g., "/Game/Maps/L_StandardOkey")
+	 * @param AssetPath Full asset path (e.g., "/Game/Maps/L_ExampleMap")
 	 * @param OutputDirectory Output directory for export files
 	 * @param bBothFormats If true, exports both raw and simplified formats
 	 * @return Export result with file paths and status

@@ -72,11 +72,11 @@ UClass* UMCTAssetFactory::ResolveAssetClass(const FString& AssetType)
 		return UPhysicalMaterial::StaticClass();
 
 	// Generic fallback — resolve any loaded concrete UObject class by short or
-	// fully-qualified name. Enables DataAsset subclasses (UOkeySkinDefinition
-	// etc.) without extending the hardcoded switch for every project type.
+	// fully-qualified name. Enables project DataAsset subclasses without
+	// extending the hardcoded switch for every project type.
 	if (!AssetType.IsEmpty())
 	{
-		// 1) Try direct object lookup by path (e.g. "/Script/OkeyGame.OkeySkinDefinition")
+		// 1) Try direct object lookup by path (e.g. "/Script/YourProject.YourDataAssetDefinition")
 		if (UClass* ByPath = FindObject<UClass>(nullptr, *AssetType))
 		{
 			if (!ByPath->HasAnyClassFlags(CLASS_Abstract))

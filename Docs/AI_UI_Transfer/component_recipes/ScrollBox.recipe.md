@@ -10,12 +10,12 @@ scrollbar only when the content is larger than the available viewport.
 Targeted UE source files:
 
 ```text
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\UMG\Public\Components\ScrollBox.h
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\UMG\Private\Components\ScrollBox.cpp
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\UMG\Public\Components\ScrollBoxSlot.h
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\UMG\Private\Components\ScrollBoxSlot.cpp
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\Slate\Private\Widgets\Layout\SScrollBox.cpp
-D:\Programlama\Projeler\UnrealEngine\Engine\Source\Runtime\Slate\Private\Widgets\Layout\SScrollBar.cpp
+<UE_ROOT>\Engine\Source\Runtime\UMG\Public\Components\ScrollBox.h
+<UE_ROOT>\Engine\Source\Runtime\UMG\Private\Components\ScrollBox.cpp
+<UE_ROOT>\Engine\Source\Runtime\UMG\Public\Components\ScrollBoxSlot.h
+<UE_ROOT>\Engine\Source\Runtime\UMG\Private\Components\ScrollBoxSlot.cpp
+<UE_ROOT>\Engine\Source\Runtime\Slate\Private\Widgets\Layout\SScrollBox.cpp
+<UE_ROOT>\Engine\Source\Runtime\Slate\Private\Widgets\Layout\SScrollBar.cpp
 ```
 
 Key facts:
@@ -34,7 +34,7 @@ For a tab inside a `WidgetSwitcher`, make the switcher child the scrollbox and
 put the original content panel inside it:
 
 ```text
-add_widget(parent_wbp, "/Game/UI/Menu/OkeyScrollBox", "AudioContentScroll", "ContentSwitcher")
+add_widget(parent_wbp, "/Game/UI/Menu/MenuScrollBox", "AudioContentScroll", "ContentSwitcher")
 move_widget(parent_wbp, "AudioContent", "AudioContentScroll")
 set_slot_property(parent_wbp, "AudioContent", "Padding", "(Left=40,Top=48,Right=40,Bottom=0)")
 set_widget_property(parent_wbp, "AudioContentScroll", "AlwaysShowScrollbar", "False")
@@ -55,7 +55,7 @@ set_widget_property(parent_wbp, "AudioContentScroll", "AlwaysShowScrollbarTrack"
 Required checks:
 
 1. `get_widget_tree` shows the `WidgetSwitcher` children in enum order.
-2. Each overflow-capable tab root is an `OkeyScrollBox_C`.
+2. Each overflow-capable tab root is a `MenuScrollBox_C`.
 3. The content panel inside each scrollbox has a `ScrollBoxSlot`.
 4. Runtime captures show the content inset from the scroll viewport and no
    visible scrollbar on tabs that do not overflow.

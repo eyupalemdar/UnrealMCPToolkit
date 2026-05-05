@@ -27,7 +27,6 @@ Guncel yuzey:
 | Ihtiyac | Dokuman |
 |---|---|
 | AI asistani ayarlamak ve ilk komutlari calistirmak | [Usage/AI_QUICKSTART.md](Usage/AI_QUICKSTART.md) |
-| UE 5.7 Win64 ve Linux paketleri almak | [Usage/BUILD_PLUGIN.md](Usage/BUILD_PLUGIN.md) |
 | Export sistemi, formatlar ve commandlet kullanimi | [Usage/EXPORT_SYSTEM.md](Usage/EXPORT_SYSTEM.md) |
 | Tum araclar ve kritik notlar | [Reference/AI_REFERENCE.md](Reference/AI_REFERENCE.md) |
 | Generated tool katalogu | [../Resources/Generated/MCPToolkit_ToolCatalog.md](../Resources/Generated/MCPToolkit_ToolCatalog.md) |
@@ -65,7 +64,7 @@ powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
 Plugin bir host Unreal projesine kuruluyken:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
+powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/UI_TSpecs
 ```
 
 Bilesen davranisi belirsizse once

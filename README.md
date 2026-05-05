@@ -61,7 +61,6 @@ artifacts live under `Resources/Generated/`.
 | Need | Read |
 |---|---|
 | Setup and first tool calls | [Docs/Usage/AI_QUICKSTART.md](Docs/Usage/AI_QUICKSTART.md) |
-| Build UE 5.7 Win64/Linux packages | [Docs/Usage/BUILD_PLUGIN.md](Docs/Usage/BUILD_PLUGIN.md) |
 | Export architecture and formats | [Docs/Usage/EXPORT_SYSTEM.md](Docs/Usage/EXPORT_SYSTEM.md) |
 | Full AI tool reference | [Docs/Reference/AI_REFERENCE.md](Docs/Reference/AI_REFERENCE.md) |
 | Generated tool catalog | [Resources/Generated/MCPToolkit_ToolCatalog.md](Resources/Generated/MCPToolkit_ToolCatalog.md) |
@@ -83,7 +82,7 @@ powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
 For an installed plugin inside a host project:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/Tasarim/UI_TSpecs
+powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/UI_TSpecs
 ```
 
 If a component behavior is uncertain, use the component recipes in
@@ -106,12 +105,6 @@ UnrealEditor-Cmd.exe "Project.uproject" -run=MCTExport -asset="/Game/UI/W_Menu" 
 More export details: [Docs/Usage/EXPORT_SYSTEM.md](Docs/Usage/EXPORT_SYSTEM.md).
 
 ## Validation
-
-Package UE 5.7 Win64 and Linux builds:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File Resources/Scripts/BuildPlugin.ps1
-```
 
 Run these after command, wrapper, matrix, or documentation-generation changes:
 

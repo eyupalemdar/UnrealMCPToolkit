@@ -8,23 +8,17 @@
   detailed docs instead of duplicating long reference material.
 - Added `Docs/README.md` as the primary English documentation index.
 - Added `Docs/README.tr.md` as a Turkish secondary-language overview.
-- Added `Docs/Usage/BUILD_PLUGIN.md` for UE 5.7 Win64/Linux packaging.
 - Added `Docs/Usage/EXPORT_SYSTEM.md` for exporter architecture, output
   formats, simplifier scripts, commandlet usage, and troubleshooting.
 
-### Build
+### Changed
 
-- Added `Resources/Scripts/BuildPlugin.ps1` as a repo-local BuildPlugin wrapper.
-- Defaulted plugin packaging to UE 5.7 for both `Win64` and `Linux`.
-- Declared `SupportedTargetPlatforms` as `Win64` and `Linux` in
-  `MCPToolkit.uplugin`.
-- Added UE 5.7 Linux toolchain discovery for
-  `C:\UnrealToolchains\v26_clang-20.1.8-rockylinux8\`.
-- Stamped packaged `.uplugin` descriptors with `EngineVersion: "5.7.0"` without
-  modifying the source `MCPToolkit.uplugin`.
+- Generalized host-project-specific prompts, sample paths, and recipe source
+  references so plugin docs and MCP prompt surfaces stay project-independent.
 
 ### Removed
 
+- Removed repo-local packaging documentation and wrapper scripts.
 - Removed the legacy reflected-type redirect config from
   `Config/DefaultEngine.ini`.
 
@@ -145,4 +139,3 @@ Related commit:
 
 - `python Resources/Scripts/validate_mcp_contract.py`
 - `python Resources/Scripts/test_mcp_contract.py`
-- UE 5.7 `BuildPlugin -TargetPlatforms=Win64`

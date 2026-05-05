@@ -108,7 +108,7 @@ Supported commandlet parameters:
 Automation wrapper examples:
 
 ```powershell
-python Resources/Scripts/export_asset.py --asset /Game/UI/W_Menu --project D:\Projects\MyGame\MyGame.uproject
+python Resources/Scripts/export_asset.py --asset /Game/UI/W_Menu --project <PROJECT_ROOT>\ExampleProject.uproject
 python Resources/Scripts/export_asset.py Dev\AIExports\W_Menu_raw.txt
 ```
 

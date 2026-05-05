@@ -709,7 +709,6 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
             "runtime_async_load_diagnostics",
             {
                 "world": "auto",
-                "asset_path": "/Game/Maps/L_OkeyFrontEnd",
                 "include_package_probes": True,
                 "include_streamable_handles": True,
                 "include_streaming_manager": True,
