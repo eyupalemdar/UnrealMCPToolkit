@@ -1,7 +1,7 @@
-# MCPToolkit — AI Reference Guide
+# MCPToolkit - AI Reference Guide
 
 > **Read this file to understand ALL plugin capabilities in one place.**
-> 198 MCP tools across 37 TCP command categories plus client-only tools. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
+> 198 MCP tools across 38 TCP command categories plus client-only tools. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
 
 ## Architecture
 

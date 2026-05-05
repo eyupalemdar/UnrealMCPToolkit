@@ -10,6 +10,7 @@ When configured in an MCP-capable AI assistant, the generated tool surface becom
 **MCP Client**: `Plugins/MCPToolkit/MCPClient/ai_widget_mcp_client.py`
 
 For full tool reference: **[AI_REFERENCE.md](../Reference/AI_REFERENCE.md)**
+For the documentation index: **[Docs README](../README.md)**
 
 ### 2. Direct TCP (For scripts, other AI tools)
 
@@ -105,7 +106,7 @@ code_transfer_plan(source_paths=["Source/OkeyGame/Public/MyClass.h"], source_edi
 | **Export Assets** | Widget BP, Blueprint, AnimBP, DataAsset, DataTable, Material, World, Audio, Texture |
 | **Control Editor Worlds** | Inspect editor world, list/spawn/move/delete actors, open/save levels, PIE status/start/stop |
 | **Inspect Project Health** | Search assets, run light asset validation, read editor logs, source-control status, guarded build status |
-| **Use Context Resources** | Read CommonAI resources/prompts and export MCP metadata/command manifests |
+| **Use Context Resources** | Read MCPToolkit resources/prompts and export MCP metadata/command manifests. Compatibility tool names and URIs currently use `commonai` names. |
 | **Probe Native HTTP/MCP** | Check C++ localhost HTTP health and JSON-RPC MCP tools/list |
 | **Multi-Editor** | Discover open UE projects and route MCPToolkit commands to a selected editor |
 | **Transfer Code** | Plan, copy, and verify C++/config files with hash/collision checks |
@@ -122,6 +123,8 @@ Each export produces 3 files:
 
 Output: `Dev/AIExports/` mirroring Content folder structure.
 
+Full export documentation: **[EXPORT_SYSTEM.md](EXPORT_SYSTEM.md)**
+
 ---
 
 ## Critical Path Formats
@@ -134,4 +137,4 @@ Generated class:  WidgetBlueprintGeneratedClass'/Game/UI/Path/W_Widget.W_Widget_
 
 ---
 
-For comprehensive documentation: **[AI_REFERENCE.md](../Reference/AI_REFERENCE.md)** | **[README.md](../../README.md)**
+For comprehensive documentation: **[AI_REFERENCE.md](../Reference/AI_REFERENCE.md)** | **[Docs README](../README.md)**

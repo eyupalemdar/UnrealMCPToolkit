@@ -1,50 +1,84 @@
 # Changelog
 
+## Unreleased
+
+### Documentation
+
+- Reworked the root `README.md` into a concise GitHub entry point that links to
+  detailed docs instead of duplicating long reference material.
+- Added `Docs/README.md` as the primary English documentation index.
+- Added `Docs/README.tr.md` as a Turkish secondary-language overview.
+- Added `Docs/Usage/BUILD_PLUGIN.md` for UE 5.7 Win64/Linux packaging.
+- Added `Docs/Usage/EXPORT_SYSTEM.md` for exporter architecture, output
+  formats, simplifier scripts, commandlet usage, and troubleshooting.
+
+### Build
+
+- Added `Resources/Scripts/BuildPlugin.ps1` as a repo-local BuildPlugin wrapper.
+- Defaulted plugin packaging to UE 5.7 for both `Win64` and `Linux`.
+- Declared `SupportedTargetPlatforms` as `Win64` and `Linux` in
+  `MCPToolkit.uplugin`.
+- Added UE 5.7 Linux toolchain discovery for
+  `C:\UnrealToolchains\v26_clang-20.1.8-rockylinux8\`.
+- Stamped packaged `.uplugin` descriptors with `EngineVersion: "5.7.0"` without
+  modifying the source `MCPToolkit.uplugin`.
+
+### Removed
+
+- Removed the legacy reflected-type redirect config from
+  `Config/DefaultEngine.ini`.
+
 ## 2026-05-05 - Unreal MCP Toolkit Rename
 
-Renamed the plugin identity from CommonAIExport to Unreal MCP Toolkit with
-`MCPToolkit` as the module name, `MCT` as the C++ type prefix, and
-`MCPTOOLKIT_API` as the module API macro. Added CoreRedirects for reflected
-types so existing projects can migrate old `/Script/CommonAIExport` references.
-New HTTP/MCP env variables use `MCPTOOLKIT_*`, with old `COMMONAI_*` and
-`COMMONAIEXPORT_*` names kept as compatibility fallbacks.
+### Changed
+
+- Renamed the plugin identity from `CommonAIExport` to `Unreal MCP Toolkit`.
+- Renamed the module to `MCPToolkit`, the C++ type prefix to `MCT`, and the
+  module API macro to `MCPTOOLKIT_API`.
+- Switched generated artifacts and plugin metadata to the `MCPToolkit` naming
+  surface.
+- Added `MCPTOOLKIT_*` HTTP/MCP environment variable names while keeping
+  existing `COMMONAI_*` and `COMMONAIEXPORT_*` names as compatibility fallbacks
+  where those external clients still depend on them.
 
 ## 2026-05-05 - MCPToolkit Unreal Automation Layering Pass
 
-### Changelist 1 - Agent And UI Transfer Guardrails
+### Agent And UI Transfer Guardrails
 
-Codified the agent workflow rules, removed vendor-specific assistant references,
-and documented the TSpec-first UI transfer workflow. This makes future WBP/UI
-automation safer by forcing recipe and schema validation before production asset
-mutation.
+- Documented the TSpec-first UI transfer workflow.
+- Added agent workflow guardrails for Widget Blueprint mutation.
+- Removed vendor-specific assistant references from the UI transfer docs.
 
-Commits:
+Related commits:
+
 - `8961ac5` docs: add UI transfer TSpec workflow
 - `85eff2a` docs: add agent workflow guardrails
 - `597fbcf` docs: remove vendor-specific assistant references
 
-### Changelist 2 - Native Automation Surface Expansion
+### Native Automation Surface Expansion
 
-Expanded the Unreal TCP/MCP command surface with project config automation,
-reflection/type discovery, runtime component hierarchy details, and a capability
-matrix validator. This established the first mechanical coverage check for new
-native commands and Python MCP tools.
+- Added project config automation commands.
+- Added reflection/type discovery commands.
+- Added runtime component hierarchy details.
+- Added the first capability matrix validation layer for native commands and
+  Python MCP tools.
 
-Commits:
+Related commits:
+
 - `565d34b` feat: add Unreal automation command coverage
 - `6be4801` feat: add project config automation commands
 - `36390c2` feat: add reflected type discovery commands
 - `33ea875` chore: add capability matrix validation
 - `3f29e62` feat: add runtime component hierarchy details
 
-### Changelist 3 - World, Asset, And Domain Diagnostics
+### World, Asset, And Domain Diagnostics
 
-Added targeted read-only diagnostics for Sequencer, spline actors, landscape,
-foliage, PCG, level structure, StaticMesh, SkeletalMesh, animation assets, and
-Niagara. These stay command-owned because they provide scoped inspection
-responses rather than canonical asset export or reusable asset mutation.
+- Added read-only diagnostics for Sequencer, landscape, foliage, PCG, level
+  structure, StaticMesh, SkeletalMesh, animation assets, and Niagara.
+- Added spline actor authoring commands for editor spline workflows.
 
-Commits:
+Related commits:
+
 - `30190a2` feat: add sequencer asset inspection
 - `824fd6a` feat: add spline actor authoring commands
 - `93b1f21` feat: add landscape diagnostics commands
@@ -56,53 +90,56 @@ Commits:
 - `2019bee` feat: add animation asset diagnostics
 - `e7fb2cd` feat: add niagara asset diagnostics
 
-### Changelist 4 - Builder Layer Refactors
+### Builder Layer Refactors
 
-Moved reusable asset mutation logic out of transport handlers into dedicated
-Builder classes for Blueprint SCS components, DataTables, and asset imports.
-CommandHandlers now parse JSON and format responses while Builders own Unreal
-asset construction/mutation APIs.
+- Moved reusable Unreal asset mutation logic out of transport handlers and into
+  dedicated Builder classes.
+- Added Builders for Blueprint SCS components, DataTables, and asset imports.
+- Kept command handlers focused on JSON parsing, scheduling, and responses.
 
-Commits:
+Related commits:
+
 - `073822b` feat: add blueprint component authoring commands
 - `eafd64a` refactor: add blueprint component builder
 - `45373c4` refactor: add data table builder
 - `0e38e23` refactor: add asset import builder
 
-### Changelist 5 - DataTable Export Coverage
+### DataTable Export Coverage
 
-Added canonical DataTable export support and made supported export types
-registry-driven. DataTable rows and row struct metadata are now covered by
-`UMCTDataTableExporter`, with docs synced to the new export surface.
+- Added canonical DataTable export support through `UMCTDataTableExporter`.
+- Made supported export type documentation registry-driven.
+- Documented DataTable rows and row struct metadata as supported export content.
 
-Commits:
+Related commits:
+
 - `516ca82` docs: record command layering audit
 - `a9e0822` feat: add data table exporter
 - `1b21820` docs: sync data table export support
 - `6f38804` refactor: trim export command includes
 
-### Changelist 6 - Capability Layer Enforcement
+### Capability Layer Enforcement
 
-Added a second matrix, `Resources/CapabilityLayerMatrix.json`, that records the
-Builder/Exporter decision for every capability. Contract validation now rejects
-missing layer decisions, stale handler references, and invalid Builder/Exporter
-class references.
+- Added `Resources/CapabilityLayerMatrix.json`.
+- Extended contract validation to reject missing layer decisions, stale handler
+  references, and invalid Builder/Exporter class references.
 
-Commits:
+Related commit:
+
 - `3707b04` test: enforce capability layer matrix
 
-### Changelist 7 - Commandlet Export And Widget Reordering
+### Commandlet Export And Widget Reordering
 
-Completed the Python export wrapper path so automation clients can run the
-existing `MCTExport` commandlet directly instead of falling back to manual copy
-instructions. The wrapper now resolves the host project, UnrealEditor-Cmd,
-output directory, commandlet mode, and simplified output path while preserving
-manual `_raw.txt` simplification.
+- Completed the Python export wrapper path for running the `MCTExport`
+  commandlet directly from automation clients.
+- Added host project, UnrealEditor-Cmd, output directory, commandlet mode, and
+  simplified output path resolution to `Resources/Scripts/export_asset.py`.
+- Implemented index-aware Widget Blueprint moves using UE 5.7 panel APIs.
+- Preserved compatible slot data during widget moves, rejected self/descendant
+  moves, and returned the applied index in handler responses.
 
-Implemented index-aware widget moves using UE 5.7 `UPanelWidget` APIs. Widget
-reordering now uses `ShiftChild` for same-parent moves and `InsertChildAt` for
-cross-parent moves, keeps compatible slot data through slot templates, rejects
-self/descendant moves, and returns the applied index in the handler response.
+Related commit:
+
+- `4eb7754` fix: complete commandlet export and widget reordering
 
 ## Validation
 

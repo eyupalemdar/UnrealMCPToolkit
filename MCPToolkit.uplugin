@@ -5,6 +5,10 @@
 	"FriendlyName": "Unreal MCP Toolkit",
 	"Description": "AI/MCP-powered Unreal Editor toolkit for automation, asset export, diagnostics, Blueprint tooling, and safe UI mutation.",
 	"Category": "Editor",
+	"SupportedTargetPlatforms": [
+		"Win64",
+		"Linux"
+	],
 	"CreatedBy": "Alemdar Labs",
 	"CreatedByURL": "",
 	"DocsURL": "",
