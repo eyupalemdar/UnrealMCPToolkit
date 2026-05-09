@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import json
 import os
 import socket
@@ -31,6 +32,9 @@ def _project_root() -> Path:
 
 
 PROJECT_ROOT = _project_root()
+MUTATING_SMOKE_LOCK_PATH = PROJECT_ROOT / "Intermediate" / "MCPToolkit_mutating_smoke.lock"
+MUTATING_SMOKE_LOCK_TIMEOUT_SECONDS = int(os.environ.get("MCPTOOLKIT_MUTATING_SMOKE_LOCK_TIMEOUT_SECONDS", "600"))
+MUTATING_SMOKE_LOCK_STALE_SECONDS = int(os.environ.get("MCPTOOLKIT_MUTATING_SMOKE_LOCK_STALE_SECONDS", "7200"))
 
 
 def _read_port(filename: str, default: int = 0) -> int:
@@ -195,10 +199,75 @@ def _cleanup_smoke_asset(tcp_port: int, asset_path: str, *, allow_missing: bool 
     return _delete_smoke_asset(tcp_port, asset_path, force=True, allow_missing=False)
 
 
+def _unique_smoke_asset_name(prefix: str) -> str:
+    return f"{prefix}_{os.getpid()}_{int(time.time() * 1000)}"
+
+
+@contextmanager
+def _mutating_smoke_lock(timeout_seconds: int = MUTATING_SMOKE_LOCK_TIMEOUT_SECONDS):
+    """Serialize mutating smoke runs across Python processes for the same project."""
+    MUTATING_SMOKE_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + max(timeout_seconds, 1)
+    lock_info = {
+        "path": str(MUTATING_SMOKE_LOCK_PATH),
+        "pid": os.getpid(),
+        "acquired": False,
+        "released": False,
+    }
+    payload = json.dumps(
+        {
+            "pid": os.getpid(),
+            "started_at_unix": time.time(),
+            "script": str(Path(__file__).resolve()),
+        },
+        indent=2,
+    )
+
+    while True:
+        try:
+            fd = os.open(str(MUTATING_SMOKE_LOCK_PATH), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(payload)
+            lock_info["acquired"] = True
+            break
+        except FileExistsError:
+            try:
+                lock_age_seconds = time.time() - MUTATING_SMOKE_LOCK_PATH.stat().st_mtime
+                if lock_age_seconds > MUTATING_SMOKE_LOCK_STALE_SECONDS:
+                    MUTATING_SMOKE_LOCK_PATH.unlink()
+                    continue
+            except FileNotFoundError:
+                continue
+            except OSError:
+                pass
+
+            if time.monotonic() >= deadline:
+                try:
+                    owner = MUTATING_SMOKE_LOCK_PATH.read_text(encoding="utf-8").strip()
+                except OSError:
+                    owner = "<unreadable>"
+                raise RuntimeError(
+                    f"Timed out waiting for mutating smoke lock at {MUTATING_SMOKE_LOCK_PATH}. "
+                    f"Existing lock owner: {owner[:500]}"
+                )
+            time.sleep(0.25)
+        except OSError as exc:
+            raise RuntimeError(f"Could not acquire mutating smoke lock at {MUTATING_SMOKE_LOCK_PATH}: {exc}") from exc
+
+    try:
+        yield lock_info
+    finally:
+        try:
+            MUTATING_SMOKE_LOCK_PATH.unlink()
+        except FileNotFoundError:
+            pass
+        lock_info["released"] = True
+
+
 def _run_mutating_widget_smoke(tcp_port: int) -> dict:
     """Create, mutate, compile, inspect, and delete an isolated smoke WBP."""
     package_path = "/Game/MCPToolkit/_Smoke"
-    asset_name = "W_MCPToolkitRuntimeSmoke"
+    asset_name = _unique_smoke_asset_name("W_MCPToolkitRuntimeSmoke")
     asset_path = f"{package_path}/{asset_name}"
 
     cleanup = _cleanup_smoke_asset(tcp_port, asset_path)
@@ -317,7 +386,7 @@ def _run_mutating_widget_smoke(tcp_port: int) -> dict:
 def _run_mutating_material_smoke(tcp_port: int) -> dict:
     """Create, mutate, inspect, and delete an isolated smoke Material."""
     package_path = "/Game/MCPToolkit/_Smoke"
-    asset_name = "M_MCPToolkitRuntimeSmoke"
+    asset_name = _unique_smoke_asset_name("M_MCPToolkitRuntimeSmoke")
     asset_path = f"{package_path}/{asset_name}"
 
     cleanup = _cleanup_smoke_asset(tcp_port, asset_path)
@@ -391,7 +460,7 @@ def _run_mutating_material_smoke(tcp_port: int) -> dict:
 def _run_mutating_asset_smoke(tcp_port: int) -> dict:
     """Create, save, inspect, and delete an isolated generic asset."""
     package_path = "/Game/MCPToolkit/_Smoke"
-    asset_name = "IA_MCPToolkitRuntimeSmoke"
+    asset_name = _unique_smoke_asset_name("IA_MCPToolkitRuntimeSmoke")
     asset_path = f"{package_path}/{asset_name}"
 
     cleanup = _cleanup_smoke_asset(tcp_port, asset_path)
@@ -898,10 +967,12 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
     mutating_widget_result = None
     mutating_material_result = None
     mutating_asset_result = None
+    mutating_smoke_lock_result = None
     if mutating_smoke:
-        mutating_widget_result = _run_mutating_widget_smoke(tcp_port)
-        mutating_material_result = _run_mutating_material_smoke(tcp_port)
-        mutating_asset_result = _run_mutating_asset_smoke(tcp_port)
+        with _mutating_smoke_lock() as mutating_smoke_lock_result:
+            mutating_widget_result = _run_mutating_widget_smoke(tcp_port)
+            mutating_material_result = _run_mutating_material_smoke(tcp_port)
+            mutating_asset_result = _run_mutating_asset_smoke(tcp_port)
 
     identity = _send_tcp(tcp_port, {"type": "editor_identity"})
     audit_path = Path(identity.get("data", {}).get("http_audit_log_path", ""))
@@ -948,6 +1019,7 @@ def run_smoke(mutating_smoke: bool = False) -> dict:
         "task_events_http_wait_checked": True,
         "task_events_sse_checked": True,
         "session_delete_success": True,
+        "mutating_smoke_lock": mutating_smoke_lock_result,
         "mutating_widget_smoke": mutating_widget_result,
         "mutating_material_smoke": mutating_material_result,
         "mutating_asset_smoke": mutating_asset_result,

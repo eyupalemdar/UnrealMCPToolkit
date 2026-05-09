@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "MCPToolkit",
-  "generated_at_utc": "2026-05-04T23:09:08.127480Z",
+  "generated_at_utc": "2026-05-09T15:02:58.665712Z",
   "manifest_source": "FMCTTcpServer::GetCommandDescriptors",
   "generator": "MCPToolkit/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",

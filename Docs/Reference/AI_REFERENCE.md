@@ -66,6 +66,10 @@ AI Assistant ──MCP stdio──> ai_widget_mcp_client.py ──TCP──> UE 
 | `export_blueprint(asset_path, both_formats?)` | Export any supported asset (Widget, Blueprint, DataAsset, DataTable, etc.) |
 | `list_supported_types()` | List exportable asset types |
 
+`compile_and_save` returns `errors` and `warnings` arrays when the Blueprint
+compiler reports diagnostics. `saved=false` means the package was not saved even
+if a compile attempt was made.
+
 ### Example: Create Widget
 ```
 create_widget_blueprint("/Game/UI/Kale/Screens", "W_KalePlayContent", "/Script/CommonUI.CommonUserWidget")
@@ -100,6 +104,11 @@ add_widget("/Game/UI/Path/W_Parent", "WidgetBlueprintGeneratedClass'/Game/UI/Pat
 
 Do not assign class or asset paths into `WidgetSwitcher` or `NamedSlot` through
 slot `Content`; add an actual child widget instance instead.
+
+`add_widget` rejects duplicate local names and names that shadow inherited
+Blueprint properties/designer variables. For inherited WBP extension, either use
+unique local names or compose a child widget instead of recreating the parent's
+designer widget names.
 
 ---
 
@@ -273,6 +282,12 @@ set_pin_default(path, "SetColor_Selected", "InColorAndOpacity",
 - Variable Get: outputs the variable name (e.g., `ButtonTextBlock`)
 - Struct Make: field names as pins
 
+If a variable Get/Set node is created before the Blueprint skeleton can resolve
+the variable, the command response includes a warning that the node has missing
+pins. Compile the Blueprint successfully, recreate the variable node, then wire
+it. `connect_pins` failures include the available source/target pins to make
+bad node or pin names visible in the MCP response.
+
 ### Important: target_class for Functions
 Some functions exist on specific classes and require `target_class`:
 - `SetColorAndOpacity` on TextBlock: `target_class="/Script/UMG.TextBlock"`
@@ -292,6 +307,10 @@ Without `target_class`, the function may resolve to wrong overload or fail.
 | `set_variable_default(asset_path, var_name, value, scope?, dry_run?)` | Set default value |
 | `remove_variable(asset_path, var_name, scope?, dry_run?)` | Remove variable |
 | `get_variables(asset_path)` | Get all variables as JSON |
+
+`add_variable` rejects names that shadow inherited properties. This prevents UE
+Widget Blueprint compiler collisions when child WBPs accidentally reuse parent
+designer variable names.
 
 ### Variable Types
 ```
@@ -347,6 +366,18 @@ blueprint_component_list("/Game/Blueprints/BP_DebugActor")
 | `compile_material(asset_path, scope?, dry_run?)` | Compile + save |
 | `get_material_graph(asset_path)` | Get graph as JSON |
 | `list_expression_classes()` | List available expression types |
+
+`connect_expressions` resolves common pin aliases before wiring and fails the
+tool call if the target input is not actually connected afterward. `If` pins may
+be addressed as either Unreal's display names (`"A > B"`, `"A == B"`,
+`"A < B"`) or compact aliases (`"AGreaterThanB"`, `"AEqualsB"`,
+`"ALessThanB"`). Single-input expressions accept aliases such as `"Input"` and
+`"Value"` even when Unreal exposes the pin as an unnamed input.
+
+`get_material_graph` includes each expression's `inputs`, `outputs`,
+intra-graph `connections`, and root material `root_connections`. Always inspect
+this graph after procedural material edits; `compile_material` now blocks on
+shader compilation and returns an MCP error when Unreal reports compile errors.
 
 ### Material Instance
 
@@ -414,6 +445,10 @@ save_material_instance("/Game/UI/Kale/Materials/MI_KaleTabButton_BG")
 | `delete_asset(asset_path, force?, scope?, dry_run?)` | Delete an asset after reference checks, or force delete when explicitly requested. Requires `scope="destructive"` |
 | `list_redirectors(folder_path, recursive?)` | List redirectors under a folder |
 | `fixup_redirectors(folder_path, recursive?, scope?, dry_run?)` | Fix redirector referencers under a folder |
+
+After a successful `delete_asset`, the tool closes any open editor for the asset,
+runs GC, and force-rescans the deleted asset's folder. The response includes
+`closed_editors`, `garbage_collected`, and `rescanned_paths`.
 
 ---
 
@@ -793,6 +828,10 @@ The Python MCP wrapper exposes this on destructive tools such as
 `delete_asset(..., scope="destructive")` and
 `actor_delete(..., scope="destructive")`.
 
+The editor process serializes mutating commands with a process-local lock before
+dispatching handlers from TCP, native HTTP/MCP, or async jobs. `server_status`
+and `editor_identity` report this as `serializes_mutating_commands=true`.
+
 ### Dry-run model
 
 Pass `dry_run=True` through the MCP wrapper, or top-level `meta.dry_run=true`
@@ -905,6 +944,12 @@ python Plugins/MCPToolkit/Resources/Scripts/smoke_mcp_runtime.py
 python Plugins/MCPToolkit/Resources/Scripts/smoke_mcp_runtime.py --mutating-smoke
 ```
 
+`--mutating-smoke` also takes a per-project lock file at
+`Intermediate/MCPToolkit_mutating_smoke.lock`, so multiple smoke processes do
+not mutate the same editor at the same time. Override wait/stale timing with
+`MCPTOOLKIT_MUTATING_SMOKE_LOCK_TIMEOUT_SECONDS` and
+`MCPTOOLKIT_MUTATING_SMOKE_LOCK_STALE_SECONDS`.
+
 For the non-runtime preflight, use the wrapper:
 
 ```powershell
@@ -976,7 +1021,8 @@ CDO properties with very long values (e.g., PreregisteredTabInfoArray) get trunc
 When setting class references via `set_cdo_array_element_property`, the target class must satisfy the TSubclassOf constraint. E.g., `TabContentType` requires `UCommonUserWidget` subclass — a plain `UUserWidget` subclass will fail silently.
 
 ### 6. Widget Name Uniqueness
-UE may rename widgets if the name already exists. Check the return value of `add_widget` for the actual assigned name.
+`add_widget` rejects duplicate names and inherited property name collisions. Use
+unique local widget names, especially in child WBPs.
 
 ### 7. Root Widget
 First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets need a parent.
