@@ -162,7 +162,13 @@ public:
 		const FString& FromPinName,
 		const FString& ToNodeName,
 		const FString& ToPinName,
-		const FString& GraphName = TEXT(""));
+		const FString& GraphName = TEXT(""),
+		FString* OutError = nullptr);
+
+	/** Return a compact list of pins for diagnostics. */
+	static TArray<FString> DescribePins(
+		UK2Node* Node,
+		EEdGraphPinDirection Direction);
 
 	/**
 	 * Set a pin's default value (for unconnected input pins).
@@ -223,7 +229,8 @@ public:
 		const FString& VarType,
 		bool bInstanceEditable = false,
 		bool bBlueprintReadOnly = false,
-		const FString& CategoryName = TEXT(""));
+		const FString& CategoryName = TEXT(""),
+		FString* OutError = nullptr);
 
 	/** Set a variable's default value. */
 	static bool SetVariableDefault(

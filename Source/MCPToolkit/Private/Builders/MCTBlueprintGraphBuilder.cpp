@@ -26,6 +26,7 @@
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 #include "ScopedTransaction.h"
+#include "UObject/UnrealType.h"
 #include "UObject/UObjectIterator.h"
 
 #define LOCTEXT_NAMESPACE "MCTBlueprintGraphBuilder"
@@ -35,6 +36,104 @@ DEFINE_LOG_CATEGORY_STATIC(LogAIGraphBuilder, Log, All);
 // =============================================================================
 // UTILITY
 // =============================================================================
+
+namespace
+{
+FString NormalizeNodeLookupText(FString Text)
+{
+	Text.TrimStartAndEndInline();
+	Text.ReplaceInline(TEXT(" "), TEXT(""));
+	Text.ReplaceInline(TEXT("_"), TEXT(""));
+	Text.ReplaceInline(TEXT("-"), TEXT(""));
+	if (Text.StartsWith(TEXT("Event"), ESearchCase::IgnoreCase))
+	{
+		Text.RightChopInline(5);
+	}
+	return Text.ToLower();
+}
+
+bool NodeLookupTextMatches(const FString& Candidate, const FString& Requested)
+{
+	return Candidate.Equals(Requested, ESearchCase::IgnoreCase)
+		|| NormalizeNodeLookupText(Candidate) == NormalizeNodeLookupText(Requested);
+}
+
+FProperty* FindInheritedPropertyByName(UBlueprint* Blueprint, const FName PropertyName, UClass** OutOwnerClass = nullptr)
+{
+	if (OutOwnerClass)
+	{
+		*OutOwnerClass = nullptr;
+	}
+	if (!Blueprint || PropertyName.IsNone())
+	{
+		return nullptr;
+	}
+
+	for (UClass* Class = Blueprint->ParentClass; Class; Class = Class->GetSuperClass())
+	{
+		if (FProperty* Property = Class->FindPropertyByName(PropertyName))
+		{
+			if (OutOwnerClass)
+			{
+				*OutOwnerClass = Class;
+			}
+			return Property;
+		}
+	}
+
+	return nullptr;
+}
+
+bool NodeMatchesLookupName(UK2Node* Node, const FString& NodeName, const FString& SearchComment)
+{
+	if (!Node)
+	{
+		return false;
+	}
+
+	if (Node->NodeComment == SearchComment)
+	{
+		return true;
+	}
+	if (NodeLookupTextMatches(Node->GetName(), NodeName))
+	{
+		return true;
+	}
+	if (NodeLookupTextMatches(Node->GetNodeTitle(ENodeTitleType::FullTitle).ToString(), NodeName))
+	{
+		return true;
+	}
+
+	if (const UK2Node_Event* EventNode = Cast<UK2Node_Event>(Node))
+	{
+		if (NodeLookupTextMatches(EventNode->GetFunctionName().ToString(), NodeName)
+			|| NodeLookupTextMatches(EventNode->CustomFunctionName.ToString(), NodeName)
+			|| NodeLookupTextMatches(EventNode->EventReference.GetMemberName().ToString(), NodeName))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+FString JoinPinDescriptions(const TArray<FString>& PinDescriptions)
+{
+	if (PinDescriptions.Num() == 0)
+	{
+		return TEXT("<none>");
+	}
+	return FString::Join(PinDescriptions, TEXT(", "));
+}
+
+void SetError(FString* OutError, const FString& Error)
+{
+	if (OutError)
+	{
+		*OutError = Error;
+	}
+}
+}
 
 UBlueprint* UMCTBlueprintGraphBuilder::LoadBlueprint(const FString& AssetPath)
 {
@@ -132,7 +231,7 @@ UK2Node* UMCTBlueprintGraphBuilder::FindNodeByName(
 
 	FString SearchComment = FString::Printf(TEXT("AI:%s"), *NodeName);
 
-	auto SearchGraph = [&SearchComment](UEdGraph* Graph) -> UK2Node*
+	auto SearchGraphByComment = [&SearchComment](UEdGraph* Graph) -> UK2Node*
 	{
 		if (!Graph)
 		{
@@ -148,6 +247,24 @@ UK2Node* UMCTBlueprintGraphBuilder::FindNodeByName(
 		}
 		return nullptr;
 	};
+	auto SearchGraphByFallbackName = [&NodeName, &SearchComment](UEdGraph* Graph) -> UK2Node*
+	{
+		if (!Graph)
+		{
+			return nullptr;
+		}
+		for (UEdGraphNode* Node : Graph->Nodes)
+		{
+			UK2Node* K2Node = Cast<UK2Node>(Node);
+			if (NodeMatchesLookupName(K2Node, NodeName, SearchComment))
+			{
+				return K2Node;
+			}
+		}
+		return nullptr;
+	};
+
+	TArray<UEdGraph*> GraphsToSearch;
 
 	if (!GraphName.IsEmpty())
 	{
@@ -156,14 +273,14 @@ UK2Node* UMCTBlueprintGraphBuilder::FindNodeByName(
 		{
 			if (Graph && Graph->GetName() == GraphName)
 			{
-				return SearchGraph(Graph);
+				GraphsToSearch.Add(Graph);
 			}
 		}
 		for (UEdGraph* Graph : Blueprint->FunctionGraphs)
 		{
 			if (Graph && Graph->GetName() == GraphName)
 			{
-				return SearchGraph(Graph);
+				GraphsToSearch.Add(Graph);
 			}
 		}
 	}
@@ -172,14 +289,23 @@ UK2Node* UMCTBlueprintGraphBuilder::FindNodeByName(
 		// Search all graphs
 		for (UEdGraph* Graph : Blueprint->UbergraphPages)
 		{
-			UK2Node* Found = SearchGraph(Graph);
-			if (Found) return Found;
+			GraphsToSearch.Add(Graph);
 		}
 		for (UEdGraph* Graph : Blueprint->FunctionGraphs)
 		{
-			UK2Node* Found = SearchGraph(Graph);
-			if (Found) return Found;
+			GraphsToSearch.Add(Graph);
 		}
+	}
+
+	for (UEdGraph* Graph : GraphsToSearch)
+	{
+		UK2Node* Found = SearchGraphByComment(Graph);
+		if (Found) return Found;
+	}
+	for (UEdGraph* Graph : GraphsToSearch)
+	{
+		UK2Node* Found = SearchGraphByFallbackName(Graph);
+		if (Found) return Found;
 	}
 
 	return nullptr;
@@ -267,6 +393,55 @@ UEdGraphPin* UMCTBlueprintGraphBuilder::FindPin(
 	}
 
 	return nullptr;
+}
+
+TArray<FString> UMCTBlueprintGraphBuilder::DescribePins(
+	UK2Node* Node,
+	EEdGraphPinDirection Direction)
+{
+	TArray<FString> PinDescriptions;
+	if (!Node)
+	{
+		return PinDescriptions;
+	}
+
+	for (UEdGraphPin* Pin : Node->Pins)
+	{
+		if (Pin && Pin->Direction == Direction)
+		{
+			const FString DisplayName = Pin->GetDisplayName().ToString();
+			const FString PinName = Pin->PinName.ToString();
+			const FString TypeName = Pin->PinType.PinCategory.ToString();
+			if (!DisplayName.IsEmpty() && !DisplayName.Equals(PinName, ESearchCase::IgnoreCase))
+			{
+				PinDescriptions.Add(FString::Printf(TEXT("%s (%s, %s)"), *PinName, *DisplayName, *TypeName));
+			}
+			else
+			{
+				PinDescriptions.Add(FString::Printf(TEXT("%s (%s)"), *PinName, *TypeName));
+			}
+		}
+	}
+
+	return PinDescriptions;
+}
+
+static bool HasPinInDirection(UK2Node* Node, EEdGraphPinDirection Direction)
+{
+	if (!Node)
+	{
+		return false;
+	}
+
+	for (UEdGraphPin* Pin : Node->Pins)
+	{
+		if (Pin && Pin->Direction == Direction)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 UFunction* UMCTBlueprintGraphBuilder::FindFunctionByName(
@@ -867,6 +1042,12 @@ UK2Node* UMCTBlueprintGraphBuilder::AddVariableGetNode(
 	EventGraph->AddNode(GetNode, false, false);
 	GetNode->CreateNewGuid();
 	GetNode->AllocateDefaultPins();
+	if (!HasPinInDirection(GetNode, EGPD_Output))
+	{
+		UE_LOG(LogAIGraphBuilder, Warning,
+			TEXT("AddVariableGetNode: Get '%s' created with no output pins. The Blueprint skeleton may need a successful compile before variable access nodes can resolve."),
+			*VariableName);
+	}
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 
@@ -907,6 +1088,12 @@ UK2Node* UMCTBlueprintGraphBuilder::AddVariableSetNode(
 	EventGraph->AddNode(SetNode, false, false);
 	SetNode->CreateNewGuid();
 	SetNode->AllocateDefaultPins();
+	if (!HasPinInDirection(SetNode, EGPD_Input) || !HasPinInDirection(SetNode, EGPD_Output))
+	{
+		UE_LOG(LogAIGraphBuilder, Warning,
+			TEXT("AddVariableSetNode: Set '%s' created with incomplete pins. The Blueprint skeleton may need a successful compile before variable access nodes can resolve."),
+			*VariableName);
+	}
 
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 
@@ -1064,10 +1251,12 @@ bool UMCTBlueprintGraphBuilder::ConnectPins(
 	const FString& FromPinName,
 	const FString& ToNodeName,
 	const FString& ToPinName,
-	const FString& GraphName)
+	const FString& GraphName,
+	FString* OutError)
 {
 	if (!Blueprint)
 	{
+		SetError(OutError, TEXT("ConnectPins: Blueprint is null"));
 		return false;
 	}
 
@@ -1077,11 +1266,17 @@ bool UMCTBlueprintGraphBuilder::ConnectPins(
 	if (!FromNode)
 	{
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("ConnectPins: Source node '%s' not found"), *FromNodeName);
+		SetError(OutError, FString::Printf(TEXT("Source node '%s' not found in graph '%s'"),
+			*FromNodeName,
+			GraphName.IsEmpty() ? TEXT("EventGraph") : *GraphName));
 		return false;
 	}
 	if (!ToNode)
 	{
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("ConnectPins: Target node '%s' not found"), *ToNodeName);
+		SetError(OutError, FString::Printf(TEXT("Target node '%s' not found in graph '%s'"),
+			*ToNodeName,
+			GraphName.IsEmpty() ? TEXT("EventGraph") : *GraphName));
 		return false;
 	}
 
@@ -1092,18 +1287,27 @@ bool UMCTBlueprintGraphBuilder::ConnectPins(
 	{
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("ConnectPins: Output pin '%s' not found on node '%s'"),
 			*FromPinName, *FromNodeName);
+		SetError(OutError, FString::Printf(TEXT("Output pin '%s' not found on node '%s'. Available output pins: %s"),
+			*FromPinName,
+			*FromNodeName,
+			*JoinPinDescriptions(DescribePins(FromNode, EGPD_Output))));
 		return false;
 	}
 	if (!ToPin)
 	{
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("ConnectPins: Input pin '%s' not found on node '%s'"),
 			*ToPinName, *ToNodeName);
+		SetError(OutError, FString::Printf(TEXT("Input pin '%s' not found on node '%s'. Available input pins: %s"),
+			*ToPinName,
+			*ToNodeName,
+			*JoinPinDescriptions(DescribePins(ToNode, EGPD_Input))));
 		return false;
 	}
 
 	FScopedTransaction Transaction(LOCTEXT("AIConnectPins", "AI: Connect Pins"));
 
 	const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
+	const FPinConnectionResponse ConnectionResponse = Schema->CanCreateConnection(FromPin, ToPin);
 	bool bConnected = Schema->TryCreateConnection(FromPin, ToPin);
 
 	if (bConnected)
@@ -1115,6 +1319,14 @@ bool UMCTBlueprintGraphBuilder::ConnectPins(
 	{
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("ConnectPins: Failed to connect %s.%s -> %s.%s"),
 			*FromNodeName, *FromPinName, *ToNodeName, *ToPinName);
+		const FString SchemaMessage = ConnectionResponse.Message.ToString();
+		SetError(OutError, FString::Printf(TEXT("Failed to connect %s.%s -> %s.%s%s%s"),
+			*FromNodeName,
+			*FromPinName,
+			*ToNodeName,
+			*ToPinName,
+			SchemaMessage.IsEmpty() ? TEXT("") : TEXT(": "),
+			*SchemaMessage));
 	}
 
 	return bConnected;
@@ -1465,10 +1677,12 @@ bool UMCTBlueprintGraphBuilder::AddVariable(
 	const FString& VarType,
 	bool bInstanceEditable,
 	bool bBlueprintReadOnly,
-	const FString& CategoryName)
+	const FString& CategoryName,
+	FString* OutError)
 {
 	if (!Blueprint || VarName.IsEmpty())
 	{
+		SetError(OutError, TEXT("AddVariable: Blueprint is null or variable name is empty"));
 		return false;
 	}
 
@@ -1476,10 +1690,24 @@ bool UMCTBlueprintGraphBuilder::AddVariable(
 
 	FName VarFName(*VarName);
 
+	UClass* OwnerClass = nullptr;
+	if (FProperty* InheritedProperty = FindInheritedPropertyByName(Blueprint, VarFName, &OwnerClass))
+	{
+		const FString Error = FString::Printf(
+			TEXT("Variable '%s' shadows inherited property '%s' on parent class '%s'. Choose a unique variable name."),
+			*VarName,
+			*InheritedProperty->GetName(),
+			OwnerClass ? *OwnerClass->GetName() : TEXT("unknown"));
+		UE_LOG(LogAIGraphBuilder, Error, TEXT("AddVariable: %s"), *Error);
+		SetError(OutError, Error);
+		return false;
+	}
+
 	// Check if already exists
 	if (FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, VarFName) != INDEX_NONE)
 	{
 		UE_LOG(LogAIGraphBuilder, Warning, TEXT("AddVariable: Variable '%s' already exists"), *VarName);
+		SetError(OutError, FString::Printf(TEXT("Variable '%s' already exists"), *VarName));
 		return false;
 	}
 
@@ -1489,6 +1717,7 @@ bool UMCTBlueprintGraphBuilder::AddVariable(
 	if (!bResult)
 	{
 		UE_LOG(LogAIGraphBuilder, Error, TEXT("AddVariable: Failed to add '%s' of type '%s'"), *VarName, *VarType);
+		SetError(OutError, FString::Printf(TEXT("Failed to add variable '%s' of type '%s'"), *VarName, *VarType));
 		return false;
 	}
 

@@ -55,7 +55,9 @@ public:
 	 */
 	static bool CompileAndSave(
 		UWidgetBlueprint* WidgetBP,
-		TArray<FString>* OutWarnings = nullptr);
+		TArray<FString>* OutWarnings = nullptr,
+		TArray<FString>* OutErrors = nullptr,
+		bool* OutSaved = nullptr);
 
 	// =========================================================================
 	// WIDGET TREE MANIPULATION
@@ -73,7 +75,8 @@ public:
 		UWidgetBlueprint* WidgetBP,
 		const FString& WidgetClassName,
 		const FString& WidgetName,
-		const FString& ParentWidgetName = TEXT(""));
+		const FString& ParentWidgetName = TEXT(""),
+		FString* OutError = nullptr);
 
 	/**
 	 * Remove a widget from the widget tree.

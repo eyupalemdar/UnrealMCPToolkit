@@ -283,10 +283,13 @@ FString HandleAddWidget(TSharedPtr<FJsonObject> Params)
 			return;
 		}
 
-		UWidget* Widget = UMCTWidgetBlueprintBuilder::AddWidget(WBP, WidgetClass, WidgetName, ParentName);
+		FString AddError;
+		UWidget* Widget = UMCTWidgetBlueprintBuilder::AddWidget(WBP, WidgetClass, WidgetName, ParentName, &AddError);
 		if (!Widget)
 		{
-			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add widget '%s' of class '%s'"), *WidgetName, *WidgetClass)));
+			Promise->SetValue(CreateErrorResponse(AddError.IsEmpty()
+				? FString::Printf(TEXT("Failed to add widget '%s' of class '%s'"), *WidgetName, *WidgetClass)
+				: AddError));
 			return;
 		}
 
@@ -783,11 +786,13 @@ FString HandleCompileAndSave(TSharedPtr<FJsonObject> Params)
 		if (WBP)
 		{
 			TArray<FString> Warnings;
-			bool bSuccess = UMCTWidgetBlueprintBuilder::CompileAndSave(WBP, &Warnings);
+			TArray<FString> Errors;
+			bool bSaved = false;
+			bool bSuccess = UMCTWidgetBlueprintBuilder::CompileAndSave(WBP, &Warnings, &Errors, &bSaved);
 
 			TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 			Data->SetBoolField(TEXT("compiled"), bSuccess);
-			Data->SetBoolField(TEXT("saved"), bSuccess);
+			Data->SetBoolField(TEXT("saved"), bSaved);
 
 			if (Warnings.Num() > 0)
 			{
@@ -797,6 +802,15 @@ FString HandleCompileAndSave(TSharedPtr<FJsonObject> Params)
 					WarningArray.Add(MakeShared<FJsonValueString>(W));
 				}
 				Data->SetArrayField(TEXT("warnings"), WarningArray);
+			}
+			if (Errors.Num() > 0)
+			{
+				TArray<TSharedPtr<FJsonValue>> ErrorArray;
+				for (const FString& E : Errors)
+				{
+					ErrorArray.Add(MakeShared<FJsonValueString>(E));
+				}
+				Data->SetArrayField(TEXT("errors"), ErrorArray);
 			}
 
 			Promise->SetValue(CreateSuccessResponse(Data));

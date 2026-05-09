@@ -893,6 +893,20 @@ FString HandleDeleteAsset(TSharedPtr<FJsonObject> Params)
 		}
 
 		const FString PackageName = Asset->GetOutermost()->GetName();
+		const FString PackagePath = FPackageName::GetLongPackagePath(PackageName);
+
+		bool bClosedEditors = false;
+		if (GEditor)
+		{
+			if (UAssetEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>())
+			{
+				if (EditorSubsystem->FindEditorForAsset(Asset, /*bFocusIfOpen=*/false))
+				{
+					EditorSubsystem->CloseAllEditorsForAsset(Asset);
+					bClosedEditors = true;
+				}
+			}
+		}
 
 		int32 NumDeleted = 0;
 		if (bForce)
@@ -916,12 +930,31 @@ FString HandleDeleteAsset(TSharedPtr<FJsonObject> Params)
 			return;
 		}
 
+		CollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS);
+
+		TArray<FString> RescannedPaths;
+		if (!PackagePath.IsEmpty())
+		{
+			FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+			IAssetRegistry& AR = ARM.Get();
+			RescannedPaths.Add(PackagePath);
+			AR.ScanPathsSynchronous(RescannedPaths, /*bForceRescan=*/true);
+		}
+
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetBoolField(TEXT("deleted"), true);
 		Data->SetStringField(TEXT("asset_path"), AssetPath);
 		Data->SetStringField(TEXT("package_name"), PackageName);
 		Data->SetNumberField(TEXT("num_deleted"), NumDeleted);
 		Data->SetBoolField(TEXT("force"), bForce);
+		Data->SetBoolField(TEXT("closed_editors"), bClosedEditors);
+		Data->SetBoolField(TEXT("garbage_collected"), true);
+		TArray<TSharedPtr<FJsonValue>> RescannedArray;
+		for (const FString& RescannedPath : RescannedPaths)
+		{
+			RescannedArray.Add(MakeShared<FJsonValueString>(RescannedPath));
+		}
+		Data->SetArrayField(TEXT("rescanned_paths"), RescannedArray);
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 

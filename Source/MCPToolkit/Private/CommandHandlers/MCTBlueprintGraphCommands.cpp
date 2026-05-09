@@ -361,6 +361,13 @@ FString HandleAddVariableGetNode(TSharedPtr<FJsonObject> Params)
 		Data->SetStringField(TEXT("node_name"), NodeName);
 		Data->SetStringField(TEXT("variable_name"), VariableName);
 		Data->SetStringField(TEXT("graph_name"), GraphName.IsEmpty() ? TEXT("EventGraph") : GraphName);
+		if (UMCTBlueprintGraphBuilder::DescribePins(Node, EGPD_Output).Num() == 0)
+		{
+			TArray<TSharedPtr<FJsonValue>> WarningArray;
+			WarningArray.Add(MakeShared<FJsonValueString>(
+				FString::Printf(TEXT("Get node for '%s' has no output pins; compile the Blueprint successfully before adding or wiring variable access nodes."), *VariableName)));
+			Data->SetArrayField(TEXT("warnings"), WarningArray);
+		}
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
@@ -394,6 +401,14 @@ FString HandleAddVariableSetNode(TSharedPtr<FJsonObject> Params)
 		Data->SetStringField(TEXT("node_name"), NodeName);
 		Data->SetStringField(TEXT("variable_name"), VariableName);
 		Data->SetStringField(TEXT("graph_name"), GraphName.IsEmpty() ? TEXT("EventGraph") : GraphName);
+		if (UMCTBlueprintGraphBuilder::DescribePins(Node, EGPD_Input).Num() == 0
+			|| UMCTBlueprintGraphBuilder::DescribePins(Node, EGPD_Output).Num() == 0)
+		{
+			TArray<TSharedPtr<FJsonValue>> WarningArray;
+			WarningArray.Add(MakeShared<FJsonValueString>(
+				FString::Printf(TEXT("Set node for '%s' has incomplete pins; compile the Blueprint successfully before adding or wiring variable access nodes."), *VariableName)));
+			Data->SetArrayField(TEXT("warnings"), WarningArray);
+		}
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
@@ -584,11 +599,13 @@ FString HandleConnectPins(TSharedPtr<FJsonObject> Params)
 		UBlueprint* BP = UMCTBlueprintGraphBuilder::LoadBlueprint(AssetPath);
 		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
 
-		bool bSuccess = UMCTBlueprintGraphBuilder::ConnectPins(BP, FromNode, FromPin, ToNode, ToPin, GraphName);
+		FString ConnectError;
+		bool bSuccess = UMCTBlueprintGraphBuilder::ConnectPins(BP, FromNode, FromPin, ToNode, ToPin, GraphName, &ConnectError);
 		if (!bSuccess)
 		{
-			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to connect %s.%s -> %s.%s"),
-				*FromNode, *FromPin, *ToNode, *ToPin)));
+			Promise->SetValue(CreateErrorResponse(ConnectError.IsEmpty()
+				? FString::Printf(TEXT("Failed to connect %s.%s -> %s.%s"), *FromNode, *FromPin, *ToNode, *ToPin)
+				: ConnectError));
 			return;
 		}
 
@@ -778,8 +795,15 @@ FString HandleAddVariable(TSharedPtr<FJsonObject> Params)
 		UBlueprint* BP = UMCTBlueprintGraphBuilder::LoadBlueprint(AssetPath);
 		if (!BP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load: %s"), *AssetPath))); return; }
 
-		bool bSuccess = UMCTBlueprintGraphBuilder::AddVariable(BP, VarName, VarType, bInstanceEditable, bBlueprintReadOnly, Category);
-		if (!bSuccess) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Failed to add variable '%s'"), *VarName))); return; }
+		FString AddError;
+		bool bSuccess = UMCTBlueprintGraphBuilder::AddVariable(BP, VarName, VarType, bInstanceEditable, bBlueprintReadOnly, Category, &AddError);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(AddError.IsEmpty()
+				? FString::Printf(TEXT("Failed to add variable '%s'"), *VarName)
+				: AddError));
+			return;
+		}
 
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetStringField(TEXT("var_name"), VarName);

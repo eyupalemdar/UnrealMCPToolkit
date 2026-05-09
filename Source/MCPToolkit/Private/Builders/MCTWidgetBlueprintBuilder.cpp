@@ -16,14 +16,17 @@
 
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Kismet2/CompilerResultsLog.h"
 #include "KismetCompilerModule.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UObject/SavePackage.h"
 #include "UObject/Package.h"
+#include "UObject/UnrealType.h"
 
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
+#include "Logging/TokenizedMessage.h"
 #include "ScopedTransaction.h"
 
 #define LOCTEXT_NAMESPACE "MCTWidgetBlueprintBuilder"
@@ -95,6 +98,119 @@ FString StripObjectPathDecorators(const FString& Input)
 	}
 
 	return Result;
+}
+
+FProperty* FindInheritedPropertyByName(UWidgetBlueprint* WidgetBP, const FName PropertyName, UClass** OutOwnerClass = nullptr)
+{
+	if (OutOwnerClass)
+	{
+		*OutOwnerClass = nullptr;
+	}
+	if (!WidgetBP || PropertyName.IsNone())
+	{
+		return nullptr;
+	}
+
+	for (UClass* Class = WidgetBP->ParentClass; Class; Class = Class->GetSuperClass())
+	{
+		if (FProperty* Property = Class->FindPropertyByName(PropertyName))
+		{
+			if (OutOwnerClass)
+			{
+				*OutOwnerClass = Class;
+			}
+			return Property;
+		}
+	}
+
+	return nullptr;
+}
+
+void AppendCompilerMessages(
+	const FCompilerResultsLog& Results,
+	TArray<FString>* OutWarnings,
+	TArray<FString>* OutErrors)
+{
+	TSet<FString> SeenWarnings;
+	TSet<FString> SeenErrors;
+
+	auto AddUnique = [](TArray<FString>* OutMessages, TSet<FString>& Seen, const FString& Message)
+	{
+		if (OutMessages && !Message.IsEmpty() && !Seen.Contains(Message))
+		{
+			Seen.Add(Message);
+			OutMessages->Add(Message);
+		}
+	};
+
+	for (const TSharedRef<FTokenizedMessage>& Message : Results.Messages)
+	{
+		const FString Text = Message->ToText().ToString();
+		const EMessageSeverity::Type Severity = Message->GetSeverity();
+		if (Severity <= EMessageSeverity::Error)
+		{
+			AddUnique(OutErrors, SeenErrors, Text);
+		}
+		else if (Severity == EMessageSeverity::PerformanceWarning || Severity == EMessageSeverity::Warning)
+		{
+			AddUnique(OutWarnings, SeenWarnings, Text);
+		}
+	}
+
+	if (OutErrors && Results.NumErrors > 0 && OutErrors->Num() == 0)
+	{
+		OutErrors->Add(FString::Printf(TEXT("Blueprint compiler reported %d error(s) without detailed messages"), Results.NumErrors));
+	}
+	if (OutWarnings && Results.NumWarnings > 0 && OutWarnings->Num() == 0)
+	{
+		OutWarnings->Add(FString::Printf(TEXT("Blueprint compiler reported %d warning(s) without detailed messages"), Results.NumWarnings));
+	}
+}
+
+void SetBuilderError(FString* OutError, const FString& Error)
+{
+	if (OutError)
+	{
+		*OutError = Error;
+	}
+}
+
+bool CanSaveWidgetBlueprint(
+	UWidgetBlueprint* WidgetBP,
+	TArray<FString>* OutErrors)
+{
+	if (!IsValid(WidgetBP))
+	{
+		if (OutErrors)
+		{
+			OutErrors->Add(TEXT("Widget Blueprint is invalid or pending destruction; it may have been deleted by another command before save."));
+		}
+		return false;
+	}
+
+	constexpr EObjectFlags RequiredSaveFlags = RF_Public | RF_Standalone;
+	if (!WidgetBP->HasAnyFlags(RequiredSaveFlags))
+	{
+		if (OutErrors)
+		{
+			OutErrors->Add(FString::Printf(
+				TEXT("Widget Blueprint '%s' is missing RF_Public/RF_Standalone and will not be saved. The asset may have been deleted or mutated concurrently."),
+				*WidgetBP->GetPathName()));
+		}
+		return false;
+	}
+
+	UPackage* Package = WidgetBP->GetOutermost();
+	if (!Package)
+	{
+		if (OutErrors)
+		{
+			OutErrors->Add(TEXT("Widget Blueprint has no outer package; save skipped."));
+		}
+		return false;
+	}
+
+	return true;
 }
 
 bool IsWidgetDescendantOf(const UWidget* Candidate, const UWidget* PotentialAncestor)
@@ -215,6 +331,7 @@ UWidgetBlueprint* UMCTWidgetBlueprintBuilder::CreateWidgetBlueprint(
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("CreateWidgetBlueprint: FKismetEditorUtilities::CreateBlueprint failed"));
 		return nullptr;
 	}
+	WidgetBP->SetFlags(RF_Public | RF_Standalone);
 
 	// Set root widget to CanvasPanel by default if none exists
 	if (WidgetBP->WidgetTree && !WidgetBP->WidgetTree->RootWidget)
@@ -238,12 +355,23 @@ UWidgetBlueprint* UMCTWidgetBlueprintBuilder::CreateWidgetBlueprint(
 
 bool UMCTWidgetBlueprintBuilder::CompileAndSave(
 	UWidgetBlueprint* WidgetBP,
-	TArray<FString>* OutWarnings)
+	TArray<FString>* OutWarnings,
+	TArray<FString>* OutErrors,
+	bool* OutSaved)
 {
 	if (!WidgetBP)
 	{
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("CompileAndSave: WidgetBP is null"));
+		if (OutSaved)
+		{
+			*OutSaved = false;
+		}
 		return false;
+	}
+
+	if (OutSaved)
+	{
+		*OutSaved = false;
 	}
 
 	// Pre-compile: Sync GUID map with ALL source widgets AND animations to prevent Ensure failures.
@@ -299,37 +427,39 @@ bool UMCTWidgetBlueprintBuilder::CompileAndSave(
 	}
 
 	// Compile
-	FKismetEditorUtilities::CompileBlueprint(WidgetBP, EBlueprintCompileOptions::None);
+	FCompilerResultsLog CompileResults;
+	FKismetEditorUtilities::CompileBlueprint(WidgetBP, EBlueprintCompileOptions::None, &CompileResults);
+	AppendCompilerMessages(CompileResults, OutWarnings, OutErrors);
 
 	// Check for errors
-	bool bHasErrors = WidgetBP->Status == BS_Error;
+	bool bHasErrors = WidgetBP->Status == BS_Error || CompileResults.NumErrors > 0;
 	if (bHasErrors)
 	{
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("CompileAndSave: Compilation failed for '%s'"),
 			*WidgetBP->GetName());
-	}
-
-	// Collect warnings
-	if (OutWarnings)
-	{
-		// Blueprint compiler messages are in the message log, not easily accessible here.
-		// We check the status instead.
-		if (WidgetBP->Status == BS_UpToDateWithWarnings)
+		if (OutErrors && OutErrors->Num() == 0)
 		{
-			OutWarnings->Add(TEXT("Blueprint compiled with warnings"));
+			OutErrors->Add(FString::Printf(TEXT("Compilation failed for '%s'"), *WidgetBP->GetName()));
 		}
 	}
 
-	// Save
-	UPackage* Package = WidgetBP->GetOutermost();
-	if (Package)
+	// Collect warnings
+	if (OutWarnings && WidgetBP->Status == BS_UpToDateWithWarnings && OutWarnings->Num() == 0)
 	{
+		OutWarnings->Add(TEXT("Blueprint compiled with warnings"));
+	}
+
+	// Save
+	bool bSaved = false;
+	if (!bHasErrors && CanSaveWidgetBlueprint(WidgetBP, OutErrors))
+	{
+		UPackage* Package = WidgetBP->GetOutermost();
 		FString PackageFilename;
 		if (FPackageName::DoesPackageExist(Package->GetName(), &PackageFilename))
 		{
 			FSavePackageArgs SaveArgs;
 			SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
-			UPackage::SavePackage(Package, WidgetBP, *PackageFilename, SaveArgs);
+			bSaved = UPackage::SavePackage(Package, WidgetBP, *PackageFilename, SaveArgs);
 		}
 		else
 		{
@@ -338,13 +468,20 @@ bool UMCTWidgetBlueprintBuilder::CompileAndSave(
 				Package->GetName(), FPackageName::GetAssetPackageExtension());
 			FSavePackageArgs SaveArgs;
 			SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
-			UPackage::SavePackage(Package, WidgetBP, *PackagePath, SaveArgs);
+			bSaved = UPackage::SavePackage(Package, WidgetBP, *PackagePath, SaveArgs);
 		}
 	}
+	if (OutSaved)
+	{
+		*OutSaved = bSaved;
+	}
 
-	UE_LOG(LogAIWidgetBuilder, Log, TEXT("CompileAndSave: '%s' %s"),
+	UE_LOG(LogAIWidgetBuilder, Log, TEXT("CompileAndSave: '%s' %s (saved=%d, errors=%d, warnings=%d)"),
 		*WidgetBP->GetName(),
-		bHasErrors ? TEXT("FAILED") : TEXT("succeeded"));
+		bHasErrors ? TEXT("FAILED") : TEXT("succeeded"),
+		bSaved ? 1 : 0,
+		CompileResults.NumErrors,
+		CompileResults.NumWarnings);
 
 	return !bHasErrors;
 }
@@ -416,11 +553,34 @@ UWidget* UMCTWidgetBlueprintBuilder::AddWidget(
 	UWidgetBlueprint* WidgetBP,
 	const FString& WidgetClassName,
 	const FString& WidgetName,
-	const FString& ParentWidgetName)
+	const FString& ParentWidgetName,
+	FString* OutError)
 {
 	if (!WidgetBP || !WidgetBP->WidgetTree)
 	{
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: Invalid WidgetBP or WidgetTree"));
+		SetBuilderError(OutError, TEXT("Invalid Widget Blueprint or WidgetTree"));
+		return nullptr;
+	}
+
+	if (FindWidgetByName(WidgetBP, WidgetName))
+	{
+		const FString Error = FString::Printf(TEXT("Widget '%s' already exists in this WidgetTree"), *WidgetName);
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: %s"), *Error);
+		SetBuilderError(OutError, Error);
+		return nullptr;
+	}
+
+	UClass* OwnerClass = nullptr;
+	if (FProperty* InheritedProperty = FindInheritedPropertyByName(WidgetBP, FName(*WidgetName), &OwnerClass))
+	{
+		const FString Error = FString::Printf(
+			TEXT("Widget name '%s' shadows inherited property '%s' on parent class '%s'. Use a unique local widget name or composition instead of duplicating inherited designer variables."),
+			*WidgetName,
+			*InheritedProperty->GetName(),
+			OwnerClass ? *OwnerClass->GetName() : TEXT("unknown"));
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: %s"), *Error);
+		SetBuilderError(OutError, Error);
 		return nullptr;
 	}
 
@@ -429,7 +589,30 @@ UWidget* UMCTWidgetBlueprintBuilder::AddWidget(
 	if (!WidgetClass)
 	{
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: Could not resolve class '%s'"), *WidgetClassName);
+		SetBuilderError(OutError, FString::Printf(TEXT("Could not resolve widget class '%s'"), *WidgetClassName));
 		return nullptr;
+	}
+
+	UPanelWidget* ResolvedPanelParent = nullptr;
+	if (!ParentWidgetName.IsEmpty())
+	{
+		UWidget* ParentWidget = FindWidgetByName(WidgetBP, ParentWidgetName);
+		if (!ParentWidget)
+		{
+			UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: Parent '%s' not found"), *ParentWidgetName);
+			SetBuilderError(OutError, FString::Printf(TEXT("Parent widget '%s' not found"), *ParentWidgetName));
+			return nullptr;
+		}
+
+		ResolvedPanelParent = Cast<UPanelWidget>(ParentWidget);
+		if (!ResolvedPanelParent)
+		{
+			UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: Parent '%s' is not a panel widget (class: %s)"),
+				*ParentWidgetName, *ParentWidget->GetClass()->GetName());
+			SetBuilderError(OutError, FString::Printf(TEXT("Parent '%s' is not a panel widget (class: %s)"),
+				*ParentWidgetName, *ParentWidget->GetClass()->GetName()));
+			return nullptr;
+		}
 	}
 
 	FScopedTransaction Transaction(LOCTEXT("AIAddWidget", "AI: Add Widget"));
@@ -442,6 +625,7 @@ UWidget* UMCTWidgetBlueprintBuilder::AddWidget(
 	if (!NewWidget)
 	{
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: ConstructWidget failed for class '%s'"), *WidgetClassName);
+		SetBuilderError(OutError, FString::Printf(TEXT("ConstructWidget failed for class '%s'"), *WidgetClassName));
 		return nullptr;
 	}
 
@@ -481,25 +665,13 @@ UWidget* UMCTWidgetBlueprintBuilder::AddWidget(
 	}
 	else
 	{
-		UWidget* ParentWidget = FindWidgetByName(WidgetBP, ParentWidgetName);
-		if (!ParentWidget)
-		{
-			UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: Parent '%s' not found"), *ParentWidgetName);
-			return nullptr;
-		}
-
-		UPanelWidget* PanelParent = Cast<UPanelWidget>(ParentWidget);
-		if (!PanelParent)
-		{
-			UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: Parent '%s' is not a panel widget (class: %s)"),
-				*ParentWidgetName, *ParentWidget->GetClass()->GetName());
-			return nullptr;
-		}
-
-		UPanelSlot* Slot = PanelParent->AddChild(NewWidget);
+		UPanelSlot* Slot = ResolvedPanelParent->AddChild(NewWidget);
 		if (!Slot)
 		{
 			UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: AddChild failed for parent '%s'"), *ParentWidgetName);
+			SetBuilderError(OutError, FString::Printf(TEXT("AddChild failed for parent '%s'"), *ParentWidgetName));
+			WidgetBP->OnVariableRemoved(NewWidget->GetFName());
+			NewWidget->Rename(nullptr, GetTransientPackage());
 			return nullptr;
 		}
 
