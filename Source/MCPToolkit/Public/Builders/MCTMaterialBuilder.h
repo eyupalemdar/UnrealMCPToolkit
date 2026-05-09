@@ -133,4 +133,9 @@ private:
 	static bool SetPropertyByPath(UObject* Object, const FString& PropertyPath, const FString& Value);
 	static bool SaveAsset(UObject* Asset);
 	static TSharedPtr<FJsonObject> ExpressionToJson(UMaterialExpression* Expr, int32 Index);
+	static FString MakePinMatchKey(const FString& PinName);
+	static bool ResolveInputPinName(UMaterialExpression* Expr, const FString& RequestedInput, FString& OutResolvedInput);
+	static bool ResolveOutputPinName(UMaterialExpression* Expr, const FString& RequestedOutput, FString& OutResolvedOutput, int32& OutOutputIndex);
+	static bool IsExpressionInputConnected(UMaterialExpression* ToExpr, const FString& ToInput, UMaterialExpression* FromExpr, int32 FromOutputIndex);
+	static FString GetExpressionJsonName(UMaterialExpression* Expr);
 };

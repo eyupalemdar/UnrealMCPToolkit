@@ -326,6 +326,12 @@ FString HandleSetExpressionProperty(TSharedPtr<FJsonObject> Params)
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
 
 		bool bSuccess = UMCTMaterialBuilder::SetExpressionProperty(Material, NodeName, PropertyName, Value);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("Failed to set expression property '%s' on node '%s'"), *PropertyName, *NodeName)));
+			return;
+		}
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetBoolField(TEXT("success"), bSuccess);
 		Data->SetStringField(TEXT("node_name"), NodeName);
@@ -365,6 +371,13 @@ FString HandleConnectExpressions(TSharedPtr<FJsonObject> Params)
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
 
 		bool bSuccess = UMCTMaterialBuilder::ConnectExpressions(Material, FromNode, FromOutput, ToNode, ToInput);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("Failed to connect material expressions: %s.%s -> %s.%s"),
+				*FromNode, *FromOutput, *ToNode, *ToInput)));
+			return;
+		}
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetBoolField(TEXT("success"), bSuccess);
 		Promise->SetValue(CreateSuccessResponse(Data));
@@ -400,6 +413,13 @@ FString HandleConnectToMaterialProperty(TSharedPtr<FJsonObject> Params)
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
 
 		bool bSuccess = UMCTMaterialBuilder::ConnectToMaterialProperty(Material, FromNode, FromOutput, MaterialProperty);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("Failed to connect material property: %s.%s -> %s"),
+				*FromNode, *FromOutput, *MaterialProperty)));
+			return;
+		}
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetBoolField(TEXT("success"), bSuccess);
 		Promise->SetValue(CreateSuccessResponse(Data));
@@ -433,6 +453,12 @@ FString HandleDisconnectInput(TSharedPtr<FJsonObject> Params)
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
 
 		bool bSuccess = UMCTMaterialBuilder::DisconnectInput(Material, NodeName, InputName);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("Failed to disconnect input '%s' on node '%s'"), *InputName, *NodeName)));
+			return;
+		}
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetBoolField(TEXT("success"), bSuccess);
 		Promise->SetValue(CreateSuccessResponse(Data));
@@ -464,6 +490,12 @@ FString HandleRemoveExpression(TSharedPtr<FJsonObject> Params)
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
 
 		bool bSuccess = UMCTMaterialBuilder::RemoveExpression(Material, NodeName);
+		if (!bSuccess)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("Failed to remove expression '%s'"), *NodeName)));
+			return;
+		}
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetBoolField(TEXT("success"), bSuccess);
 		Promise->SetValue(CreateSuccessResponse(Data));
@@ -497,7 +529,7 @@ FString HandleCompileMaterial(TSharedPtr<FJsonObject> Params)
 
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetBoolField(TEXT("compiled"), bCompiled);
-		Data->SetBoolField(TEXT("saved"), true);
+		Data->SetBoolField(TEXT("saved"), bCompiled);
 
 		if (Warnings.Num() > 0)
 		{
@@ -507,6 +539,14 @@ FString HandleCompileMaterial(TSharedPtr<FJsonObject> Params)
 				WarnArray.Add(MakeShared<FJsonValueString>(W));
 			}
 			Data->SetArrayField(TEXT("warnings"), WarnArray);
+		}
+		if (!bCompiled)
+		{
+			const FString ErrorText = Warnings.Num() > 0
+				? FString::Join(Warnings, TEXT("; "))
+				: TEXT("Material compile failed");
+			Promise->SetValue(CreateErrorResponse(ErrorText));
+			return;
 		}
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});

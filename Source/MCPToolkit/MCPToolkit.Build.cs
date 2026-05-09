@@ -47,6 +47,7 @@ public class MCPToolkit : ModuleRules
 			"CommonUI",  // For UCommonTextBlock
 			"CommonInput",  // For CommonUI runtime input data during widget preview capture
 			"ImageWrapper",  // For PNG export (IImageWrapper)
+			"RHI",  // For material compile platform checks
 			"RenderCore",  // For FlushRenderingCommands (widget preview capture)
 			"Landscape",  // For landscape proxy/component diagnostics
 			"Foliage",  // For foliage actor/type diagnostics

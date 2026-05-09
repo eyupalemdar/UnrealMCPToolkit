@@ -27,6 +27,8 @@
 
 // Compile
 #include "MaterialShared.h"
+#include "RHIShaderPlatform.h"
+#include "ShaderCompiler.h"
 
 // Undo/Redo
 #include "ScopedTransaction.h"
@@ -153,12 +155,44 @@ bool UMCTMaterialBuilder::CompileMaterial(
 	// Use UMaterialEditingLibrary for the high-level recompile
 	UMaterialEditingLibrary::RecompileMaterial(Material);
 
-	// Save
+	if (GShaderCompilingManager)
+	{
+		GShaderCompilingManager->FinishAllCompilation();
+	}
+
+	TArray<FString> CompileErrors;
+	if (const FMaterialResource* Resource = Material->GetMaterialResource(GMaxRHIShaderPlatform))
+	{
+		CompileErrors = Resource->GetCompileErrors();
+		if (!Resource->IsCompilationFinished())
+		{
+			CompileErrors.Add(TEXT("Material shader compilation did not finish"));
+		}
+	}
+	else
+	{
+		CompileErrors.Add(TEXT("Material resource was not available after compile"));
+	}
+
+	if (CompileErrors.Num() > 0)
+	{
+		if (OutWarnings)
+		{
+			OutWarnings->Append(CompileErrors);
+		}
+
+		for (const FString& Error : CompileErrors)
+		{
+			UE_LOG(LogMCTMaterialBuilder, Error, TEXT("CompileMaterial: %s: %s"), *Material->GetName(), *Error);
+		}
+		return false;
+	}
+
 	bool bSaved = SaveAsset(Material);
 
 	UE_LOG(LogMCTMaterialBuilder, Log, TEXT("CompileMaterial: '%s' compiled, saved=%s"),
 		*Material->GetName(), bSaved ? TEXT("true") : TEXT("false"));
-	return true;
+	return bSaved;
 }
 
 UMaterial* UMCTMaterialBuilder::LoadMaterial(const FString& AssetPath)
@@ -268,6 +302,167 @@ bool UMCTMaterialBuilder::SetExpressionProperty(
 	return bSuccess;
 }
 
+FString UMCTMaterialBuilder::GetExpressionJsonName(UMaterialExpression* Expr)
+{
+	return Expr && !Expr->Desc.IsEmpty() ? Expr->Desc : (Expr ? Expr->GetName() : FString());
+}
+
+FString UMCTMaterialBuilder::MakePinMatchKey(const FString& PinName)
+{
+	FString Key = PinName.ToLower();
+	Key.ReplaceInline(TEXT("1-x"), TEXT("oneminus"));
+	Key.ReplaceInline(TEXT(">="), TEXT("greaterorequal"));
+	Key.ReplaceInline(TEXT("<="), TEXT("lessorequal"));
+	Key.ReplaceInline(TEXT("=="), TEXT("equals"));
+	Key.ReplaceInline(TEXT("="), TEXT("equals"));
+	Key.ReplaceInline(TEXT(">"), TEXT("greaterthan"));
+	Key.ReplaceInline(TEXT("<"), TEXT("lessthan"));
+	Key.ReplaceInline(TEXT("+"), TEXT("plus"));
+	Key.ReplaceInline(TEXT("-"), TEXT("minus"));
+	Key.ReplaceInline(TEXT("*"), TEXT("multiply"));
+	Key.ReplaceInline(TEXT("/"), TEXT("divide"));
+
+	FString Result;
+	Result.Reserve(Key.Len());
+	for (TCHAR Ch : Key)
+	{
+		if (FChar::IsAlnum(Ch))
+		{
+			Result.AppendChar(Ch);
+		}
+	}
+	return Result;
+}
+
+bool UMCTMaterialBuilder::ResolveInputPinName(
+	UMaterialExpression* Expr,
+	const FString& RequestedInput,
+	FString& OutResolvedInput)
+{
+	if (!Expr) return false;
+
+	FString TrimmedInput = RequestedInput;
+	TrimmedInput.TrimStartAndEndInline();
+	if (TrimmedInput.IsEmpty())
+	{
+		for (FExpressionInputIterator It{Expr}; It; ++It)
+		{
+			OutResolvedInput = Expr->GetInputName(It.Index).ToString();
+			return true;
+		}
+		return false;
+	}
+
+	const FString RequestedKey = MakePinMatchKey(TrimmedInput);
+	int32 InputCount = 0;
+	FString SingleInputName;
+
+	for (FExpressionInputIterator It{Expr}; It; ++It)
+	{
+		++InputCount;
+		const FString ActualName = Expr->GetInputName(It.Index).ToString();
+		if (InputCount == 1)
+		{
+			SingleInputName = ActualName;
+		}
+
+		if (ActualName.Equals(TrimmedInput, ESearchCase::IgnoreCase) ||
+			MakePinMatchKey(ActualName).Equals(RequestedKey, ESearchCase::CaseSensitive))
+		{
+			OutResolvedInput = ActualName;
+			return true;
+		}
+	}
+
+	const bool bCommonSingleInputAlias =
+		RequestedKey == TEXT("input") ||
+		RequestedKey == TEXT("in") ||
+		RequestedKey == TEXT("value") ||
+		RequestedKey == TEXT("v") ||
+		RequestedKey == TEXT("x") ||
+		RequestedKey == TEXT("a");
+
+	if (InputCount == 1 && bCommonSingleInputAlias)
+	{
+		OutResolvedInput = SingleInputName;
+		return true;
+	}
+
+	return false;
+}
+
+bool UMCTMaterialBuilder::ResolveOutputPinName(
+	UMaterialExpression* Expr,
+	const FString& RequestedOutput,
+	FString& OutResolvedOutput,
+	int32& OutOutputIndex)
+{
+	if (!Expr) return false;
+
+	FString TrimmedOutput = RequestedOutput;
+	TrimmedOutput.TrimStartAndEndInline();
+	const TArray<FExpressionOutput>& Outputs = Expr->GetOutputs();
+
+	if (TrimmedOutput.IsEmpty())
+	{
+		OutResolvedOutput = TEXT("");
+		OutOutputIndex = 0;
+		return Outputs.Num() > 0;
+	}
+
+	const FString RequestedKey = MakePinMatchKey(TrimmedOutput);
+	for (int32 Index = 0; Index < Outputs.Num(); ++Index)
+	{
+		const FString ActualName = Outputs[Index].OutputName.ToString();
+		if (ActualName.Equals(TrimmedOutput, ESearchCase::IgnoreCase) ||
+			MakePinMatchKey(ActualName).Equals(RequestedKey, ESearchCase::CaseSensitive))
+		{
+			OutResolvedOutput = Outputs[Index].OutputName.IsNone() ? TEXT("") : ActualName;
+			OutOutputIndex = Index;
+			return true;
+		}
+	}
+
+	const bool bCommonSingleOutputAlias =
+		RequestedKey == TEXT("output") ||
+		RequestedKey == TEXT("out") ||
+		RequestedKey == TEXT("result") ||
+		RequestedKey == TEXT("value") ||
+		RequestedKey == TEXT("rgb") ||
+		RequestedKey == TEXT("rgba");
+
+	if (Outputs.Num() == 1 && bCommonSingleOutputAlias)
+	{
+		OutResolvedOutput = Outputs[0].OutputName.IsNone() ? TEXT("") : Outputs[0].OutputName.ToString();
+		OutOutputIndex = 0;
+		return true;
+	}
+
+	return false;
+}
+
+bool UMCTMaterialBuilder::IsExpressionInputConnected(
+	UMaterialExpression* ToExpr,
+	const FString& ToInput,
+	UMaterialExpression* FromExpr,
+	int32 FromOutputIndex)
+{
+	if (!ToExpr || !FromExpr) return false;
+
+	for (FExpressionInputIterator It{ToExpr}; It; ++It)
+	{
+		const FString ActualInputName = ToExpr->GetInputName(It.Index).ToString();
+		if (ActualInputName.Equals(ToInput, ESearchCase::IgnoreCase))
+		{
+			return It.Input &&
+				It.Input->Expression == FromExpr &&
+				It.Input->OutputIndex == FromOutputIndex;
+		}
+	}
+
+	return false;
+}
+
 bool UMCTMaterialBuilder::ConnectExpressions(
 	UMaterial* Material,
 	const FString& FromNodeName,
@@ -293,12 +488,49 @@ bool UMCTMaterialBuilder::ConnectExpressions(
 
 	FScopedTransaction Transaction(LOCTEXT("AIConnectExpressions", "AI: Connect Material Expressions"));
 
-	UMaterialEditingLibrary::ConnectMaterialExpressions(
-		FromExpr, FromOutput, ToExpr, ToInput);
+	FString ResolvedFromOutput;
+	int32 ResolvedFromOutputIndex = INDEX_NONE;
+	if (!ResolveOutputPinName(FromExpr, FromOutput, ResolvedFromOutput, ResolvedFromOutputIndex))
+	{
+		UE_LOG(LogMCTMaterialBuilder, Error, TEXT("ConnectExpressions: Output '%s' not found on node '%s'"),
+			*FromOutput, *FromNodeName);
+		return false;
+	}
+
+	FString ResolvedToInput;
+	if (!ResolveInputPinName(ToExpr, ToInput, ResolvedToInput))
+	{
+		UE_LOG(LogMCTMaterialBuilder, Error, TEXT("ConnectExpressions: Input '%s' not found on node '%s'"),
+			*ToInput, *ToNodeName);
+		return false;
+	}
+
+	bool bConnected = false;
+	for (FExpressionInputIterator It{ToExpr}; It; ++It)
+	{
+		const FString ActualInputName = ToExpr->GetInputName(It.Index).ToString();
+		if (ActualInputName.Equals(ResolvedToInput, ESearchCase::IgnoreCase))
+		{
+			if (It.Input)
+			{
+				It.Input->Connect(ResolvedFromOutputIndex, FromExpr);
+				bConnected = true;
+			}
+			break;
+		}
+	}
+
+	if (!bConnected || !IsExpressionInputConnected(ToExpr, ResolvedToInput, FromExpr, ResolvedFromOutputIndex))
+	{
+		UE_LOG(LogMCTMaterialBuilder, Error,
+			TEXT("ConnectExpressions: Verification failed for '%s'.%s -> '%s'.%s"),
+			*FromNodeName, *ResolvedFromOutput, *ToNodeName, *ResolvedToInput);
+		return false;
+	}
 
 	Material->MarkPackageDirty();
 	UE_LOG(LogMCTMaterialBuilder, Log, TEXT("ConnectExpressions: '%s'.%s -> '%s'.%s"),
-		*FromNodeName, *FromOutput, *ToNodeName, *ToInput);
+		*FromNodeName, *ResolvedFromOutput, *ToNodeName, *ResolvedToInput);
 
 	return true;
 }
@@ -327,11 +559,28 @@ bool UMCTMaterialBuilder::ConnectToMaterialProperty(
 
 	FScopedTransaction Transaction(LOCTEXT("AIConnectToMaterialProp", "AI: Connect To Material Property"));
 
-	bool bResult = UMaterialEditingLibrary::ConnectMaterialProperty(FromExpr, FromOutput, Prop);
+	FString ResolvedFromOutput;
+	int32 ResolvedFromOutputIndex = INDEX_NONE;
+	if (!ResolveOutputPinName(FromExpr, FromOutput, ResolvedFromOutput, ResolvedFromOutputIndex))
+	{
+		UE_LOG(LogMCTMaterialBuilder, Error, TEXT("ConnectToMaterialProperty: Output '%s' not found on node '%s'"),
+			*FromOutput, *FromNodeName);
+		return false;
+	}
+
+	bool bResult = UMaterialEditingLibrary::ConnectMaterialProperty(FromExpr, ResolvedFromOutput, Prop);
+	const FExpressionInput* RootInput = Material->GetExpressionInputForProperty(Prop);
+	if (!bResult || !RootInput || RootInput->Expression != FromExpr || RootInput->OutputIndex != ResolvedFromOutputIndex)
+	{
+		UE_LOG(LogMCTMaterialBuilder, Error,
+			TEXT("ConnectToMaterialProperty: Verification failed for '%s'.%s -> %s (result=%s)"),
+			*FromNodeName, *ResolvedFromOutput, *MaterialProperty, bResult ? TEXT("true") : TEXT("false"));
+		return false;
+	}
 
 	Material->MarkPackageDirty();
 	UE_LOG(LogMCTMaterialBuilder, Log, TEXT("ConnectToMaterialProperty: '%s'.%s -> %s (result=%s)"),
-		*FromNodeName, *FromOutput, *MaterialProperty, bResult ? TEXT("true") : TEXT("false"));
+		*FromNodeName, *ResolvedFromOutput, *MaterialProperty, bResult ? TEXT("true") : TEXT("false"));
 
 	return bResult;
 }
@@ -348,10 +597,18 @@ bool UMCTMaterialBuilder::DisconnectInput(
 
 	FScopedTransaction Transaction(LOCTEXT("AIDisconnectInput", "AI: Disconnect Material Input"));
 
+	FString ResolvedInputName;
+	if (!ResolveInputPinName(Expr, InputName, ResolvedInputName))
+	{
+		UE_LOG(LogMCTMaterialBuilder, Warning, TEXT("DisconnectInput: Input '%s' not found on node '%s'"),
+			*InputName, *NodeName);
+		return false;
+	}
+
 	for (FExpressionInputIterator It{Expr}; It; ++It)
 	{
 		FString ExprInputName = Expr->GetInputName(It.Index).ToString();
-		if (ExprInputName.Equals(InputName, ESearchCase::IgnoreCase))
+		if (ExprInputName.Equals(ResolvedInputName, ESearchCase::IgnoreCase))
 		{
 			It.Input->Expression = nullptr;
 			It.Input->OutputIndex = 0;
@@ -766,7 +1023,7 @@ TSharedPtr<FJsonObject> UMCTMaterialBuilder::ExpressionToJson(UMaterialExpressio
 	TSharedPtr<FJsonObject> Obj = MakeShared<FJsonObject>();
 	if (!Expr) return Obj;
 
-	FString Name = Expr->Desc.IsEmpty() ? Expr->GetName() : Expr->Desc;
+	FString Name = GetExpressionJsonName(Expr);
 	Obj->SetStringField(TEXT("name"), Name);
 	Obj->SetStringField(TEXT("class"), Expr->GetClass()->GetName());
 	Obj->SetNumberField(TEXT("index"), Index);
@@ -782,6 +1039,17 @@ TSharedPtr<FJsonObject> UMCTMaterialBuilder::ExpressionToJson(UMaterialExpressio
 			Obj->SetStringField(TEXT("parameter_name"), ParamName.ToString());
 		}
 	}
+
+	// Inputs
+	TArray<TSharedPtr<FJsonValue>> InputsArr;
+	for (FExpressionInputIterator It{Expr}; It; ++It)
+	{
+		TSharedPtr<FJsonObject> InObj = MakeShared<FJsonObject>();
+		InObj->SetNumberField(TEXT("index"), It.Index);
+		InObj->SetStringField(TEXT("name"), Expr->GetInputName(It.Index).ToString());
+		InputsArr.Add(MakeShared<FJsonValueObject>(InObj));
+	}
+	Obj->SetArrayField(TEXT("inputs"), InputsArr);
 
 	// Outputs
 	TArray<TSharedPtr<FJsonValue>> OutputsArr;
@@ -845,14 +1113,13 @@ TSharedPtr<FJsonObject> UMCTMaterialBuilder::GetMaterialGraphAsJson(UMaterial* M
 	for (UMaterialExpression* Expr : Expressions)
 	{
 		if (!Expr) continue;
-		FString ToName = Expr->Desc.IsEmpty() ? Expr->GetName() : Expr->Desc;
+		FString ToName = GetExpressionJsonName(Expr);
 		for (FExpressionInputIterator It{Expr}; It; ++It)
 		{
 			if (It.Input && It.Input->Expression)
 			{
 				TSharedPtr<FJsonObject> Conn = MakeShared<FJsonObject>();
-				FString FromName = It.Input->Expression->Desc.IsEmpty()
-					? It.Input->Expression->GetName() : It.Input->Expression->Desc;
+				FString FromName = GetExpressionJsonName(It.Input->Expression);
 				Conn->SetStringField(TEXT("from"), FromName);
 				Conn->SetNumberField(TEXT("from_output"), It.Input->OutputIndex);
 				Conn->SetStringField(TEXT("to"), ToName);
@@ -862,6 +1129,48 @@ TSharedPtr<FJsonObject> UMCTMaterialBuilder::GetMaterialGraphAsJson(UMaterial* M
 		}
 	}
 	Result->SetArrayField(TEXT("connections"), ConnArray);
+
+	TArray<TSharedPtr<FJsonValue>> RootConnArray;
+	auto AddRootConnection = [&](EMaterialProperty Property, const TCHAR* PropertyName)
+	{
+		if (!Material->IsPropertyConnected(Property))
+		{
+			return;
+		}
+
+		const FExpressionInput* Input = Material->GetExpressionInputForProperty(Property);
+		if (!Input || !Input->Expression)
+		{
+			return;
+		}
+
+		TSharedPtr<FJsonObject> Conn = MakeShared<FJsonObject>();
+		Conn->SetStringField(TEXT("from"), GetExpressionJsonName(Input->Expression));
+		Conn->SetNumberField(TEXT("from_output"), Input->OutputIndex);
+		Conn->SetStringField(TEXT("to"), TEXT("Material"));
+		Conn->SetStringField(TEXT("to_input"), PropertyName);
+		RootConnArray.Add(MakeShared<FJsonValueObject>(Conn));
+	};
+
+	AddRootConnection(MP_BaseColor, TEXT("BaseColor"));
+	AddRootConnection(MP_Metallic, TEXT("Metallic"));
+	AddRootConnection(MP_Specular, TEXT("Specular"));
+	AddRootConnection(MP_Roughness, TEXT("Roughness"));
+	AddRootConnection(MP_Anisotropy, TEXT("Anisotropy"));
+	AddRootConnection(MP_EmissiveColor, TEXT("EmissiveColor"));
+	AddRootConnection(MP_Opacity, TEXT("Opacity"));
+	AddRootConnection(MP_OpacityMask, TEXT("OpacityMask"));
+	AddRootConnection(MP_Normal, TEXT("Normal"));
+	AddRootConnection(MP_Tangent, TEXT("Tangent"));
+	AddRootConnection(MP_WorldPositionOffset, TEXT("WorldPositionOffset"));
+	AddRootConnection(MP_SubsurfaceColor, TEXT("SubsurfaceColor"));
+	AddRootConnection(MP_CustomData0, TEXT("CustomData0"));
+	AddRootConnection(MP_CustomData1, TEXT("CustomData1"));
+	AddRootConnection(MP_AmbientOcclusion, TEXT("AmbientOcclusion"));
+	AddRootConnection(MP_Refraction, TEXT("Refraction"));
+	AddRootConnection(MP_PixelDepthOffset, TEXT("PixelDepthOffset"));
+	AddRootConnection(MP_ShadingModel, TEXT("ShadingModel"));
+	Result->SetArrayField(TEXT("root_connections"), RootConnArray);
 
 	return Result;
 }
