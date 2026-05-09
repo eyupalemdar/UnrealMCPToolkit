@@ -33,6 +33,7 @@ struct FMCTUtilityContext
 	TArray<FMCTUtilityCommandDescriptor> Commands;
 	HttpMcp::FMCTHttpMcpStatus HttpStatus;
 	FMCTAsyncJobCounts TaskCounts;
+	bool bSerializesMutatingCommands = false;
 };
 
 TSharedPtr<FJsonObject> BuildEditorIdentityJson(const FMCTUtilityContext& Context);

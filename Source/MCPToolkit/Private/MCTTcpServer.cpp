@@ -16,6 +16,7 @@
 #include "Misc/DateTime.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/ScopeLock.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "Sockets.h"
@@ -392,17 +393,28 @@ MCPToolkit::CommandDispatch::FMCTCommandDescriptor FMCTTcpServer::BuildDispatchD
 
 FString FMCTTcpServer::DispatchCommand(const FCommandDescriptor& Descriptor, TSharedPtr<FJsonObject> Params)
 {
-	if (Descriptor.ParamsHandler)
+	auto ExecuteHandler = [this, &Descriptor, Params]() -> FString
 	{
-		return (this->*Descriptor.ParamsHandler)(Params);
+		if (Descriptor.ParamsHandler)
+		{
+			return (this->*Descriptor.ParamsHandler)(Params);
+		}
+
+		if (Descriptor.NoParamsHandler)
+		{
+			return (this->*Descriptor.NoParamsHandler)();
+		}
+
+		return CreateErrorResponse(FString::Printf(TEXT("Command '%s' has no registered handler"), Descriptor.Name));
+	};
+
+	if (Descriptor.bMutating)
+	{
+		FScopeLock Lock(&MutatingCommandCriticalSection);
+		return ExecuteHandler();
 	}
 
-	if (Descriptor.NoParamsHandler)
-	{
-		return (this->*Descriptor.NoParamsHandler)();
-	}
-
-	return CreateErrorResponse(FString::Printf(TEXT("Command '%s' has no registered handler"), Descriptor.Name));
+	return ExecuteHandler();
 }
 
 MCPToolkit::CommandHandlers::Utility::FMCTUtilityContext FMCTTcpServer::BuildUtilityContext() const
@@ -417,6 +429,7 @@ MCPToolkit::CommandHandlers::Utility::FMCTUtilityContext FMCTTcpServer::BuildUti
 	Context.ManifestSource = TEXT("FMCTTcpServer::GetCommandDescriptors");
 	Context.HttpStatus = HttpMcpServer.GetStatus();
 	Context.TaskCounts = AsyncJobStore.GetCounts();
+	Context.bSerializesMutatingCommands = true;
 
 	for (const FCommandDescriptor& Descriptor : GetCommandDescriptors())
 	{

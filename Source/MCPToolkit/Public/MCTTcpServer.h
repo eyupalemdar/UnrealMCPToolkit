@@ -503,6 +503,9 @@ private:
 
 	/** Async job registry for long-running commands */
 	MCPToolkit::CommandHandlers::FMCTAsyncJobStore AsyncJobStore;
+
+	/** Serializes mutating command execution across TCP/HTTP/thread-pool clients. */
+	FCriticalSection MutatingCommandCriticalSection;
 };
 
 /**

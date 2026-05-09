@@ -86,6 +86,7 @@ TSharedPtr<FJsonObject> BuildEditorIdentityJson(const FMCTUtilityContext& Contex
 	Capabilities->SetBoolField(TEXT("supports_http_mcp_sessions"), Context.HttpStatus.bRunning);
 	Capabilities->SetBoolField(TEXT("supports_mcp_pagination"), Context.HttpStatus.bRunning);
 	Capabilities->SetBoolField(TEXT("supports_http_audit"), Context.HttpStatus.bRunning);
+	Capabilities->SetBoolField(TEXT("serializes_mutating_commands"), Context.bSerializesMutatingCommands);
 	Capabilities->SetBoolField(TEXT("http_auth_required"), Context.HttpStatus.bAuthRequired);
 	Capabilities->SetArrayField(TEXT("supported_scopes"), BuildSupportedScopesJson());
 
@@ -167,6 +168,7 @@ TSharedPtr<FJsonObject> BuildCommandManifestJson(const FMCTUtilityContext& Conte
 	Manifest->SetBoolField(TEXT("supports_mcp_pagination"), Context.HttpStatus.bRunning);
 	Manifest->SetBoolField(TEXT("supports_http_audit"), Context.HttpStatus.bRunning);
 	Manifest->SetBoolField(TEXT("http_audit_enabled"), Context.HttpStatus.bAuditEnabled);
+	Manifest->SetBoolField(TEXT("serializes_mutating_commands"), Context.bSerializesMutatingCommands);
 	Manifest->SetStringField(TEXT("http_audit_log_path"), Context.HttpStatus.AuditLogPath);
 	Manifest->SetStringField(TEXT("mcp_protocol_version"), TEXT("2025-06-18"));
 	Manifest->SetNumberField(TEXT("mcp_session_ttl_seconds"), Context.HttpStatus.SessionTtlSeconds);
@@ -213,6 +215,7 @@ FString HandleServerStatus(const FMCTUtilityContext& Context)
 	Data->SetNumberField(TEXT("tasks_cancelled"), Context.TaskCounts.CancelledTasks);
 	Data->SetNumberField(TEXT("task_event_count"), Context.TaskCounts.TaskEventCount);
 	Data->SetNumberField(TEXT("latest_task_event_sequence"), static_cast<double>(Context.TaskCounts.LatestTaskEventSequence));
+	Data->SetBoolField(TEXT("serializes_mutating_commands"), Context.bSerializesMutatingCommands);
 	return CreateSuccessResponse(Data);
 }
 
