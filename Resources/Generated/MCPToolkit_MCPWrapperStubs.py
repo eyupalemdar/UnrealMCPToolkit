@@ -1655,6 +1655,17 @@ def rename_asset(asset_path: str, new_package_path: str = '', new_asset_name: st
     return _format_response(_send_command("rename_asset", params, _request_meta(scope, dry_run)))
 
 
+def duplicate_asset(asset_path: str, target_asset_path: str = '', new_package_path: str = '', new_asset_name: str = '', scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `duplicate_asset` (Asset)."""
+    params = {
+        "asset_path": asset_path,
+        "target_asset_path": target_asset_path,
+        "new_package_path": new_package_path,
+        "new_asset_name": new_asset_name,
+    }
+    return _format_response(_send_command("duplicate_asset", params, _request_meta(scope, dry_run)))
+
+
 def get_referencers(asset_path: str) -> str:
     """Generated stub for TCP command `get_referencers` (Asset)."""
     params = {

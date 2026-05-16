@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "MCPToolkit",
-  "generated_at_utc": "2026-05-09T15:02:58.591156Z",
-  "tool_count": 198,
+  "generated_at_utc": "2026-05-12T02:33:35.306173Z",
+  "tool_count": 199,
   "tools": {
     "ping": {
       "type": "object",
@@ -6466,6 +6466,53 @@
       "properties": {
         "asset_path": {
           "type": "string"
+        },
+        "new_package_path": {
+          "type": "string",
+          "default": ""
+        },
+        "new_asset_name": {
+          "type": "string",
+          "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "asset_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Asset",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": true,
+        "timeout_seconds": 120
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "duplicate_asset": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "target_asset_path": {
+          "type": "string",
+          "default": ""
         },
         "new_package_path": {
           "type": "string",

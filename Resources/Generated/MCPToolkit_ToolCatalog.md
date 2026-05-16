@@ -2,8 +2,8 @@
 
 > Generated from `FMCTTcpServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 179
-- MCP tools: 198
+- TCP commands: 180
+- MCP tools: 199
 - Categories: 38
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/MCPToolkit_WrapperSpec.json`
@@ -16,7 +16,7 @@
 |---|---:|
 | `AnimBlueprint` | 2 |
 | `AnimationAsset` | 1 |
-| `Asset` | 14 |
+| `Asset` | 15 |
 | `AssetLifecycle` | 1 |
 | `AsyncJob` | 6 |
 | `BlueprintComponent` | 4 |
@@ -207,6 +207,7 @@
 | `asset_validate_light` | `Asset` | `read` | false | false | false | 60 |
 | `save_asset` | `Asset` | `write` | true | true | false | 60 |
 | `rename_asset` | `Asset` | `write` | true | true | true | 120 |
+| `duplicate_asset` | `Asset` | `write` | true | true | true | 120 |
 | `get_referencers` | `Asset` | `read` | false | false | false | 60 |
 | `get_dependencies` | `Asset` | `read` | false | false | false | 60 |
 | `delete_asset` | `Asset` | `destructive` | true | true | true | 120 |

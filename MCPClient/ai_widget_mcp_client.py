@@ -6185,6 +6185,41 @@ def rename_asset(
 
 
 @mcp.tool()
+def duplicate_asset(
+    asset_path: str,
+    target_asset_path: str = "",
+    new_package_path: str = "",
+    new_asset_name: str = "",
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """
+    Duplicate an asset to a new package path/name using UE AssetTools::DuplicateAsset.
+
+    Provide either target_asset_path or both new_package_path and new_asset_name.
+    The command refuses to overwrite an existing target asset; delete or rename the
+    target first when replacing a scratch/probe asset.
+
+    Args:
+        asset_path: Source asset path, e.g. "/Game/UI/W_Source".
+        target_asset_path: Full target package path, e.g. "/Game/UI/W_Copy".
+        new_package_path: Target package folder path when target_asset_path is empty.
+        new_asset_name: Target asset name when target_asset_path is empty.
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without duplicating.
+
+    Returns:
+        JSON with duplicated status, source_path, new_path, new_package_path, and new_asset_name.
+
+    Notes:
+        - Runs on Game Thread; up to 120s timeout.
+        - For Blueprint/Widget Blueprint assets, pass the BP path (not the _C generated class).
+        - Existing dependencies remain referenced; dependencies are not cloned or path-rewritten.
+    """
+    return _send_generated_tcp_tool("duplicate_asset", locals())
+
+
+@mcp.tool()
 def delete_asset(
     asset_path: str,
     force: bool = False,
@@ -6714,13 +6749,15 @@ def reload_asset(
     reopen_after: bool = True,
 ) -> str:
     """
-    Reload an asset from disk, clearing any cached editor tab state.
+    Refresh an asset editor tab, clearing any cached editor-tab state.
 
     Use this after `compile_and_save` when the user has the asset open in an
     editor tab. The editor keeps a cached widget instance that does not auto-
     refresh after backend modifications, so the user sees the old version even
-    though the on-disk asset is up to date. This tool closes the editor,
-    hard-reloads the package, and (optionally) reopens the editor.
+    though the on-disk asset is up to date. This tool closes the editor and
+    optionally reopens it. For regular assets it also hard-reloads the package;
+    for Widget Blueprints it skips hard package reload and uses close/reopen
+    refresh because hard reload can invalidate live UMG designer preview state.
 
     `capture_widget_preview` renders directly from disk, so it does NOT need
     reload — only the user-facing editor tab needs this.
@@ -6731,8 +6768,8 @@ def reload_asset(
                       it was previously open.
 
     Returns:
-        JSON with `was_open` (was it open before reload), `reloaded` (did the
-        hard reload succeed), and `reopened` (was it reopened after).
+        JSON with `was_open`, `closed_editor`, `reloaded`,
+        `hard_reload_skipped`, `reload_strategy`, and `reopened`.
     """
     return _format_response(_send_command("reload_asset", {
         "asset_path": asset_path,

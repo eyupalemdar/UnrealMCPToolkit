@@ -442,6 +442,7 @@
         "asset_validate_light",
         "save_asset",
         "rename_asset",
+        "duplicate_asset",
         "get_referencers",
         "get_dependencies",
         "delete_asset",
