@@ -149,6 +149,11 @@ FString FMCTTcpServer::HandleRenameAsset(TSharedPtr<FJsonObject> Params)
 	return MCPToolkit::CommandHandlers::Asset::HandleRenameAsset(Params);
 }
 
+FString FMCTTcpServer::HandleDuplicateAsset(TSharedPtr<FJsonObject> Params)
+{
+	return MCPToolkit::CommandHandlers::Asset::HandleDuplicateAsset(Params);
+}
+
 FString FMCTTcpServer::HandleGetReferencers(TSharedPtr<FJsonObject> Params)
 {
 	return MCPToolkit::CommandHandlers::Asset::HandleGetReferencers(Params);

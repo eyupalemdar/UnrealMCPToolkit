@@ -770,6 +770,126 @@ FString HandleRenameAsset(TSharedPtr<FJsonObject> Params)
 
 
 
+FString HandleDuplicateAsset(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	FString TargetAssetPath;
+	Params->TryGetStringField(TEXT("target_asset_path"), TargetAssetPath);
+
+	FString NewPackagePath, NewAssetName;
+	Params->TryGetStringField(TEXT("new_package_path"), NewPackagePath);
+	Params->TryGetStringField(TEXT("new_asset_name"), NewAssetName);
+
+	if (!TargetAssetPath.IsEmpty())
+	{
+		const FString TargetPackageName = NormalizePackageName(TargetAssetPath).ToString();
+		NewPackagePath = FPackageName::GetLongPackagePath(TargetPackageName);
+		NewAssetName = FPackageName::GetLongPackageAssetName(TargetPackageName);
+	}
+
+	if (NewPackagePath.IsEmpty() || NewAssetName.IsEmpty())
+	{
+		return CreateErrorResponse(TEXT("Provide either 'target_asset_path' or both 'new_package_path' and 'new_asset_name'"));
+	}
+
+	if (!NewPackagePath.StartsWith(TEXT("/Game/")) && NewPackagePath != TEXT("/Game"))
+	{
+		return CreateErrorResponse(TEXT("'new_package_path' must be under /Game"));
+	}
+
+	if (!FPackageName::IsValidObjectPath(AssetPath))
+	{
+		const FString SourcePackageName = NormalizePackageName(AssetPath).ToString();
+		if (!FPackageName::IsValidLongPackageName(SourcePackageName))
+		{
+			return CreateErrorResponse(FString::Printf(TEXT("Invalid source asset path: %s"), *AssetPath));
+		}
+	}
+
+	if (!FPackageName::IsValidLongPackageName(NewPackagePath))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Invalid target package path: %s"), *NewPackagePath));
+	}
+
+	const FString FinalAssetPath = NewPackagePath / NewAssetName;
+	if (NormalizePackageName(AssetPath).ToString() == FinalAssetPath)
+	{
+		return CreateErrorResponse(TEXT("Target path equals source path; nothing to duplicate"));
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, NewPackagePath, NewAssetName, FinalAssetPath, Promise]()
+	{
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+		if (AR.IsLoadingAssets())
+		{
+			AR.WaitForCompletion();
+		}
+
+		const FName TargetPackageName(*FinalAssetPath);
+		TArray<FAssetData> ExistingTargetAssets;
+		AR.GetAssetsByPackageName(TargetPackageName, ExistingTargetAssets);
+		FString ExistingPackageFilename;
+		const bool bTargetPackageExistsOnDisk = FPackageName::DoesPackageExist(FinalAssetPath, &ExistingPackageFilename);
+		if (ExistingTargetAssets.Num() > 0 || bTargetPackageExistsOnDisk)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("Target asset already exists: %s. Delete or rename it before duplicate_asset."),
+				*FinalAssetPath)));
+			return;
+		}
+
+		UObject* SourceAsset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
+		if (!SourceAsset)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Asset not found: %s"), *AssetPath)));
+			return;
+		}
+
+		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
+		IAssetTools& AssetTools = AssetToolsModule.Get();
+		UObject* DuplicatedAsset = AssetTools.DuplicateAsset(NewAssetName, NewPackagePath, SourceAsset);
+		if (!DuplicatedAsset)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("DuplicateAsset failed for %s -> %s"),
+				*AssetPath, *FinalAssetPath)));
+			return;
+		}
+
+		DuplicatedAsset->MarkPackageDirty();
+		const bool bSaved = UMCTDataAssetBuilder::SaveAsset(DuplicatedAsset);
+
+		TArray<FString> PathsToScan;
+		PathsToScan.Add(NewPackagePath);
+		AR.ScanPathsSynchronous(PathsToScan, true);
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetBoolField(TEXT("duplicated"), true);
+		Data->SetBoolField(TEXT("saved"), bSaved);
+		Data->SetStringField(TEXT("source_path"), AssetPath);
+		Data->SetStringField(TEXT("new_path"), FinalAssetPath);
+		Data->SetStringField(TEXT("new_package_path"), NewPackagePath);
+		Data->SetStringField(TEXT("new_asset_name"), NewAssetName);
+		Data->SetStringField(TEXT("class"), DuplicatedAsset->GetClass()->GetPathName());
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Duplicate asset timed out"));
+	return Future.Get();
+}
+
+
+
 FString HandleGetReferencers(TSharedPtr<FJsonObject> Params)
 {
 	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));

@@ -16,6 +16,7 @@ FString HandleAssetSearch(TSharedPtr<FJsonObject> Params);
 FString HandleAssetValidateLight(TSharedPtr<FJsonObject> Params);
 FString HandleSaveAsset(TSharedPtr<FJsonObject> Params);
 FString HandleRenameAsset(TSharedPtr<FJsonObject> Params);
+FString HandleDuplicateAsset(TSharedPtr<FJsonObject> Params);
 FString HandleGetReferencers(TSharedPtr<FJsonObject> Params);
 FString HandleGetDependencies(TSharedPtr<FJsonObject> Params);
 FString HandleDeleteAsset(TSharedPtr<FJsonObject> Params);

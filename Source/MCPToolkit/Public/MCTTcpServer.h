@@ -103,6 +103,7 @@
  * - get_asset_properties: Get all properties of any loaded asset as JSON
  * - save_asset: Save any loaded asset to disk
  * - rename_asset: Rename/move an asset (creates redirector, fixes references via AssetTools)
+ * - duplicate_asset: Duplicate an asset to a new package path/name using AssetTools
  * - delete_asset: Delete an asset from disk (ObjectTools::DeleteAssets, optional force=true bypasses ref check)
  *
  * Input Mapping Context commands:
@@ -413,6 +414,7 @@ private:
 	FString HandleAssetValidateLight(TSharedPtr<class FJsonObject> Params);
 	FString HandleSaveAsset(TSharedPtr<class FJsonObject> Params);
 	FString HandleRenameAsset(TSharedPtr<class FJsonObject> Params);
+	FString HandleDuplicateAsset(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetReferencers(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetDependencies(TSharedPtr<class FJsonObject> Params);
 	FString HandleDeleteAsset(TSharedPtr<class FJsonObject> Params);

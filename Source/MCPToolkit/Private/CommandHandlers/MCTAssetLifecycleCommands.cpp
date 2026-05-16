@@ -230,8 +230,11 @@ FString HandleReloadAsset(TSharedPtr<FJsonObject> Params)
 			return;
 		}
 
+		const bool bIsWidgetBlueprint = Asset->IsA<UWidgetBlueprint>();
+
 		// 2) Check if asset editor is currently open, remember state
 		bool bWasOpen = false;
+		bool bClosedEditor = false;
 		UAssetEditorSubsystem* EditorSubsystem = nullptr;
 		if (GEditor)
 		{
@@ -245,23 +248,38 @@ FString HandleReloadAsset(TSharedPtr<FJsonObject> Params)
 				if (bWasOpen)
 				{
 					EditorSubsystem->CloseAllEditorsForAsset(Asset);
+					bClosedEditor = true;
 				}
 			}
 		}
 
-		// 3) Hard reload the package (reloads from disk, discards in-memory cache)
-		TArray<UPackage*> PackagesToReload;
-		PackagesToReload.Add(Package);
-
+		// 3) Hard reload the package for regular assets. Widget Blueprints are
+		// refreshed by closing/reopening the editor tab only: hard package reload
+		// can destroy live UMG designer preview worlds while their tickable editor
+		// objects are still unwinding.
+		bool bReloaded = false;
+		bool bSkippedHardReload = false;
+		FString ReloadStrategy = TEXT("package_reload");
 		FText ErrorMsg;
-		bool bReloaded = UPackageTools::ReloadPackages(PackagesToReload, ErrorMsg, EReloadPackagesInteractionMode::AssumePositive);
+
+		if (bIsWidgetBlueprint)
+		{
+			bSkippedHardReload = true;
+			ReloadStrategy = TEXT("widget_blueprint_editor_refresh");
+		}
+		else
+		{
+			TArray<UPackage*> PackagesToReload;
+			PackagesToReload.Add(Package);
+			bReloaded = UPackageTools::ReloadPackages(PackagesToReload, ErrorMsg, EReloadPackagesInteractionMode::AssumePositive);
+		}
 
 		// 4) Reopen editor if it was previously open and reopen_after flag is true
 		bool bReopened = false;
 		if (bReopenAfter && bWasOpen && EditorSubsystem)
 		{
 			// Load fresh reference after reload
-			UObject* FreshAsset = LoadObject<UObject>(nullptr, *AssetPath);
+			UObject* FreshAsset = bSkippedHardReload ? Asset : LoadObject<UObject>(nullptr, *AssetPath);
 			if (FreshAsset)
 			{
 				bReopened = EditorSubsystem->OpenEditorForAsset(FreshAsset);
@@ -272,7 +290,14 @@ FString HandleReloadAsset(TSharedPtr<FJsonObject> Params)
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetStringField(TEXT("asset_path"), AssetPath);
 		Data->SetBoolField(TEXT("was_open"), bWasOpen);
+		Data->SetBoolField(TEXT("closed_editor"), bClosedEditor);
 		Data->SetBoolField(TEXT("reloaded"), bReloaded);
+		Data->SetBoolField(TEXT("hard_reload_skipped"), bSkippedHardReload);
+		Data->SetStringField(TEXT("reload_strategy"), ReloadStrategy);
+		if (!ErrorMsg.IsEmpty())
+		{
+			Data->SetStringField(TEXT("reload_error"), ErrorMsg.ToString());
+		}
 		Data->SetBoolField(TEXT("reopened"), bReopened);
 
 		Promise->SetValue(CreateSuccessResponse(Data));
