@@ -1243,12 +1243,19 @@ FString HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
 		Params->TryGetObjectField(TEXT("args"), ArgsObject);
 
 		TArray<uint8> ParamBuffer;
-		ParamBuffer.SetNumZeroed(Function->ParmsSize);
-		void* ParamData = ParamBuffer.GetData();
-		Function->InitializeStruct(ParamData);
+		void* ParamData = nullptr;
+		if (Function->ParmsSize > 0)
+		{
+			ParamBuffer.SetNumZeroed(Function->ParmsSize);
+			ParamData = ParamBuffer.GetData();
+			Function->InitializeStruct(ParamData);
+		}
 		ON_SCOPE_EXIT
 		{
-			Function->DestroyStruct(ParamData);
+			if (ParamData)
+			{
+				Function->DestroyStruct(ParamData);
+			}
 		};
 
 		for (TFieldIterator<FProperty> It(Function); It; ++It)
@@ -1267,6 +1274,11 @@ FString HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
 			if (!ArgValue.IsValid())
 			{
 				continue;
+			}
+			if (!ParamData)
+			{
+				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Function %s has no parameter storage for argument %s"), *FunctionName, *Param->GetName())));
+				return;
 			}
 
 			void* ValuePtr = Param->ContainerPtrToValuePtr<void>(ParamData);
@@ -1289,6 +1301,11 @@ FString HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
 			if (!Param || !Param->HasAnyPropertyFlags(CPF_Parm))
 			{
 				continue;
+			}
+			if (!ParamData)
+			{
+				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Function %s has no parameter storage for output %s"), *FunctionName, *Param->GetName())));
+				return;
 			}
 
 			void* ValuePtr = Param->ContainerPtrToValuePtr<void>(ParamData);
