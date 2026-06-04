@@ -415,6 +415,7 @@ private:
 	FString HandleSaveAsset(TSharedPtr<class FJsonObject> Params);
 	FString HandleRenameAsset(TSharedPtr<class FJsonObject> Params);
 	FString HandleDuplicateAsset(TSharedPtr<class FJsonObject> Params);
+	FString HandleMoveFolderAssets(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetReferencers(TSharedPtr<class FJsonObject> Params);
 	FString HandleGetDependencies(TSharedPtr<class FJsonObject> Params);
 	FString HandleDeleteAsset(TSharedPtr<class FJsonObject> Params);

@@ -321,6 +321,7 @@ const TArray<FMCTTcpServer::FCommandDescriptor>& FMCTTcpServer::GetCommandDescri
 		MCT_COMMAND_PARAMS("save_asset", "Asset", true, 60, HandleSaveAsset),
 		MCT_COMMAND_PARAMS("rename_asset", "Asset", true, 120, HandleRenameAsset),
 		MCT_COMMAND_PARAMS("duplicate_asset", "Asset", true, 120, HandleDuplicateAsset),
+		MCT_COMMAND_PARAMS_SCOPE("move_folder_assets", "Asset", true, 300, "write", true, true, HandleMoveFolderAssets),
 		MCT_COMMAND_PARAMS("get_referencers", "Asset", false, 60, HandleGetReferencers),
 		MCT_COMMAND_PARAMS("get_dependencies", "Asset", false, 60, HandleGetDependencies),
 		MCT_COMMAND_PARAMS_SCOPE("delete_asset", "Asset", true, 120, "destructive", true, true, HandleDeleteAsset),

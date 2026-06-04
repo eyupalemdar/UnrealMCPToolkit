@@ -6220,6 +6220,43 @@ def duplicate_asset(
 
 
 @mcp.tool()
+def move_folder_assets(
+    source_folder: str,
+    target_folder: str,
+    operation: str = "move",
+    recursive: bool = True,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """
+    Move or copy all assets under a Content Browser folder using UE directory APIs.
+
+    operation="move" calls UEditorAssetSubsystem::RenameDirectory, which is the
+    Unreal Editor folder move path. operation="copy" calls
+    UEditorAssetSubsystem::DuplicateDirectory. This command never moves .uasset
+    files directly on disk.
+
+    Args:
+        source_folder: Source Content Browser folder, e.g. "/Game/UI/Hud/Players/SeatPlates".
+        target_folder: Target Content Browser folder, e.g. "/Game/UI/Hud/SeatPlates".
+        operation: "move" to move in place, or "copy" to duplicate to the target folder.
+        recursive: Must be True. UE directory APIs operate on contained assets recursively.
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without moving or copying assets.
+
+    Returns:
+        JSON with operation, engine_api, source/target folder paths, before/after asset counts,
+        source/target directory existence after the operation, and a sample of target asset paths.
+
+    Notes:
+        - The target folder must be empty; this command refuses to merge into existing assets.
+        - Use list_redirectors/fixup_redirectors after a move when you need explicit redirector cleanup.
+        - For copy, existing dependencies remain referenced; dependencies are not cloned or path-rewritten.
+    """
+    return _send_generated_tcp_tool("move_folder_assets", locals())
+
+
+@mcp.tool()
 def delete_asset(
     asset_path: str,
     force: bool = False,

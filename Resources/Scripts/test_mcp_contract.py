@@ -259,6 +259,7 @@ def _failures() -> list[str]:
             "compile_and_save",
             "remove_input_mapping",
             "rename_asset",
+            "move_folder_assets",
             "remove_cdo_array_element",
             "remove_expression",
             "remove_graph_node",
@@ -388,6 +389,23 @@ def _failures() -> list[str]:
             )
             if rename_asset_call.get("params") != {"asset_path": "/Game/Input/IA_Test", "new_asset_name": "IA_TestRenamed"} or rename_asset_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed rename_asset optional payload/meta mapping")
+            move_folder_call = build_tcp_call(
+                "move_folder_assets",
+                {
+                    "source_folder": "/Game/UI/Hud/Players/SeatPlates",
+                    "target_folder": "/Game/UI/Hud/SeatPlates",
+                    "operation": "copy",
+                    "recursive": True,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if move_folder_call.get("params") != {
+                "source_folder": "/Game/UI/Hud/Players/SeatPlates",
+                "target_folder": "/Game/UI/Hud/SeatPlates",
+                "operation": "copy",
+            } or move_folder_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed move_folder_assets payload/meta mapping")
             fixup_call = build_tcp_call(
                 "fixup_redirectors",
                 {

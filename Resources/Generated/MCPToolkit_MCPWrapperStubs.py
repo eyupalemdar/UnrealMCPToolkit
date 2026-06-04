@@ -1666,6 +1666,17 @@ def duplicate_asset(asset_path: str, target_asset_path: str = '', new_package_pa
     return _format_response(_send_command("duplicate_asset", params, _request_meta(scope, dry_run)))
 
 
+def move_folder_assets(source_folder: str, target_folder: str, operation: str = 'move', recursive: bool = True, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `move_folder_assets` (Asset)."""
+    params = {
+        "source_folder": source_folder,
+        "target_folder": target_folder,
+        "operation": operation,
+        "recursive": recursive,
+    }
+    return _format_response(_send_command("move_folder_assets", params, _request_meta(scope, dry_run)))
+
+
 def get_referencers(asset_path: str) -> str:
     """Generated stub for TCP command `get_referencers` (Asset)."""
     params = {

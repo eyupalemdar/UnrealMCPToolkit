@@ -62,6 +62,7 @@
 // Asset rename (HandleRenameAsset)
 #include "AssetToolsModule.h"
 #include "IAssetTools.h"
+#include "Subsystems/EditorAssetSubsystem.h"
 
 // Asset delete (HandleDeleteAsset) — ObjectTools lives in UnrealEd
 #include "ObjectTools.h"
@@ -211,6 +212,76 @@ FName NormalizePackageName(const FString& InAssetPath)
 		PackageName = PackageName.Left(DotIndex);
 	}
 	return FName(*PackageName);
+}
+
+FString NormalizeContentFolderPath(const FString& InFolderPath)
+{
+	FString FolderPath = InFolderPath;
+	FolderPath.TrimStartAndEndInline();
+	FolderPath.ReplaceInline(TEXT("\\"), TEXT("/"));
+	while (FolderPath.EndsWith(TEXT("/")) && FolderPath.Len() > 5)
+	{
+		FolderPath.LeftChopInline(1);
+	}
+	return FolderPath;
+}
+
+bool ValidateGameContentFolderPath(const FString& FolderPath, const TCHAR* ParamName, FString& OutError)
+{
+	if (FolderPath.IsEmpty())
+	{
+		OutError = FString::Printf(TEXT("Missing '%s' parameter"), ParamName);
+		return false;
+	}
+	if (FolderPath.Contains(TEXT(".")))
+	{
+		OutError = FString::Printf(TEXT("'%s' must be a Content Browser folder path, not an asset/object path: %s"), ParamName, *FolderPath);
+		return false;
+	}
+	if (FolderPath == TEXT("/Game"))
+	{
+		OutError = FString::Printf(TEXT("'%s' cannot be /Game root for folder move/copy operations"), ParamName);
+		return false;
+	}
+	if (!FolderPath.StartsWith(TEXT("/Game/")))
+	{
+		OutError = FString::Printf(TEXT("'%s' must be under /Game: %s"), ParamName, *FolderPath);
+		return false;
+	}
+	if (!FPackageName::IsValidLongPackageName(FolderPath))
+	{
+		OutError = FString::Printf(TEXT("Invalid Content Browser folder path for '%s': %s"), ParamName, *FolderPath);
+		return false;
+	}
+	return true;
+}
+
+void GetFolderAssets(IAssetRegistry& AR, const FString& FolderPath, const bool bRecursive, TArray<FAssetData>& OutAssets)
+{
+	FARFilter Filter;
+	Filter.PackagePaths.Add(FName(*FolderPath));
+	Filter.bRecursivePaths = bRecursive;
+	AR.GetAssets(Filter, OutAssets);
+}
+
+TArray<TSharedPtr<FJsonValue>> BuildAssetPathSample(const TArray<FAssetData>& Assets, const int32 Limit)
+{
+	TArray<FString> AssetPaths;
+	AssetPaths.Reserve(Assets.Num());
+	for (const FAssetData& AssetData : Assets)
+	{
+		AssetPaths.Add(AssetData.GetSoftObjectPath().ToString());
+	}
+	AssetPaths.Sort();
+
+	TArray<TSharedPtr<FJsonValue>> Array;
+	const int32 Count = FMath::Min(Limit, AssetPaths.Num());
+	Array.Reserve(Count);
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		Array.Add(MakeShared<FJsonValueString>(AssetPaths[Index]));
+	}
+	return Array;
 }
 
 FString HandleCreateAsset(TSharedPtr<FJsonObject> Params)
@@ -885,6 +956,160 @@ FString HandleDuplicateAsset(TSharedPtr<FJsonObject> Params)
 
 	Future.WaitFor(FTimespan::FromSeconds(120.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Duplicate asset timed out"));
+	return Future.Get();
+}
+
+
+FString HandleMoveFolderAssets(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString SourceFolder;
+	if (!Params->TryGetStringField(TEXT("source_folder"), SourceFolder))
+		return CreateErrorResponse(TEXT("Missing 'source_folder' parameter"));
+
+	FString TargetFolder;
+	if (!Params->TryGetStringField(TEXT("target_folder"), TargetFolder))
+		return CreateErrorResponse(TEXT("Missing 'target_folder' parameter"));
+
+	FString Operation;
+	Params->TryGetStringField(TEXT("operation"), Operation);
+	Operation.TrimStartAndEndInline();
+	if (Operation.IsEmpty())
+	{
+		Operation = TEXT("move");
+	}
+	Operation.ToLowerInline();
+	if (Operation == TEXT("rename"))
+	{
+		Operation = TEXT("move");
+	}
+	else if (Operation == TEXT("duplicate"))
+	{
+		Operation = TEXT("copy");
+	}
+
+	bool bRecursive = true;
+	Params->TryGetBoolField(TEXT("recursive"), bRecursive);
+	if (!bRecursive)
+	{
+		return CreateErrorResponse(TEXT("move_folder_assets currently supports recursive folder operations only; pass recursive=true"));
+	}
+
+	SourceFolder = NormalizeContentFolderPath(SourceFolder);
+	TargetFolder = NormalizeContentFolderPath(TargetFolder);
+
+	FString ValidationError;
+	if (!ValidateGameContentFolderPath(SourceFolder, TEXT("source_folder"), ValidationError))
+	{
+		return CreateErrorResponse(ValidationError);
+	}
+	if (!ValidateGameContentFolderPath(TargetFolder, TEXT("target_folder"), ValidationError))
+	{
+		return CreateErrorResponse(ValidationError);
+	}
+	if (SourceFolder == TargetFolder)
+	{
+		return CreateErrorResponse(TEXT("source_folder and target_folder are identical; nothing to move or copy"));
+	}
+	if (TargetFolder.StartsWith(SourceFolder + TEXT("/")))
+	{
+		return CreateErrorResponse(TEXT("target_folder cannot be inside source_folder"));
+	}
+	if (Operation != TEXT("move") && Operation != TEXT("copy"))
+	{
+		return CreateErrorResponse(FString::Printf(TEXT("Unsupported operation '%s'. Expected 'move' or 'copy'"), *Operation));
+	}
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [SourceFolder, TargetFolder, Operation, bRecursive, Promise]()
+	{
+		if (!GEditor)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("GEditor is unavailable")));
+			return;
+		}
+
+		UEditorAssetSubsystem* AssetSubsystem = GEditor->GetEditorSubsystem<UEditorAssetSubsystem>();
+		if (!AssetSubsystem)
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("UEditorAssetSubsystem is unavailable")));
+			return;
+		}
+
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AR = ARM.Get();
+		if (AR.IsLoadingAssets())
+		{
+			AR.WaitForCompletion();
+		}
+
+		TArray<FAssetData> SourceAssetsBefore;
+		GetFolderAssets(AR, SourceFolder, bRecursive, SourceAssetsBefore);
+		if (!AssetSubsystem->DoesDirectoryExist(SourceFolder) || SourceAssetsBefore.Num() == 0)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("Source folder not found or contains no assets: %s"),
+				*SourceFolder)));
+			return;
+		}
+
+		TArray<FAssetData> TargetAssetsBefore;
+		GetFolderAssets(AR, TargetFolder, bRecursive, TargetAssetsBefore);
+		if (TargetAssetsBefore.Num() > 0 || AssetSubsystem->DoesDirectoryContainAssets(TargetFolder, /*bRecursive=*/true))
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("Target folder already contains assets: %s. Choose an empty destination before move_folder_assets."),
+				*TargetFolder)));
+			return;
+		}
+
+		const bool bMove = Operation == TEXT("move");
+		const bool bSucceeded = bMove
+			? AssetSubsystem->RenameDirectory(SourceFolder, TargetFolder)
+			: AssetSubsystem->DuplicateDirectory(SourceFolder, TargetFolder);
+		if (!bSucceeded)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(
+				TEXT("%s failed for %s -> %s"),
+				bMove ? TEXT("UEditorAssetSubsystem::RenameDirectory") : TEXT("UEditorAssetSubsystem::DuplicateDirectory"),
+				*SourceFolder,
+				*TargetFolder)));
+			return;
+		}
+
+		TArray<FString> PathsToScan;
+		PathsToScan.Add(SourceFolder);
+		PathsToScan.Add(TargetFolder);
+		AR.ScanPathsSynchronous(PathsToScan, /*bForceRescan=*/true);
+
+		TArray<FAssetData> SourceAssetsAfter;
+		TArray<FAssetData> TargetAssetsAfter;
+		GetFolderAssets(AR, SourceFolder, bRecursive, SourceAssetsAfter);
+		GetFolderAssets(AR, TargetFolder, bRecursive, TargetAssetsAfter);
+
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("operation"), Operation);
+		Data->SetStringField(TEXT("engine_api"), bMove ? TEXT("UEditorAssetSubsystem::RenameDirectory") : TEXT("UEditorAssetSubsystem::DuplicateDirectory"));
+		Data->SetBoolField(TEXT("recursive"), bRecursive);
+		Data->SetBoolField(TEXT("moved"), bMove);
+		Data->SetBoolField(TEXT("copied"), !bMove);
+		Data->SetStringField(TEXT("source_folder"), SourceFolder);
+		Data->SetStringField(TEXT("target_folder"), TargetFolder);
+		Data->SetNumberField(TEXT("source_asset_count_before"), SourceAssetsBefore.Num());
+		Data->SetNumberField(TEXT("target_asset_count_before"), TargetAssetsBefore.Num());
+		Data->SetNumberField(TEXT("source_asset_count_after"), SourceAssetsAfter.Num());
+		Data->SetNumberField(TEXT("target_asset_count_after"), TargetAssetsAfter.Num());
+		Data->SetBoolField(TEXT("source_directory_exists_after"), AssetSubsystem->DoesDirectoryExist(SourceFolder));
+		Data->SetBoolField(TEXT("target_directory_exists_after"), AssetSubsystem->DoesDirectoryExist(TargetFolder));
+		Data->SetArrayField(TEXT("target_asset_sample"), BuildAssetPathSample(TargetAssetsAfter, 50));
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(300.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Move folder assets timed out"));
 	return Future.Get();
 }
 
