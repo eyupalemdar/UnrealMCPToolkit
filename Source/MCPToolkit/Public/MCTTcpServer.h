@@ -322,6 +322,7 @@ private:
 	FString HandleAddWidget(TSharedPtr<class FJsonObject> Params);
 	FString HandleRemoveWidget(TSharedPtr<class FJsonObject> Params);
 	FString HandleMoveWidget(TSharedPtr<class FJsonObject> Params);
+	FString HandleReplaceWidget(TSharedPtr<class FJsonObject> Params);
 	FString HandleSetWidgetProperty(TSharedPtr<class FJsonObject> Params);
 	FString HandleSetSlotProperty(TSharedPtr<class FJsonObject> Params);
 	FString HandleSetCanvasSlotLayout(TSharedPtr<class FJsonObject> Params);

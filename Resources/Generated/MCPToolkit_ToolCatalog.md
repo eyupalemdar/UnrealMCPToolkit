@@ -2,8 +2,8 @@
 
 > Generated from `FMCTTcpServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 181
-- MCP tools: 200
+- TCP commands: 182
+- MCP tools: 201
 - Categories: 38
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/MCPToolkit_WrapperSpec.json`
@@ -49,7 +49,7 @@
 | `Spline` | 3 |
 | `StaticMesh` | 1 |
 | `Utility` | 5 |
-| `Widget` | 11 |
+| `Widget` | 12 |
 | `WidgetPreview` | 1 |
 | `Workflow` | 12 |
 
@@ -131,6 +131,7 @@
 | `add_widget` | `Widget` | `write` | true | true | false | 60 |
 | `remove_widget` | `Widget` | `write` | true | true | false | 60 |
 | `move_widget` | `Widget` | `write` | true | true | false | 60 |
+| `replace_widget` | `Widget` | `write` | true | true | false | 60 |
 | `set_widget_property` | `Widget` | `write` | true | true | false | 60 |
 | `set_slot_property` | `Widget` | `write` | true | true | false | 60 |
 | `set_canvas_slot_layout` | `Widget` | `write` | true | true | false | 60 |

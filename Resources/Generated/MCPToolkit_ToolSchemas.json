@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "MCPToolkit",
-  "generated_at_utc": "2026-06-04T10:18:47.196618Z",
-  "tool_count": 200,
+  "generated_at_utc": "2026-06-08T14:48:53.352021Z",
+  "tool_count": 201,
   "tools": {
     "ping": {
       "type": "object",
@@ -3066,6 +3066,57 @@
         "asset_path",
         "widget_name",
         "new_parent_name"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "Widget",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "replace_widget": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "target_widget_name": {
+          "type": "string"
+        },
+        "new_widget_class": {
+          "type": "string"
+        },
+        "new_widget_name": {
+          "type": "string",
+          "default": ""
+        },
+        "preserve_slot": {
+          "type": "boolean",
+          "default": true
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "asset_path",
+        "target_widget_name",
+        "new_widget_class"
       ],
       "additionalProperties": false,
       "x-commonai": {

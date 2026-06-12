@@ -4217,6 +4217,32 @@ def move_widget(
     return _send_generated_tcp_tool("move_widget", locals())
 
 
+@mcp.tool()
+def replace_widget(
+    asset_path: str,
+    target_widget_name: str,
+    new_widget_class: str,
+    new_widget_name: str = "",
+    preserve_slot: bool = True,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """
+    Replace one widget in a Widget Blueprint while preserving its tree position.
+
+    Args:
+        asset_path: Asset path of the Widget Blueprint
+        target_widget_name: Name of the existing widget to replace
+        new_widget_class: Replacement widget class short name or explicit custom Widget Blueprint path
+        new_widget_name: Optional name for the replacement. Empty keeps target_widget_name.
+        preserve_slot: Reuse the previous parent slot template when possible.
+
+    Returns:
+        JSON with widget_name, widget_class, parent_name, and index of the replacement.
+    """
+    return _send_generated_tcp_tool("replace_widget", locals())
+
+
 # =============================================================================
 # PROPERTY SETTING
 # =============================================================================

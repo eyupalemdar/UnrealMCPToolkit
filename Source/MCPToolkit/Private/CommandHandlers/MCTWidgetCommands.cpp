@@ -16,6 +16,7 @@
 
 #include "WidgetBlueprint.h"
 #include "Components/Widget.h"
+#include "Components/PanelWidget.h"
 
 #include "Sockets.h"
 #include "SocketSubsystem.h"
@@ -416,6 +417,78 @@ FString HandleMoveWidget(TSharedPtr<FJsonObject> Params)
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Move widget timed out"));
+	}
+	return Future.Get();
+}
+
+
+FString HandleReplaceWidget(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid())
+	{
+		return CreateErrorResponse(TEXT("Missing 'params' object"));
+	}
+
+	FString AssetPath, TargetWidgetName, NewWidgetClass, NewWidgetName;
+	bool bPreserveSlot = true;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+	{
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+	}
+	if (!Params->TryGetStringField(TEXT("target_widget_name"), TargetWidgetName))
+	{
+		return CreateErrorResponse(TEXT("Missing 'target_widget_name' parameter"));
+	}
+	if (!Params->TryGetStringField(TEXT("new_widget_class"), NewWidgetClass))
+	{
+		return CreateErrorResponse(TEXT("Missing 'new_widget_class' parameter"));
+	}
+	Params->TryGetStringField(TEXT("new_widget_name"), NewWidgetName);
+	Params->TryGetBoolField(TEXT("preserve_slot"), bPreserveSlot);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, TargetWidgetName, NewWidgetClass, NewWidgetName, bPreserveSlot, Promise]()
+	{
+		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
+		if (!WBP)
+		{
+			Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Widget Blueprint: %s"), *AssetPath)));
+			return;
+		}
+
+		FString ReplaceError;
+		UWidget* Widget = UMCTWidgetBlueprintBuilder::ReplaceWidget(
+			WBP,
+			TargetWidgetName,
+			NewWidgetClass,
+			NewWidgetName,
+			bPreserveSlot,
+			&ReplaceError);
+		if (!Widget)
+		{
+			Promise->SetValue(CreateErrorResponse(ReplaceError.IsEmpty()
+				? FString::Printf(TEXT("Failed to replace widget '%s' with class '%s'"), *TargetWidgetName, *NewWidgetClass)
+				: ReplaceError));
+			return;
+		}
+
+		UPanelWidget* Parent = Widget->GetParent();
+		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+		Data->SetStringField(TEXT("target_widget_name"), TargetWidgetName);
+		Data->SetStringField(TEXT("widget_name"), Widget->GetName());
+		Data->SetStringField(TEXT("widget_class"), Widget->GetClass()->GetName());
+		Data->SetStringField(TEXT("parent_name"), Parent ? Parent->GetName() : TEXT(""));
+		Data->SetNumberField(TEXT("index"), Parent ? Parent->GetChildIndex(Widget) : -1);
+		Data->SetBoolField(TEXT("preserve_slot"), bPreserveSlot);
+		Promise->SetValue(CreateSuccessResponse(Data));
+	});
+
+	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady())
+	{
+		return CreateErrorResponse(TEXT("Replace widget timed out"));
 	}
 	return Future.Get();
 }

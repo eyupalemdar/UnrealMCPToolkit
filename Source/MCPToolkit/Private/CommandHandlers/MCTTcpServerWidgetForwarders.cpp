@@ -25,6 +25,11 @@ FString FMCTTcpServer::HandleMoveWidget(TSharedPtr<FJsonObject> Params)
 	return MCPToolkit::CommandHandlers::Widget::HandleMoveWidget(Params);
 }
 
+FString FMCTTcpServer::HandleReplaceWidget(TSharedPtr<FJsonObject> Params)
+{
+	return MCPToolkit::CommandHandlers::Widget::HandleReplaceWidget(Params);
+}
+
 FString FMCTTcpServer::HandleSetWidgetProperty(TSharedPtr<FJsonObject> Params)
 {
 	return MCPToolkit::CommandHandlers::Widget::HandleSetWidgetProperty(Params);

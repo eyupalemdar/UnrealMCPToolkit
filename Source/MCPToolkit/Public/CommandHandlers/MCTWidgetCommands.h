@@ -11,6 +11,7 @@ FString HandleCreateWidgetBlueprint(TSharedPtr<FJsonObject> Params);
 FString HandleAddWidget(TSharedPtr<FJsonObject> Params);
 FString HandleRemoveWidget(TSharedPtr<FJsonObject> Params);
 FString HandleMoveWidget(TSharedPtr<FJsonObject> Params);
+FString HandleReplaceWidget(TSharedPtr<FJsonObject> Params);
 FString HandleSetWidgetProperty(TSharedPtr<FJsonObject> Params);
 FString HandleSetSlotProperty(TSharedPtr<FJsonObject> Params);
 FString HandleSetCanvasSlotLayout(TSharedPtr<FJsonObject> Params);

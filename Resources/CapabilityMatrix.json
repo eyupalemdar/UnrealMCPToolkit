@@ -233,6 +233,7 @@
         "add_widget",
         "remove_widget",
         "move_widget",
+        "replace_widget",
         "set_widget_property",
         "set_slot_property",
         "set_canvas_slot_layout",

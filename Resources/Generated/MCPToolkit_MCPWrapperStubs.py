@@ -819,6 +819,18 @@ def move_widget(asset_path: str, widget_name: str, new_parent_name: str, index: 
     return _format_response(_send_command("move_widget", params, _request_meta(scope, dry_run)))
 
 
+def replace_widget(asset_path: str, target_widget_name: str, new_widget_class: str, new_widget_name: str = '', preserve_slot: bool = True, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `replace_widget` (Widget)."""
+    params = {
+        "asset_path": asset_path,
+        "target_widget_name": target_widget_name,
+        "new_widget_class": new_widget_class,
+        "new_widget_name": new_widget_name,
+        "preserve_slot": preserve_slot,
+    }
+    return _format_response(_send_command("replace_widget", params, _request_meta(scope, dry_run)))
+
+
 def set_widget_property(asset_path: str, widget_name: str, property_name: str, value: str, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `set_widget_property` (Widget)."""
     params = {

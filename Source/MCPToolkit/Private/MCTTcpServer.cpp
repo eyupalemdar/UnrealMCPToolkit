@@ -2,6 +2,7 @@
 
 #include "MCTTcpServer.h"
 #include "CommandDispatch/MCTCommandDispatch.h"
+#include "CommandDispatch/MCTCommandRegistry.h"
 #include "CommandHandlers/MCTUtilityCommands.h"
 #include "MCTModule.h"
 
@@ -238,6 +239,7 @@ const TArray<FMCTTcpServer::FCommandDescriptor>& FMCTTcpServer::GetCommandDescri
 		MCT_COMMAND_PARAMS("add_widget", "Widget", true, 60, HandleAddWidget),
 		MCT_COMMAND_PARAMS("remove_widget", "Widget", true, 60, HandleRemoveWidget),
 		MCT_COMMAND_PARAMS("move_widget", "Widget", true, 60, HandleMoveWidget),
+		MCT_COMMAND_PARAMS("replace_widget", "Widget", true, 60, HandleReplaceWidget),
 		MCT_COMMAND_PARAMS("set_widget_property", "Widget", true, 60, HandleSetWidgetProperty),
 		MCT_COMMAND_PARAMS("set_slot_property", "Widget", true, 60, HandleSetSlotProperty),
 		MCT_COMMAND_PARAMS("set_canvas_slot_layout", "Widget", true, 60, HandleSetCanvasSlotLayout),
@@ -447,6 +449,20 @@ MCPToolkit::CommandHandlers::Utility::FMCTUtilityContext FMCTTcpServer::BuildUti
 		Context.Commands.Add(MoveTemp(UtilityDescriptor));
 	}
 
+	for (const MCPToolkit::CommandDispatch::FMCTCommandDescriptor& Descriptor : MCPToolkit::CommandDispatch::FMCTCommandRegistry::ListCommands())
+	{
+		MCPToolkit::CommandHandlers::Utility::FMCTUtilityCommandDescriptor UtilityDescriptor;
+		UtilityDescriptor.Name = Descriptor.Name;
+		UtilityDescriptor.Category = Descriptor.Category;
+		UtilityDescriptor.bRequiresParams = Descriptor.bRequiresParams;
+		UtilityDescriptor.bMutating = Descriptor.bMutating;
+		UtilityDescriptor.TimeoutSeconds = Descriptor.TimeoutSeconds;
+		UtilityDescriptor.RequiredScope = Descriptor.RequiredScope.IsEmpty() ? TEXT("read") : Descriptor.RequiredScope;
+		UtilityDescriptor.bSupportsDryRun = Descriptor.bSupportsDryRun;
+		UtilityDescriptor.bAsyncCandidate = Descriptor.bAsyncCandidate;
+		Context.Commands.Add(MoveTemp(UtilityDescriptor));
+	}
+
 	return Context;
 }
 
@@ -475,6 +491,16 @@ void FMCTTcpServer::StartHttpServer()
 			Tool.Name = Descriptor.Name;
 			Tool.Category = Descriptor.Category;
 			Tool.RequiredScope = Descriptor.RequiredScope ? Descriptor.RequiredScope : TEXT("read");
+			Tool.bMutating = Descriptor.bMutating;
+			Tool.bSupportsDryRun = Descriptor.bSupportsDryRun;
+			Tools.Add(MoveTemp(Tool));
+		}
+		for (const MCPToolkit::CommandDispatch::FMCTCommandDescriptor& Descriptor : MCPToolkit::CommandDispatch::FMCTCommandRegistry::ListCommands())
+		{
+			MCPToolkit::HttpMcp::FMCTHttpMcpToolDescriptor Tool;
+			Tool.Name = Descriptor.Name;
+			Tool.Category = Descriptor.Category;
+			Tool.RequiredScope = Descriptor.RequiredScope.IsEmpty() ? TEXT("read") : Descriptor.RequiredScope;
 			Tool.bMutating = Descriptor.bMutating;
 			Tool.bSupportsDryRun = Descriptor.bSupportsDryRun;
 			Tools.Add(MoveTemp(Tool));
@@ -628,18 +654,47 @@ FString FMCTTcpServer::ProcessCommand(const FString& JsonCommand)
 	Callbacks.ResolveCommand = [](const FString& CommandName, MCPToolkit::CommandDispatch::FMCTCommandDescriptor& OutDescriptor)
 	{
 		const FCommandDescriptor* Descriptor = FindCommandDescriptor(CommandName);
-		if (!Descriptor)
+		if (Descriptor)
 		{
-			return false;
+			OutDescriptor = BuildDispatchDescriptor(*Descriptor);
+			return true;
 		}
 
-		OutDescriptor = BuildDispatchDescriptor(*Descriptor);
-		return true;
+		return MCPToolkit::CommandDispatch::FMCTCommandRegistry::FindCommand(CommandName, OutDescriptor);
 	};
 	Callbacks.DispatchCommand = [this](const FString& CommandName, TSharedPtr<FJsonObject> Params)
 	{
 		const FCommandDescriptor* Descriptor = FindCommandDescriptor(CommandName);
-		return Descriptor ? DispatchCommand(*Descriptor, Params) : CreateErrorResponse(FString::Printf(TEXT("Unknown command: %s"), *CommandName));
+		if (Descriptor)
+		{
+			return DispatchCommand(*Descriptor, Params);
+		}
+
+		MCPToolkit::CommandDispatch::FMCTCommandDescriptor ExternalDescriptor;
+		if (!MCPToolkit::CommandDispatch::FMCTCommandRegistry::FindCommand(CommandName, ExternalDescriptor))
+		{
+			return CreateErrorResponse(FString::Printf(TEXT("Unknown command: %s"), *CommandName));
+		}
+
+		auto ExecuteExternal = [CommandName, Params]() -> FString
+		{
+			FString Response;
+			if (!MCPToolkit::CommandDispatch::FMCTCommandRegistry::ExecuteCommand(CommandName, Params, Response))
+			{
+				return FString();
+			}
+			return Response;
+		};
+
+		if (ExternalDescriptor.bMutating)
+		{
+			FScopeLock Lock(&MutatingCommandCriticalSection);
+			const FString Response = ExecuteExternal();
+			return Response.IsEmpty() ? CreateErrorResponse(FString::Printf(TEXT("External command '%s' has no registered handler"), *CommandName)) : Response;
+		}
+
+		const FString Response = ExecuteExternal();
+		return Response.IsEmpty() ? CreateErrorResponse(FString::Printf(TEXT("External command '%s' has no registered handler"), *CommandName)) : Response;
 	};
 	return MCPToolkit::CommandDispatch::ProcessCommandEnvelope(JsonCommand, Callbacks);
 }

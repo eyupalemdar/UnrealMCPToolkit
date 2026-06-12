@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "1.0",
+	"Version": 2,
+	"VersionName": "1.1.0",
 	"FriendlyName": "Unreal MCP Toolkit",
 	"Description": "AI/MCP-powered Unreal Editor toolkit for automation, asset export, diagnostics, Blueprint tooling, and safe UI mutation.",
 	"Category": "Editor",

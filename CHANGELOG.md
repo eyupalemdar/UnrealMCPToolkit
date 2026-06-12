@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 1.1.0 - Extension Command Registry
+
+### Added
+
+- Added the public extension command registry used by external editor plugins
+  such as AIAssetPipeline.
+- Included registered extension commands in command listing, manifest export,
+  dry-run handling, scope validation, and mutating command serialization.
+
+### Changed
+
+- Stabilized the asset import builder surface used by plugin-owned batch import
+  commands.
+- Kept AI asset packaging logic outside MCPToolkit; MCPToolkit remains the
+  editor automation bridge.
+
 ### Documentation
 
 - Reworked the root `README.md` into a concise GitHub entry point that links to

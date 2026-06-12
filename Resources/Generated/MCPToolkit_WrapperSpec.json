@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "server": "MCPToolkit",
-  "generated_at_utc": "2026-06-04T10:18:47.278180Z",
+  "generated_at_utc": "2026-06-08T14:48:53.432894Z",
   "manifest_source": "FMCTTcpServer::GetCommandDescriptors",
   "generator": "MCPToolkit/Resources/Scripts/generate_mcp_artifacts.py",
   "wrapper_source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-  "tool_count": 200,
-  "tcp_command_count": 181,
+  "tool_count": 201,
+  "tcp_command_count": 182,
   "client_only_count": 19,
-  "wrapper_count": 200,
+  "wrapper_count": 201,
   "missing_tcp_wrappers": [],
   "extra_tcp_wrappers": [],
   "wrapper_drift": [],
@@ -606,7 +606,7 @@
       "wrapper": {
         "name": "add_branch_node",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5480,
+        "line": 5506,
         "params": [
           {
             "name": "asset_path",
@@ -746,7 +746,7 @@
       "wrapper": {
         "name": "add_call_parent_function",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5506,
+        "line": 5532,
         "params": [
           {
             "name": "asset_path",
@@ -887,7 +887,7 @@
       "wrapper": {
         "name": "add_cdo_array_element",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5192,
+        "line": 5218,
         "params": [
           {
             "name": "asset_path",
@@ -1018,7 +1018,7 @@
       "wrapper": {
         "name": "add_custom_event",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5334,
+        "line": 5360,
         "params": [
           {
             "name": "asset_path",
@@ -1160,7 +1160,7 @@
       "wrapper": {
         "name": "add_datatable_row",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4874,
+        "line": 4900,
         "params": [
           {
             "name": "asset_path",
@@ -1291,7 +1291,7 @@
       "wrapper": {
         "name": "add_event_node",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5303,
+        "line": 5329,
         "params": [
           {
             "name": "asset_path",
@@ -1436,7 +1436,7 @@
       "wrapper": {
         "name": "add_expression",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4513,
+        "line": 4539,
         "params": [
           {
             "name": "asset_path",
@@ -1580,7 +1580,7 @@
       "wrapper": {
         "name": "add_function_call",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5362,
+        "line": 5388,
         "params": [
           {
             "name": "asset_path",
@@ -1752,7 +1752,7 @@
       "wrapper": {
         "name": "add_input_mapping",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6303,
+        "line": 6329,
         "params": [
           {
             "name": "asset_path",
@@ -1892,7 +1892,7 @@
       "wrapper": {
         "name": "add_make_struct_node",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5452,
+        "line": 5478,
         "params": [
           {
             "name": "asset_path",
@@ -2041,7 +2041,7 @@
       "wrapper": {
         "name": "add_variable",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5684,
+        "line": 5710,
         "params": [
           {
             "name": "asset_path",
@@ -2190,7 +2190,7 @@
       "wrapper": {
         "name": "add_variable_get_node",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5396,
+        "line": 5422,
         "params": [
           {
             "name": "asset_path",
@@ -2339,7 +2339,7 @@
       "wrapper": {
         "name": "add_variable_set_node",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5424,
+        "line": 5450,
         "params": [
           {
             "name": "asset_path",
@@ -2647,7 +2647,7 @@
       "wrapper": {
         "name": "animation_asset_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6417,
+        "line": 6443,
         "params": [
           {
             "name": "asset_path",
@@ -2849,7 +2849,7 @@
       "wrapper": {
         "name": "asset_exists",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5978,
+        "line": 6004,
         "params": [
           {
             "name": "asset_path",
@@ -2926,7 +2926,7 @@
       "wrapper": {
         "name": "asset_search",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5846,
+        "line": 5872,
         "params": [
           {
             "name": "path",
@@ -3613,7 +3613,7 @@
       "wrapper": {
         "name": "asset_validate_light",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5879,
+        "line": 5905,
         "params": [
           {
             "name": "asset_path",
@@ -4345,7 +4345,7 @@
       "wrapper": {
         "name": "capture_widget_preview",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6704,
+        "line": 6730,
         "params": [
           {
             "name": "asset_path",
@@ -5524,7 +5524,7 @@
       "wrapper": {
         "name": "compile_material",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4682,
+        "line": 4708,
         "params": [
           {
             "name": "asset_path",
@@ -5624,7 +5624,7 @@
       "wrapper": {
         "name": "connect_expressions",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4578,
+        "line": 4604,
         "params": [
           {
             "name": "asset_path",
@@ -5764,7 +5764,7 @@
       "wrapper": {
         "name": "connect_pins",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5567,
+        "line": 5593,
         "params": [
           {
             "name": "asset_path",
@@ -5905,7 +5905,7 @@
       "wrapper": {
         "name": "connect_to_material_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4606,
+        "line": 4632,
         "params": [
           {
             "name": "asset_path",
@@ -6150,7 +6150,7 @@
       "wrapper": {
         "name": "create_anim_blueprint",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6376,
+        "line": 6402,
         "params": [
           {
             "name": "package_path",
@@ -6280,7 +6280,7 @@
       "wrapper": {
         "name": "create_asset",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5778,
+        "line": 5804,
         "params": [
           {
             "name": "package_path",
@@ -6399,7 +6399,7 @@
       "wrapper": {
         "name": "create_datatable",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4846,
+        "line": 4872,
         "params": [
           {
             "name": "package_path",
@@ -6521,7 +6521,7 @@
       "wrapper": {
         "name": "create_material",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4459,
+        "line": 4485,
         "params": [
           {
             "name": "package_path",
@@ -6658,7 +6658,7 @@
       "wrapper": {
         "name": "create_material_instance",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4731,
+        "line": 4757,
         "params": [
           {
             "name": "package_path",
@@ -6874,7 +6874,7 @@
       "wrapper": {
         "name": "delete_asset",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6260,
+        "line": 6286,
         "params": [
           {
             "name": "asset_path",
@@ -6975,7 +6975,7 @@
       "wrapper": {
         "name": "disconnect_input",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4636,
+        "line": 4662,
         "params": [
           {
             "name": "asset_path",
@@ -7089,7 +7089,7 @@
       "wrapper": {
         "name": "duplicate_asset",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6188,
+        "line": 6214,
         "params": [
           {
             "name": "asset_path",
@@ -7692,7 +7692,7 @@
       "wrapper": {
         "name": "ensure_function_graph",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5534,
+        "line": 5560,
         "params": [
           {
             "name": "asset_path",
@@ -7821,7 +7821,7 @@
       "wrapper": {
         "name": "export_blueprint",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4432,
+        "line": 4458,
         "params": [
           {
             "name": "asset_path",
@@ -7918,7 +7918,7 @@
       "wrapper": {
         "name": "export_widget",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4409,
+        "line": 4435,
         "params": [
           {
             "name": "asset_path",
@@ -8019,7 +8019,7 @@
       "wrapper": {
         "name": "fixup_redirectors",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6095,
+        "line": 6121,
         "params": [
           {
             "name": "folder_path",
@@ -8119,7 +8119,7 @@
       "wrapper": {
         "name": "foliage_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6583,
+        "line": 6609,
         "params": [
           {
             "name": "world",
@@ -8241,7 +8241,7 @@
       "wrapper": {
         "name": "foliage_sample_instances",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6595,
+        "line": 6621,
         "params": [
           {
             "name": "x",
@@ -8362,7 +8362,7 @@
       "wrapper": {
         "name": "foliage_type_settings",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6610,
+        "line": 6636,
         "params": [
           {
             "name": "foliage_type_path",
@@ -8503,7 +8503,7 @@
       "wrapper": {
         "name": "get_anim_blueprint_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6403,
+        "line": 6429,
         "params": [
           {
             "name": "asset_path",
@@ -8561,7 +8561,7 @@
       "wrapper": {
         "name": "get_asset_properties",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5832,
+        "line": 5858,
         "params": [
           {
             "name": "asset_path",
@@ -8623,7 +8623,7 @@
       "wrapper": {
         "name": "get_cdo_array_length",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5281,
+        "line": 5307,
         "params": [
           {
             "name": "asset_path",
@@ -8690,7 +8690,7 @@
       "wrapper": {
         "name": "get_cdo_properties",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5031,
+        "line": 5057,
         "params": [
           {
             "name": "asset_path",
@@ -8748,7 +8748,7 @@
       "wrapper": {
         "name": "get_datatable_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4858,
+        "line": 4884,
         "params": [
           {
             "name": "asset_path",
@@ -8806,7 +8806,7 @@
       "wrapper": {
         "name": "get_dependencies",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6043,
+        "line": 6069,
         "params": [
           {
             "name": "asset_path",
@@ -8868,7 +8868,7 @@
       "wrapper": {
         "name": "get_graph",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5646,
+        "line": 5672,
         "params": [
           {
             "name": "asset_path",
@@ -8944,7 +8944,7 @@
       "wrapper": {
         "name": "get_input_mappings",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6358,
+        "line": 6384,
         "params": [
           {
             "name": "asset_path",
@@ -9002,7 +9002,7 @@
       "wrapper": {
         "name": "get_material_graph",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4702,
+        "line": 4728,
         "params": [
           {
             "name": "asset_path",
@@ -9060,7 +9060,7 @@
       "wrapper": {
         "name": "get_material_instance_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4804,
+        "line": 4830,
         "params": [
           {
             "name": "asset_path",
@@ -9118,7 +9118,7 @@
       "wrapper": {
         "name": "get_referencers",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6020,
+        "line": 6046,
         "params": [
           {
             "name": "asset_path",
@@ -9246,7 +9246,7 @@
       "wrapper": {
         "name": "get_variables",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5760,
+        "line": 5786,
         "params": [
           {
             "name": "asset_path",
@@ -9304,7 +9304,7 @@
       "wrapper": {
         "name": "get_widget_tree",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4367,
+        "line": 4393,
         "params": [
           {
             "name": "asset_path",
@@ -9433,7 +9433,7 @@
       "wrapper": {
         "name": "import_datatable_csv",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4899,
+        "line": 4925,
         "params": [
           {
             "name": "asset_path",
@@ -9560,7 +9560,7 @@
       "wrapper": {
         "name": "import_font",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4965,
+        "line": 4991,
         "params": [
           {
             "name": "package_path",
@@ -9695,7 +9695,7 @@
       "wrapper": {
         "name": "import_texture",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4916,
+        "line": 4942,
         "params": [
           {
             "name": "source_path",
@@ -9864,7 +9864,7 @@
       "wrapper": {
         "name": "landscape_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6548,
+        "line": 6574,
         "params": [
           {
             "name": "world",
@@ -10032,7 +10032,7 @@
       "wrapper": {
         "name": "landscape_sample_height",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6566,
+        "line": 6592,
         "params": [
           {
             "name": "x",
@@ -10490,7 +10490,7 @@
       "wrapper": {
         "name": "list_classes",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5159,
+        "line": 5185,
         "params": [
           {
             "name": "query",
@@ -10647,7 +10647,7 @@
       "wrapper": {
         "name": "list_expression_classes",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4716,
+        "line": 4742,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -10718,7 +10718,7 @@
       "wrapper": {
         "name": "list_gameplay_tags",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5174,
+        "line": 5200,
         "params": [
           {
             "name": "root_tag",
@@ -10830,7 +10830,7 @@
       "wrapper": {
         "name": "list_graphs",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5666,
+        "line": 5692,
         "params": [
           {
             "name": "asset_path",
@@ -10892,7 +10892,7 @@
       "wrapper": {
         "name": "list_redirectors",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6066,
+        "line": 6092,
         "params": [
           {
             "name": "folder_path",
@@ -10962,7 +10962,7 @@
       "wrapper": {
         "name": "list_supported_types",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4399,
+        "line": 4425,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -11061,7 +11061,7 @@
       "wrapper": {
         "name": "list_widget_classes",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4384,
+        "line": 4410,
         "params": [],
         "payload_params": {},
         "returns": "str",
@@ -11180,7 +11180,7 @@
       "wrapper": {
         "name": "move_folder_assets",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6223,
+        "line": 6249,
         "params": [
           {
             "name": "source_folder",
@@ -11543,7 +11543,7 @@
       "wrapper": {
         "name": "niagara_asset_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6653,
+        "line": 6679,
         "params": [
           {
             "name": "asset_path",
@@ -11787,7 +11787,7 @@
       "wrapper": {
         "name": "object_call_function",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5101,
+        "line": 5127,
         "params": [
           {
             "name": "function_name",
@@ -11976,7 +11976,7 @@
       "wrapper": {
         "name": "object_get_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5066,
+        "line": 5092,
         "params": [
           {
             "name": "property_path",
@@ -12153,7 +12153,7 @@
       "wrapper": {
         "name": "object_query",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5046,
+        "line": 5072,
         "params": [
           {
             "name": "object_path",
@@ -12363,7 +12363,7 @@
       "wrapper": {
         "name": "object_set_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5082,
+        "line": 5108,
         "params": [
           {
             "name": "property_path",
@@ -12555,7 +12555,7 @@
       "wrapper": {
         "name": "pcg_component_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6636,
+        "line": 6662,
         "params": [
           {
             "name": "world",
@@ -12726,7 +12726,7 @@
       "wrapper": {
         "name": "pcg_graph_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6620,
+        "line": 6646,
         "params": [
           {
             "name": "asset_path",
@@ -13878,7 +13878,7 @@
       "wrapper": {
         "name": "read_datatable_rows",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4864,
+        "line": 4890,
         "params": [
           {
             "name": "asset_path",
@@ -13977,7 +13977,7 @@
       "wrapper": {
         "name": "reflect_class",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5120,
+        "line": 5146,
         "params": [
           {
             "name": "class_path",
@@ -14104,7 +14104,7 @@
       "wrapper": {
         "name": "reflect_enum",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5147,
+        "line": 5173,
         "params": [
           {
             "name": "enum_path",
@@ -14217,7 +14217,7 @@
       "wrapper": {
         "name": "reflect_struct",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5134,
+        "line": 5160,
         "params": [
           {
             "name": "struct_path",
@@ -14324,7 +14324,7 @@
       "wrapper": {
         "name": "reload_asset",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6784,
+        "line": 6810,
         "params": [
           {
             "name": "asset_path",
@@ -14416,7 +14416,7 @@
       "wrapper": {
         "name": "remove_cdo_array_element",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5257,
+        "line": 5283,
         "params": [
           {
             "name": "asset_path",
@@ -14526,7 +14526,7 @@
       "wrapper": {
         "name": "remove_datatable_row",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4887,
+        "line": 4913,
         "params": [
           {
             "name": "asset_path",
@@ -14632,7 +14632,7 @@
       "wrapper": {
         "name": "remove_expression",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4660,
+        "line": 4686,
         "params": [
           {
             "name": "asset_path",
@@ -14733,7 +14733,7 @@
       "wrapper": {
         "name": "remove_graph_node",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5624,
+        "line": 5650,
         "params": [
           {
             "name": "asset_path",
@@ -14839,7 +14839,7 @@
       "wrapper": {
         "name": "remove_input_mapping",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6336,
+        "line": 6362,
         "params": [
           {
             "name": "asset_path",
@@ -14936,7 +14936,7 @@
       "wrapper": {
         "name": "remove_variable",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5740,
+        "line": 5766,
         "params": [
           {
             "name": "asset_path",
@@ -15134,7 +15134,7 @@
       "wrapper": {
         "name": "rename_asset",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6152,
+        "line": 6178,
         "params": [
           {
             "name": "asset_path",
@@ -15283,6 +15283,142 @@
         "returns": "str",
         "literal_send_commands": [
           "reparent_blueprint"
+        ]
+      },
+      "calls_expected_tcp_command": true
+    },
+    "replace_widget": {
+      "name": "replace_widget",
+      "source": "tcp_command",
+      "wrapper_present": true,
+      "expected_tcp_command": "replace_widget",
+      "literal_send_commands": [
+        "replace_widget"
+      ],
+      "signature": {
+        "type": "object",
+        "properties": {
+          "asset_path": {
+            "type": "string"
+          },
+          "target_widget_name": {
+            "type": "string"
+          },
+          "new_widget_class": {
+            "type": "string"
+          },
+          "new_widget_name": {
+            "type": "string",
+            "default": ""
+          },
+          "preserve_slot": {
+            "type": "boolean",
+            "default": true
+          },
+          "scope": {
+            "type": "string",
+            "default": ""
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "asset_path",
+          "target_widget_name",
+          "new_widget_class"
+        ],
+        "additionalProperties": false,
+        "x-commonai": {
+          "source": "tcp_command",
+          "schema_source": "python_mcp_signature",
+          "category": "Widget",
+          "required_scope": "write",
+          "mutating": true,
+          "supports_dry_run": true,
+          "async_candidate": false,
+          "timeout_seconds": 60
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        }
+      },
+      "wrapper": {
+        "name": "replace_widget",
+        "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
+        "line": 4221,
+        "params": [
+          {
+            "name": "asset_path",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "target_widget_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "new_widget_class",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": null,
+            "default_value": null,
+            "default_is_literal": false,
+            "required": true
+          },
+          {
+            "name": "new_widget_name",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "preserve_slot",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "True",
+            "default_value": true,
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "scope",
+            "kind": "positional_or_keyword",
+            "annotation": "str",
+            "default": "''",
+            "default_value": "",
+            "default_is_literal": true,
+            "required": false
+          },
+          {
+            "name": "dry_run",
+            "kind": "positional_or_keyword",
+            "annotation": "bool",
+            "default": "False",
+            "default_value": false,
+            "default_is_literal": true,
+            "required": false
+          }
+        ],
+        "payload_params": {},
+        "returns": "str",
+        "literal_send_commands": [
+          "replace_widget"
         ]
       },
       "calls_expected_tcp_command": true
@@ -18792,7 +18928,7 @@
       "wrapper": {
         "name": "save_asset",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6132,
+        "line": 6158,
         "params": [
           {
             "name": "asset_path",
@@ -18876,7 +19012,7 @@
       "wrapper": {
         "name": "save_data_asset",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4822,
+        "line": 4848,
         "params": [
           {
             "name": "asset_path",
@@ -18960,7 +19096,7 @@
       "wrapper": {
         "name": "save_material_instance",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4784,
+        "line": 4810,
         "params": [
           {
             "name": "asset_path",
@@ -19052,7 +19188,7 @@
       "wrapper": {
         "name": "scan_asset_paths",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5993,
+        "line": 6019,
         "params": [
           {
             "name": "paths",
@@ -19157,7 +19293,7 @@
       "wrapper": {
         "name": "sequencer_asset_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6470,
+        "line": 6496,
         "params": [
           {
             "name": "asset_path",
@@ -19309,7 +19445,7 @@
       "wrapper": {
         "name": "set_asset_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5807,
+        "line": 5833,
         "params": [
           {
             "name": "asset_path",
@@ -19455,7 +19591,7 @@
       "wrapper": {
         "name": "set_canvas_slot_layout",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4286,
+        "line": 4312,
         "params": [
           {
             "name": "asset_path",
@@ -19654,7 +19790,7 @@
       "wrapper": {
         "name": "set_cdo_array_element_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5229,
+        "line": 5255,
         "params": [
           {
             "name": "asset_path",
@@ -19782,7 +19918,7 @@
       "wrapper": {
         "name": "set_cdo_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5004,
+        "line": 5030,
         "params": [
           {
             "name": "asset_path",
@@ -19896,7 +20032,7 @@
       "wrapper": {
         "name": "set_expression_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4548,
+        "line": 4574,
         "params": [
           {
             "name": "asset_path",
@@ -20019,7 +20155,7 @@
       "wrapper": {
         "name": "set_instance_parameter",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4755,
+        "line": 4781,
         "params": [
           {
             "name": "asset_path",
@@ -20138,7 +20274,7 @@
       "wrapper": {
         "name": "set_material_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4489,
+        "line": 4515,
         "params": [
           {
             "name": "asset_path",
@@ -20256,7 +20392,7 @@
       "wrapper": {
         "name": "set_pin_default",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5598,
+        "line": 5624,
         "params": [
           {
             "name": "asset_path",
@@ -20388,7 +20524,7 @@
       "wrapper": {
         "name": "set_slot_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4257,
+        "line": 4283,
         "params": [
           {
             "name": "asset_path",
@@ -20507,7 +20643,7 @@
       "wrapper": {
         "name": "set_variable_default",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5718,
+        "line": 5744,
         "params": [
           {
             "name": "asset_path",
@@ -20625,7 +20761,7 @@
       "wrapper": {
         "name": "set_widget_properties",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4326,
+        "line": 4352,
         "params": [
           {
             "name": "asset_path",
@@ -20739,7 +20875,7 @@
       "wrapper": {
         "name": "set_widget_property",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 4225,
+        "line": 4251,
         "params": [
           {
             "name": "asset_path",
@@ -20902,7 +21038,7 @@
       "wrapper": {
         "name": "skeletal_mesh_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5931,
+        "line": 5957,
         "params": [
           {
             "name": "asset_path",
@@ -21705,7 +21841,7 @@
       "wrapper": {
         "name": "spline_actor_create",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6494,
+        "line": 6520,
         "params": [
           {
             "name": "actor_label",
@@ -21876,7 +22012,7 @@
       "wrapper": {
         "name": "spline_component_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6512,
+        "line": 6538,
         "params": [
           {
             "name": "actor_path",
@@ -22032,7 +22168,7 @@
       "wrapper": {
         "name": "spline_component_set_points",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 6526,
+        "line": 6552,
         "params": [
           {
             "name": "points",
@@ -22220,7 +22356,7 @@
       "wrapper": {
         "name": "static_mesh_info",
         "source": "MCPToolkit/MCPClient/ai_widget_mcp_client.py",
-        "line": 5894,
+        "line": 5920,
         "params": [
           {
             "name": "asset_path",

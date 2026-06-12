@@ -841,6 +841,174 @@ bool UMCTWidgetBlueprintBuilder::MoveWidget(
 	return true;
 }
 
+UWidget* UMCTWidgetBlueprintBuilder::ReplaceWidget(
+	UWidgetBlueprint* WidgetBP,
+	const FString& TargetWidgetName,
+	const FString& NewWidgetClassName,
+	const FString& NewWidgetName,
+	bool bPreserveSlot,
+	FString* OutError)
+{
+	if (!WidgetBP || !WidgetBP->WidgetTree)
+	{
+		SetBuilderError(OutError, TEXT("Invalid Widget Blueprint or WidgetTree"));
+		return nullptr;
+	}
+
+	if (TargetWidgetName.IsEmpty())
+	{
+		SetBuilderError(OutError, TEXT("Target widget name is required"));
+		return nullptr;
+	}
+
+	UWidget* OldWidget = FindWidgetByName(WidgetBP, TargetWidgetName);
+	if (!OldWidget)
+	{
+		const FString Error = FString::Printf(TEXT("Widget '%s' not found"), *TargetWidgetName);
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+		SetBuilderError(OutError, Error);
+		return nullptr;
+	}
+
+	FString FinalWidgetName = NewWidgetName.IsEmpty() ? TargetWidgetName : NewWidgetName;
+	FinalWidgetName.TrimStartAndEndInline();
+	if (FinalWidgetName.IsEmpty())
+	{
+		SetBuilderError(OutError, TEXT("Replacement widget name cannot be empty"));
+		return nullptr;
+	}
+
+	const bool bKeepName = FinalWidgetName.Equals(TargetWidgetName, ESearchCase::CaseSensitive);
+	if (!bKeepName && FindWidgetByName(WidgetBP, FinalWidgetName))
+	{
+		const FString Error = FString::Printf(TEXT("Widget '%s' already exists in this WidgetTree"), *FinalWidgetName);
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+		SetBuilderError(OutError, Error);
+		return nullptr;
+	}
+
+	UClass* WidgetClass = ResolveWidgetClass(NewWidgetClassName);
+	if (!WidgetClass)
+	{
+		const FString Error = FString::Printf(TEXT("Could not resolve widget class '%s'"), *NewWidgetClassName);
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+		SetBuilderError(OutError, Error);
+		return nullptr;
+	}
+
+	if (!bKeepName)
+	{
+		UClass* OwnerClass = nullptr;
+		if (FProperty* InheritedProperty = FindInheritedPropertyByName(WidgetBP, FName(*FinalWidgetName), &OwnerClass))
+		{
+			const FString Error = FString::Printf(
+				TEXT("Widget name '%s' shadows inherited property '%s' on parent class '%s'. Use a unique local widget name or composition instead of duplicating inherited designer variables."),
+				*FinalWidgetName,
+				*InheritedProperty->GetName(),
+				OwnerClass ? *OwnerClass->GetName() : TEXT("unknown"));
+			UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+			SetBuilderError(OutError, Error);
+			return nullptr;
+		}
+	}
+
+	UPanelWidget* Parent = OldWidget->GetParent();
+	const int32 OldIndex = Parent ? Parent->GetChildIndex(OldWidget) : INDEX_NONE;
+	const bool bWasRoot = OldWidget == WidgetBP->WidgetTree->RootWidget;
+	UPanelSlot* SlotTemplate = bPreserveSlot ? OldWidget->Slot : nullptr;
+
+	if (!bWasRoot && !Parent)
+	{
+		const FString Error = FString::Printf(TEXT("Widget '%s' has no parent and is not the root widget"), *TargetWidgetName);
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+		SetBuilderError(OutError, Error);
+		return nullptr;
+	}
+
+	const FName TempWidgetName = MakeUniqueObjectName(
+		WidgetBP->WidgetTree,
+		WidgetClass,
+		FName(*(FinalWidgetName + TEXT("_ReplacementTmp"))));
+
+	UWidget* NewWidget = WidgetBP->WidgetTree->ConstructWidget<UWidget>(
+		TSubclassOf<UWidget>(WidgetClass),
+		TempWidgetName);
+	if (!NewWidget)
+	{
+		const FString Error = FString::Printf(TEXT("ConstructWidget failed for class '%s'"), *NewWidgetClassName);
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+		SetBuilderError(OutError, Error);
+		return nullptr;
+	}
+
+	FScopedTransaction Transaction(LOCTEXT("AIReplaceWidget", "AI: Replace Widget"));
+
+	TArray<UWidget*> OldDescendants;
+	if (UPanelWidget* OldPanel = Cast<UPanelWidget>(OldWidget))
+	{
+		CollectAllDescendants(OldPanel, OldDescendants);
+	}
+
+	for (UWidget* Descendant : OldDescendants)
+	{
+		WidgetBP->OnVariableRemoved(Descendant->GetFName());
+		Descendant->Rename(nullptr, GetTransientPackage());
+	}
+
+	if (bWasRoot)
+	{
+		WidgetBP->WidgetTree->RootWidget = nullptr;
+	}
+	else if (Parent)
+	{
+		Parent->RemoveChild(OldWidget);
+	}
+
+	WidgetBP->OnVariableRemoved(OldWidget->GetFName());
+	WidgetBP->WidgetTree->RemoveWidget(OldWidget);
+	OldWidget->Rename(nullptr, GetTransientPackage());
+
+	if (!NewWidget->Rename(*FinalWidgetName, WidgetBP->WidgetTree))
+	{
+		const FString Error = FString::Printf(TEXT("Failed to rename replacement widget to '%s'"), *FinalWidgetName);
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+		SetBuilderError(OutError, Error);
+		NewWidget->Rename(nullptr, GetTransientPackage());
+		return nullptr;
+	}
+
+	NewWidget->bIsVariable = true;
+
+	UPanelSlot* NewSlot = nullptr;
+	if (bWasRoot)
+	{
+		WidgetBP->WidgetTree->RootWidget = NewWidget;
+	}
+	else if (Parent)
+	{
+		NewSlot = OldIndex >= 0
+			? Parent->InsertChildAt(OldIndex, NewWidget, SlotTemplate)
+			: Parent->AddChild(NewWidget, SlotTemplate);
+		if (!NewSlot)
+		{
+			const FString Error = FString::Printf(TEXT("Failed to add replacement widget '%s' to parent '%s'"),
+				*FinalWidgetName, *Parent->GetName());
+			UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+			SetBuilderError(OutError, Error);
+			WidgetBP->WidgetTree->RemoveWidget(NewWidget);
+			NewWidget->Rename(nullptr, GetTransientPackage());
+			return nullptr;
+		}
+	}
+
+	WidgetBP->OnVariableAdded(NewWidget->GetFName());
+	MarkModified(WidgetBP);
+
+	UE_LOG(LogAIWidgetBuilder, Log, TEXT("ReplaceWidget: Replaced '%s' with '%s' (%s)"),
+		*TargetWidgetName, *FinalWidgetName, *NewWidgetClassName);
+	return NewWidget;
+}
+
 // =============================================================================
 // PROPERTY SETTING
 // =============================================================================

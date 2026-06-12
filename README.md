@@ -22,6 +22,8 @@ Primary language: English. Turkish overview: [Docs/README.tr.md](Docs/README.tr.
   imports, and AnimBlueprint creation.
 - Guarded cross-project asset/code transfer, multi-editor routing, async jobs,
   generated schemas, capability matrices, and validation scripts.
+- Public extension command registry so project or plugin-specific workflows can
+  register editor commands without forking MCPToolkit.
 
 Current validation target: Unreal Engine 5.7.
 
@@ -69,6 +71,14 @@ artifacts live under `Resources/Generated/`.
 | UI TSpec schema and validation | [Docs/UI_TSpec/README.md](Docs/UI_TSpec/README.md) |
 | CommonUI notes | [Docs/CommonUI_Architecture.md](Docs/CommonUI_Architecture.md) |
 | Turkish overview | [Docs/README.tr.md](Docs/README.tr.md) |
+
+## Extension Plugins
+
+MCPToolkit exposes a command registry for editor plugins that need to publish
+their own guarded automation commands. Extension commands participate in
+`list_commands`, manifest export, scope checks, dry-run metadata, and mutating
+command serialization. AIAssetPipeline uses this layer for provider-agnostic
+asset manifest import and verification.
 
 ## Safe UI Automation
 

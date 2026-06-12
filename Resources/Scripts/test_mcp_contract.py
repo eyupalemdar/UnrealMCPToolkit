@@ -270,6 +270,7 @@ def _failures() -> list[str]:
             "save_data_asset",
             "save_material_instance",
             "move_widget",
+            "replace_widget",
             "set_canvas_slot_layout",
             "set_cdo_array_element_property",
             "set_cdo_property",
@@ -752,6 +753,20 @@ def _failures() -> list[str]:
             )
             if move_widget_call.get("params") != {"asset_path": "/Game/UI/W_Test", "widget_name": "TitleText", "new_parent_name": "Root", "index": 0} or move_widget_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed move_widget index payload/meta mapping")
+            replace_widget_call = build_tcp_call(
+                "replace_widget",
+                {
+                    "asset_path": "/Game/UI/W_Test",
+                    "target_widget_name": "OldPlate",
+                    "new_widget_class": "/Game/UI/W_NewPlate",
+                    "new_widget_name": "",
+                    "preserve_slot": True,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if replace_widget_call.get("params") != {"asset_path": "/Game/UI/W_Test", "target_widget_name": "OldPlate", "new_widget_class": "/Game/UI/W_NewPlate"} or replace_widget_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed replace_widget default payload/meta mapping")
             canvas_slot_call = build_tcp_call(
                 "set_canvas_slot_layout",
                 {
