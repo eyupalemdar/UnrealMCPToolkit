@@ -169,12 +169,22 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 		return nullptr;
 	}
 
+	const TextureCompressionSettings ParsedCompression = ParseTextureCompression(Compression);
+	const TextureMipGenSettings ParsedMipGen = ParseMipGenSettings(MipGen);
+	const TextureGroup ParsedLODGroup = ParseTextureGroup(LODGroup);
+
 	UTextureFactory* TextureFactory = NewObject<UTextureFactory>();
 	if (!TextureFactory)
 	{
 		OutError = TEXT("Failed to create texture factory");
 		return nullptr;
 	}
+
+	TextureFactory->CompressionSettings = ParsedCompression;
+	TextureFactory->MipGenSettings = ParsedMipGen;
+	TextureFactory->LODGroup = ParsedLODGroup;
+	TextureFactory->ColorSpaceMode = bSRGB ? ETextureSourceColorSpace::SRGB : ETextureSourceColorSpace::Linear;
+	TextureFactory->bDeferCompression = true;
 
 	TextureFactory->AddToRoot();
 	ON_SCOPE_EXIT
@@ -202,10 +212,10 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 		return nullptr;
 	}
 
-	Texture->CompressionSettings = ParseTextureCompression(Compression);
+	Texture->CompressionSettings = ParsedCompression;
 	Texture->SRGB = bSRGB;
-	Texture->MipGenSettings = ParseMipGenSettings(MipGen);
-	Texture->LODGroup = ParseTextureGroup(LODGroup);
+	Texture->MipGenSettings = ParsedMipGen;
+	Texture->LODGroup = ParsedLODGroup;
 	Texture->PostEditChange();
 	Texture->UpdateResource();
 	Package->MarkPackageDirty();
