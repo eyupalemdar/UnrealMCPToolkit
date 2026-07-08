@@ -23,7 +23,7 @@ from typing import Dict, Iterable, List, Optional
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PLUGIN_ROOT = SCRIPT_DIR.parent.parent
-DEFAULT_ENGINE_DIR = Path(r"C:\Program Files\Epic Games\UE_5.7")
+DEFAULT_ENGINE_DIR = Path(r"C:\Program Files\Epic Games\UE_5.8")
 INVALID_FILENAME_CHARS = '/\\:*?"<>|'
 
 
@@ -385,7 +385,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--engine-dir",
-        help="Unreal Engine install root or Engine directory. Defaults to UE_ENGINE_DIR, UE_ROOT, then UE_5.7.",
+        help="Unreal Engine install root or Engine directory. Defaults to UE_ENGINE_DIR, UE_ROOT, then UE_5.8.",
     )
     parser.add_argument(
         "--editor-cmd",

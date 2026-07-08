@@ -112,8 +112,14 @@ python Resources/Scripts/export_asset.py --asset /Game/UI/W_Menu --project <PROJ
 python Resources/Scripts/export_asset.py Dev\AIExports\W_Menu_raw.txt
 ```
 
-If Unreal is not installed under `C:\Program Files\Epic Games\UE_5.7`, pass
+If Unreal is not installed under `C:\Program Files\Epic Games\UE_5.8`, pass
 `--engine-dir` or `--editor-cmd`, or set `UE_ENGINE_DIR` / `UE_ROOT`.
+
+For a source checkout, pass the engine root explicitly:
+
+```powershell
+python Resources/Scripts/export_asset.py --asset /Game/UI/W_Menu --project <PROJECT_ROOT>\OkeyGame.uproject --engine-dir D:\Programlama\Projeler\UnrealEngine
+```
 
 ## Adding Export Support
 

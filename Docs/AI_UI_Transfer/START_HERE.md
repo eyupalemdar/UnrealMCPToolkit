@@ -1,11 +1,11 @@
-# START HERE: Reference Image -> Pencil -> UE 5.7
+# START HERE: Reference Image -> Pencil -> UE 5.8
 
 This workflow is agent-neutral. Codex, Gemini CLI, Kimi Code, or any other agent
 should follow the same contract.
 
 ## Goal
 
-Turn a reference image into a Pencil design and then into a UE 5.7 CommonUI/UMG
+Turn a reference image into a Pencil design and then into a UE 5.8 CommonUI/UMG
 Widget Blueprint through deterministic contracts, not visual guessing inside
 Unreal.
 

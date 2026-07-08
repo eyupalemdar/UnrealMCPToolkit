@@ -306,7 +306,7 @@ FString HandleCreateAsset(TSharedPtr<FJsonObject> Params)
 			FString Val;
 			if (Pair.Value->TryGetString(Val))
 			{
-				InitialProperties.Add(Pair.Key, Val);
+				InitialProperties.Add(FString(Pair.Key.ToView()), Val);
 			}
 		}
 	}

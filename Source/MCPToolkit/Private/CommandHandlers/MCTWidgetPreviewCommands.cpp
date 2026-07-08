@@ -47,6 +47,7 @@
 
 #include "Async/Async.h"
 #include "Async/TaskGraphInterfaces.h"
+#include "Containers/Ticker.h"
 #include "CoreGlobals.h"
 #include "HAL/RunnableThread.h"
 #include "Misc/EngineVersion.h"
@@ -186,6 +187,253 @@
 
 namespace MCPToolkit::CommandHandlers::WidgetPreview
 {
+namespace
+{
+struct FPreviewFunctionCall
+{
+	FString WidgetName;
+	FString FunctionName;
+	TMap<FString, FString> Args;
+};
+
+struct FWidgetPreviewRatioEntry
+{
+	int32 Width = 0;
+	int32 Height = 0;
+	FString Label;
+};
+
+struct FWidgetPreviewCaptureState
+{
+	FString AssetPath;
+	TArray<FWidgetPreviewRatioEntry> Ratios;
+	int32 WarmupFrames = 3;
+	float DPIScale = 1.0f;
+	bool bTransparentBG = false;
+	bool bReturnBase64 = false;
+	FString OutputPath;
+	FString OutputDir;
+	FString PreviewMode;
+	TArray<FPreviewFunctionCall> PreviewFunctionCalls;
+	TSharedPtr<TPromise<FString>> Promise;
+
+	UUserWidget* UserWidget = nullptr;
+	TSharedPtr<SWidget> SlateWidget;
+	TSharedPtr<FWidgetRenderer> Renderer;
+	FString AssetBaseName;
+	TArray<TSharedPtr<FJsonValue>> PngResults;
+	bool bAllSucceeded = true;
+	FString LastError;
+	int32 PreviewFunctionCallCount = 0;
+
+	int32 CurrentRatioIndex = 0;
+	int32 CurrentWarmupPass = 0;
+	UTextureRenderTarget2D* CurrentRenderTarget = nullptr;
+};
+
+static void CleanupWidgetPreviewCapture(const TSharedRef<FWidgetPreviewCaptureState>& State)
+{
+	if (State->CurrentRenderTarget)
+	{
+		State->CurrentRenderTarget->RemoveFromRoot();
+		State->CurrentRenderTarget = nullptr;
+	}
+
+	State->Renderer.Reset();
+	FlushRenderingCommands();
+	State->SlateWidget.Reset();
+
+	if (State->UserWidget)
+	{
+		if (UCommonActivatableWidget* ActivatableWidget = Cast<UCommonActivatableWidget>(State->UserWidget))
+		{
+			if (ActivatableWidget->IsActivated())
+			{
+				ActivatableWidget->DeactivateWidget();
+			}
+		}
+
+		State->UserWidget->ReleaseSlateResources(true);
+		State->UserWidget->RemoveFromRoot();
+		State->UserWidget = nullptr;
+	}
+}
+
+static void FinishWidgetPreviewCapture(const TSharedRef<FWidgetPreviewCaptureState>& State)
+{
+	CleanupWidgetPreviewCapture(State);
+
+	if (State->PngResults.Num() == 0)
+	{
+		State->Promise->SetValue(CreateErrorResponse(State->LastError.IsEmpty() ? TEXT("No previews produced") : State->LastError));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	Data->SetStringField(TEXT("asset_path"), State->AssetPath);
+	Data->SetStringField(TEXT("preview_mode"), State->PreviewMode);
+	Data->SetNumberField(TEXT("preview_function_calls_applied"), State->PreviewFunctionCallCount);
+	Data->SetArrayField(TEXT("pngs"), State->PngResults);
+	Data->SetNumberField(TEXT("count"), State->PngResults.Num());
+	if (!State->bAllSucceeded)
+	{
+		Data->SetStringField(TEXT("partial_error"), State->LastError);
+	}
+
+	State->Promise->SetValue(CreateSuccessResponse(Data));
+}
+
+static void FailWidgetPreviewCapture(const TSharedRef<FWidgetPreviewCaptureState>& State, const FString& Error)
+{
+	State->LastError = Error;
+	CleanupWidgetPreviewCapture(State);
+	State->Promise->SetValue(CreateErrorResponse(Error));
+}
+
+static bool SaveCurrentWidgetPreviewCapture(const TSharedRef<FWidgetPreviewCaptureState>& State)
+{
+	if (!State->CurrentRenderTarget || !State->Ratios.IsValidIndex(State->CurrentRatioIndex))
+	{
+		State->bAllSucceeded = false;
+		State->LastError = TEXT("Internal capture state was invalid");
+		return false;
+	}
+
+	const FWidgetPreviewRatioEntry& Ratio = State->Ratios[State->CurrentRatioIndex];
+	const int32 RW = Ratio.Width;
+	const int32 RH = Ratio.Height;
+
+	FlushRenderingCommands();
+
+	TArray<FColor> Bitmap;
+	FRenderTarget* RenderTargetResource = State->CurrentRenderTarget->GameThread_GetRenderTargetResource();
+	if (!RenderTargetResource || !RenderTargetResource->ReadPixels(Bitmap))
+	{
+		State->bAllSucceeded = false;
+		State->LastError = FString::Printf(TEXT("Failed to read pixels for %dx%d"), RW, RH);
+		return false;
+	}
+
+	IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
+	TSharedPtr<IImageWrapper> PNGWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
+	if (!PNGWrapper.IsValid() ||
+		!PNGWrapper->SetRaw(Bitmap.GetData(),
+							Bitmap.Num() * sizeof(FColor),
+							RW, RH,
+							ERGBFormat::BGRA, 8))
+	{
+		State->bAllSucceeded = false;
+		State->LastError = FString::Printf(TEXT("Failed to encode PNG for %dx%d"), RW, RH);
+		return false;
+	}
+
+	const TArray64<uint8>& CompressedPng = PNGWrapper->GetCompressed(100);
+
+	TArray<uint8> FlatPng;
+	FlatPng.SetNumUninitialized((int32)CompressedPng.Num());
+	FMemory::Memcpy(FlatPng.GetData(), CompressedPng.GetData(), CompressedPng.Num());
+
+	FString OutPath;
+	if (State->Ratios.Num() == 1 && !State->OutputPath.IsEmpty())
+	{
+		OutPath = State->OutputPath;
+	}
+	else
+	{
+		FString Suffix = Ratio.Label.IsEmpty()
+			? FString::Printf(TEXT("_%dx%d"), RW, RH)
+			: FString::Printf(TEXT("_%s"), *Ratio.Label);
+		Suffix.ReplaceInline(TEXT(":"), TEXT(""));
+		Suffix.ReplaceInline(TEXT("/"), TEXT("_"));
+		Suffix.ReplaceInline(TEXT("\\"), TEXT("_"));
+		OutPath = State->OutputDir / (State->AssetBaseName + Suffix + TEXT(".png"));
+	}
+
+	if (!FFileHelper::SaveArrayToFile(FlatPng, *OutPath))
+	{
+		State->bAllSucceeded = false;
+		State->LastError = FString::Printf(TEXT("Failed to write PNG: %s"), *OutPath);
+		return false;
+	}
+
+	TSharedPtr<FJsonObject> Entry = MakeShared<FJsonObject>();
+	Entry->SetStringField(TEXT("png_path"), OutPath);
+	Entry->SetNumberField(TEXT("width"), RW);
+	Entry->SetNumberField(TEXT("height"), RH);
+	Entry->SetNumberField(TEXT("size_bytes"), FlatPng.Num());
+	Entry->SetStringField(TEXT("preview_mode"), State->PreviewMode);
+	if (!Ratio.Label.IsEmpty())
+	{
+		Entry->SetStringField(TEXT("label"), Ratio.Label);
+	}
+	if (State->bReturnBase64)
+	{
+		Entry->SetStringField(TEXT("png_base64"), FBase64::Encode(FlatPng));
+	}
+	State->PngResults.Add(MakeShared<FJsonValueObject>(Entry));
+	return true;
+}
+
+static bool TickWidgetPreviewCapture(const TSharedRef<FWidgetPreviewCaptureState>& State, float DeltaTime)
+{
+	if (!State->Renderer.IsValid() || !State->SlateWidget.IsValid())
+	{
+		FailWidgetPreviewCapture(State, TEXT("Widget preview capture lost renderer or Slate widget"));
+		return false;
+	}
+
+	if (!State->Ratios.IsValidIndex(State->CurrentRatioIndex))
+	{
+		FinishWidgetPreviewCapture(State);
+		return false;
+	}
+
+	const FWidgetPreviewRatioEntry& Ratio = State->Ratios[State->CurrentRatioIndex];
+	if (!State->CurrentRenderTarget)
+	{
+		State->CurrentRenderTarget = NewObject<UTextureRenderTarget2D>();
+		State->CurrentRenderTarget->ClearColor = State->bTransparentBG ? FLinearColor::Transparent : FLinearColor::Black;
+		State->CurrentRenderTarget->TargetGamma = 0.0f;
+		State->CurrentRenderTarget->RenderTargetFormat = RTF_RGBA8;
+		State->CurrentRenderTarget->InitAutoFormat(Ratio.Width, Ratio.Height);
+		State->CurrentRenderTarget->UpdateResourceImmediate(true);
+		State->CurrentRenderTarget->AddToRoot();
+		State->CurrentWarmupPass = 0;
+	}
+
+	const FVector2D DrawSize(Ratio.Width, Ratio.Height);
+	State->Renderer->DrawWidget(State->CurrentRenderTarget, State->SlateWidget.ToSharedRef(), DrawSize, 0.016f, false);
+	++State->CurrentWarmupPass;
+
+	if (State->CurrentWarmupPass < State->WarmupFrames)
+	{
+		return true;
+	}
+
+	SaveCurrentWidgetPreviewCapture(State);
+	State->CurrentRenderTarget->RemoveFromRoot();
+	State->CurrentRenderTarget = nullptr;
+	++State->CurrentRatioIndex;
+	State->CurrentWarmupPass = 0;
+
+	if (!State->Ratios.IsValidIndex(State->CurrentRatioIndex))
+	{
+		FinishWidgetPreviewCapture(State);
+		return false;
+	}
+
+	return true;
+}
+
+static void StartWidgetPreviewFrameCapture(const TSharedRef<FWidgetPreviewCaptureState>& State)
+{
+	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([State](float DeltaTime)
+	{
+		return TickWidgetPreviewCapture(State, DeltaTime);
+	}), 0.0f);
+}
+}
+
 FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 {
 	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
@@ -203,12 +451,6 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 	bool bReturnBase64 = false;
 	FString OutputPath;
 	FString PreviewMode = TEXT("runtime");
-	struct FPreviewFunctionCall
-	{
-		FString WidgetName;
-		FString FunctionName;
-		TMap<FString, FString> Args;
-	};
 	TArray<FPreviewFunctionCall> PreviewFunctionCalls;
 
 	{
@@ -274,13 +516,7 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 
 	// Parse optional ratios array (multi-ratio mode)
 	// Each entry: { "width": 2560, "height": 1080, "label": "21x9" }
-	struct FRatioEntry
-	{
-		int32 Width;
-		int32 Height;
-		FString Label;
-	};
-	TArray<FRatioEntry> Ratios;
+	TArray<FWidgetPreviewRatioEntry> Ratios;
 	const TArray<TSharedPtr<FJsonValue>>* RatiosArray = nullptr;
 	if (Params->TryGetArrayField(TEXT("ratios"), RatiosArray) && RatiosArray)
 	{
@@ -288,7 +524,7 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 		{
 			const TSharedPtr<FJsonObject>* RatioObj = nullptr;
 			if (!Entry->TryGetObject(RatioObj) || !RatioObj->IsValid()) continue;
-			FRatioEntry R;
+			FWidgetPreviewRatioEntry R;
 			double RW = 1920.0, RH = 1080.0;
 			(*RatioObj)->TryGetNumberField(TEXT("width"), RW);
 			(*RatioObj)->TryGetNumberField(TEXT("height"), RH);
@@ -301,7 +537,7 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 
 	if (Ratios.Num() == 0)
 	{
-		FRatioEntry R;
+		FWidgetPreviewRatioEntry R;
 		R.Width = Width;
 		R.Height = Height;
 		Ratios.Add(R);
@@ -315,8 +551,26 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Ratios, WarmupFrames, DPIScale, bTransparentBG, bReturnBase64, OutputPath, OutputDir, PreviewMode, PreviewFunctionCalls, Promise]()
+	TSharedRef<FWidgetPreviewCaptureState> CaptureState = MakeShared<FWidgetPreviewCaptureState>();
+	CaptureState->AssetPath = AssetPath;
+	CaptureState->Ratios = Ratios;
+	CaptureState->WarmupFrames = WarmupFrames;
+	CaptureState->DPIScale = DPIScale;
+	CaptureState->bTransparentBG = bTransparentBG;
+	CaptureState->bReturnBase64 = bReturnBase64;
+	CaptureState->OutputPath = OutputPath;
+	CaptureState->OutputDir = OutputDir;
+	CaptureState->PreviewMode = PreviewMode;
+	CaptureState->PreviewFunctionCalls = PreviewFunctionCalls;
+	CaptureState->Promise = Promise;
+
+	AsyncTask(ENamedThreads::GameThread, [CaptureState]()
 	{
+		const FString& AssetPath = CaptureState->AssetPath;
+		const FString& PreviewMode = CaptureState->PreviewMode;
+		const TArray<FPreviewFunctionCall>& PreviewFunctionCalls = CaptureState->PreviewFunctionCalls;
+		const TSharedPtr<TPromise<FString>> Promise = CaptureState->Promise;
+
 		// 1) Load Widget Blueprint
 		UWidgetBlueprint* WidgetBP = LoadObject<UWidgetBlueprint>(nullptr, *AssetPath);
 		if (!WidgetBP)
@@ -352,6 +606,7 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 			return;
 		}
 		UserWidget->AddToRoot();  // Prevent GC during rendering
+		CaptureState->UserWidget = UserWidget;
 
 #if WITH_EDITOR
 		if (PreviewMode == TEXT("designer"))
@@ -368,7 +623,8 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 		ICommonInputModule::GetSettings().LoadData();
 
 		// 4) Take Slate widget — triggers outer widget's Initialize + PreConstruct.
-		TSharedRef<SWidget> SlateWidget = UserWidget->TakeWidget();
+		TSharedPtr<SWidget> SlateWidget = UserWidget->TakeWidget();
+		CaptureState->SlateWidget = SlateWidget;
 
 		// CommonUI screens often synchronize state during activation rather than
 		// designer PreConstruct. Offscreen captures need that lifecycle too, or
@@ -388,18 +644,14 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 			}
 			if (!Target)
 			{
-				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("preview_function_calls target widget not found: %s"), *Call.WidgetName)));
-				UserWidget->ReleaseSlateResources(true);
-				UserWidget->RemoveFromRoot();
+				FailWidgetPreviewCapture(CaptureState, FString::Printf(TEXT("preview_function_calls target widget not found: %s"), *Call.WidgetName));
 				return;
 			}
 
 			UFunction* Function = Target->FindFunction(FName(*Call.FunctionName));
 			if (!Function)
 			{
-				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("preview_function_calls function not found: %s on %s"), *Call.FunctionName, *Target->GetName())));
-				UserWidget->ReleaseSlateResources(true);
-				UserWidget->RemoveFromRoot();
+				FailWidgetPreviewCapture(CaptureState, FString::Printf(TEXT("preview_function_calls function not found: %s on %s"), *Call.FunctionName, *Target->GetName()));
 				return;
 			}
 
@@ -450,9 +702,7 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 				{
 					Function->DestroyStruct(ParamData);
 				}
-				Promise->SetValue(CreateErrorResponse(ParamError));
-				UserWidget->ReleaseSlateResources(true);
-				UserWidget->RemoveFromRoot();
+				FailWidgetPreviewCapture(CaptureState, ParamError);
 				return;
 			}
 
@@ -576,157 +826,13 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 		}
 		UE_LOG(LogMCT, Log, TEXT("CaptureWidgetPreview[%s]: applied %d preview function calls, initialized %d nested widgets, synchronized %d widgets, streamed %d textures, skipped %d streaming waits"), *PreviewMode, PreviewFunctionCallCount, InitCount, SyncCount, TexCount, StreamingWaitSkippedCount);
 
-		// 5) Get ImageWrapper module
-		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
+		CaptureState->PreviewFunctionCallCount = PreviewFunctionCallCount;
+		CaptureState->AssetBaseName = FPaths::GetBaseFilename(AssetPath);
+		CaptureState->Renderer = MakeShared<FWidgetRenderer>(/*bUseGammaCorrection=*/true);
+		StartWidgetPreviewFrameCapture(CaptureState);
+		return;
 
-		// 6) Derive base filename
-		FString AssetBaseName = FPaths::GetBaseFilename(AssetPath);
 
-		// 7) Widget renderer (gamma correction on for sRGB output)
-		TSharedPtr<FWidgetRenderer> Renderer = MakeShared<FWidgetRenderer>(/*bUseGammaCorrection=*/true);
-
-		TArray<TSharedPtr<FJsonValue>> PngResults;
-		bool bAllSucceeded = true;
-		FString LastError;
-
-		for (const FRatioEntry& Ratio : Ratios)
-		{
-			const int32 RW = Ratio.Width;
-			const int32 RH = Ratio.Height;
-
-			// Create render target — RTF_RGBA8 (raw UNORM) + TargetGamma=0 (use DisplayGamma default).
-			// FWidgetRenderer(bUseGammaCorrection=true) already applies linear›sRGB in shader
-			// using RT->GetDisplayGamma(). Setting TargetGamma=2.2 + sRGB format causes double
-			// gamma (values look washed out). Setting TargetGamma=0 lets it fall through to
-			// Engine->DisplayGamma (2.2) applied exactly once. Matches editor viewport.
-			UTextureRenderTarget2D* RT = NewObject<UTextureRenderTarget2D>();
-			RT->ClearColor = bTransparentBG ? FLinearColor::Transparent : FLinearColor::Black;
-			RT->TargetGamma = 0.0f;
-			RT->RenderTargetFormat = RTF_RGBA8;
-			RT->InitAutoFormat(RW, RH);
-			RT->UpdateResourceImmediate(true);
-			RT->AddToRoot();
-
-			// Warmup + final render passes (absorb texture streaming delay)
-			const FVector2D DrawSize(RW, RH);
-			for (int32 i = 0; i < WarmupFrames; ++i)
-			{
-				Renderer->DrawWidget(RT, SlateWidget, DrawSize, 0.016f, false);
-			}
-
-			// Flush GPU work before reading pixels
-			FlushRenderingCommands();
-
-			// Read pixels
-			TArray<FColor> Bitmap;
-			FRenderTarget* RenderTargetResource = RT->GameThread_GetRenderTargetResource();
-			if (!RenderTargetResource || !RenderTargetResource->ReadPixels(Bitmap))
-			{
-				bAllSucceeded = false;
-				LastError = FString::Printf(TEXT("Failed to read pixels for %dx%d"), RW, RH);
-				RT->RemoveFromRoot();
-				continue;
-			}
-
-			// Encode PNG
-			TSharedPtr<IImageWrapper> PNGWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG);
-			if (!PNGWrapper.IsValid() ||
-				!PNGWrapper->SetRaw(Bitmap.GetData(),
-									Bitmap.Num() * sizeof(FColor),
-									RW, RH,
-									ERGBFormat::BGRA, 8))
-			{
-				bAllSucceeded = false;
-				LastError = FString::Printf(TEXT("Failed to encode PNG for %dx%d"), RW, RH);
-				RT->RemoveFromRoot();
-				continue;
-			}
-
-			const TArray64<uint8>& CompressedPng = PNGWrapper->GetCompressed(100);
-
-			// Flatten into TArray<uint8> for FFileHelper + FBase64 compatibility
-			TArray<uint8> FlatPng;
-			FlatPng.SetNumUninitialized((int32)CompressedPng.Num());
-			FMemory::Memcpy(FlatPng.GetData(), CompressedPng.GetData(), CompressedPng.Num());
-
-			// Derive output file path
-			FString OutPath;
-			if (Ratios.Num() == 1 && !OutputPath.IsEmpty())
-			{
-				OutPath = OutputPath;
-			}
-			else
-			{
-				FString Suffix = Ratio.Label.IsEmpty()
-					? FString::Printf(TEXT("_%dx%d"), RW, RH)
-					: FString::Printf(TEXT("_%s"), *Ratio.Label);
-				Suffix.ReplaceInline(TEXT(":"), TEXT(""));
-				Suffix.ReplaceInline(TEXT("/"), TEXT("_"));
-				Suffix.ReplaceInline(TEXT("\\"), TEXT("_"));
-				OutPath = OutputDir / (AssetBaseName + Suffix + TEXT(".png"));
-			}
-
-			// Save to disk
-			if (!FFileHelper::SaveArrayToFile(FlatPng, *OutPath))
-			{
-				bAllSucceeded = false;
-				LastError = FString::Printf(TEXT("Failed to write PNG: %s"), *OutPath);
-				RT->RemoveFromRoot();
-				continue;
-			}
-
-			// Build JSON entry
-			TSharedPtr<FJsonObject> Entry = MakeShared<FJsonObject>();
-			Entry->SetStringField(TEXT("png_path"), OutPath);
-			Entry->SetNumberField(TEXT("width"), RW);
-			Entry->SetNumberField(TEXT("height"), RH);
-			Entry->SetNumberField(TEXT("size_bytes"), FlatPng.Num());
-			Entry->SetStringField(TEXT("preview_mode"), PreviewMode);
-			if (!Ratio.Label.IsEmpty())
-			{
-				Entry->SetStringField(TEXT("label"), Ratio.Label);
-			}
-			if (bReturnBase64)
-			{
-				FString B64 = FBase64::Encode(FlatPng);
-				Entry->SetStringField(TEXT("png_base64"), B64);
-			}
-			PngResults.Add(MakeShared<FJsonValueObject>(Entry));
-
-			// Cleanup RT
-			RT->RemoveFromRoot();
-		}
-
-		// Cleanup widget
-		if (UCommonActivatableWidget* ActivatableWidget = Cast<UCommonActivatableWidget>(UserWidget))
-		{
-			if (ActivatableWidget->IsActivated())
-			{
-				ActivatableWidget->DeactivateWidget();
-			}
-		}
-		UserWidget->ReleaseSlateResources(true);
-		UserWidget->RemoveFromRoot();
-
-		if (PngResults.Num() == 0)
-		{
-			Promise->SetValue(CreateErrorResponse(LastError.IsEmpty() ? TEXT("No previews produced") : LastError));
-			return;
-		}
-
-		// Build response
-		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
-		Data->SetStringField(TEXT("asset_path"), AssetPath);
-		Data->SetStringField(TEXT("preview_mode"), PreviewMode);
-		Data->SetNumberField(TEXT("preview_function_calls_applied"), PreviewFunctionCallCount);
-		Data->SetArrayField(TEXT("pngs"), PngResults);
-		Data->SetNumberField(TEXT("count"), PngResults.Num());
-		if (!bAllSucceeded)
-		{
-			Data->SetStringField(TEXT("partial_error"), LastError);
-		}
-
-		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
 	Future.WaitFor(FTimespan::FromSeconds(120.0));

@@ -721,7 +721,7 @@ FString HandleSetWidgetProperties(TSharedPtr<FJsonObject> Params)
 		FString StringValue;
 		if (Pair.Value->TryGetString(StringValue))
 		{
-			Properties.Add(Pair.Key, StringValue);
+			Properties.Add(FString(Pair.Key.ToView()), StringValue);
 		}
 	}
 

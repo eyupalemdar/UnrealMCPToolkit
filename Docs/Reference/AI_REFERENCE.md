@@ -1,7 +1,7 @@
 # MCPToolkit - AI Reference Guide
 
 > **Read this file to understand ALL plugin capabilities in one place.**
-> 201 MCP tools across 38 TCP command categories plus client-only tools. UE 5.7, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
+> 201 MCP tools across 182 native TCP commands in 38 categories plus 19 client-only tools. UE 5.8, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
 
 ## Architecture
 
@@ -595,7 +595,7 @@ capture_widget_preview(
 
 ### Technical details
 - Uses `FWidgetRenderer` + `UTextureRenderTarget2D` → `IImageWrapper` (PNG).
-- Game-thread safe: asset load + widget instantiation run via `AsyncTask(GameThread)`.
+- Game-thread safe: asset load + widget instantiation run via `AsyncTask(GameThread)`, then render/readback runs from editor frame ticker callbacks so Slate render-thread work inherits a valid frame time context.
 - `preview_mode="runtime"` is the default and is required for UI acceptance. It does not set `EWidgetDesignFlags::Designing`; CommonActivatable root widgets are activated before rendering.
 - `preview_mode="designer"` preserves design-time `PreConstruct` preview data for probes, but it is not a reliable runtime acceptance capture.
 - `preview_function_calls` applies optional reflection calls to the live widget instance after runtime activation and before rendering. Use this for stateful runtime captures where activation sets a default state, e.g. `preview_function_calls=[{"function_name":"SwitchToTab","args":{"Tab":"2"}}]` to capture a non-default settings tab without falling back to designer mode.
@@ -618,15 +618,16 @@ capture_widget_preview(
 
 | Tool | Purpose |
 |------|---------|
-| `reload_asset(asset_path, reopen_after?)` | Refresh an asset editor tab; hard-reload regular assets, close/reopen Widget Blueprints |
+| `reload_asset(asset_path, reopen_after?)` | Reload an asset package through Unreal's package reload path and let AssetEditorSubsystem refresh any open editor tab |
 
 ### Why this exists
 
 After `compile_and_save`, the on-disk asset is updated but any open editor tab keeps a **cached widget instance** showing the old version. The user sees stale output even though `capture_widget_preview` (which reads from disk) shows the fix. Manually the user must do **Asset Actions → Reload** in Content Browser. This tool automates that step.
 
-For Widget Blueprint assets, the tool intentionally skips hard package reload
-and uses close/reopen editor refresh. Hard package reload can tear down live UMG
-designer preview worlds while their tickable editor objects are unwinding.
+For Widget Blueprint assets, the tool still uses the package reload path. It
+does not manually close or reopen UMG designer tabs; Unreal's own
+`UAssetEditorSubsystem::HandlePackageReloaded` handles affected editor tabs
+during the safe reload phases.
 
 ### Example
 
@@ -637,17 +638,17 @@ compile_and_save("/Game/UI/Menu/W_MainMenu_HF03d")
 # Clear any stale editor tab so the user sees the updated widget:
 reload_asset("/Game/UI/Menu/W_MainMenu_HF03d")
 # Widget Blueprint result:
-# {"was_open": true, "closed_editor": true, "reloaded": false,
-#  "hard_reload_skipped": true, "reload_strategy": "widget_blueprint_editor_refresh",
-#  "reopened": true}
+# {"was_open": true, "reloaded": true,
+#  "reload_strategy": "package_tools_reload",
+#  "editor_refresh_delegated": true}
 ```
 
 ### Technical details
 
-- Uses `UAssetEditorSubsystem::CloseAllEditorsForAsset` to close any open tab.
-- For `UWidgetBlueprint` assets, skips `UPackageTools::ReloadPackages` and relies on close/reopen editor refresh.
-- For other asset types, uses `UPackageTools::ReloadPackages` with `AssumePositive` interaction mode (no dialog prompts).
-- Reopens the editor tab only if `reopen_after=true` and the tab was open before.
+- Uses `UPackageTools::ReloadPackages` with `AssumePositive` interaction mode (no dialog prompts).
+- Does not directly call `CloseAllEditorsForAsset` or `OpenEditorForAsset`.
+- Open editors, including Widget Blueprint editors, are refreshed by `UAssetEditorSubsystem` in response to package reload events.
+- `reopen_after` is accepted for backward compatibility; package reload owns the actual editor refresh timing.
 - `capture_widget_preview` does NOT need this — it renders directly from the on-disk asset.
 
 ### Response fields
@@ -655,11 +656,10 @@ reload_asset("/Game/UI/Menu/W_MainMenu_HF03d")
 | Field | Meaning |
 |---|---|
 | `was_open` | Was an editor tab open for this asset before reload? |
-| `closed_editor` | Was an open editor tab closed? |
-| `reloaded` | Did a hard package reload run and succeed? Widget Blueprints generally return `false` here because hard reload is intentionally skipped. |
-| `hard_reload_skipped` | Was hard package reload skipped for a safer refresh path? |
-| `reload_strategy` | Either `package_reload` or `widget_blueprint_editor_refresh`. |
-| `reopened` | Was the editor tab reopened after reload? |
+| `reloaded` | Did `UPackageTools::ReloadPackages` report a successful package reload? |
+| `reload_strategy` | `package_tools_reload`. |
+| `editor_refresh_delegated` | Editor tab refresh was delegated to `UAssetEditorSubsystem` package reload handling. |
+| `closed_editor`, `reopened`, `hard_reload_skipped` | Backward-compatible fields; this command no longer performs manual editor close/reopen or skips package reload for Widget Blueprints. |
 
 ---
 
@@ -936,7 +936,7 @@ and fails validation when a wrapper is missing or calls the wrong TCP command.
 `MCPToolkit_MCPWrapperStubs.py` is a generated review aid for the next
 wrapper-generation pass. `MCPToolkit_MCPWrapperRuntime.py` is imported by
 the MCP client for selected pass-through wrappers. Generated runtime metadata
-now covers all 161 TCP wrappers: read-only payload wrappers, the safe write-scope set
+now covers all 182 TCP wrappers: read-only payload wrappers, the safe write-scope set
 (editor/level/actor/PIE/viewport, Asset/DataAsset/Input, Import,
 AnimBlueprint, CDO/CDOArray, Material graph/MIC, Project/ProjectConfig,
 Blueprint graph/variable, Blueprint utility, and Widget wrappers), and the current destructive dry-run set

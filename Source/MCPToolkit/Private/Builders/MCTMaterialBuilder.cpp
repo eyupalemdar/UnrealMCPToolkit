@@ -152,8 +152,19 @@ bool UMCTMaterialBuilder::CompileMaterial(
 		return false;
 	}
 
-	// Use UMaterialEditingLibrary for the high-level recompile
-	UMaterialEditingLibrary::RecompileMaterial(Material);
+	// UMaterialEditingLibrary::RecompileMaterial broadcasts editor refresh and
+	// viewport redraw events after compiling. For MCP automation that can create
+	// Slate/D3D swapchains while an asset editor tab is restoring or hidden,
+	// which turns an otherwise valid material edit into an editor-fatal RHI
+	// failure. Do the material update directly and leave visual editor refresh to
+	// normal package/asset notifications.
+	{
+		FMaterialUpdateContext UpdateContext(FMaterialUpdateContext::EOptions::Default, GMaxRHIShaderPlatform);
+		UpdateContext.AddMaterial(Material);
+		Material->PreEditChange(nullptr);
+		Material->PostEditChange();
+		Material->MarkPackageDirty();
+	}
 
 	if (GShaderCompilingManager)
 	{
@@ -1210,6 +1221,28 @@ bool UMCTMaterialBuilder::SetPropertyByPath(
 		{
 			// Leaf property — set the value using ImportText
 			void* ValuePtr = Prop->ContainerPtrToValuePtr<void>(CurrentContainer);
+			if (FStrProperty* StrProp = CastField<FStrProperty>(Prop))
+			{
+				FString StringValue = Value;
+				if (StringValue.Len() >= 2)
+				{
+					const TCHAR FirstChar = StringValue[0];
+					const TCHAR LastChar = StringValue[StringValue.Len() - 1];
+					if ((FirstChar == TEXT('"') && LastChar == TEXT('"')) ||
+						(FirstChar == TEXT('\'') && LastChar == TEXT('\'')))
+					{
+						StringValue = StringValue.Mid(1, StringValue.Len() - 2);
+						StringValue.ReplaceInline(TEXT("\\n"), TEXT("\n"));
+						StringValue.ReplaceInline(TEXT("\\r"), TEXT("\r"));
+						StringValue.ReplaceInline(TEXT("\\t"), TEXT("\t"));
+						StringValue.ReplaceInline(TEXT("\\\""), TEXT("\""));
+						StringValue.ReplaceInline(TEXT("\\'"), TEXT("'"));
+						StringValue.ReplaceInline(TEXT("\\\\"), TEXT("\\"));
+					}
+				}
+				StrProp->SetPropertyValue(ValuePtr, StringValue);
+				return true;
+			}
 			const TCHAR* ValueCStr = *Value;
 			const TCHAR* Result = Prop->ImportText_Direct(ValueCStr, ValuePtr, Object, PPF_None);
 			if (Result != nullptr)

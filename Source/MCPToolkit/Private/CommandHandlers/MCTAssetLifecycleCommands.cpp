@@ -230,75 +230,53 @@ FString HandleReloadAsset(TSharedPtr<FJsonObject> Params)
 			return;
 		}
 
+		// 3) Check if an asset editor is currently open, but do not close or reopen
+		// it directly. This matches the editor's reload path: UPackageTools emits
+		// package reload events, and UAssetEditorSubsystem refreshes open editors
+		// during the safe reload phases.
 		const bool bIsWidgetBlueprint = Asset->IsA<UWidgetBlueprint>();
-
-		// 2) Check if asset editor is currently open, remember state
 		bool bWasOpen = false;
-		bool bClosedEditor = false;
-		UAssetEditorSubsystem* EditorSubsystem = nullptr;
 		if (GEditor)
 		{
-			EditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
-			if (EditorSubsystem)
+			if (UAssetEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>())
 			{
-				// FindEditorsForAsset returns nullptr if not open
 				bWasOpen = EditorSubsystem->FindEditorForAsset(Asset, /*bFocusIfOpen=*/false) != nullptr;
-
-				// Close all editors for this asset (clears cached widget instance)
-				if (bWasOpen)
-				{
-					EditorSubsystem->CloseAllEditorsForAsset(Asset);
-					bClosedEditor = true;
-				}
 			}
 		}
 
-		// 3) Hard reload the package for regular assets. Widget Blueprints are
-		// refreshed by closing/reopening the editor tab only: hard package reload
-		// can destroy live UMG designer preview worlds while their tickable editor
-		// objects are still unwinding.
+		// 4) Use the same package reload primitive as the editor reload action.
+		// Do not pre-close editors here. AssetEditorSubsystem listens to
+		// OnPackageReloaded and closes/reopens affected editors in PrePackageFixup
+		// and PostBatchPostGC, which avoids tearing down UMG/Slate tabs from this
+		// remote command while they are still live.
 		bool bReloaded = false;
-		bool bSkippedHardReload = false;
-		FString ReloadStrategy = TEXT("package_reload");
 		FText ErrorMsg;
-
-		if (bIsWidgetBlueprint)
-		{
-			bSkippedHardReload = true;
-			ReloadStrategy = TEXT("widget_blueprint_editor_refresh");
-		}
-		else
-		{
-			TArray<UPackage*> PackagesToReload;
-			PackagesToReload.Add(Package);
-			bReloaded = UPackageTools::ReloadPackages(PackagesToReload, ErrorMsg, EReloadPackagesInteractionMode::AssumePositive);
-		}
-
-		// 4) Reopen editor if it was previously open and reopen_after flag is true
-		bool bReopened = false;
-		if (bReopenAfter && bWasOpen && EditorSubsystem)
-		{
-			// Load fresh reference after reload
-			UObject* FreshAsset = bSkippedHardReload ? Asset : LoadObject<UObject>(nullptr, *AssetPath);
-			if (FreshAsset)
-			{
-				bReopened = EditorSubsystem->OpenEditorForAsset(FreshAsset);
-			}
-		}
+		TArray<UPackage*> PackagesToReload;
+		PackagesToReload.Add(Package);
+		bReloaded = UPackageTools::ReloadPackages(PackagesToReload, ErrorMsg, EReloadPackagesInteractionMode::AssumePositive);
 
 		// 5) Build response
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetStringField(TEXT("asset_path"), AssetPath);
+		Data->SetStringField(TEXT("package_path"), PackagePath);
+		Data->SetBoolField(TEXT("is_widget_blueprint"), bIsWidgetBlueprint);
 		Data->SetBoolField(TEXT("was_open"), bWasOpen);
-		Data->SetBoolField(TEXT("closed_editor"), bClosedEditor);
 		Data->SetBoolField(TEXT("reloaded"), bReloaded);
-		Data->SetBoolField(TEXT("hard_reload_skipped"), bSkippedHardReload);
-		Data->SetStringField(TEXT("reload_strategy"), ReloadStrategy);
+		Data->SetStringField(TEXT("reload_strategy"), TEXT("package_tools_reload"));
+		Data->SetBoolField(TEXT("editor_refresh_delegated"), true);
+		Data->SetBoolField(TEXT("reopen_after_requested"), bReopenAfter);
+		Data->SetBoolField(TEXT("reopen_after_delegated_to_asset_editor_subsystem"), bWasOpen);
+		// Backward-compatible fields: the command no longer performs manual tab
+		// close/reopen, because PackageTools owns editor refresh during reload.
+		Data->SetBoolField(TEXT("closed_editor"), false);
+		Data->SetBoolField(TEXT("reopened"), false);
+		Data->SetBoolField(TEXT("hard_reload_skipped"), false);
+		Data->SetBoolField(TEXT("editor_refresh_skipped"), false);
+		Data->SetBoolField(TEXT("manual_editor_refresh_required"), false);
 		if (!ErrorMsg.IsEmpty())
 		{
 			Data->SetStringField(TEXT("reload_error"), ErrorMsg.ToString());
 		}
-		Data->SetBoolField(TEXT("reopened"), bReopened);
 
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});

@@ -7,7 +7,7 @@ Primary language: English. Turkish overview: [Docs/README.tr.md](Docs/README.tr.
 
 ## What It Provides
 
-- 198 MCP tools backed by 179 native TCP commands and 19 client-only tools.
+- 201 MCP tools backed by 182 native TCP commands and 19 client-only tools.
 - Local Unreal Editor automation over TCP, Python MCP stdio, and native localhost
   HTTP/MCP.
 - Asset export for Widget Blueprints, Blueprints, Animation Blueprints,
@@ -25,7 +25,7 @@ Primary language: English. Turkish overview: [Docs/README.tr.md](Docs/README.tr.
 - Public extension command registry so project or plugin-specific workflows can
   register editor commands without forking MCPToolkit.
 
-Current validation target: Unreal Engine 5.7.
+Current validation target: Unreal Engine 5.8. Static surface: 182 TCP / 201 MCP tools.
 
 ## Quick Start
 

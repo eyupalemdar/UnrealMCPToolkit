@@ -159,7 +159,7 @@
  * - capture_widget_preview: Render a Widget Blueprint to PNG at one or more ratios
  *
  * Asset Lifecycle commands:
- * - reload_asset: Close asset editor, hard reload package, reopen editor (fixes cached tab after compile_and_save)
+ * - reload_asset: Reload a package through UPackageTools; editor tab refresh is delegated to AssetEditorSubsystem
  */
 class FMCTTcpServer : public FRunnable
 {

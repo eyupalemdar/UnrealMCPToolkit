@@ -15,12 +15,12 @@ okumasidir.
 
 Guncel yuzey:
 
-- 179 native TCP komutu
-- 198 MCP araci
+- 182 native TCP komutu
+- 201 MCP araci
 - 19 client-only MCP araci
 - 38 komut kategorisi
 - 42 capability kaydi
-- Guncel dogrulama hedefi: Unreal Engine 5.7
+- Guncel dogrulama hedefi: Unreal Engine 5.8
 
 ## Nereden Baslamali?
 

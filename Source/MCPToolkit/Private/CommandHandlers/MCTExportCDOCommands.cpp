@@ -350,7 +350,7 @@ FString HandleAddCDOArrayElement(TSharedPtr<FJsonObject> Params)
 				FString Val;
 				if (Pair.Value->TryGetString(Val))
 				{
-					ElementValues.Add(Pair.Key, Val);
+					ElementValues.Add(FString(Pair.Key.ToView()), Val);
 				}
 			}
 		}

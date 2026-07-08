@@ -6812,27 +6812,26 @@ def reload_asset(
     reopen_after: bool = True,
 ) -> str:
     """
-    Refresh an asset editor tab, clearing any cached editor-tab state.
+    Reload an asset package through Unreal's package reload path.
 
     Use this after `compile_and_save` when the user has the asset open in an
-    editor tab. The editor keeps a cached widget instance that does not auto-
-    refresh after backend modifications, so the user sees the old version even
-    though the on-disk asset is up to date. This tool closes the editor and
-    optionally reopens it. For regular assets it also hard-reloads the package;
-    for Widget Blueprints it skips hard package reload and uses close/reopen
-    refresh because hard reload can invalidate live UMG designer preview state.
+    editor tab. The editor can keep cached state after backend modifications,
+    so the user may see stale content even though the on-disk asset is updated.
+    This tool calls UPackageTools::ReloadPackages and lets Unreal's
+    AssetEditorSubsystem refresh open editor tabs via package reload events.
+    It does not manually close or reopen Widget Blueprint tabs.
 
     `capture_widget_preview` renders directly from disk, so it does NOT need
     reload — only the user-facing editor tab needs this.
 
     Args:
         asset_path: Content path of the asset, e.g. "/Game/UI/Menu/W_MainMenu_HF03d"
-        reopen_after: If True (default), reopen the editor tab after reload if
-                      it was previously open.
+        reopen_after: Backward-compatible flag. Package reload owns the actual
+                      editor refresh timing.
 
     Returns:
         JSON with `was_open`, `closed_editor`, `reloaded`,
-        `hard_reload_skipped`, `reload_strategy`, and `reopened`.
+        `editor_refresh_delegated`, `reload_strategy`, and compatibility fields.
     """
     return _format_response(_send_command("reload_asset", {
         "asset_path": asset_path,

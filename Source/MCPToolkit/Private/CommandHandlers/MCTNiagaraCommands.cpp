@@ -425,7 +425,7 @@ TSharedPtr<FJsonObject> BuildScriptJson(const UNiagaraScript* Script, const FNia
 	Data->SetNumberField(TEXT("attribute_count"), ExecutableData.Attributes.Num());
 	Data->SetNumberField(TEXT("attribute_written_count"), ExecutableData.AttributesWritten.Num());
 	Data->SetNumberField(TEXT("data_interface_count"), ExecutableData.DataInterfaceInfo.Num());
-	Data->SetNumberField(TEXT("resolved_data_interface_count"), Script->GetResolvedDataInterfaces().Num());
+	Data->SetNumberField(TEXT("resolved_data_interface_count"), ExecutableData.DataInterfaceInfo.Num());
 	Data->SetNumberField(TEXT("external_function_count"), ExecutableData.CalledVMExternalFunctions.Num());
 	Data->SetNumberField(TEXT("read_dataset_count"), ExecutableData.ReadDataSets.Num());
 	Data->SetNumberField(TEXT("write_dataset_count"), ExecutableData.WriteDataSets.Num());

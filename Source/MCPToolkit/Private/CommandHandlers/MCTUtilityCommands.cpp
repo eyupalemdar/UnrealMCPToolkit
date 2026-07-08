@@ -56,6 +56,38 @@ TArray<TSharedPtr<FJsonValue>> BuildAllowedOriginsJson(const TArray<FString>& Or
 	}
 	return AllowedOrigins;
 }
+
+UWorld* FindStatusWorld()
+{
+	if (!GEditor)
+	{
+		return nullptr;
+	}
+
+	if (GEditor->PlayWorld)
+	{
+		return GEditor->PlayWorld;
+	}
+
+	for (const FWorldContext& WorldContext : GEditor->GetWorldContexts())
+	{
+		UWorld* World = WorldContext.World();
+		if (World && WorldContext.WorldType == EWorldType::Editor)
+		{
+			return World;
+		}
+	}
+
+	for (const FWorldContext& WorldContext : GEditor->GetWorldContexts())
+	{
+		if (UWorld* World = WorldContext.World())
+		{
+			return World;
+		}
+	}
+
+	return nullptr;
+}
 }
 
 TSharedPtr<FJsonObject> BuildEditorIdentityJson(const FMCTUtilityContext& Context)
@@ -282,7 +314,8 @@ FString HandleProjectStatus(const FMCTUtilityContext& Context)
 	TSharedPtr<FJsonObject> EditorState = MakeShared<FJsonObject>();
 	EditorState->SetBoolField(TEXT("pie_active"), GEditor && GEditor->PlayWorld != nullptr);
 	EditorState->SetBoolField(TEXT("simulating"), GEditor && GEditor->bIsSimulatingInEditor);
-	UWorld* World = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
+	UWorld* World = FindStatusWorld();
+	EditorState->SetBoolField(TEXT("world_context_available"), World != nullptr);
 	EditorState->SetStringField(TEXT("world_name"), World ? World->GetName() : TEXT(""));
 	EditorState->SetStringField(TEXT("world_package"), (World && World->GetOutermost()) ? World->GetOutermost()->GetName() : TEXT(""));
 	Data->SetObjectField(TEXT("editor_state"), EditorState);
