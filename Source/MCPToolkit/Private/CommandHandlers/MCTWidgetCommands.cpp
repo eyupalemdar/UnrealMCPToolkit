@@ -431,6 +431,7 @@ FString HandleReplaceWidget(TSharedPtr<FJsonObject> Params)
 
 	FString AssetPath, TargetWidgetName, NewWidgetClass, NewWidgetName;
 	bool bPreserveSlot = true;
+	bool bPreserveChildren = false;
 	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
 	{
 		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
@@ -445,11 +446,12 @@ FString HandleReplaceWidget(TSharedPtr<FJsonObject> Params)
 	}
 	Params->TryGetStringField(TEXT("new_widget_name"), NewWidgetName);
 	Params->TryGetBoolField(TEXT("preserve_slot"), bPreserveSlot);
+	Params->TryGetBoolField(TEXT("preserve_children"), bPreserveChildren);
 
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, TargetWidgetName, NewWidgetClass, NewWidgetName, bPreserveSlot, Promise]()
+	AsyncTask(ENamedThreads::GameThread, [AssetPath, TargetWidgetName, NewWidgetClass, NewWidgetName, bPreserveSlot, bPreserveChildren, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -465,6 +467,7 @@ FString HandleReplaceWidget(TSharedPtr<FJsonObject> Params)
 			NewWidgetClass,
 			NewWidgetName,
 			bPreserveSlot,
+			bPreserveChildren,
 			&ReplaceError);
 		if (!Widget)
 		{
@@ -482,6 +485,7 @@ FString HandleReplaceWidget(TSharedPtr<FJsonObject> Params)
 		Data->SetStringField(TEXT("parent_name"), Parent ? Parent->GetName() : TEXT(""));
 		Data->SetNumberField(TEXT("index"), Parent ? Parent->GetChildIndex(Widget) : -1);
 		Data->SetBoolField(TEXT("preserve_slot"), bPreserveSlot);
+		Data->SetBoolField(TEXT("preserve_children"), bPreserveChildren);
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 

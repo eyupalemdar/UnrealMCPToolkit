@@ -86,6 +86,14 @@ compile_and_save("/Game/UI/Kale/Screens/W_KalePlayContent")
 | `add_widget(asset_path, widget_class, widget_name, parent_name?, scope?, dry_run?)` | Add widget. parent="" = root |
 | `remove_widget(asset_path, widget_name, scope?, dry_run?)` | Remove widget |
 | `move_widget(asset_path, widget_name, new_parent, index?, scope?, dry_run?)` | Move widget. index=-1 = append |
+| `replace_widget(asset_path, widget_name, new_class, new_name?, preserve_children?, scope?, dry_run?)` | Replace a widget; opt-in child preservation is intended for layout-root/container migration |
+
+`replace_widget` keeps its historical destructive default:
+`preserve_children=false`. Set `preserve_children=true` only when the old and
+new widgets are panels and the direct children must survive the replacement.
+The builder preserves direct child order, removes the old parent slots, and lets
+the new parent generate the correct slot type for every preserved child. Verify
+the resulting slot properties and tree before compilation.
 
 ### Widget Classes (common)
 `TextBlock`, `Image`, `Button`, `Border`, `CanvasPanel`, `VerticalBox`, `HorizontalBox`, `Overlay`, `SizeBox`, `Spacer`, `WidgetSwitcher`, `ScrollBox`, `CommonTextBlock`, `CommonButtonBase`, `CommonActionWidget`, `CommonActivatableWidget`, `CommonAnimatedSwitcher`
@@ -594,6 +602,15 @@ capture_widget_preview(
 4. Write findings to `Docs/AI_UI_Transfer/ui-fidelity-log.md`.
 
 ### Technical details
+
+- `dpi_scale` is passed to the `FWidgetRenderer::DrawWidget` layout-scale
+  argument. The requested render-target `width`/`height` remains the physical
+  PNG size; the widget's logical root space is therefore approximately
+  `DrawSize / dpi_scale`.
+- The response includes the applied `dpi_scale` at the top level and on every
+  PNG entry. A capture matrix can therefore model real accumulated Slate layout
+  scales such as `0.666`, `1.0`, `1.333`, and `2.0` without resizing a
+  previously rendered PNG.
 - Uses `FWidgetRenderer` + `UTextureRenderTarget2D` → `IImageWrapper` (PNG).
 - Game-thread safe: asset load + widget instantiation run via `AsyncTask(GameThread)`, then render/readback runs from editor frame ticker callbacks so Slate render-thread work inherits a valid frame time context.
 - `preview_mode="runtime"` is the default and is required for UI acceptance. It does not set `EWidgetDesignFlags::Designing`; CommonActivatable root widgets are activated before rendering.

@@ -189,6 +189,16 @@ namespace MCPToolkit::CommandHandlers::WidgetPreview
 {
 namespace
 {
+void RefreshGameThreadAppTimeContextForRemoteCommand()
+{
+	if (IsInGameThread())
+	{
+		// MCP commands originate from a TCP worker thread. Re-establish the game
+		// thread time context before widget preview queues render-thread work.
+		FApp::SetCurrentTime(FApp::GetCurrentTime());
+	}
+}
+
 struct FPreviewFunctionCall
 {
 	FString WidgetName;
@@ -272,6 +282,7 @@ static void FinishWidgetPreviewCapture(const TSharedRef<FWidgetPreviewCaptureSta
 	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 	Data->SetStringField(TEXT("asset_path"), State->AssetPath);
 	Data->SetStringField(TEXT("preview_mode"), State->PreviewMode);
+	Data->SetNumberField(TEXT("dpi_scale"), State->DPIScale);
 	Data->SetNumberField(TEXT("preview_function_calls_applied"), State->PreviewFunctionCallCount);
 	Data->SetArrayField(TEXT("pngs"), State->PngResults);
 	Data->SetNumberField(TEXT("count"), State->PngResults.Num());
@@ -376,6 +387,8 @@ static bool SaveCurrentWidgetPreviewCapture(const TSharedRef<FWidgetPreviewCaptu
 
 static bool TickWidgetPreviewCapture(const TSharedRef<FWidgetPreviewCaptureState>& State, float DeltaTime)
 {
+	RefreshGameThreadAppTimeContextForRemoteCommand();
+
 	if (!State->Renderer.IsValid() || !State->SlateWidget.IsValid())
 	{
 		FailWidgetPreviewCapture(State, TEXT("Widget preview capture lost renderer or Slate widget"));
@@ -402,7 +415,13 @@ static bool TickWidgetPreviewCapture(const TSharedRef<FWidgetPreviewCaptureState
 	}
 
 	const FVector2D DrawSize(Ratio.Width, Ratio.Height);
-	State->Renderer->DrawWidget(State->CurrentRenderTarget, State->SlateWidget.ToSharedRef(), DrawSize, 0.016f, false);
+	State->Renderer->DrawWidget(
+		State->CurrentRenderTarget,
+		State->SlateWidget.ToSharedRef(),
+		State->DPIScale,
+		DrawSize,
+		0.016f,
+		false);
 	++State->CurrentWarmupPass;
 
 	if (State->CurrentWarmupPass < State->WarmupFrames)
@@ -566,6 +585,8 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 
 	AsyncTask(ENamedThreads::GameThread, [CaptureState]()
 	{
+		RefreshGameThreadAppTimeContextForRemoteCommand();
+
 		const FString& AssetPath = CaptureState->AssetPath;
 		const FString& PreviewMode = CaptureState->PreviewMode;
 		const TArray<FPreviewFunctionCall>& PreviewFunctionCalls = CaptureState->PreviewFunctionCalls;

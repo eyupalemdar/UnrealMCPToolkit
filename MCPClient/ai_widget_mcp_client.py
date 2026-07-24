@@ -4224,6 +4224,7 @@ def replace_widget(
     new_widget_class: str,
     new_widget_name: str = "",
     preserve_slot: bool = True,
+    preserve_children: bool = False,
     scope: str = "",
     dry_run: bool = False,
 ) -> str:
@@ -4236,6 +4237,7 @@ def replace_widget(
         new_widget_class: Replacement widget class short name or explicit custom Widget Blueprint path
         new_widget_name: Optional name for the replacement. Empty keeps target_widget_name.
         preserve_slot: Reuse the previous parent slot template when possible.
+        preserve_children: Move direct children to the replacement panel in order.
 
     Returns:
         JSON with widget_name, widget_class, parent_name, and index of the replacement.

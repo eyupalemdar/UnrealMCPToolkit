@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "server": "MCPToolkit",
-  "generated_at_utc": "2026-06-13T21:24:37.411731Z",
+  "generated_at_utc": "2026-07-14T17:08:30.445713Z",
   "tool_count": 201,
   "tools": {
     "ping": {
@@ -3103,6 +3103,10 @@
         "preserve_slot": {
           "type": "boolean",
           "default": true
+        },
+        "preserve_children": {
+          "type": "boolean",
+          "default": false
         },
         "scope": {
           "type": "string",

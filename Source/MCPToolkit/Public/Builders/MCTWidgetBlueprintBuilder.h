@@ -104,12 +104,14 @@ public:
 
 	/**
 	 * Replace one widget with a newly constructed widget while preserving tree position.
-	 * The old widget and its descendants are removed. Empty NewWidgetName keeps TargetWidgetName.
+	 * The old widget and its descendants are removed unless bPreserveChildren is true.
+	 * Empty NewWidgetName keeps TargetWidgetName.
 	 * @param WidgetBP Target Widget Blueprint
 	 * @param TargetWidgetName Name of the widget to replace
 	 * @param NewWidgetClassName Widget class short name or explicit custom Widget Blueprint path
 	 * @param NewWidgetName Optional name for the replacement widget
 	 * @param bPreserveSlot Reuse the old parent slot template when possible
+	 * @param bPreserveChildren Move direct children to the replacement panel in order
 	 * @return The replacement widget, or nullptr on failure
 	 */
 	static UWidget* ReplaceWidget(
@@ -118,6 +120,7 @@ public:
 		const FString& NewWidgetClassName,
 		const FString& NewWidgetName = TEXT(""),
 		bool bPreserveSlot = true,
+		bool bPreserveChildren = false,
 		FString* OutError = nullptr);
 
 	// =========================================================================

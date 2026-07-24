@@ -819,7 +819,7 @@ def move_widget(asset_path: str, widget_name: str, new_parent_name: str, index: 
     return _format_response(_send_command("move_widget", params, _request_meta(scope, dry_run)))
 
 
-def replace_widget(asset_path: str, target_widget_name: str, new_widget_class: str, new_widget_name: str = '', preserve_slot: bool = True, scope: str = '', dry_run: bool = False) -> str:
+def replace_widget(asset_path: str, target_widget_name: str, new_widget_class: str, new_widget_name: str = '', preserve_slot: bool = True, preserve_children: bool = False, scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `replace_widget` (Widget)."""
     params = {
         "asset_path": asset_path,
@@ -827,6 +827,7 @@ def replace_widget(asset_path: str, target_widget_name: str, new_widget_class: s
         "new_widget_class": new_widget_class,
         "new_widget_name": new_widget_name,
         "preserve_slot": preserve_slot,
+        "preserve_children": preserve_children,
     }
     return _format_response(_send_command("replace_widget", params, _request_meta(scope, dry_run)))
 

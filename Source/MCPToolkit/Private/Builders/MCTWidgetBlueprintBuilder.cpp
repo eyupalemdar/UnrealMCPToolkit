@@ -847,6 +847,7 @@ UWidget* UMCTWidgetBlueprintBuilder::ReplaceWidget(
 	const FString& NewWidgetClassName,
 	const FString& NewWidgetName,
 	bool bPreserveSlot,
+	bool bPreserveChildren,
 	FString* OutError)
 {
 	if (!WidgetBP || !WidgetBP->WidgetTree)
@@ -891,6 +892,17 @@ UWidget* UMCTWidgetBlueprintBuilder::ReplaceWidget(
 	if (!WidgetClass)
 	{
 		const FString Error = FString::Printf(TEXT("Could not resolve widget class '%s'"), *NewWidgetClassName);
+		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+		SetBuilderError(OutError, Error);
+		return nullptr;
+	}
+
+	UPanelWidget* OldPanel = Cast<UPanelWidget>(OldWidget);
+	if (bPreserveChildren && OldPanel && OldPanel->GetChildrenCount() > 0 && !WidgetClass->IsChildOf(UPanelWidget::StaticClass()))
+	{
+		const FString Error = FString::Printf(
+			TEXT("Cannot preserve children when replacement class '%s' is not a panel widget"),
+			*NewWidgetClassName);
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
 		SetBuilderError(OutError, Error);
 		return nullptr;
@@ -943,8 +955,25 @@ UWidget* UMCTWidgetBlueprintBuilder::ReplaceWidget(
 
 	FScopedTransaction Transaction(LOCTEXT("AIReplaceWidget", "AI: Replace Widget"));
 
+	TArray<UWidget*> PreservedChildren;
+	if (bPreserveChildren && OldPanel)
+	{
+		while (OldPanel->GetChildrenCount() > 0)
+		{
+			UWidget* Child = OldPanel->GetChildAt(0);
+			if (!Child || !OldPanel->RemoveChild(Child))
+			{
+				const FString Error = FString::Printf(TEXT("Failed to detach a child from '%s'"), *TargetWidgetName);
+				UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+				SetBuilderError(OutError, Error);
+				return nullptr;
+			}
+			PreservedChildren.Add(Child);
+		}
+	}
+
 	TArray<UWidget*> OldDescendants;
-	if (UPanelWidget* OldPanel = Cast<UPanelWidget>(OldWidget))
+	if (OldPanel)
 	{
 		CollectAllDescendants(OldPanel, OldDescendants);
 	}
@@ -1001,11 +1030,29 @@ UWidget* UMCTWidgetBlueprintBuilder::ReplaceWidget(
 		}
 	}
 
+	if (bPreserveChildren)
+	{
+		UPanelWidget* NewPanel = Cast<UPanelWidget>(NewWidget);
+		for (UWidget* Child : PreservedChildren)
+		{
+			if (!NewPanel || !NewPanel->AddChild(Child))
+			{
+				const FString Error = FString::Printf(
+					TEXT("Failed to attach preserved child '%s' to replacement '%s'"),
+					Child ? *Child->GetName() : TEXT("null"),
+					*FinalWidgetName);
+				UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+				SetBuilderError(OutError, Error);
+				return nullptr;
+			}
+		}
+	}
+
 	WidgetBP->OnVariableAdded(NewWidget->GetFName());
 	MarkModified(WidgetBP);
 
-	UE_LOG(LogAIWidgetBuilder, Log, TEXT("ReplaceWidget: Replaced '%s' with '%s' (%s)"),
-		*TargetWidgetName, *FinalWidgetName, *NewWidgetClassName);
+	UE_LOG(LogAIWidgetBuilder, Log, TEXT("ReplaceWidget: Replaced '%s' with '%s' (%s), preserved children=%d"),
+		*TargetWidgetName, *FinalWidgetName, *NewWidgetClassName, PreservedChildren.Num());
 	return NewWidget;
 }
 
