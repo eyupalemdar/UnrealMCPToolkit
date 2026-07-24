@@ -19,6 +19,27 @@
 
 namespace
 {
+bool IsSRGBGammaSpace(const EGammaSpace GammaSpace)
+{
+	return GammaSpace == EGammaSpace::sRGB || GammaSpace == EGammaSpace::Pow22;
+}
+
+FString GammaSpaceToString(const EGammaSpace GammaSpace)
+{
+	switch (GammaSpace)
+	{
+	case EGammaSpace::Linear:
+		return TEXT("Linear");
+	case EGammaSpace::sRGB:
+		return TEXT("sRGB");
+	case EGammaSpace::Pow22:
+		return TEXT("Pow22");
+	case EGammaSpace::Invalid:
+	default:
+		return TEXT("Invalid");
+	}
+}
+
 TextureCompressionSettings ParseTextureCompression(const FString& Compression)
 {
 	if (Compression == TEXT("Default"))
@@ -173,6 +194,23 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 	const TextureMipGenSettings ParsedMipGen = ParseMipGenSettings(MipGen);
 	const TextureGroup ParsedLODGroup = ParseTextureGroup(LODGroup);
 
+	const FString FullObjectPath = FString::Printf(TEXT("%s.%s"), *FullPackagePath, *EffectiveAssetName);
+	UTexture2D* ExistingTexture = LoadObject<UTexture2D>(nullptr, *FullObjectPath);
+	bool bEffectiveSRGB = bSRGB;
+	bool bPreservedExistingSourceGamma = false;
+	FString ExistingSourceGammaString;
+	if (ExistingTexture && ExistingTexture->Source.IsValid() && ExistingTexture->Source.GetNumLayers() > 0)
+	{
+		const EGammaSpace ExistingSourceGamma = ExistingTexture->Source.GetGammaSpace(0);
+		const bool bExistingSourceSRGB = IsSRGBGammaSpace(ExistingSourceGamma);
+		ExistingSourceGammaString = GammaSpaceToString(ExistingSourceGamma);
+		if (bExistingSourceSRGB != bSRGB)
+		{
+			bEffectiveSRGB = bExistingSourceSRGB;
+			bPreservedExistingSourceGamma = true;
+		}
+	}
+
 	UTextureFactory* TextureFactory = NewObject<UTextureFactory>();
 	if (!TextureFactory)
 	{
@@ -183,7 +221,7 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 	TextureFactory->CompressionSettings = ParsedCompression;
 	TextureFactory->MipGenSettings = ParsedMipGen;
 	TextureFactory->LODGroup = ParsedLODGroup;
-	TextureFactory->ColorSpaceMode = bSRGB ? ETextureSourceColorSpace::SRGB : ETextureSourceColorSpace::Linear;
+	TextureFactory->ColorSpaceMode = bEffectiveSRGB ? ETextureSourceColorSpace::SRGB : ETextureSourceColorSpace::Linear;
 	TextureFactory->bDeferCompression = true;
 
 	TextureFactory->AddToRoot();
@@ -213,7 +251,7 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 	}
 
 	Texture->CompressionSettings = ParsedCompression;
-	Texture->SRGB = bSRGB;
+	Texture->SRGB = bEffectiveSRGB;
 	Texture->MipGenSettings = ParsedMipGen;
 	Texture->LODGroup = ParsedLODGroup;
 	Texture->PostEditChange();
@@ -229,6 +267,13 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 	Data->SetNumberField(TEXT("width"), Texture->GetSizeX());
 	Data->SetNumberField(TEXT("height"), Texture->GetSizeY());
 	Data->SetStringField(TEXT("format"), UEnum::GetValueAsString(Texture->GetPixelFormat()));
+	Data->SetBoolField(TEXT("requested_srgb"), bSRGB);
+	Data->SetBoolField(TEXT("effective_srgb"), bEffectiveSRGB);
+	Data->SetBoolField(TEXT("preserved_existing_source_gamma"), bPreservedExistingSourceGamma);
+	if (!ExistingSourceGammaString.IsEmpty())
+	{
+		Data->SetStringField(TEXT("existing_source_gamma"), ExistingSourceGammaString);
+	}
 	Data->SetBoolField(TEXT("saved"), bSaved);
 	return Data;
 }

@@ -185,6 +185,19 @@
 
 namespace MCPToolkit::CommandHandlers::AssetLifecycle
 {
+namespace
+{
+void RefreshGameThreadAppTimeContextForRemoteCommand()
+{
+	if (IsInGameThread())
+	{
+		// MCP commands originate from a TCP worker thread. Re-establish the game
+		// thread time context before PackageTools queues render-thread work.
+		FApp::SetCurrentTime(FApp::GetCurrentTime());
+	}
+}
+}
+
 FString HandleReloadAsset(TSharedPtr<FJsonObject> Params)
 {
 	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
@@ -201,6 +214,8 @@ FString HandleReloadAsset(TSharedPtr<FJsonObject> Params)
 
 	AsyncTask(ENamedThreads::GameThread, [AssetPath, bReopenAfter, Promise]()
 	{
+		RefreshGameThreadAppTimeContextForRemoteCommand();
+
 		// 1) Silent existence check BEFORE LoadObject (avoids UE log spam on bad paths)
 		//    Extract package path from asset path (strip .ObjectName suffix if present)
 		FString PackagePath = AssetPath;
