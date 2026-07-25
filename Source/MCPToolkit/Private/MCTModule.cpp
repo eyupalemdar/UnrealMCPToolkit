@@ -1,6 +1,7 @@
 // Copyright (c) 2025 Alemdar Labs Ltd. All Rights Reserved.
 
 #include "MCTModule.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "MCTExportContextMenu.h"
 #include "MCTTcpServer.h"
 #include "Interfaces/IPluginManager.h"
@@ -18,14 +19,24 @@ void FMCTModule::StartupModule()
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(
 		this, &FMCTModule::RegisterContextMenu));
 
+	// Register the safe Game Thread consumer before any transport can accept
+	// commands. This prevents remote work from falling back to TaskGraph
+	// reentrancy while Slate or render-asset streaming is suspended.
+	FMCTGameThreadDispatcher::Get().Startup();
+
 	// Start TCP server for external automation commands.
 	FMCTTcpServerManager::Start();
 }
 
 void FMCTModule::ShutdownModule()
 {
-	// Stop TCP server
+	// Reject new work and complete queued promises before joining transport
+	// threads. Commands that have already started are never interrupted.
+	FMCTGameThreadDispatcher::Get().BeginShutdown();
+
+	// Stop TCP/HTTP servers before removing the Game Thread ticker.
 	FMCTTcpServerManager::Stop();
+	FMCTGameThreadDispatcher::Get().Shutdown();
 
 	// Unregister context menu (guard against UObject system already torn down)
 	if (UObjectInitialized())
