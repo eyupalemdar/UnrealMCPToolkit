@@ -5,7 +5,7 @@
 #include "MCTExportFunctionLibrary.h"
 #include "MCTExporterRegistry.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 
@@ -36,7 +36,7 @@ FString HandleExportWidget(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FMCTExportResult>> Promise = MakeShared<TPromise<FMCTExportResult>>();
 	TFuture<FMCTExportResult> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, OutputDirectory, bBothFormats, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, OutputDirectory, bBothFormats, Promise]()
 	{
 		FMCTExportResult Result = UMCTExportFunctionLibrary::ExportWidgetBlueprintByPath(
 			AssetPath,
@@ -44,10 +44,20 @@ FString HandleExportWidget(TSharedPtr<FJsonObject> Params)
 			bBothFormats
 		);
 		Promise->SetValue(Result);
+	}, []()
+	{
+		FMCTExportResult Result;
+		Result.ErrorMessage = TEXT("Export timed out");
+		return Result;
+	}, []()
+	{
+		FMCTExportResult Result;
+		Result.ErrorMessage = TEXT("editor shutting down");
+		return Result;
 	});
 
 	// Wait for result with timeout
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 
 	if (!Future.IsReady())
 	{
@@ -102,7 +112,7 @@ FString HandleExportBlueprint(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FMCTExportResult>> Promise = MakeShared<TPromise<FMCTExportResult>>();
 	TFuture<FMCTExportResult> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, OutputDirectory, bBothFormats, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, OutputDirectory, bBothFormats, Promise]()
 	{
 		// Use ExportAssetByPath to support all asset types (Blueprint, Audio, Input, etc.)
 		FMCTExportResult Result = UMCTExportFunctionLibrary::ExportAssetByPath(
@@ -111,10 +121,20 @@ FString HandleExportBlueprint(TSharedPtr<FJsonObject> Params)
 			bBothFormats
 		);
 		Promise->SetValue(Result);
+	}, []()
+	{
+		FMCTExportResult Result;
+		Result.ErrorMessage = TEXT("Export timed out");
+		return Result;
+	}, []()
+	{
+		FMCTExportResult Result;
+		Result.ErrorMessage = TEXT("editor shutting down");
+		return Result;
 	});
 
 	// Wait for result with timeout
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 
 	if (!Future.IsReady())
 	{

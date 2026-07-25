@@ -5,7 +5,7 @@
 #include "Builders/MCTDataAssetBuilder.h"
 #include "CommandHandlers/MCTCommandResponse.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Components/ActorComponent.h"
 #include "Dom/JsonObject.h"
 #include "Editor.h"
@@ -1096,7 +1096,7 @@ FString HandleObjectQuery(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, Promise]()
 	{
 		FString Error;
 		UObject* Object = ResolveObject(Params, Error);
@@ -1108,7 +1108,7 @@ FString HandleObjectQuery(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(BuildObjectQuery(Object, Params)));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Object query timed out"));
 	return Future.Get();
 }
@@ -1126,7 +1126,7 @@ FString HandleObjectGetProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, PropertyPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, PropertyPath, Promise]()
 	{
 		FString Error;
 		UObject* Object = ResolveObject(Params, Error);
@@ -1152,7 +1152,7 @@ FString HandleObjectGetProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Object get property timed out"));
 	return Future.Get();
 }
@@ -1176,7 +1176,7 @@ FString HandleObjectSetProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, PropertyPath, Value, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, PropertyPath, Value, Promise]()
 	{
 		FString Error;
 		UObject* Object = ResolveObject(Params, Error);
@@ -1199,7 +1199,7 @@ FString HandleObjectSetProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(bSet ? CreateSuccessResponse(Data) : CreateErrorResponse(FString::Printf(TEXT("Failed to set property: %s"), *PropertyPath)));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Object set property timed out"));
 	return Future.Get();
 }
@@ -1217,7 +1217,7 @@ FString HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, FunctionName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, FunctionName, Promise]()
 	{
 		FString Error;
 		UObject* Object = ResolveObject(Params, Error);
@@ -1334,7 +1334,7 @@ FString HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Object call function timed out"));
 	return Future.Get();
 }
@@ -1344,7 +1344,7 @@ FString HandleReflectClass(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, Promise]()
 	{
 		FString ClassQuery;
 		if (Params.IsValid())
@@ -1371,7 +1371,7 @@ FString HandleReflectClass(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(BuildClassReflection(Class, Params)));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Class reflection timed out"));
 	return Future.Get();
 }
@@ -1381,7 +1381,7 @@ FString HandleReflectStruct(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, Promise]()
 	{
 		FString StructQuery;
 		if (Params.IsValid())
@@ -1408,7 +1408,7 @@ FString HandleReflectStruct(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(BuildStructReflection(Struct, Params, TEXT("struct"))));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Struct reflection timed out"));
 	return Future.Get();
 }
@@ -1418,7 +1418,7 @@ FString HandleReflectEnum(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, Promise]()
 	{
 		FString EnumQuery;
 		if (Params.IsValid())
@@ -1445,7 +1445,7 @@ FString HandleReflectEnum(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(BuildEnumReflection(Enum, Params)));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Enum reflection timed out"));
 	return Future.Get();
 }
@@ -1455,7 +1455,7 @@ FString HandleListClasses(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, Promise]()
 	{
 		FString Query;
 		FString ParentClassQuery;
@@ -1550,7 +1550,7 @@ FString HandleListClasses(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("List classes timed out"));
 	return Future.Get();
 }
@@ -1560,7 +1560,7 @@ FString HandleListGameplayTags(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, Promise]()
 	{
 		FString RootTag;
 		FString Query;
@@ -1624,7 +1624,7 @@ FString HandleListGameplayTags(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("List gameplay tags timed out"));
 	return Future.Get();
 }

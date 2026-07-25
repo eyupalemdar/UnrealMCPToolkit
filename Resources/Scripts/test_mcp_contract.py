@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+import re
 import sys
 
 from generate_mcp_artifacts import (
@@ -27,10 +29,70 @@ from generate_mcp_artifacts import (
 
 
 SCOPE_RANK = {"read": 0, "write": 1, "destructive": 2}
+PLUGIN_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = PLUGIN_ROOT / "Source" / "MCPToolkit"
 
 
 def _failures() -> list[str]:
     failures: list[str] = []
+
+    handler_root = SOURCE_ROOT / "Private" / "CommandHandlers"
+    direct_game_thread_pattern = re.compile(
+        r"AsyncTask\s*\(\s*ENamedThreads::GameThread"
+    )
+    for handler_path in sorted(handler_root.glob("*.cpp")):
+        handler_source = handler_path.read_text(encoding="utf-8")
+        if direct_game_thread_pattern.search(handler_source):
+            failures.append(
+                f"{handler_path.name}: direct AsyncTask(GameThread) bypasses "
+                "MCTGameThreadDispatcher"
+            )
+
+    dispatcher_header = (
+        SOURCE_ROOT
+        / "Public"
+        / "CommandDispatch"
+        / "MCTGameThreadDispatcher.h"
+    )
+    dispatcher_source = (
+        SOURCE_ROOT
+        / "Private"
+        / "CommandDispatch"
+        / "MCTGameThreadDispatcher.cpp"
+    )
+    if not dispatcher_header.exists() or not dispatcher_source.exists():
+        failures.append("Game Thread dispatcher source/header is missing")
+
+    module_source_path = SOURCE_ROOT / "Private" / "MCTModule.cpp"
+    module_source = module_source_path.read_text(encoding="utf-8")
+    dispatcher_start = module_source.find(
+        "FMCTGameThreadDispatcher::Get().Startup();"
+    )
+    server_start = module_source.find("FMCTTcpServerManager::Start();")
+    if (
+        dispatcher_start < 0
+        or server_start < 0
+        or dispatcher_start >= server_start
+    ):
+        failures.append(
+            "MCTModule must start the Game Thread dispatcher before the server"
+        )
+
+    dispatcher_begin_shutdown = module_source.find(
+        "FMCTGameThreadDispatcher::Get().BeginShutdown();"
+    )
+    server_stop = module_source.find("FMCTTcpServerManager::Stop();")
+    dispatcher_shutdown = module_source.find(
+        "FMCTGameThreadDispatcher::Get().Shutdown();"
+    )
+    if not (
+        0 <= dispatcher_begin_shutdown < server_stop < dispatcher_shutdown
+    ):
+        failures.append(
+            "MCTModule must cancel queued commands before stopping the server "
+            "and remove the dispatcher ticker afterward"
+        )
+
     manifest = build_command_manifest()
     schemas = build_tool_schemas(manifest)
     wrapper_spec = build_wrapper_spec(manifest, schemas)

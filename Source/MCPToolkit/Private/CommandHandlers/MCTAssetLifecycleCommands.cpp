@@ -44,7 +44,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonTypes.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "CoreGlobals.h"
 #include "HAL/RunnableThread.h"
@@ -212,7 +212,7 @@ FString HandleReloadAsset(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, bReopenAfter, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, bReopenAfter, Promise]()
 	{
 		RefreshGameThreadAppTimeContextForRemoteCommand();
 
@@ -296,7 +296,7 @@ FString HandleReloadAsset(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(30.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Reload asset timed out"));
 	return Future.Get();
 }

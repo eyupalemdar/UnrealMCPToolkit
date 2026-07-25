@@ -17,7 +17,7 @@
 #include "Animation/AnimSequenceBase.h"
 #include "Animation/Skeleton.h"
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Dom/JsonValue.h"
 #include "Misc/PackageName.h"
 #include "Modules/ModuleManager.h"
@@ -553,7 +553,7 @@ FString HandleAnimationAssetInfo(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [
 		AssetPath,
 		bIncludeNotifies,
 		bIncludeCurves,
@@ -633,7 +633,7 @@ FString HandleAnimationAssetInfo(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Animation asset info timed out"));

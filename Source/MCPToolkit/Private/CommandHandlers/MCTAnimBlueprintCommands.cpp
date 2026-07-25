@@ -44,7 +44,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonTypes.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "CoreGlobals.h"
 #include "HAL/RunnableThread.h"
@@ -204,7 +204,7 @@ FString HandleCreateAnimBlueprint(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [PackagePath, AssetName, SkeletonPath, ParentClass, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [PackagePath, AssetName, SkeletonPath, ParentClass, Promise]()
 	{
 		UAnimBlueprint* AnimBP = UMCTAnimBlueprintBuilder::CreateAnimBlueprint(PackagePath, AssetName, SkeletonPath, ParentClass);
 		if (!AnimBP)
@@ -220,7 +220,7 @@ FString HandleCreateAnimBlueprint(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Create AnimBlueprint timed out"));
 	return Future.Get();
 }
@@ -238,7 +238,7 @@ FString HandleGetAnimBlueprintInfo(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UAnimBlueprint* AnimBP = UMCTAnimBlueprintBuilder::LoadAnimBlueprint(AssetPath);
 		if (!AnimBP) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("AnimBlueprint not found: %s"), *AssetPath))); return; }
@@ -247,7 +247,7 @@ FString HandleGetAnimBlueprintInfo(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get AnimBlueprint info timed out"));
 	return Future.Get();
 }

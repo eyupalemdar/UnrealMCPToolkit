@@ -44,7 +44,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonTypes.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "CoreGlobals.h"
 #include "HAL/RunnableThread.h"
@@ -206,7 +206,7 @@ FString HandleCreateMaterial(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [PackagePath, AssetName, Domain, BlendMode, ShadingModel, bTwoSided, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [PackagePath, AssetName, Domain, BlendMode, ShadingModel, bTwoSided, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::CreateMaterial(PackagePath, AssetName, Domain, BlendMode, ShadingModel, bTwoSided);
 		if (!Material)
@@ -220,7 +220,7 @@ FString HandleCreateMaterial(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Create material timed out"));
 	return Future.Get();
 }
@@ -242,7 +242,7 @@ FString HandleSetMaterialProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, PropertyName, Value, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, PropertyName, Value, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::LoadMaterial(AssetPath);
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
@@ -253,7 +253,7 @@ FString HandleSetMaterialProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set material property timed out"));
 	return Future.Get();
 }
@@ -280,7 +280,7 @@ FString HandleAddExpression(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, ExprClass, NodeName, PosX, PosY, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, ExprClass, NodeName, PosX, PosY, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::LoadMaterial(AssetPath);
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
@@ -296,7 +296,7 @@ FString HandleAddExpression(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add expression timed out"));
 	return Future.Get();
 }
@@ -320,7 +320,7 @@ FString HandleSetExpressionProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, NodeName, PropertyName, Value, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, NodeName, PropertyName, Value, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::LoadMaterial(AssetPath);
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
@@ -339,7 +339,7 @@ FString HandleSetExpressionProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set expression property timed out"));
 	return Future.Get();
 }
@@ -365,7 +365,7 @@ FString HandleConnectExpressions(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, FromNode, FromOutput, ToNode, ToInput, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, FromNode, FromOutput, ToNode, ToInput, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::LoadMaterial(AssetPath);
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
@@ -383,7 +383,7 @@ FString HandleConnectExpressions(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Connect expressions timed out"));
 	return Future.Get();
 }
@@ -407,7 +407,7 @@ FString HandleConnectToMaterialProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, FromNode, FromOutput, MaterialProperty, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, FromNode, FromOutput, MaterialProperty, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::LoadMaterial(AssetPath);
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
@@ -425,7 +425,7 @@ FString HandleConnectToMaterialProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Connect to material property timed out"));
 	return Future.Get();
 }
@@ -447,7 +447,7 @@ FString HandleDisconnectInput(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, NodeName, InputName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, NodeName, InputName, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::LoadMaterial(AssetPath);
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
@@ -464,7 +464,7 @@ FString HandleDisconnectInput(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Disconnect input timed out"));
 	return Future.Get();
 }
@@ -484,7 +484,7 @@ FString HandleRemoveExpression(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, NodeName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, NodeName, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::LoadMaterial(AssetPath);
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
@@ -501,7 +501,7 @@ FString HandleRemoveExpression(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Remove expression timed out"));
 	return Future.Get();
 }
@@ -519,7 +519,7 @@ FString HandleCompileMaterial(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::LoadMaterial(AssetPath);
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
@@ -551,7 +551,7 @@ FString HandleCompileMaterial(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(120.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Compile material timed out"));
 	return Future.Get();
 }
@@ -569,7 +569,7 @@ FString HandleGetMaterialGraph(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UMaterial* Material = UMCTMaterialBuilder::LoadMaterial(AssetPath);
 		if (!Material) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Material not found: %s"), *AssetPath))); return; }
@@ -578,7 +578,7 @@ FString HandleGetMaterialGraph(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get material graph timed out"));
 	return Future.Get();
 }
@@ -590,7 +590,7 @@ FString HandleListExpressionClasses()
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Promise]()
 	{
 		TArray<FString> Classes = UMCTMaterialBuilder::GetAvailableExpressionClasses();
 
@@ -606,7 +606,7 @@ FString HandleListExpressionClasses()
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("List expression classes timed out"));
 	return Future.Get();
 }
@@ -628,7 +628,7 @@ FString HandleCreateMaterialInstance(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [PackagePath, AssetName, ParentMaterialPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [PackagePath, AssetName, ParentMaterialPath, Promise]()
 	{
 		UMaterialInstanceConstant* MIC = UMCTMaterialBuilder::CreateMaterialInstance(PackagePath, AssetName, ParentMaterialPath);
 		if (!MIC) { Promise->SetValue(CreateErrorResponse(TEXT("Failed to create material instance"))); return; }
@@ -639,7 +639,7 @@ FString HandleCreateMaterialInstance(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Create material instance timed out"));
 	return Future.Get();
 }
@@ -663,7 +663,7 @@ FString HandleSetInstanceParameter(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, ParamName, ParamType, Value, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, ParamName, ParamType, Value, Promise]()
 	{
 		UMaterialInstanceConstant* MIC = UMCTMaterialBuilder::LoadMaterialInstance(AssetPath);
 		if (!MIC) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("MIC not found: %s"), *AssetPath))); return; }
@@ -674,7 +674,7 @@ FString HandleSetInstanceParameter(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set instance parameter timed out"));
 	return Future.Get();
 }
@@ -692,7 +692,7 @@ FString HandleSaveMaterialInstance(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UMaterialInstanceConstant* MIC = UMCTMaterialBuilder::LoadMaterialInstance(AssetPath);
 		if (!MIC) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("MIC not found: %s"), *AssetPath))); return; }
@@ -703,7 +703,7 @@ FString HandleSaveMaterialInstance(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Save material instance timed out"));
 	return Future.Get();
 }
@@ -721,7 +721,7 @@ FString HandleGetMaterialInstanceInfo(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UMaterialInstanceConstant* MIC = UMCTMaterialBuilder::LoadMaterialInstance(AssetPath);
 		if (!MIC) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("MIC not found: %s"), *AssetPath))); return; }
@@ -730,7 +730,7 @@ FString HandleGetMaterialInstanceInfo(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get material instance info timed out"));
 	return Future.Get();
 }

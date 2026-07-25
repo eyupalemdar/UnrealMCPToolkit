@@ -44,7 +44,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonTypes.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "CoreGlobals.h"
 #include "HAL/RunnableThread.h"
@@ -221,7 +221,7 @@ FString HandleAddInputMapping(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, InputActionPath, KeyName, TriggerClasses, ModifierClasses, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, InputActionPath, KeyName, TriggerClasses, ModifierClasses, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		UInputMappingContext* IMC = Cast<UInputMappingContext>(Asset);
@@ -237,7 +237,7 @@ FString HandleAddInputMapping(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add input mapping timed out"));
 	return Future.Get();
 }
@@ -260,7 +260,7 @@ FString HandleRemoveInputMapping(TSharedPtr<FJsonObject> Params)
 
 	int32 Index = static_cast<int32>(MappingIndex);
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Index, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Index, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		UInputMappingContext* IMC = Cast<UInputMappingContext>(Asset);
@@ -275,7 +275,7 @@ FString HandleRemoveInputMapping(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Remove input mapping timed out"));
 	return Future.Get();
 }
@@ -293,7 +293,7 @@ FString HandleGetInputMappings(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		UInputMappingContext* IMC = Cast<UInputMappingContext>(Asset);
@@ -303,7 +303,7 @@ FString HandleGetInputMappings(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get input mappings timed out"));
 	return Future.Get();
 }

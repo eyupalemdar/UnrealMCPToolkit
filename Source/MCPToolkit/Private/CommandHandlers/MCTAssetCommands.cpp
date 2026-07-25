@@ -44,7 +44,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonTypes.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "CoreGlobals.h"
 #include "HAL/RunnableThread.h"
@@ -314,7 +314,7 @@ FString HandleCreateAsset(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [PackagePath, AssetName, AssetType, InitialProperties, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [PackagePath, AssetName, AssetType, InitialProperties, Promise]()
 	{
 		UObject* Asset = UMCTAssetFactory::CreateAsset(PackagePath, AssetName, AssetType, InitialProperties);
 		if (!Asset)
@@ -330,7 +330,7 @@ FString HandleCreateAsset(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Create asset timed out"));
 	return Future.Get();
 }
@@ -352,7 +352,7 @@ FString HandleSetAssetProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, PropertyPath, Value, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, PropertyPath, Value, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Asset not found: %s"), *AssetPath))); return; }
@@ -364,7 +364,7 @@ FString HandleSetAssetProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set asset property timed out"));
 	return Future.Get();
 }
@@ -382,7 +382,7 @@ FString HandleGetAssetProperties(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Asset not found: %s"), *AssetPath))); return; }
@@ -395,7 +395,7 @@ FString HandleGetAssetProperties(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get asset properties timed out"));
 	return Future.Get();
 }
@@ -413,7 +413,7 @@ FString HandleAssetExists(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		IAssetRegistry& AR = ARM.Get();
@@ -457,7 +457,7 @@ FString HandleAssetExists(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(30.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Asset exists timed out"));
 	return Future.Get();
 }
@@ -501,7 +501,7 @@ FString HandleScanAssetPaths(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Paths, bForceRescan, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Paths, bForceRescan, Promise]()
 	{
 		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		IAssetRegistry& AR = ARM.Get();
@@ -523,7 +523,7 @@ FString HandleScanAssetPaths(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Scan asset paths timed out"));
 	return Future.Get();
 }
@@ -562,7 +562,7 @@ FString HandleAssetSearch(TSharedPtr<FJsonObject> Params)
 
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
-	AsyncTask(ENamedThreads::GameThread, [Path, NameFilter, ClassFilter, bRecursive, Offset, Limit, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Path, NameFilter, ClassFilter, bRecursive, Offset, Limit, Promise]()
 	{
 		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		IAssetRegistry& AR = ARM.Get();
@@ -618,7 +618,7 @@ FString HandleAssetSearch(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Asset search timed out"));
 	return Future.Get();
 }
@@ -635,7 +635,7 @@ FString HandleAssetValidateLight(TSharedPtr<FJsonObject> Params)
 
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		IAssetRegistry& AR = ARM.Get();
@@ -716,7 +716,7 @@ FString HandleAssetValidateLight(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Asset validation timed out"));
 	return Future.Get();
 }
@@ -734,7 +734,7 @@ FString HandleSaveAsset(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset) { Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Asset not found: %s"), *AssetPath))); return; }
@@ -748,7 +748,7 @@ FString HandleSaveAsset(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Save asset timed out"));
 	return Future.Get();
 }
@@ -776,7 +776,7 @@ FString HandleRenameAsset(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, NewPackagePath, NewAssetName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, NewPackagePath, NewAssetName, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset)
@@ -834,7 +834,7 @@ FString HandleRenameAsset(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(120.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Rename asset timed out"));
 	return Future.Get();
 }
@@ -896,7 +896,7 @@ FString HandleDuplicateAsset(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, NewPackagePath, NewAssetName, FinalAssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, NewPackagePath, NewAssetName, FinalAssetPath, Promise]()
 	{
 		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		IAssetRegistry& AR = ARM.Get();
@@ -954,7 +954,7 @@ FString HandleDuplicateAsset(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(120.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Duplicate asset timed out"));
 	return Future.Get();
 }
@@ -1024,7 +1024,7 @@ FString HandleMoveFolderAssets(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [SourceFolder, TargetFolder, Operation, bRecursive, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [SourceFolder, TargetFolder, Operation, bRecursive, Promise]()
 	{
 		if (!GEditor)
 		{
@@ -1108,7 +1108,7 @@ FString HandleMoveFolderAssets(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(300.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(300.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Move folder assets timed out"));
 	return Future.Get();
 }
@@ -1126,7 +1126,7 @@ FString HandleGetReferencers(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		IAssetRegistry& AR = ARM.Get();
@@ -1158,7 +1158,7 @@ FString HandleGetReferencers(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get referencers timed out"));
 	return Future.Get();
 }
@@ -1176,7 +1176,7 @@ FString HandleGetDependencies(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		IAssetRegistry& AR = ARM.Get();
@@ -1207,7 +1207,7 @@ FString HandleGetDependencies(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get dependencies timed out"));
 	return Future.Get();
 }
@@ -1228,7 +1228,7 @@ FString HandleDeleteAsset(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, bForce, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, bForce, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset)
@@ -1303,7 +1303,7 @@ FString HandleDeleteAsset(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(120.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Delete asset timed out"));
 	return Future.Get();
 }
@@ -1324,7 +1324,7 @@ FString HandleListRedirectors(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [FolderPath, bRecursive, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [FolderPath, bRecursive, Promise]()
 	{
 		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		IAssetRegistry& AR = ARM.Get();
@@ -1368,7 +1368,7 @@ FString HandleListRedirectors(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("List redirectors timed out"));
 	return Future.Get();
 }
@@ -1389,7 +1389,7 @@ FString HandleFixupRedirectors(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [FolderPath, bRecursive, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [FolderPath, bRecursive, Promise]()
 	{
 		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 		IAssetRegistry& AR = ARM.Get();
@@ -1453,7 +1453,7 @@ FString HandleFixupRedirectors(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(120.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Fixup redirectors timed out"));
 	return Future.Get();
 }

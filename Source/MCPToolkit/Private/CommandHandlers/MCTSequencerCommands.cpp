@@ -4,7 +4,7 @@
 
 #include "CommandHandlers/MCTCommandResponse.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Dom/JsonValue.h"
 #include "LevelSequence.h"
 #include "MovieScene.h"
@@ -216,12 +216,12 @@ FString RunOnGameThread(TFunction<FString()>&& Work, const TCHAR* TimeoutError)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Promise, Work = MoveTemp(Work)]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Promise, Work = MoveTemp(Work)]()
 	{
 		Promise->SetValue(Work());
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TimeoutError);

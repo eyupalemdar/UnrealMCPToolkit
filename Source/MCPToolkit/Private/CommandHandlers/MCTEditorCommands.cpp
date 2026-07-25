@@ -4,7 +4,7 @@
 #include "CommandHandlers/MCTCommandResponse.h"
 #include "MCTModule.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Dom/JsonObject.h"
 #include "Editor.h"
 #include "Engine/Level.h"
@@ -129,7 +129,7 @@ FString HandleEditorWorldInfo()
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Promise]()
 	{
 		UWorld* World = GetAIEditorWorld();
 		if (!World)
@@ -170,7 +170,7 @@ FString HandleEditorWorldInfo()
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(30.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Editor world info timed out"));
 	return Future.Get();
 }
@@ -194,7 +194,7 @@ FString HandleActorList(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [NameFilter, ClassFilter, Limit, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [NameFilter, ClassFilter, Limit, Promise]()
 	{
 		UWorld* World = GetAIEditorWorld();
 		if (!World)
@@ -240,7 +240,7 @@ FString HandleActorList(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Actor list timed out"));
 	return Future.Get();
 }
@@ -262,7 +262,7 @@ FString HandleActorSpawn(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [ClassPath, ActorLabel, Location, Rotation, Scale, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [ClassPath, ActorLabel, Location, Rotation, Scale, Promise]()
 	{
 		UWorld* World = GetAIEditorWorld();
 		if (!World)
@@ -299,7 +299,7 @@ FString HandleActorSpawn(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(BuildActorJson(Actor)));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Actor spawn timed out"));
 	return Future.Get();
 }
@@ -318,7 +318,7 @@ FString HandleActorSetTransform(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Params, ActorPath, ActorLabel, ActorName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Params, ActorPath, ActorLabel, ActorName, Promise]()
 	{
 		UWorld* World = GetAIEditorWorld();
 		if (!World)
@@ -345,7 +345,7 @@ FString HandleActorSetTransform(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(BuildActorJson(Actor)));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Actor set transform timed out"));
 	return Future.Get();
 }
@@ -364,7 +364,7 @@ FString HandleActorDelete(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [ActorPath, ActorLabel, ActorName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [ActorPath, ActorLabel, ActorName, Promise]()
 	{
 		UWorld* World = GetAIEditorWorld();
 		if (!World)
@@ -389,7 +389,7 @@ FString HandleActorDelete(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Actor delete timed out"));
 	return Future.Get();
 }
@@ -405,7 +405,7 @@ FString HandleLevelOpen(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [MapPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [MapPath, Promise]()
 	{
 		FString Filename = MapPath;
 		if (MapPath.StartsWith(TEXT("/Game/")) || MapPath.StartsWith(TEXT("/Engine/")))
@@ -421,7 +421,7 @@ FString HandleLevelOpen(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Level open timed out"));
 	return Future.Get();
 }
@@ -431,7 +431,7 @@ FString HandleLevelSaveCurrent()
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Promise]()
 	{
 		UWorld* World = GetAIEditorWorld();
 		if (!World || !World->PersistentLevel)
@@ -448,7 +448,7 @@ FString HandleLevelSaveCurrent()
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Level save current timed out"));
 	return Future.Get();
 }
@@ -466,7 +466,7 @@ FString HandlePIEStart()
 {
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
-	AsyncTask(ENamedThreads::GameThread, [Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Promise]()
 	{
 		if (!GEditor)
 		{
@@ -485,7 +485,7 @@ FString HandlePIEStart()
 		Data->SetBoolField(TEXT("requested"), true);
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
-	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(30.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("PIE start timed out"));
 	return Future.Get();
 }
@@ -494,7 +494,7 @@ FString HandlePIEStop()
 {
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
-	AsyncTask(ENamedThreads::GameThread, [Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Promise]()
 	{
 		if (!GEditor)
 		{
@@ -514,7 +514,7 @@ FString HandlePIEStop()
 		Data->SetBoolField(TEXT("requested"), true);
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
-	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(30.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("PIE stop timed out"));
 	return Future.Get();
 }
@@ -529,7 +529,7 @@ FString HandleEditorConsoleCommand(TSharedPtr<FJsonObject> Params)
 
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
-	AsyncTask(ENamedThreads::GameThread, [Command, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Command, Promise]()
 	{
 		if (!GEditor)
 		{
@@ -548,7 +548,7 @@ FString HandleEditorConsoleCommand(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Editor console command timed out"));
 	return Future.Get();
 }
@@ -574,7 +574,7 @@ FString HandleViewportCapture(TSharedPtr<FJsonObject> Params)
 
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
-	AsyncTask(ENamedThreads::GameThread, [OutputPath, bShowUI, bAddFilenameSuffix, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [OutputPath, bShowUI, bAddFilenameSuffix, Promise]()
 	{
 		IFileManager::Get().MakeDirectory(*FPaths::GetPath(OutputPath), true);
 		FScreenshotRequest::RequestScreenshot(OutputPath, bShowUI, bAddFilenameSuffix);
@@ -587,7 +587,7 @@ FString HandleViewportCapture(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(30.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(30.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Viewport capture request timed out"));
 	return Future.Get();
 }

@@ -45,7 +45,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonTypes.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "CoreGlobals.h"
 #include "HAL/RunnableThread.h"
@@ -210,7 +210,7 @@ FString HandleCreateWidgetBlueprint(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [PackagePath, AssetName, ParentClassPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [PackagePath, AssetName, ParentClassPath, Promise]()
 	{
 		UClass* ParentClass = nullptr;
 		if (!ParentClassPath.IsEmpty())
@@ -240,7 +240,7 @@ FString HandleCreateWidgetBlueprint(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Create widget blueprint timed out"));
@@ -275,7 +275,7 @@ FString HandleAddWidget(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, WidgetClass, WidgetName, ParentName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, WidgetClass, WidgetName, ParentName, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -300,7 +300,7 @@ FString HandleAddWidget(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Add widget timed out"));
@@ -330,7 +330,7 @@ FString HandleRemoveWidget(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, WidgetName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, WidgetName, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -352,7 +352,7 @@ FString HandleRemoveWidget(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Remove widget timed out"));
@@ -390,7 +390,7 @@ FString HandleMoveWidget(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, WidgetName, NewParentName, NewIndex, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, WidgetName, NewParentName, NewIndex, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -413,7 +413,7 @@ FString HandleMoveWidget(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Move widget timed out"));
@@ -451,7 +451,7 @@ FString HandleReplaceWidget(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, TargetWidgetName, NewWidgetClass, NewWidgetName, bPreserveSlot, bPreserveChildren, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, TargetWidgetName, NewWidgetClass, NewWidgetName, bPreserveSlot, bPreserveChildren, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -489,7 +489,7 @@ FString HandleReplaceWidget(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Replace widget timed out"));
@@ -527,7 +527,7 @@ FString HandleSetWidgetProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, WidgetName, PropertyName, Value, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, WidgetName, PropertyName, Value, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -550,7 +550,7 @@ FString HandleSetWidgetProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Set widget property timed out"));
@@ -588,7 +588,7 @@ FString HandleSetSlotProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, WidgetName, PropertyName, Value, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, WidgetName, PropertyName, Value, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -611,7 +611,7 @@ FString HandleSetSlotProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Set slot property timed out"));
@@ -657,7 +657,7 @@ FString HandleSetCanvasSlotLayout(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [=]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [=]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -685,7 +685,7 @@ FString HandleSetCanvasSlotLayout(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Set canvas slot layout timed out"));
@@ -732,7 +732,7 @@ FString HandleSetWidgetProperties(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, WidgetName, Properties, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, WidgetName, Properties, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -760,7 +760,7 @@ FString HandleSetWidgetProperties(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Set widget properties timed out"));
@@ -792,7 +792,7 @@ FString HandleReparentBlueprint(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, NewParentClassPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, NewParentClassPath, Promise]()
 	{
 		// Load the Widget Blueprint
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
@@ -831,7 +831,7 @@ FString HandleReparentBlueprint(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Reparent blueprint timed out"));
@@ -857,7 +857,7 @@ FString HandleCompileAndSave(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (WBP)
@@ -911,7 +911,7 @@ FString HandleCompileAndSave(TSharedPtr<FJsonObject> Params)
 		}
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Compile and save timed out"));
@@ -937,7 +937,7 @@ FString HandleGetWidgetTree(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UWidgetBlueprint* WBP = UMCTWidgetBlueprintBuilder::LoadWidgetBlueprint(AssetPath);
 		if (!WBP)
@@ -959,7 +959,7 @@ FString HandleGetWidgetTree(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("Get widget tree timed out"));
@@ -974,7 +974,7 @@ FString HandleListWidgetClasses()
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Promise]()
 	{
 		TArray<TPair<FString, bool>> Classes = UMCTWidgetBlueprintBuilder::GetAvailableWidgetClasses();
 
@@ -993,7 +993,7 @@ FString HandleListWidgetClasses()
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("List widget classes timed out"));

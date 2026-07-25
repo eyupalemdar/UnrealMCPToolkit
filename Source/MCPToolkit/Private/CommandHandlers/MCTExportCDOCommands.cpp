@@ -44,7 +44,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonTypes.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "CoreGlobals.h"
 #include "HAL/RunnableThread.h"
@@ -200,7 +200,7 @@ FString HandleSetCDOProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, PropertyName, Value, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, PropertyName, Value, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset)
@@ -262,7 +262,7 @@ FString HandleSetCDOProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set CDO property timed out"));
 	return Future.Get();
 }
@@ -280,7 +280,7 @@ FString HandleGetCDOProperties(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset)
@@ -318,7 +318,7 @@ FString HandleGetCDOProperties(TSharedPtr<FJsonObject> Params)
 		}
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get CDO properties timed out"));
 	return Future.Get();
 }
@@ -359,7 +359,7 @@ FString HandleAddCDOArrayElement(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, ElementValues, ClassName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, ArrayName, ElementValues, ClassName, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset)
@@ -421,7 +421,7 @@ FString HandleAddCDOArrayElement(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Add CDO array element timed out"));
 	return Future.Get();
 }
@@ -450,7 +450,7 @@ FString HandleSetCDOArrayElementProperty(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, ElementIndex, PropertyName, Value, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, ArrayName, ElementIndex, PropertyName, Value, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset)
@@ -503,7 +503,7 @@ FString HandleSetCDOArrayElementProperty(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Set CDO array element property timed out"));
 	return Future.Get();
 }
@@ -528,7 +528,7 @@ FString HandleRemoveCDOArrayElement(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, ElementIndex, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, ArrayName, ElementIndex, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset)
@@ -580,7 +580,7 @@ FString HandleRemoveCDOArrayElement(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Remove CDO array element timed out"));
 	return Future.Get();
 }
@@ -600,7 +600,7 @@ FString HandleGetCDOArrayLength(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, ArrayName, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, ArrayName, Promise]()
 	{
 		UObject* Asset = UMCTDataAssetBuilder::LoadAssetObject(AssetPath);
 		if (!Asset)
@@ -649,7 +649,7 @@ FString HandleGetCDOArrayLength(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Get CDO array length timed out"));
 	return Future.Get();
 }

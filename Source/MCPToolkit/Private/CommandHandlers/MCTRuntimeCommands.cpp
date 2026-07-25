@@ -15,7 +15,7 @@
 #include "RuntimeDiagnostics/MCTRuntimeStreaming.h"
 #include "RuntimeDiagnostics/MCTRuntimeUI.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Async/TaskGraphInterfaces.h"
 
 namespace MCPToolkit::CommandHandlers::Runtime
@@ -30,13 +30,13 @@ FString RunRuntimeDataCommand(
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Promise, BuildData = MoveTemp(BuildData), UnavailableError]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Promise, BuildData = MoveTemp(BuildData), UnavailableError]()
 	{
 		TSharedPtr<FJsonObject> Data = BuildData();
 		Promise->SetValue(Data.IsValid() ? CreateSuccessResponse(Data) : CreateErrorResponse(UnavailableError));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TimeoutError);
@@ -51,12 +51,12 @@ FString RunRuntimeSuccessCommand(
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [Promise, BuildData = MoveTemp(BuildData)]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [Promise, BuildData = MoveTemp(BuildData)]()
 	{
 		Promise->SetValue(CreateSuccessResponse(BuildData()));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TimeoutError);

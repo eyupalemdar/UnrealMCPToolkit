@@ -6,7 +6,7 @@
 #include "RuntimeDiagnostics/MCTRuntimeDiagnosticsUtils.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Dom/JsonValue.h"
 #include "Materials/MaterialInterface.h"
 #include "Misc/PackageName.h"
@@ -843,11 +843,16 @@ FString HandleNiagaraAssetInfo(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [AssetPath, Options, Promise]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [AssetPath, Options, Promise]()
 	{
 		Promise->SetValue(BuildNiagaraAssetInfoResponse(AssetPath, Options));
 	});
 
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady())
+	{
+		return CreateErrorResponse(TEXT("Niagara asset info timed out"));
+	}
 	return Future.Get();
 }
 }

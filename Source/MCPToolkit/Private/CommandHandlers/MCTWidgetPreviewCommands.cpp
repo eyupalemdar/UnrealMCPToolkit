@@ -45,7 +45,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonTypes.h"
 
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "Containers/Ticker.h"
 #include "CoreGlobals.h"
@@ -583,7 +583,7 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 	CaptureState->PreviewFunctionCalls = PreviewFunctionCalls;
 	CaptureState->Promise = Promise;
 
-	AsyncTask(ENamedThreads::GameThread, [CaptureState]()
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [CaptureState]()
 	{
 		RefreshGameThreadAppTimeContextForRemoteCommand();
 
@@ -856,7 +856,7 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(120.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(120.0));
 	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Widget preview capture timed out"));
 	return Future.Get();
 }

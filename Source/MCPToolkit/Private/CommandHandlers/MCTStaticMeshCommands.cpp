@@ -6,7 +6,7 @@
 #include "RuntimeDiagnostics/MCTRuntimeDiagnosticsUtils.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "Async/Async.h"
+#include "CommandDispatch/MCTGameThreadDispatcher.h"
 #include "BodySetupEnums.h"
 #include "Dom/JsonValue.h"
 #include "Engine/StaticMesh.h"
@@ -489,7 +489,7 @@ FString HandleStaticMeshInfo(TSharedPtr<FJsonObject> Params)
 	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
 	TFuture<FString> Future = Promise->GetFuture();
 
-	AsyncTask(ENamedThreads::GameThread, [
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(Promise, [
 		AssetPath,
 		bIncludeLODs,
 		bIncludeMaterials,
@@ -550,7 +550,7 @@ FString HandleStaticMeshInfo(TSharedPtr<FJsonObject> Params)
 		Promise->SetValue(CreateSuccessResponse(Data));
 	});
 
-	Future.WaitFor(FTimespan::FromSeconds(60.0));
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
 	if (!Future.IsReady())
 	{
 		return CreateErrorResponse(TEXT("StaticMesh info timed out"));
