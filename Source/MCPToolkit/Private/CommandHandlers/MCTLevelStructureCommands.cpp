@@ -23,6 +23,7 @@
 #include "LevelInstance/LevelInstanceComponent.h"
 #include "LevelInstance/LevelInstanceTypes.h"
 #include "UObject/Package.h"
+#include "UObject/UnrealType.h"
 #include "WorldPartition/ActorDescContainerInstanceCollection.h"
 #include "WorldPartition/DataLayer/DataLayerAsset.h"
 #include "WorldPartition/DataLayer/DataLayerInstance.h"
@@ -30,6 +31,7 @@
 #include "WorldPartition/DataLayer/WorldDataLayers.h"
 #include "WorldPartition/HLOD/HLODActor.h"
 #include "WorldPartition/HLOD/HLODLayer.h"
+#include "WorldPartition/HLOD/HLODRebuildPolicy.h"
 #include "WorldPartition/HLOD/HLODSourceActors.h"
 #include "WorldPartition/WorldPartition.h"
 
@@ -219,7 +221,7 @@ TSharedPtr<FJsonObject> BuildDataLayerJson(UDataLayerInstance* DataLayer, const 
 		return Data;
 	}
 
-	Data->SetStringField(TEXT("name"), DataLayer->GetDataLayerFName().ToString());
+	Data->SetStringField(TEXT("name"), DataLayer->GetFName().ToString());
 	Data->SetStringField(TEXT("short_name"), DataLayer->GetDataLayerShortName());
 	Data->SetStringField(TEXT("full_name"), DataLayer->GetDataLayerFullName());
 	Data->SetStringField(TEXT("type"), EnumValueToString(StaticEnum<EDataLayerType>(), static_cast<int64>(DataLayer->GetType())));
@@ -377,7 +379,25 @@ TSharedPtr<FJsonObject> BuildWorldPartitionHLODJson(AWorldPartitionHLOD* HLODAct
 #if WITH_EDITOR
 	Data->SetObjectField(TEXT("hlod_bounds"), BuildBoxJson(HLODActor->GetHLODBounds()));
 	Data->SetNumberField(TEXT("min_visible_distance"), HLODActor->GetMinVisibleDistance());
-	Data->SetNumberField(TEXT("hlod_hash"), HLODActor->GetHLODHash());
+	TArray<TSharedPtr<FJsonValue>> RebuildPolicyDataJson;
+	for (const TObjectPtr<UHLODRebuildPolicyData>& PolicyData : HLODActor->GetHLODRebuildPolicyDataSet())
+	{
+		if (!PolicyData)
+		{
+			continue;
+		}
+
+		TSharedPtr<FJsonObject> PolicyDataJson = MakeShared<FJsonObject>();
+		PolicyDataJson->SetStringField(TEXT("class"), PolicyData->GetClass()->GetPathName());
+		PolicyDataJson->SetStringField(TEXT("value"), PolicyData->ToString());
+		RebuildPolicyDataJson.Add(MakeShared<FJsonValueObject>(PolicyDataJson));
+
+		if (const FUInt32Property* HashProperty = FindFProperty<FUInt32Property>(PolicyData->GetClass(), TEXT("HLODHash")))
+		{
+			Data->SetNumberField(TEXT("hlod_hash"), HashProperty->GetPropertyValue_InContainer(PolicyData));
+		}
+	}
+	Data->SetArrayField(TEXT("hlod_rebuild_policy_data"), RebuildPolicyDataJson);
 	Data->SetObjectField(TEXT("source_actors"), BuildObjectReferenceJson(HLODActor->GetSourceActors()));
 #endif
 	return Data;

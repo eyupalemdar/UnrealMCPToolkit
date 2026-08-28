@@ -116,7 +116,9 @@ TSharedPtr<FJsonObject> BuildRuntimeTickFunctionJson(const FTickFunction& TickFu
 	Data->SetStringField(TEXT("actual_tick_group"), TickGroupToString(TickFunction.GetActualTickGroup()));
 	Data->SetStringField(TEXT("actual_end_tick_group"), TickGroupToString(TickFunction.GetActualEndTickGroup()));
 	Data->SetNumberField(TEXT("prerequisite_count"), TickFunction.GetPrerequisites().Num());
-	Data->SetNumberField(TEXT("last_tick_game_time"), TickFunction.GetLastTickGameTime());
+	const double LastIntervalTickGameTime = TickFunction.GetLastIntervalTickGameTime();
+	Data->SetNumberField(TEXT("last_interval_tick_game_time"), LastIntervalTickGameTime);
+	Data->SetNumberField(TEXT("last_tick_game_time"), LastIntervalTickGameTime);
 	return Data;
 }
 

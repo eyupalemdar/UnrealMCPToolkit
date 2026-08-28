@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import tempfile
 
 from generate_mcp_artifacts import (
     AI_REFERENCE_PATH,
@@ -25,6 +26,7 @@ from generate_mcp_artifacts import (
     build_tool_schemas,
     read_mcp_tool_signatures,
     validate_capability_matrix,
+    write_artifacts,
 )
 
 
@@ -35,6 +37,23 @@ SOURCE_ROOT = PLUGIN_ROOT / "Source" / "MCPToolkit"
 
 def _failures() -> list[str]:
     failures: list[str] = []
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        generated_root = Path(temp_dir)
+        first_targets = write_artifacts(generated_root)
+        first_bytes = {
+            name: path.read_bytes()
+            for name, path in first_targets.items()
+            if path.suffix in {".json", ".md", ".py"}
+        }
+        second_targets = write_artifacts(generated_root)
+        second_bytes = {
+            name: path.read_bytes()
+            for name, path in second_targets.items()
+            if path.suffix in {".json", ".md", ".py"}
+        }
+        if first_bytes != second_bytes:
+            failures.append("two identical artifact generations are not byte-stable")
 
     handler_root = SOURCE_ROOT / "Private" / "CommandHandlers"
     direct_game_thread_pattern = re.compile(

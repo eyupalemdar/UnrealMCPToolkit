@@ -463,7 +463,6 @@ TSharedPtr<FJsonObject> BuildPCGComponentJson(
 	Data->SetNumberField(TEXT("seed"), Component->Seed);
 	Data->SetBoolField(TEXT("activated"), Component->bActivated);
 	Data->SetBoolField(TEXT("generated"), Component->bGenerated);
-	Data->SetBoolField(TEXT("runtime_generated"), Component->bRuntimeGenerated);
 	Data->SetBoolField(TEXT("was_generated_this_session"), Component->WasGeneratedThisSession());
 	Data->SetBoolField(TEXT("is_generating"), Component->IsGenerating());
 	Data->SetBoolField(TEXT("is_cleaning_up"), Component->IsCleaningUp());

@@ -1333,6 +1333,25 @@ def update_ai_reference(command_manifest: dict, tool_schemas: dict, path: Path =
         path.write_text(new_text, encoding="utf-8")
 
 
+def preserve_generated_timestamp(payload: dict, target: Path) -> None:
+    """Keep the prior timestamp when regeneration has no semantic JSON change."""
+    if not target.is_file():
+        return
+    try:
+        existing = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    prior_timestamp = existing.get("generated_at_utc")
+    if not isinstance(prior_timestamp, str) or not prior_timestamp:
+        return
+    existing_without_timestamp = dict(existing)
+    existing_without_timestamp.pop("generated_at_utc", None)
+    payload_without_timestamp = dict(payload)
+    payload_without_timestamp.pop("generated_at_utc", None)
+    if existing_without_timestamp == payload_without_timestamp:
+        payload["generated_at_utc"] = prior_timestamp
+
+
 def write_artifacts(output_dir: Path = GENERATED_DIR) -> dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1353,6 +1372,13 @@ def write_artifacts(output_dir: Path = GENERATED_DIR) -> dict[str, Path]:
         "wrapper_stubs": output_dir / WRAPPER_STUBS_PATH.name,
         "wrapper_runtime": output_dir / WRAPPER_RUNTIME_PATH.name,
     }
+    for payload, target in (
+        (command_manifest, targets["command_manifest"]),
+        (tool_schemas, targets["tool_schemas"]),
+        (server_metadata, targets["server_metadata"]),
+        (wrapper_spec, targets["wrapper_spec"]),
+    ):
+        preserve_generated_timestamp(payload, target)
     targets["command_manifest"].write_text(json.dumps(command_manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     targets["tool_schemas"].write_text(json.dumps(tool_schemas, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     targets["server_metadata"].write_text(json.dumps(server_metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

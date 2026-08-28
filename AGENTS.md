@@ -1,7 +1,9 @@
 # Agent Instructions
 
-For any Unreal UI transfer or Widget Blueprint mutation task, do not rely on
-tool-specific memory. Start with:
+For any Unreal UI transfer or Widget Blueprint mutation, the consuming host
+repository's `AGENTS.md`, design contracts, schemas and validators are
+authoritative. Do not rely on tool-specific memory. Read host instructions
+first when they exist; otherwise start with the plugin compatibility references:
 
 - `Docs/AI_SESSION_HANDOFF.md`
 - `Docs/AI_UI_Transfer/README.md`
@@ -13,21 +15,20 @@ tool-specific memory. Start with:
 - `Docs/AI_UI_Transfer/UE_COMPONENT_PROTOCOL.md`
 - `Docs/AI_UI_Transfer/component_recipes/README.md`
 
-No Unreal Widget Blueprint mutation is allowed before a TSpec exists and passes:
+The plugin's bundled TSpec and recipe material is upstream compatibility
+reference, not authority over stricter host contracts.
+
+No Unreal Widget Blueprint mutation is allowed before a matching host TSpec
+exists and the host's exact validation command passes before and after mutation.
+When the host has no stricter validator, run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File Resources/Scripts/ValidateUITSpecs.ps1
 ```
 
-When validating a host project's TSpecs from an installed plugin, pass the host
-root and spec directory explicitly:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File Plugins/MCPToolkit/Resources/Scripts/ValidateUITSpecs.ps1 -Root . -SpecDirectory Docs/UI_TSpecs
-```
-
 Do not learn UE/UMG/CommonUI component behavior by trial and error in the target
-WBP. For uncertain components, read the recipe first. If no recipe exists, use a
-minimal probe WBP under `/Game/UI/_AIProbe/<ComponentName>/`, verify it, then
-update the recipe/matrix before touching production assets.
+WBP. For uncertain components, read the qualified host recipe first. If none
+exists, use a minimal probe WBP under the host's declared probe root, exclude it
+from cooking, verify it, then update the host recipe/registry before touching
+production assets. Production assets may not retain probe dependencies.
 

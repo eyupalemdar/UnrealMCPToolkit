@@ -184,12 +184,12 @@ FString UMCTMaterialExporter::ExportMaterialSettings(UMaterial* Material)
 
 	Output += MakeSubsectionHeader(TEXT("Material Settings"));
 
-	Output += FString::Printf(TEXT("bUsedWithStaticLighting: %s\n"), Material->bUsedWithStaticLighting ? TEXT("True") : TEXT("False"));
-	Output += FString::Printf(TEXT("bUsedWithSkeletalMesh: %s\n"), Material->bUsedWithSkeletalMesh ? TEXT("True") : TEXT("False"));
-	Output += FString::Printf(TEXT("bUsedWithParticleSprites: %s\n"), Material->bUsedWithParticleSprites ? TEXT("True") : TEXT("False"));
-	Output += FString::Printf(TEXT("bUsedWithMeshParticles: %s\n"), Material->bUsedWithMeshParticles ? TEXT("True") : TEXT("False"));
-	Output += FString::Printf(TEXT("bUsedWithNiagaraSprites: %s\n"), Material->bUsedWithNiagaraSprites ? TEXT("True") : TEXT("False"));
-	Output += FString::Printf(TEXT("bUsedWithNiagaraMeshParticles: %s\n"), Material->bUsedWithNiagaraMeshParticles ? TEXT("True") : TEXT("False"));
+	Output += FString::Printf(TEXT("bUsedWithStaticLighting: %s\n"), Material->GetUsageByFlag(MATUSAGE_StaticLighting) ? TEXT("True") : TEXT("False"));
+	Output += FString::Printf(TEXT("bUsedWithSkeletalMesh: %s\n"), Material->GetUsageByFlag(MATUSAGE_SkeletalMesh) ? TEXT("True") : TEXT("False"));
+	Output += FString::Printf(TEXT("bUsedWithParticleSprites: %s\n"), Material->GetUsageByFlag(MATUSAGE_ParticleSprites) ? TEXT("True") : TEXT("False"));
+	Output += FString::Printf(TEXT("bUsedWithMeshParticles: %s\n"), Material->GetUsageByFlag(MATUSAGE_MeshParticles) ? TEXT("True") : TEXT("False"));
+	Output += FString::Printf(TEXT("bUsedWithNiagaraSprites: %s\n"), Material->GetUsageByFlag(MATUSAGE_NiagaraSprites) ? TEXT("True") : TEXT("False"));
+	Output += FString::Printf(TEXT("bUsedWithNiagaraMeshParticles: %s\n"), Material->GetUsageByFlag(MATUSAGE_NiagaraMeshParticles) ? TEXT("True") : TEXT("False"));
 
 	if (Material->BlendMode == BLEND_Masked)
 	{

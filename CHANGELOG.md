@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+## 1.1.1 - UE 5.8 API Compatibility
+
+### Fixed
+
+- Replaced deprecated or encapsulated UE 5.8 DataLayer, PCG, UImage, Material
+  usage and TickFunction access with their supported APIs.
+- Exported HLOD rebuild-policy data and recovered the optional hash from policy
+  reflection without requiring the optional HLOD utilities plugin.
+- Kept `last_tick_game_time` for response compatibility while adding the
+  accurately named `last_interval_tick_game_time` field.
+
+### Changed
+
+- Added Mac to the Editor-only supported platform allowlist.
+- Generalized host policy and source-checkout export examples so the shared
+  plugin no longer embeds a product-specific repository path.
+- Clarified that consuming-project TSpec, recipe and validation policy takes
+  precedence over bundled compatibility documentation.
+- Made repeated artifact generation byte-stable by preserving generated
+  timestamps when JSON payloads are otherwise unchanged.
+
 ## 1.1.0 - Extension Command Registry
 
 ### Added

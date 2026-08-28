@@ -118,7 +118,7 @@ If Unreal is not installed under `C:\Program Files\Epic Games\UE_5.8`, pass
 For a source checkout, pass the engine root explicitly:
 
 ```powershell
-python Resources/Scripts/export_asset.py --asset /Game/UI/W_Menu --project <PROJECT_ROOT>\OkeyGame.uproject --engine-dir D:\Programlama\Projeler\UnrealEngine
+python Resources/Scripts/export_asset.py --asset /Game/UI/W_Menu --project <PROJECT_ROOT>\<PROJECT_FILE>.uproject --engine-dir <UE_ENGINE_ROOT>
 ```
 
 ## Adding Export Support

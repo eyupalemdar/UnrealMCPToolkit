@@ -724,6 +724,10 @@ inherit the same scope/dry-run model exposed through `list_commands`.
 | `editor_console_command(command, scope?, dry_run?)` | Execute editor console command; requires `scope="destructive"` |
 | `viewport_capture(output_path?, show_ui?, add_filename_suffix?, scope?, dry_run?)` | Request an editor viewport screenshot |
 
+In UE 5.8, HLOD hashes live in rebuild-policy data rather than directly on the
+HLOD actor. HLOD entries therefore expose `hlod_rebuild_policy_data` and include
+`hlod_hash` only when a loaded policy data object publishes that property.
+
 ### Example: Inspect and dry-run editor actions
 
 ```python
@@ -1156,5 +1160,5 @@ Exports go to `Dev/AIExports/` mirroring the Content folder structure:
 
 ---
 
-*Version: 5.2.0 - Last Updated: 2026-05-04*
+*Version: 5.2.1 - Last Updated: 2026-08-28*
 *201 MCP tools, covering Widget, Material, BP Graph, CDO, Reflection, DataTable, Asset, Import, Preview, Landscape, Foliage, PCG, StaticMesh and level-structure diagnostics, project/config operations, editor/level/actor/PIE/runtime inspector, class/struct/enum reflection, Gameplay Tags, AI Perception, AIController/Brain/Blackboard/PathFollowing diagnostics, EQS manager/query wrapper diagnostics, CommonUI runtime routing, audio device/component diagnostics, NavigationSystem/Recast NavMesh diagnostics, asset streaming, async load/progress diagnostics, async event long-polling, GameInstance/save-game state, level travel/session state, multiplayer connection diagnostics, tick/timer/latent-action state, scheduler/performance diagnostics, physics/collision diagnostics, logs/workflow source-control/build/test/cook status/history/diff, local UE docs lookup, resources/prompts, client scope policy, native HTTP/MCP probe, registry metadata, multi-editor routing, code transfer, async job, and contract introspection workflows*

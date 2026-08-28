@@ -1,12 +1,13 @@
 {
 	"FileVersion": 3,
-	"Version": 2,
-	"VersionName": "1.1.0",
+	"Version": 3,
+	"VersionName": "1.1.1",
 	"FriendlyName": "Unreal MCP Toolkit",
 	"Description": "AI/MCP-powered Unreal Editor toolkit for automation, asset export, diagnostics, Blueprint tooling, and safe UI mutation.",
 	"Category": "Editor",
 	"SupportedTargetPlatforms": [
 		"Win64",
+		"Mac",
 		"Linux"
 	],
 	"CreatedBy": "Alemdar Labs",

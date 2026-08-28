@@ -812,7 +812,7 @@ FString HandleCaptureWidgetPreview(TSharedPtr<FJsonObject> Params)
 
 					if (UImage* Img = Cast<UImage>(W))
 					{
-						if (UTexture2D* Tex = Cast<UTexture2D>(Img->Brush.GetResourceObject()))
+						if (UTexture2D* Tex = Cast<UTexture2D>(Img->GetBrush().GetResourceObject()))
 						{
 							ForceTextureResidentForCapture(Tex);
 						}
