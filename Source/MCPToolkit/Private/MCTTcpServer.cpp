@@ -264,6 +264,8 @@ const TArray<FMCTTcpServer::FCommandDescriptor>& FMCTTcpServer::GetCommandDescri
 		MCT_COMMAND_OPTIONAL_PARAMS("list_classes", "Reflection", false, 60, HandleListClasses),
 		MCT_COMMAND_OPTIONAL_PARAMS("list_gameplay_tags", "Reflection", false, 60, HandleListGameplayTags),
 
+		MCT_COMMAND_PARAMS("create_blueprint", "BlueprintAsset", true, 60, HandleCreateBlueprint),
+		MCT_COMMAND_PARAMS("compile_blueprint", "BlueprintAsset", true, 60, HandleCompileBlueprint),
 		MCT_COMMAND_PARAMS("add_event_node", "BlueprintGraph", true, 60, HandleAddEventNode),
 		MCT_COMMAND_PARAMS("add_custom_event", "BlueprintGraph", true, 60, HandleAddCustomEvent),
 		MCT_COMMAND_PARAMS("add_function_call", "BlueprintGraph", true, 60, HandleAddFunctionCallNode),

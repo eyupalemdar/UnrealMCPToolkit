@@ -7,6 +7,8 @@
 
 namespace MCPToolkit::CommandHandlers::BlueprintGraph
 {
+FString HandleCreateBlueprint(TSharedPtr<FJsonObject> Params);
+FString HandleCompileBlueprint(TSharedPtr<FJsonObject> Params);
 FString HandleAddEventNode(TSharedPtr<FJsonObject> Params);
 FString HandleAddCustomEvent(TSharedPtr<FJsonObject> Params);
 FString HandleAddFunctionCallNode(TSharedPtr<FJsonObject> Params);

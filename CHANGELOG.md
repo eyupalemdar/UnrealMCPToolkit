@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## 1.1.3 - Generic Blueprint Lifecycle
+
+### Added
+
+- Added fail-closed `create_blueprint` for ordinary normal Blueprints with an
+  exact native or generated parent class and deterministic factory-event cleanup.
+- Added `compile_blueprint` for compiler-backed diagnostics and optional package
+  persistence across ordinary, Widget, and Anim Blueprint assets.
+
+### Changed
+
+- Blueprint component inspection now preserves its total `count` while also
+  reporting `user_component_count` and `default_scene_root_present`, separating
+  Unreal's engine-managed Actor root from user-authored SCS components.
+- Added the Blueprint asset lifecycle capability to both capability matrices and
+  regenerated all MCP schemas, wrapper registries, stubs, catalog, and reference
+  summaries.
+
+### Safety
+
+- Blueprint creation refuses existing packages, non-`/Game` destinations,
+  unresolved parents, and classes Unreal does not accept as Blueprint bases.
+- Compiler failures return structured warning/error data and never report a
+  successful save.
+
 ## 1.1.2 - Multi-Editor Routing Latency
 
 ### Added

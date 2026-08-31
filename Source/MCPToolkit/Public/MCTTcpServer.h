@@ -351,6 +351,8 @@ private:
 	FString HandleListGameplayTags(TSharedPtr<class FJsonObject> Params);
 
 	/** Command handlers — Blueprint Graph */
+	FString HandleCreateBlueprint(TSharedPtr<class FJsonObject> Params);
+	FString HandleCompileBlueprint(TSharedPtr<class FJsonObject> Params);
 	FString HandleAddEventNode(TSharedPtr<class FJsonObject> Params);
 	FString HandleAddCustomEvent(TSharedPtr<class FJsonObject> Params);
 	FString HandleAddFunctionCallNode(TSharedPtr<class FJsonObject> Params);

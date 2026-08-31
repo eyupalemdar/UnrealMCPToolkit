@@ -163,6 +163,14 @@
       "rationale": "Common reflected object writes reuse import-text property mutation helpers."
     },
     {
+      "capability": "blueprint_asset_lifecycle",
+      "mode": "builder_backed",
+      "command_handlers": ["MCTBlueprintGraphCommands"],
+      "builders": ["UMCTBlueprintGraphBuilder"],
+      "exporters": [],
+      "rationale": "Fail-closed normal Blueprint creation, deterministic factory-node cleanup, compilation diagnostics, and persistence are reusable Blueprint builder operations."
+    },
+    {
       "capability": "blueprint_graph_editing",
       "mode": "builder_backed",
       "command_handlers": ["MCTBlueprintGraphCommands"],

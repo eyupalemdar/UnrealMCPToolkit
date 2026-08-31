@@ -5,6 +5,16 @@
 
 #include "Dom/JsonObject.h"
 
+FString FMCTTcpServer::HandleCreateBlueprint(TSharedPtr<FJsonObject> Params)
+{
+	return MCPToolkit::CommandHandlers::BlueprintGraph::HandleCreateBlueprint(Params);
+}
+
+FString FMCTTcpServer::HandleCompileBlueprint(TSharedPtr<FJsonObject> Params)
+{
+	return MCPToolkit::CommandHandlers::BlueprintGraph::HandleCompileBlueprint(Params);
+}
+
 FString FMCTTcpServer::HandleAddEventNode(TSharedPtr<FJsonObject> Params)
 {
 	return MCPToolkit::CommandHandlers::BlueprintGraph::HandleAddEventNode(Params);

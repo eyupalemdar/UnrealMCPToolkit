@@ -157,12 +157,23 @@ TSharedPtr<FJsonObject> UMCTBlueprintComponentBuilder::ListComponents(const FStr
 	}
 
 	USimpleConstructionScript* SCS = Blueprint->SimpleConstructionScript;
+	const USCS_Node* DefaultSceneRoot = SCS->GetDefaultSceneRootNode();
+	int32 UserComponentCount = 0;
+	bool bDefaultSceneRootPresent = false;
 	TArray<TSharedPtr<FJsonValue>> Components;
 	for (USCS_Node* Node : SCS->GetAllNodes())
 	{
 		if (Node)
 		{
 			Components.Add(MakeShared<FJsonValueObject>(BuildComponentNodeJson(Node, SCS)));
+			if (Node == DefaultSceneRoot)
+			{
+				bDefaultSceneRootPresent = true;
+			}
+			else
+			{
+				++UserComponentCount;
+			}
 		}
 	}
 
@@ -178,6 +189,11 @@ TSharedPtr<FJsonObject> UMCTBlueprintComponentBuilder::ListComponents(const FStr
 	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 	Data->SetStringField(TEXT("asset_path"), AssetPath);
 	Data->SetNumberField(TEXT("count"), Components.Num());
+	Data->SetNumberField(TEXT("user_component_count"), UserComponentCount);
+	Data->SetBoolField(TEXT("default_scene_root_present"), bDefaultSceneRootPresent);
+	Data->SetStringField(
+		TEXT("count_semantics"),
+		TEXT("count includes Unreal's engine-managed DefaultSceneRoot; user_component_count excludes it"));
 	Data->SetArrayField(TEXT("components"), Components);
 	Data->SetArrayField(TEXT("roots"), Roots);
 	return Data;

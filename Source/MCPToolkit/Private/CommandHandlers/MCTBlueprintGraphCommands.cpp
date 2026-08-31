@@ -11,6 +11,9 @@
 #include "Builders/MCTAnimBlueprintBuilder.h"
 #include "Kismet2/KismetEditorUtilities.h"
 
+#include "EdGraph/EdGraph.h"
+#include "Engine/Blueprint.h"
+#include "Engine/SimpleConstructionScript.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceConstant.h"
 
@@ -185,6 +188,204 @@
 
 namespace MCPToolkit::CommandHandlers::BlueprintGraph
 {
+namespace
+{
+FString BlueprintStatusToString(const EBlueprintStatus Status)
+{
+	switch (Status)
+	{
+	case BS_UpToDate: return TEXT("UpToDate");
+	case BS_Dirty: return TEXT("Dirty");
+	case BS_Error: return TEXT("Error");
+	case BS_UpToDateWithWarnings: return TEXT("UpToDateWithWarnings");
+	case BS_BeingCreated: return TEXT("BeingCreated");
+	default: return TEXT("Unknown");
+	}
+}
+
+TArray<TSharedPtr<FJsonValue>> StringsToJsonArray(const TArray<FString>& Values)
+{
+	TArray<TSharedPtr<FJsonValue>> Result;
+	Result.Reserve(Values.Num());
+	for (const FString& Value : Values)
+	{
+		Result.Add(MakeShared<FJsonValueString>(Value));
+	}
+	return Result;
+}
+
+TSharedPtr<FJsonObject> BuildBlueprintLifecycleData(UBlueprint* Blueprint)
+{
+	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
+	if (!Blueprint)
+	{
+		return Data;
+	}
+
+	int32 EventGraphNodeCount = 0;
+	for (UEdGraph* Graph : Blueprint->UbergraphPages)
+	{
+		if (Graph)
+		{
+			EventGraphNodeCount += Graph->Nodes.Num();
+		}
+	}
+
+	int32 TotalSCSNodeCount = 0;
+	int32 UserComponentCount = 0;
+	bool bDefaultSceneRootPresent = false;
+	if (USimpleConstructionScript* SCS = Blueprint->SimpleConstructionScript)
+	{
+		const USCS_Node* DefaultSceneRoot = SCS->GetDefaultSceneRootNode();
+		for (const USCS_Node* Node : SCS->GetAllNodes())
+		{
+			if (!Node)
+			{
+				continue;
+			}
+			++TotalSCSNodeCount;
+			if (Node == DefaultSceneRoot)
+			{
+				bDefaultSceneRootPresent = true;
+			}
+			else
+			{
+				++UserComponentCount;
+			}
+		}
+	}
+
+	Data->SetStringField(TEXT("asset_path"), Blueprint->GetPathName());
+	Data->SetStringField(TEXT("package_name"), Blueprint->GetOutermost()->GetName());
+	Data->SetStringField(TEXT("asset_class"), Blueprint->GetClass()->GetPathName());
+	Data->SetStringField(
+		TEXT("parent_class"),
+		Blueprint->ParentClass ? Blueprint->ParentClass->GetPathName() : TEXT(""));
+	Data->SetBoolField(
+		TEXT("parent_is_native"),
+		Blueprint->ParentClass && Blueprint->ParentClass->ClassGeneratedBy == nullptr);
+	Data->SetStringField(
+		TEXT("generated_class"),
+		Blueprint->GeneratedClass ? Blueprint->GeneratedClass->GetPathName() : TEXT(""));
+	Data->SetStringField(TEXT("blueprint_type"), Blueprint->BlueprintType == BPTYPE_Normal ? TEXT("Normal") : TEXT("Other"));
+	Data->SetStringField(TEXT("status"), BlueprintStatusToString(Blueprint->Status));
+	Data->SetNumberField(TEXT("event_graph_node_count"), EventGraphNodeCount);
+	Data->SetNumberField(TEXT("user_variable_count"), Blueprint->NewVariables.Num());
+	Data->SetNumberField(TEXT("timeline_count"), Blueprint->Timelines.Num());
+	Data->SetNumberField(TEXT("interface_count"), Blueprint->ImplementedInterfaces.Num());
+	Data->SetNumberField(TEXT("scs_node_count"), TotalSCSNodeCount);
+	Data->SetNumberField(TEXT("user_component_count"), UserComponentCount);
+	Data->SetBoolField(TEXT("default_scene_root_present"), bDefaultSceneRootPresent);
+	return Data;
+}
+}
+
+FString HandleCreateBlueprint(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString PackagePath;
+	FString AssetName;
+	FString ParentClass;
+	if (!Params->TryGetStringField(TEXT("package_path"), PackagePath))
+		return CreateErrorResponse(TEXT("Missing 'package_path' parameter"));
+	if (!Params->TryGetStringField(TEXT("asset_name"), AssetName))
+		return CreateErrorResponse(TEXT("Missing 'asset_name' parameter"));
+	if (!Params->TryGetStringField(TEXT("parent_class"), ParentClass))
+		return CreateErrorResponse(TEXT("Missing 'parent_class' parameter"));
+
+	bool bClearDefaultEventNodes = true;
+	Params->TryGetBoolField(TEXT("clear_default_event_nodes"), bClearDefaultEventNodes);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(
+		Promise,
+		[PackagePath, AssetName, ParentClass, bClearDefaultEventNodes, Promise]()
+		{
+			FString Error;
+			UBlueprint* Blueprint = UMCTBlueprintGraphBuilder::CreateBlueprintAsset(
+				PackagePath,
+				AssetName,
+				ParentClass,
+				bClearDefaultEventNodes,
+				&Error);
+			if (!Blueprint)
+			{
+				Promise->SetValue(CreateErrorResponse(Error.IsEmpty() ? TEXT("Failed to create Blueprint") : Error));
+				return;
+			}
+
+			TSharedPtr<FJsonObject> Data = BuildBlueprintLifecycleData(Blueprint);
+			Data->SetBoolField(TEXT("clear_default_event_nodes"), bClearDefaultEventNodes);
+			Promise->SetValue(CreateSuccessResponse(Data));
+		});
+
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Create Blueprint timed out"));
+	return Future.Get();
+}
+
+FString HandleCompileBlueprint(TSharedPtr<FJsonObject> Params)
+{
+	if (!Params.IsValid()) return CreateErrorResponse(TEXT("Missing 'params' object"));
+
+	FString AssetPath;
+	if (!Params->TryGetStringField(TEXT("asset_path"), AssetPath))
+		return CreateErrorResponse(TEXT("Missing 'asset_path' parameter"));
+
+	bool bSaveAsset = true;
+	Params->TryGetBoolField(TEXT("save_asset"), bSaveAsset);
+
+	TSharedPtr<TPromise<FString>> Promise = MakeShared<TPromise<FString>>();
+	TFuture<FString> Future = Promise->GetFuture();
+	const FMCTGameThreadDispatchHandle DispatchHandle = FMCTGameThreadDispatcher::Get().Enqueue(
+		Promise,
+		[AssetPath, bSaveAsset, Promise]()
+		{
+			UBlueprint* Blueprint = UMCTBlueprintGraphBuilder::LoadBlueprint(AssetPath);
+			if (!Blueprint)
+			{
+				Promise->SetValue(CreateErrorResponse(FString::Printf(TEXT("Could not load Blueprint: %s"), *AssetPath)));
+				return;
+			}
+
+			TArray<FString> Warnings;
+			TArray<FString> Errors;
+			bool bSaved = false;
+			const bool bCompiled = UMCTBlueprintGraphBuilder::CompileBlueprintAsset(
+				Blueprint,
+				bSaveAsset,
+				&Warnings,
+				&Errors,
+				&bSaved);
+
+			TSharedPtr<FJsonObject> Data = BuildBlueprintLifecycleData(Blueprint);
+			Data->SetBoolField(TEXT("compiled"), bCompiled);
+			Data->SetBoolField(TEXT("save_requested"), bSaveAsset);
+			Data->SetBoolField(TEXT("saved"), bSaved);
+			Data->SetNumberField(TEXT("warning_count"), Warnings.Num());
+			Data->SetNumberField(TEXT("error_count"), Errors.Num());
+			Data->SetArrayField(TEXT("warnings"), StringsToJsonArray(Warnings));
+			Data->SetArrayField(TEXT("errors"), StringsToJsonArray(Errors));
+
+			if (!bCompiled || (bSaveAsset && !bSaved))
+			{
+				const FString ErrorMessage = Errors.Num() > 0
+					? FString::Join(Errors, TEXT(" | "))
+					: TEXT("Blueprint compile/save failed");
+				Promise->SetValue(CreateErrorResponse(ErrorMessage, Data));
+				return;
+			}
+
+			Promise->SetValue(CreateSuccessResponse(Data));
+		});
+
+	DispatchHandle.WaitFor(Future, FTimespan::FromSeconds(60.0));
+	if (!Future.IsReady()) return CreateErrorResponse(TEXT("Compile Blueprint timed out"));
+	return Future.Get();
+}
+
 TArray<FMCTBlueprintGraphPinSpec> ParseGraphPinSpecs(
 	const TSharedPtr<FJsonObject>& Params,
 	const FString& FieldName)

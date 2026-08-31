@@ -1,17 +1,18 @@
 {
   "schema_version": 3,
   "server": "MCPToolkit",
-  "generated_at_utc": "2026-08-28T17:22:06.068128Z",
+  "generated_at_utc": "2026-08-31T01:59:16.805789Z",
   "manifest_source": "FMCTTcpServer::GetCommandDescriptors",
   "generator": "MCPToolkit/Resources/Scripts/generate_mcp_artifacts.py",
-  "command_count": 182,
-  "category_count": 38,
+  "command_count": 184,
+  "category_count": 39,
   "categories": {
     "AnimBlueprint": 2,
     "AnimationAsset": 1,
     "Asset": 16,
     "AssetLifecycle": 1,
     "AsyncJob": 6,
+    "BlueprintAsset": 2,
     "BlueprintComponent": 4,
     "BlueprintGraph": 14,
     "BlueprintUtility": 1,
@@ -1412,6 +1413,34 @@
       "line": 265
     },
     {
+      "name": "create_blueprint",
+      "category": "BlueprintAsset",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleCreateBlueprint",
+      "descriptor_macro": "MCT_COMMAND_PARAMS",
+      "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
+      "line": 267
+    },
+    {
+      "name": "compile_blueprint",
+      "category": "BlueprintAsset",
+      "requires_params": true,
+      "mutating": true,
+      "timeout_seconds": 60,
+      "required_scope": "write",
+      "supports_dry_run": true,
+      "async_candidate": false,
+      "handler": "HandleCompileBlueprint",
+      "descriptor_macro": "MCT_COMMAND_PARAMS",
+      "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
+      "line": 268
+    },
+    {
       "name": "add_event_node",
       "category": "BlueprintGraph",
       "requires_params": true,
@@ -1423,7 +1452,7 @@
       "handler": "HandleAddEventNode",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 267
+      "line": 269
     },
     {
       "name": "add_custom_event",
@@ -1437,7 +1466,7 @@
       "handler": "HandleAddCustomEvent",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 268
+      "line": 270
     },
     {
       "name": "add_function_call",
@@ -1451,7 +1480,7 @@
       "handler": "HandleAddFunctionCallNode",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 269
+      "line": 271
     },
     {
       "name": "add_variable_get_node",
@@ -1465,7 +1494,7 @@
       "handler": "HandleAddVariableGetNode",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 270
+      "line": 272
     },
     {
       "name": "add_variable_set_node",
@@ -1479,7 +1508,7 @@
       "handler": "HandleAddVariableSetNode",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 271
+      "line": 273
     },
     {
       "name": "add_make_struct_node",
@@ -1493,7 +1522,7 @@
       "handler": "HandleAddMakeStructNode",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 272
+      "line": 274
     },
     {
       "name": "add_branch_node",
@@ -1507,7 +1536,7 @@
       "handler": "HandleAddBranchNode",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 273
+      "line": 275
     },
     {
       "name": "ensure_function_graph",
@@ -1521,7 +1550,7 @@
       "handler": "HandleEnsureFunctionGraph",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 274
+      "line": 276
     },
     {
       "name": "add_call_parent_function",
@@ -1535,7 +1564,7 @@
       "handler": "HandleAddCallParentFunction",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 275
+      "line": 277
     },
     {
       "name": "connect_pins",
@@ -1549,7 +1578,7 @@
       "handler": "HandleConnectPins",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 276
+      "line": 278
     },
     {
       "name": "set_pin_default",
@@ -1563,7 +1592,7 @@
       "handler": "HandleSetPinDefault",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 277
+      "line": 279
     },
     {
       "name": "remove_graph_node",
@@ -1577,7 +1606,7 @@
       "handler": "HandleRemoveGraphNode",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 278
+      "line": 280
     },
     {
       "name": "get_graph",
@@ -1591,7 +1620,7 @@
       "handler": "HandleGetGraph",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 279
+      "line": 281
     },
     {
       "name": "list_graphs",
@@ -1605,7 +1634,7 @@
       "handler": "HandleListGraphs",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 280
+      "line": 282
     },
     {
       "name": "add_variable",
@@ -1619,7 +1648,7 @@
       "handler": "HandleAddVariable",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 282
+      "line": 284
     },
     {
       "name": "set_variable_default",
@@ -1633,7 +1662,7 @@
       "handler": "HandleSetVariableDefault",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 283
+      "line": 285
     },
     {
       "name": "remove_variable",
@@ -1647,7 +1676,7 @@
       "handler": "HandleRemoveVariable",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 284
+      "line": 286
     },
     {
       "name": "get_variables",
@@ -1661,7 +1690,7 @@
       "handler": "HandleGetVariables",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 285
+      "line": 287
     },
     {
       "name": "reparent_blueprint",
@@ -1675,7 +1704,7 @@
       "handler": "HandleReparentBlueprint",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 286
+      "line": 288
     },
     {
       "name": "blueprint_component_list",
@@ -1689,7 +1718,7 @@
       "handler": "HandleBlueprintComponentList",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 287
+      "line": 289
     },
     {
       "name": "blueprint_component_add",
@@ -1703,7 +1732,7 @@
       "handler": "HandleBlueprintComponentAdd",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 288
+      "line": 290
     },
     {
       "name": "blueprint_component_remove",
@@ -1717,7 +1746,7 @@
       "handler": "HandleBlueprintComponentRemove",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 289
+      "line": 291
     },
     {
       "name": "blueprint_component_set_property",
@@ -1731,7 +1760,7 @@
       "handler": "HandleBlueprintComponentSetProperty",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 290
+      "line": 292
     },
     {
       "name": "create_material",
@@ -1745,7 +1774,7 @@
       "handler": "HandleCreateMaterial",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 292
+      "line": 294
     },
     {
       "name": "set_material_property",
@@ -1759,7 +1788,7 @@
       "handler": "HandleSetMaterialProperty",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 293
+      "line": 295
     },
     {
       "name": "add_expression",
@@ -1773,7 +1802,7 @@
       "handler": "HandleAddExpression",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 294
+      "line": 296
     },
     {
       "name": "set_expression_property",
@@ -1787,7 +1816,7 @@
       "handler": "HandleSetExpressionProperty",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 295
+      "line": 297
     },
     {
       "name": "connect_expressions",
@@ -1801,7 +1830,7 @@
       "handler": "HandleConnectExpressions",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 296
+      "line": 298
     },
     {
       "name": "connect_to_material_property",
@@ -1815,7 +1844,7 @@
       "handler": "HandleConnectToMaterialProperty",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 297
+      "line": 299
     },
     {
       "name": "disconnect_input",
@@ -1829,7 +1858,7 @@
       "handler": "HandleDisconnectInput",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 298
+      "line": 300
     },
     {
       "name": "remove_expression",
@@ -1843,7 +1872,7 @@
       "handler": "HandleRemoveExpression",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 299
+      "line": 301
     },
     {
       "name": "compile_material",
@@ -1857,7 +1886,7 @@
       "handler": "HandleCompileMaterial",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 300
+      "line": 302
     },
     {
       "name": "get_material_graph",
@@ -1871,7 +1900,7 @@
       "handler": "HandleGetMaterialGraph",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 301
+      "line": 303
     },
     {
       "name": "list_expression_classes",
@@ -1885,7 +1914,7 @@
       "handler": "HandleListExpressionClasses",
       "descriptor_macro": "MCT_COMMAND_NO_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 302
+      "line": 304
     },
     {
       "name": "create_material_instance",
@@ -1899,7 +1928,7 @@
       "handler": "HandleCreateMaterialInstance",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 303
+      "line": 305
     },
     {
       "name": "set_instance_parameter",
@@ -1913,7 +1942,7 @@
       "handler": "HandleSetInstanceParameter",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 304
+      "line": 306
     },
     {
       "name": "save_material_instance",
@@ -1927,7 +1956,7 @@
       "handler": "HandleSaveMaterialInstance",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 305
+      "line": 307
     },
     {
       "name": "get_material_instance_info",
@@ -1941,7 +1970,7 @@
       "handler": "HandleGetMaterialInstanceInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 306
+      "line": 308
     },
     {
       "name": "save_data_asset",
@@ -1955,7 +1984,7 @@
       "handler": "HandleSaveDataAsset",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 308
+      "line": 310
     },
     {
       "name": "create_datatable",
@@ -1969,7 +1998,7 @@
       "handler": "HandleCreateDataTable",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 309
+      "line": 311
     },
     {
       "name": "get_datatable_info",
@@ -1983,7 +2012,7 @@
       "handler": "HandleGetDataTableInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 310
+      "line": 312
     },
     {
       "name": "read_datatable_rows",
@@ -1997,7 +2026,7 @@
       "handler": "HandleReadDataTableRows",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 311
+      "line": 313
     },
     {
       "name": "add_datatable_row",
@@ -2011,7 +2040,7 @@
       "handler": "HandleAddDataTableRow",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 312
+      "line": 314
     },
     {
       "name": "remove_datatable_row",
@@ -2025,7 +2054,7 @@
       "handler": "HandleRemoveDataTableRow",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 313
+      "line": 315
     },
     {
       "name": "import_datatable_csv",
@@ -2039,7 +2068,7 @@
       "handler": "HandleImportDataTableCsv",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 314
+      "line": 316
     },
     {
       "name": "create_asset",
@@ -2053,7 +2082,7 @@
       "handler": "HandleCreateAsset",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 316
+      "line": 318
     },
     {
       "name": "set_asset_property",
@@ -2067,7 +2096,7 @@
       "handler": "HandleSetAssetProperty",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 317
+      "line": 319
     },
     {
       "name": "get_asset_properties",
@@ -2081,7 +2110,7 @@
       "handler": "HandleGetAssetProperties",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 318
+      "line": 320
     },
     {
       "name": "asset_exists",
@@ -2095,7 +2124,7 @@
       "handler": "HandleAssetExists",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 319
+      "line": 321
     },
     {
       "name": "scan_asset_paths",
@@ -2109,7 +2138,7 @@
       "handler": "HandleScanAssetPaths",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 320
+      "line": 322
     },
     {
       "name": "asset_search",
@@ -2123,7 +2152,7 @@
       "handler": "HandleAssetSearch",
       "descriptor_macro": "MCT_COMMAND_OPTIONAL_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 321
+      "line": 323
     },
     {
       "name": "asset_validate_light",
@@ -2137,7 +2166,7 @@
       "handler": "HandleAssetValidateLight",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 322
+      "line": 324
     },
     {
       "name": "save_asset",
@@ -2151,7 +2180,7 @@
       "handler": "HandleSaveAsset",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 323
+      "line": 325
     },
     {
       "name": "rename_asset",
@@ -2165,7 +2194,7 @@
       "handler": "HandleRenameAsset",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 324
+      "line": 326
     },
     {
       "name": "duplicate_asset",
@@ -2179,7 +2208,7 @@
       "handler": "HandleDuplicateAsset",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 325
+      "line": 327
     },
     {
       "name": "move_folder_assets",
@@ -2193,7 +2222,7 @@
       "handler": "HandleMoveFolderAssets",
       "descriptor_macro": "MCT_COMMAND_PARAMS_SCOPE",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 326
+      "line": 328
     },
     {
       "name": "get_referencers",
@@ -2207,7 +2236,7 @@
       "handler": "HandleGetReferencers",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 327
+      "line": 329
     },
     {
       "name": "get_dependencies",
@@ -2221,7 +2250,7 @@
       "handler": "HandleGetDependencies",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 328
+      "line": 330
     },
     {
       "name": "delete_asset",
@@ -2235,7 +2264,7 @@
       "handler": "HandleDeleteAsset",
       "descriptor_macro": "MCT_COMMAND_PARAMS_SCOPE",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 329
+      "line": 331
     },
     {
       "name": "list_redirectors",
@@ -2249,7 +2278,7 @@
       "handler": "HandleListRedirectors",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 330
+      "line": 332
     },
     {
       "name": "fixup_redirectors",
@@ -2263,7 +2292,7 @@
       "handler": "HandleFixupRedirectors",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 331
+      "line": 333
     },
     {
       "name": "static_mesh_info",
@@ -2277,7 +2306,7 @@
       "handler": "HandleStaticMeshInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 332
+      "line": 334
     },
     {
       "name": "skeletal_mesh_info",
@@ -2291,7 +2320,7 @@
       "handler": "HandleSkeletalMeshInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 333
+      "line": 335
     },
     {
       "name": "add_input_mapping",
@@ -2305,7 +2334,7 @@
       "handler": "HandleAddInputMapping",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 335
+      "line": 337
     },
     {
       "name": "remove_input_mapping",
@@ -2319,7 +2348,7 @@
       "handler": "HandleRemoveInputMapping",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 336
+      "line": 338
     },
     {
       "name": "get_input_mappings",
@@ -2333,7 +2362,7 @@
       "handler": "HandleGetInputMappings",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 337
+      "line": 339
     },
     {
       "name": "create_anim_blueprint",
@@ -2347,7 +2376,7 @@
       "handler": "HandleCreateAnimBlueprint",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 339
+      "line": 341
     },
     {
       "name": "get_anim_blueprint_info",
@@ -2361,7 +2390,7 @@
       "handler": "HandleGetAnimBlueprintInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 340
+      "line": 342
     },
     {
       "name": "animation_asset_info",
@@ -2375,7 +2404,7 @@
       "handler": "HandleAnimationAssetInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 341
+      "line": 343
     },
     {
       "name": "sequencer_asset_info",
@@ -2389,7 +2418,7 @@
       "handler": "HandleSequencerAssetInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 342
+      "line": 344
     },
     {
       "name": "spline_actor_create",
@@ -2403,7 +2432,7 @@
       "handler": "HandleSplineActorCreate",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 343
+      "line": 345
     },
     {
       "name": "spline_component_info",
@@ -2417,7 +2446,7 @@
       "handler": "HandleSplineComponentInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 344
+      "line": 346
     },
     {
       "name": "spline_component_set_points",
@@ -2431,7 +2460,7 @@
       "handler": "HandleSplineComponentSetPoints",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 345
+      "line": 347
     },
     {
       "name": "landscape_info",
@@ -2445,7 +2474,7 @@
       "handler": "HandleLandscapeInfo",
       "descriptor_macro": "MCT_COMMAND_OPTIONAL_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 346
+      "line": 348
     },
     {
       "name": "landscape_sample_height",
@@ -2459,7 +2488,7 @@
       "handler": "HandleLandscapeSampleHeight",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 347
+      "line": 349
     },
     {
       "name": "foliage_info",
@@ -2473,7 +2502,7 @@
       "handler": "HandleFoliageInfo",
       "descriptor_macro": "MCT_COMMAND_OPTIONAL_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 348
+      "line": 350
     },
     {
       "name": "foliage_sample_instances",
@@ -2487,7 +2516,7 @@
       "handler": "HandleFoliageSampleInstances",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 349
+      "line": 351
     },
     {
       "name": "foliage_type_settings",
@@ -2501,7 +2530,7 @@
       "handler": "HandleFoliageTypeSettings",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 350
+      "line": 352
     },
     {
       "name": "pcg_graph_info",
@@ -2515,7 +2544,7 @@
       "handler": "HandlePCGGraphInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 351
+      "line": 353
     },
     {
       "name": "pcg_component_info",
@@ -2529,7 +2558,7 @@
       "handler": "HandlePCGComponentInfo",
       "descriptor_macro": "MCT_COMMAND_OPTIONAL_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 352
+      "line": 354
     },
     {
       "name": "niagara_asset_info",
@@ -2543,7 +2572,7 @@
       "handler": "HandleNiagaraAssetInfo",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 353
+      "line": 355
     },
     {
       "name": "import_texture",
@@ -2557,7 +2586,7 @@
       "handler": "HandleImportTexture",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 355
+      "line": 357
     },
     {
       "name": "import_font",
@@ -2571,7 +2600,7 @@
       "handler": "HandleImportFont",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 356
+      "line": 358
     },
     {
       "name": "capture_widget_preview",
@@ -2585,7 +2614,7 @@
       "handler": "HandleCaptureWidgetPreview",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 358
+      "line": 360
     },
     {
       "name": "reload_asset",
@@ -2599,7 +2628,7 @@
       "handler": "HandleReloadAsset",
       "descriptor_macro": "MCT_COMMAND_PARAMS",
       "source": "MCPToolkit/Source/MCPToolkit/Private/MCTTcpServer.cpp",
-      "line": 359
+      "line": 361
     }
   ]
 }

@@ -47,6 +47,33 @@ class MCPTOOLKIT_API UMCTBlueprintGraphBuilder : public UObject
 
 public:
 	// =========================================================================
+	// BLUEPRINT LIFECYCLE
+	// =========================================================================
+
+	/**
+	 * Create a normal Blueprint with an exact parent class.
+	 *
+	 * The operation fails closed when the package already exists, the parent
+	 * class cannot be resolved, or Unreal reports that the class cannot be used
+	 * as a Blueprint base. Actor-based Blueprints retain Unreal's engine-managed
+	 * DefaultSceneRoot, but optional factory event nodes are removed by default.
+	 */
+	static UBlueprint* CreateBlueprintAsset(
+		const FString& PackagePath,
+		const FString& AssetName,
+		const FString& ParentClassPath,
+		bool bClearDefaultEventNodes = true,
+		FString* OutError = nullptr);
+
+	/** Compile any UBlueprint and optionally save the package to disk. */
+	static bool CompileBlueprintAsset(
+		UBlueprint* Blueprint,
+		bool bSaveAsset,
+		TArray<FString>* OutWarnings = nullptr,
+		TArray<FString>* OutErrors = nullptr,
+		bool* OutSaved = nullptr);
+
+	// =========================================================================
 	// NODE CREATION
 	// =========================================================================
 

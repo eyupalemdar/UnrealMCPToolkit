@@ -22,10 +22,16 @@
 
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "Kismet2/CompilerResultsLog.h"
 
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
+#include "Logging/TokenizedMessage.h"
+#include "Misc/PackageName.h"
 #include "ScopedTransaction.h"
+#include "UObject/Package.h"
+#include "UObject/SavePackage.h"
 #include "UObject/UnrealType.h"
 #include "UObject/UObjectIterator.h"
 
@@ -133,6 +139,298 @@ void SetError(FString* OutError, const FString& Error)
 		*OutError = Error;
 	}
 }
+
+FString MCTGraphStripObjectPathDecorators(FString Path)
+{
+	Path.TrimStartAndEndInline();
+
+	int32 FirstQuote = INDEX_NONE;
+	int32 LastQuote = INDEX_NONE;
+	if (Path.FindChar(TEXT('\''), FirstQuote)
+		&& Path.FindLastChar(TEXT('\''), LastQuote)
+		&& LastQuote > FirstQuote)
+	{
+		Path = Path.Mid(FirstQuote + 1, LastQuote - FirstQuote - 1);
+		Path.TrimStartAndEndInline();
+	}
+
+	if (Path.Len() >= 2
+		&& ((Path.StartsWith(TEXT("\"")) && Path.EndsWith(TEXT("\"")))
+			|| (Path.StartsWith(TEXT("'")) && Path.EndsWith(TEXT("'")))))
+	{
+		Path = Path.Mid(1, Path.Len() - 2);
+		Path.TrimStartAndEndInline();
+	}
+
+	return Path;
+}
+
+UClass* ResolveBlueprintParentClass(const FString& ParentClassPath)
+{
+	const FString CleanPath = MCTGraphStripObjectPathDecorators(ParentClassPath);
+	if (CleanPath.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	if (UClass* ExistingClass = FindObject<UClass>(nullptr, *CleanPath))
+	{
+		return ExistingClass;
+	}
+
+	return LoadObject<UClass>(nullptr, *CleanPath);
+}
+
+void MCTGraphAppendCompilerMessages(
+	const FCompilerResultsLog& Results,
+	TArray<FString>* OutWarnings,
+	TArray<FString>* OutErrors)
+{
+	TSet<FString> SeenWarnings;
+	TSet<FString> SeenErrors;
+
+	auto AddUnique = [](TArray<FString>* OutMessages, TSet<FString>& Seen, const FString& Message)
+	{
+		if (OutMessages && !Message.IsEmpty() && !Seen.Contains(Message))
+		{
+			Seen.Add(Message);
+			OutMessages->Add(Message);
+		}
+	};
+
+	for (const TSharedRef<FTokenizedMessage>& Message : Results.Messages)
+	{
+		const FString Text = Message->ToText().ToString();
+		const EMessageSeverity::Type Severity = Message->GetSeverity();
+		if (Severity <= EMessageSeverity::Error)
+		{
+			AddUnique(OutErrors, SeenErrors, Text);
+		}
+		else if (Severity == EMessageSeverity::PerformanceWarning || Severity == EMessageSeverity::Warning)
+		{
+			AddUnique(OutWarnings, SeenWarnings, Text);
+		}
+	}
+
+	if (OutErrors && Results.NumErrors > 0 && OutErrors->Num() == 0)
+	{
+		OutErrors->Add(FString::Printf(
+			TEXT("Blueprint compiler reported %d error(s) without detailed messages"),
+			Results.NumErrors));
+	}
+	if (OutWarnings && Results.NumWarnings > 0 && OutWarnings->Num() == 0)
+	{
+		OutWarnings->Add(FString::Printf(
+			TEXT("Blueprint compiler reported %d warning(s) without detailed messages"),
+			Results.NumWarnings));
+	}
+}
+}
+
+// =============================================================================
+// BLUEPRINT LIFECYCLE
+// =============================================================================
+
+UBlueprint* UMCTBlueprintGraphBuilder::CreateBlueprintAsset(
+	const FString& PackagePath,
+	const FString& AssetName,
+	const FString& ParentClassPath,
+	const bool bClearDefaultEventNodes,
+	FString* OutError)
+{
+	if (PackagePath.IsEmpty() || AssetName.IsEmpty() || ParentClassPath.IsEmpty())
+	{
+		SetError(OutError, TEXT("package_path, asset_name and parent_class are required"));
+		return nullptr;
+	}
+
+	if (!PackagePath.StartsWith(TEXT("/Game"))
+		|| (PackagePath.Len() > 5 && PackagePath[5] != TCHAR('/')))
+	{
+		SetError(OutError, TEXT("package_path must be /Game or a child of /Game"));
+		return nullptr;
+	}
+
+	if (AssetName.Contains(TEXT("/")) || AssetName.Contains(TEXT(".")) || AssetName.Contains(TEXT("\\")))
+	{
+		SetError(OutError, TEXT("asset_name must be a single Unreal object name"));
+		return nullptr;
+	}
+
+	const FString FullPackagePath = PackagePath / AssetName;
+	if (!FPackageName::IsValidLongPackageName(FullPackagePath, true))
+	{
+		SetError(OutError, FString::Printf(TEXT("Invalid package path: %s"), *FullPackagePath));
+		return nullptr;
+	}
+
+	if (FindPackage(nullptr, *FullPackagePath) || FPackageName::DoesPackageExist(FullPackagePath))
+	{
+		SetError(OutError, FString::Printf(TEXT("Blueprint package already exists: %s"), *FullPackagePath));
+		return nullptr;
+	}
+
+	UClass* ParentClass = ResolveBlueprintParentClass(ParentClassPath);
+	if (!ParentClass)
+	{
+		SetError(OutError, FString::Printf(TEXT("Could not resolve parent class: %s"), *ParentClassPath));
+		return nullptr;
+	}
+	if (!FKismetEditorUtilities::CanCreateBlueprintOfClass(ParentClass))
+	{
+		SetError(OutError, FString::Printf(
+			TEXT("Class cannot be used as a Blueprint parent: %s"),
+			*ParentClass->GetPathName()));
+		return nullptr;
+	}
+
+	FScopedTransaction Transaction(LOCTEXT("AICreateBlueprint", "AI: Create Blueprint"));
+	UPackage* Package = CreatePackage(*FullPackagePath);
+	if (!Package)
+	{
+		SetError(OutError, FString::Printf(TEXT("Failed to create package: %s"), *FullPackagePath));
+		return nullptr;
+	}
+
+	UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(
+		ParentClass,
+		Package,
+		FName(*AssetName),
+		EBlueprintType::BPTYPE_Normal,
+		FName(TEXT("MCPToolkit")));
+	if (!Blueprint)
+	{
+		SetError(OutError, FString::Printf(TEXT("Failed to create Blueprint: %s"), *FullPackagePath));
+		return nullptr;
+	}
+
+	if (bClearDefaultEventNodes)
+	{
+		bool bRemovedAnyNode = false;
+		for (UEdGraph* Graph : Blueprint->UbergraphPages)
+		{
+			if (!Graph)
+			{
+				continue;
+			}
+
+			const TArray<TObjectPtr<UEdGraphNode>> FactoryNodes = Graph->Nodes;
+			for (UEdGraphNode* Node : FactoryNodes)
+			{
+				if (Node)
+				{
+					FBlueprintEditorUtils::RemoveNode(Blueprint, Node, true);
+					bRemovedAnyNode = true;
+				}
+			}
+		}
+
+		if (bRemovedAnyNode)
+		{
+			FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+		}
+	}
+
+	FAssetRegistryModule::AssetCreated(Blueprint);
+	Blueprint->MarkPackageDirty();
+
+	UE_LOG(LogAIGraphBuilder, Log,
+		TEXT("CreateBlueprintAsset: Created '%s' with parent '%s' (clear_default_event_nodes=%d)"),
+		*FullPackagePath,
+		*ParentClass->GetPathName(),
+		bClearDefaultEventNodes ? 1 : 0);
+	return Blueprint;
+}
+
+bool UMCTBlueprintGraphBuilder::CompileBlueprintAsset(
+	UBlueprint* Blueprint,
+	const bool bSaveAsset,
+	TArray<FString>* OutWarnings,
+	TArray<FString>* OutErrors,
+	bool* OutSaved)
+{
+	if (OutSaved)
+	{
+		*OutSaved = false;
+	}
+	if (!IsValid(Blueprint))
+	{
+		if (OutErrors)
+		{
+			OutErrors->Add(TEXT("Blueprint is null, invalid, or pending destruction"));
+		}
+		return false;
+	}
+
+	FCompilerResultsLog CompileResults;
+	FKismetEditorUtilities::CompileBlueprint(Blueprint, EBlueprintCompileOptions::None, &CompileResults);
+	MCTGraphAppendCompilerMessages(CompileResults, OutWarnings, OutErrors);
+
+	const bool bHasErrors = Blueprint->Status == BS_Error || CompileResults.NumErrors > 0;
+	if (bHasErrors)
+	{
+		if (OutErrors && OutErrors->Num() == 0)
+		{
+			OutErrors->Add(FString::Printf(TEXT("Compilation failed for '%s'"), *Blueprint->GetPathName()));
+		}
+		return false;
+	}
+
+	bool bSaved = false;
+	if (bSaveAsset)
+	{
+		constexpr EObjectFlags RequiredSaveFlags = RF_Public | RF_Standalone;
+		if (!Blueprint->HasAnyFlags(RequiredSaveFlags))
+		{
+			if (OutErrors)
+			{
+				OutErrors->Add(TEXT("Blueprint is missing RF_Public/RF_Standalone; save refused"));
+			}
+			return false;
+		}
+
+		UPackage* Package = Blueprint->GetOutermost();
+		if (!Package || !FPackageName::IsValidLongPackageName(Package->GetName(), true))
+		{
+			if (OutErrors)
+			{
+				OutErrors->Add(TEXT("Blueprint has no valid long package name; save refused"));
+			}
+			return false;
+		}
+
+		FString PackageFilename;
+		if (!FPackageName::DoesPackageExist(Package->GetName(), &PackageFilename))
+		{
+			PackageFilename = FPackageName::LongPackageNameToFilename(
+				Package->GetName(),
+				FPackageName::GetAssetPackageExtension());
+		}
+
+		FSavePackageArgs SaveArgs;
+		SaveArgs.TopLevelFlags = RequiredSaveFlags;
+		bSaved = UPackage::SavePackage(Package, Blueprint, *PackageFilename, SaveArgs);
+		if (!bSaved)
+		{
+			if (OutErrors)
+			{
+				OutErrors->Add(FString::Printf(TEXT("Failed to save Blueprint package: %s"), *Package->GetName()));
+			}
+			return false;
+		}
+	}
+
+	if (OutSaved)
+	{
+		*OutSaved = bSaved;
+	}
+	UE_LOG(LogAIGraphBuilder, Log,
+		TEXT("CompileBlueprintAsset: '%s' compiled (saved=%d, errors=%d, warnings=%d)"),
+		*Blueprint->GetPathName(),
+		bSaved ? 1 : 0,
+		CompileResults.NumErrors,
+		CompileResults.NumWarnings);
+	return true;
 }
 
 UBlueprint* UMCTBlueprintGraphBuilder::LoadBlueprint(const FString& AssetPath)

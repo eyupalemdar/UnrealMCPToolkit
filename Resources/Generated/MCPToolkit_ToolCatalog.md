@@ -2,9 +2,9 @@
 
 > Generated from `FMCTTcpServer::GetCommandDescriptors`; do not edit by hand.
 
-- TCP commands: 182
-- MCP tools: 202
-- Categories: 38
+- TCP commands: 184
+- MCP tools: 204
+- Categories: 39
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/MCPToolkit_WrapperSpec.json`
 - Wrapper stubs: `Resources/Generated/MCPToolkit_MCPWrapperStubs.py`
@@ -19,6 +19,7 @@
 | `Asset` | 16 |
 | `AssetLifecycle` | 1 |
 | `AsyncJob` | 6 |
+| `BlueprintAsset` | 2 |
 | `BlueprintComponent` | 4 |
 | `BlueprintGraph` | 14 |
 | `BlueprintUtility` | 1 |
@@ -154,6 +155,8 @@
 | `reflect_enum` | `Reflection` | `read` | false | false | false | 60 |
 | `list_classes` | `Reflection` | `read` | false | false | false | 60 |
 | `list_gameplay_tags` | `Reflection` | `read` | false | false | false | 60 |
+| `create_blueprint` | `BlueprintAsset` | `write` | true | true | false | 60 |
+| `compile_blueprint` | `BlueprintAsset` | `write` | true | true | false | 60 |
 | `add_event_node` | `BlueprintGraph` | `write` | true | true | false | 60 |
 | `add_custom_event` | `BlueprintGraph` | `write` | true | true | false | 60 |
 | `add_function_call` | `BlueprintGraph` | `write` | true | true | false | 60 |

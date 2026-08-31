@@ -4,7 +4,7 @@
   "display_name": "Unreal MCP Toolkit",
   "description": "AI-powered Unreal Editor automation, asset export, diagnostics, and Blueprint/UI tooling.",
   "version": "0.4.1",
-  "generated_at_utc": "2026-08-31T00:59:34.334763Z",
+  "generated_at_utc": "2026-08-31T01:59:16.910148Z",
   "transports": {
     "stdio": {
       "command": "python",
@@ -27,8 +27,8 @@
     }
   },
   "tools": {
-    "total": 202,
-    "tcp_commands": 182,
+    "total": 204,
+    "tcp_commands": 184,
     "client_only": [
       "asset_transfer_execute",
       "asset_transfer_plan",

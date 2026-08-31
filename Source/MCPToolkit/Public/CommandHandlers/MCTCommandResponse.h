@@ -9,11 +9,15 @@
 
 namespace MCPToolkit::CommandHandlers
 {
-inline FString CreateErrorResponse(const FString& ErrorMessage)
+inline FString CreateErrorResponse(const FString& ErrorMessage, TSharedPtr<FJsonObject> Data = nullptr)
 {
 	TSharedPtr<FJsonObject> ResponseObj = MakeShared<FJsonObject>();
 	ResponseObj->SetBoolField(TEXT("success"), false);
 	ResponseObj->SetStringField(TEXT("error"), ErrorMessage);
+	if (Data.IsValid())
+	{
+		ResponseObj->SetObjectField(TEXT("data"), Data);
+	}
 
 	FString OutputString;
 	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);

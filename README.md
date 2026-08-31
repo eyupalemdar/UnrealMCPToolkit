@@ -7,7 +7,7 @@ Primary language: English. Turkish overview: [Docs/README.tr.md](Docs/README.tr.
 
 ## What It Provides
 
-- 201 MCP tools backed by 182 native TCP commands and 19 client-only tools.
+- 204 MCP tools backed by 184 native TCP commands and 20 client-only tools.
 - Local Unreal Editor automation over TCP, Python MCP stdio, and native localhost
   HTTP/MCP.
 - Asset export for Widget Blueprints, Blueprints, Animation Blueprints,
@@ -17,15 +17,15 @@ Primary language: English. Turkish overview: [Docs/README.tr.md](Docs/README.tr.
   levels, PIE, runtime systems, StaticMesh, SkeletalMesh, Sequencer, landscape,
   foliage, PCG, Niagara, animation assets, CommonUI, navigation, physics, audio,
   streaming, and more.
-- Builder-backed mutation for reusable asset authoring domains such as Widget
-  Blueprints, Blueprint graphs/components, DataTables, DataAssets, Materials,
-  imports, and AnimBlueprint creation.
+- Builder-backed mutation for reusable asset authoring domains such as ordinary
+  Blueprint lifecycle/graphs/components, Widget Blueprints, DataTables,
+  DataAssets, Materials, imports, and AnimBlueprint creation.
 - Guarded cross-project asset/code transfer, multi-editor routing, async jobs,
   generated schemas, capability matrices, and validation scripts.
 - Public extension command registry so project or plugin-specific workflows can
   register editor commands without forking MCPToolkit.
 
-Current validation target: Unreal Engine 5.8. Static surface: 182 TCP / 201 MCP tools.
+Current validation target: Unreal Engine 5.8. Static surface: 184 TCP / 204 MCP tools.
 
 ## Quick Start
 

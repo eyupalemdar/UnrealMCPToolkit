@@ -1103,6 +1103,26 @@ def list_gameplay_tags(root_tag: str = '', query: str = '', only_dictionary_tags
     return _format_response(_send_command("list_gameplay_tags", params))
 
 
+def create_blueprint(package_path: str, asset_name: str, parent_class: str, clear_default_event_nodes: bool = True, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `create_blueprint` (BlueprintAsset)."""
+    params = {
+        "package_path": package_path,
+        "asset_name": asset_name,
+        "parent_class": parent_class,
+        "clear_default_event_nodes": clear_default_event_nodes,
+    }
+    return _format_response(_send_command("create_blueprint", params, _request_meta(scope, dry_run)))
+
+
+def compile_blueprint(asset_path: str, save_asset: bool = True, scope: str = '', dry_run: bool = False) -> str:
+    """Generated stub for TCP command `compile_blueprint` (BlueprintAsset)."""
+    params = {
+        "asset_path": asset_path,
+        "save_asset": save_asset,
+    }
+    return _format_response(_send_command("compile_blueprint", params, _request_meta(scope, dry_run)))
+
+
 def add_event_node(asset_path: str, event_name: str, node_name: str, pos_x: int = 0, pos_y: int = 0, graph_name: str = 'EventGraph', scope: str = '', dry_run: bool = False) -> str:
     """Generated stub for TCP command `add_event_node` (BlueprintGraph)."""
     params = {

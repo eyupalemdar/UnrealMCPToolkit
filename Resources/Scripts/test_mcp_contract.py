@@ -807,6 +807,36 @@ def _failures() -> list[str]:
             )
             if reparent_call.get("params") != {"asset_path": "/Game/UI/W_Test", "new_parent_class": "/Script/UMG.UserWidget"} or reparent_call.get("meta") != {"scope": "write", "dry_run": True}:
                 failures.append("generated wrapper runtime failed reparent_blueprint payload/meta mapping")
+            create_blueprint_call = build_tcp_call(
+                "create_blueprint",
+                {
+                    "package_path": "/Game/Experiences/Klondike",
+                    "asset_name": "B_GM_Klondike",
+                    "parent_class": "/Script/SolitaireGame.SolitaireGameMode",
+                    "clear_default_event_nodes": True,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if create_blueprint_call.get("params") != {
+                "package_path": "/Game/Experiences/Klondike",
+                "asset_name": "B_GM_Klondike",
+                "parent_class": "/Script/SolitaireGame.SolitaireGameMode",
+            } or create_blueprint_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed create_blueprint default payload/meta mapping")
+            compile_blueprint_call = build_tcp_call(
+                "compile_blueprint",
+                {
+                    "asset_path": "/Game/Experiences/Klondike/B_GM_Klondike",
+                    "save_asset": True,
+                    "scope": "write",
+                    "dry_run": True,
+                },
+            )
+            if compile_blueprint_call.get("params") != {
+                "asset_path": "/Game/Experiences/Klondike/B_GM_Klondike",
+            } or compile_blueprint_call.get("meta") != {"scope": "write", "dry_run": True}:
+                failures.append("generated wrapper runtime failed compile_blueprint default payload/meta mapping")
             create_widget_call = build_tcp_call(
                 "create_widget_blueprint",
                 {

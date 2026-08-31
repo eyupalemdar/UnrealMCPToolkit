@@ -9,11 +9,11 @@ Turkish overview: [README.tr.md](README.tr.md).
 ## Current Surface
 
 - Server name: `MCPToolkit`
-- Native TCP commands: 182
-- MCP tools: 201
-- Client-only MCP tools: 19
-- Command categories: 38
-- Capability entries: 42
+- Native TCP commands: 184
+- MCP tools: 204
+- Client-only MCP tools: 20
+- Command categories: 39
+- Capability entries: 43
 - Primary MCP client: `MCPClient/ai_widget_mcp_client.py`
 - Generated artifacts: `Resources/Generated/`
 - Current validation target: Unreal Engine 5.8

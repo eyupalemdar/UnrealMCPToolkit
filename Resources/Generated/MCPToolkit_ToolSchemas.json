@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "MCPToolkit",
-  "generated_at_utc": "2026-08-31T00:59:34.253222Z",
-  "tool_count": 202,
+  "generated_at_utc": "2026-08-31T01:59:16.834510Z",
+  "tool_count": 204,
   "tools": {
     "ping": {
       "type": "object",
@@ -4210,6 +4210,92 @@
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true
+      }
+    },
+    "create_blueprint": {
+      "type": "object",
+      "properties": {
+        "package_path": {
+          "type": "string"
+        },
+        "asset_name": {
+          "type": "string"
+        },
+        "parent_class": {
+          "type": "string"
+        },
+        "clear_default_event_nodes": {
+          "type": "boolean",
+          "default": true
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "package_path",
+        "asset_name",
+        "parent_class"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "BlueprintAsset",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "compile_blueprint": {
+      "type": "object",
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "save_asset": {
+          "type": "boolean",
+          "default": true
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "asset_path"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "tcp_command",
+        "schema_source": "python_mcp_signature",
+        "category": "BlueprintAsset",
+        "required_scope": "write",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false,
+        "timeout_seconds": 60
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
       }
     },
     "add_event_node": {

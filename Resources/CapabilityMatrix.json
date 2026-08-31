@@ -306,6 +306,19 @@
       "extension_policy": "Add reflection-based discovery or object invocation here. Prefer typed high-level commands when the workflow is common enough."
     },
     {
+      "id": "blueprint_asset_lifecycle",
+      "domain": "blueprint",
+      "title": "Generic Blueprint creation and compilation",
+      "status": "native",
+      "category_tags": ["BlueprintAsset"],
+      "commands": [
+        "create_blueprint",
+        "compile_blueprint"
+      ],
+      "client_tools": [],
+      "extension_policy": "Use this capability for fail-closed ordinary Blueprint creation and compiler-backed persistence. Widget tree authoring remains under widget_blueprint_authoring; graph and SCS mutation remain in their dedicated Blueprint capabilities."
+    },
+    {
       "id": "blueprint_graph_editing",
       "domain": "blueprint",
       "title": "Blueprint graph node and pin editing",

@@ -75,10 +75,16 @@ Input Mapping Context workflow:
 4. get_input_mappings - Inspect current bindings
 5. save_asset - Save to disk
 
+Generic Blueprint workflow:
+1. create_blueprint - Create a normal Blueprint with an exact parent class
+2. Use Blueprint Graph/Component tools when behavior is intentionally required
+3. compile_blueprint - Compile with structured diagnostics and optionally save
+4. Inspect with get_graph/get_variables/blueprint_component_list
+
 AnimBlueprint workflow:
 1. create_anim_blueprint - Create with skeleton and parent class
 2. Use Blueprint Graph tools (add_event_node, ensure_function_graph, etc.)
-3. compile_and_save - Compile and save
+3. compile_blueprint - Compile and save
 4. get_anim_blueprint_info - Inspect result
 """)
 
@@ -5532,6 +5538,70 @@ def get_cdo_array_length(
         JSON with array_name and length.
     """
     return _send_generated_tcp_tool("get_cdo_array_length", locals())
+
+
+# =============================================================================
+# GENERIC BLUEPRINT LIFECYCLE
+# =============================================================================
+
+@mcp.tool()
+def create_blueprint(
+    package_path: str,
+    asset_name: str,
+    parent_class: str,
+    clear_default_event_nodes: bool = True,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """
+    Create a normal Blueprint with an exact parent class.
+
+    The command fails closed when the package already exists, the parent class
+    cannot be resolved, or Unreal rejects the class as a Blueprint base. For
+    Actor-based Blueprints, Unreal's engine-managed DefaultSceneRoot remains;
+    it is reported separately from user-authored components.
+
+    Args:
+        package_path: Content folder, e.g. "/Game/Experiences/Klondike".
+        asset_name: Asset name, e.g. "B_GM_Klondike".
+        parent_class: Exact native or generated class path, e.g.
+                      "/Script/SolitaireGame.SolitaireGameMode".
+        clear_default_event_nodes: Remove factory-created EventGraph nodes so
+                                   the new Blueprint starts behavior-empty.
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without creating the asset.
+
+    Returns:
+        JSON with parent/generated-class identity, graph/variable/interface
+        counts, and user-component/default-root counts.
+    """
+    return _send_generated_tcp_tool("create_blueprint", locals())
+
+
+@mcp.tool()
+def compile_blueprint(
+    asset_path: str,
+    save_asset: bool = True,
+    scope: str = "",
+    dry_run: bool = False,
+) -> str:
+    """
+    Compile any Blueprint and optionally save its package.
+
+    Unlike widget-only compile_and_save, this command accepts ordinary,
+    Widget, and Anim Blueprint assets and returns structured compiler
+    warning/error counts plus generated-class and save status.
+
+    Args:
+        asset_path: Blueprint asset path, e.g. "/Game/Experiences/Klondike/B_GM_Klondike".
+        save_asset: Save the package after a successful compile. Defaults to True.
+        scope: Optional scope. Execution requires write scope when metadata is provided.
+        dry_run: If True, validate scope and return without compiling or saving.
+
+    Returns:
+        JSON with compiled, saved, generated_class, warnings, and errors.
+    """
+    return _send_generated_tcp_tool("compile_blueprint", locals())
 
 
 # =============================================================================
