@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 1.1.4 - Native BindWidget Authoring
+
+### Fixed
+
+- `add_widget` and `replace_widget` now permit the standard native UMG binding
+  pattern when a designer widget exactly matches an inherited `BindWidget` or
+  `BindWidgetOptional` property and its widget class is type-compatible.
+- Ordinary inherited-property collisions and type-incompatible binding names
+  remain fail-closed with explicit diagnostics.
+
+### Tests
+
+- Added native automation for required/optional compatible binding names,
+  ordinary property collisions, and incompatible widget classes.
+
 ## 1.1.3 - Generic Blueprint Lifecycle
 
 ### Added

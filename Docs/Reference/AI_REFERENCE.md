@@ -114,10 +114,12 @@ add_widget("/Game/UI/Path/W_Parent", "WidgetBlueprintGeneratedClass'/Game/UI/Pat
 Do not assign class or asset paths into `WidgetSwitcher` or `NamedSlot` through
 slot `Content`; add an actual child widget instance instead.
 
-`add_widget` rejects duplicate local names and names that shadow inherited
-Blueprint properties/designer variables. For inherited WBP extension, either use
-unique local names or compose a child widget instead of recreating the parent's
-designer widget names.
+`add_widget` rejects duplicate local names and names that shadow ordinary or
+type-incompatible inherited properties. The standard native UMG pattern is an
+explicit exception: a designer widget may use the exact inherited property name
+when that property has `BindWidget` or `BindWidgetOptional` metadata and the
+created widget class satisfies the property type. For other inherited WBP
+extension, use unique local names or compose a child widget.
 
 ---
 
@@ -1072,7 +1074,9 @@ When setting class references via `set_cdo_array_element_property`, the target c
 
 ### 6. Widget Name Uniqueness
 `add_widget` rejects duplicate names and inherited property name collisions. Use
-unique local widget names, especially in child WBPs.
+unique local widget names, especially in child WBPs. Exact native
+`BindWidget`/`BindWidgetOptional` names are allowed only when the widget class is
+type-compatible with the inherited property.
 
 ### 7. Root Widget
 First `add_widget` with empty `parent_name` becomes the root. Subsequent widgets need a parent.

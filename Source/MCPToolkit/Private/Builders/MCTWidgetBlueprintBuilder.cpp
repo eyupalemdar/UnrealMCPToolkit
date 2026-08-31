@@ -126,6 +126,24 @@ FProperty* FindInheritedPropertyByName(UWidgetBlueprint* WidgetBP, const FName P
 	return nullptr;
 }
 
+bool IsCompatibleInheritedBindWidgetProperty(
+	const FProperty* InheritedProperty,
+	const UClass* WidgetClass)
+{
+	if (!InheritedProperty || !WidgetClass
+		|| (!InheritedProperty->HasMetaData(TEXT("BindWidget"))
+			&& !InheritedProperty->HasMetaData(TEXT("BindWidgetOptional"))))
+	{
+		return false;
+	}
+
+	const FObjectPropertyBase* ObjectProperty = CastField<FObjectPropertyBase>(InheritedProperty);
+	return ObjectProperty
+		&& ObjectProperty->PropertyClass
+		&& ObjectProperty->PropertyClass->IsChildOf(UWidget::StaticClass())
+		&& WidgetClass->IsChildOf(ObjectProperty->PropertyClass);
+}
+
 void AppendCompilerMessages(
 	const FCompilerResultsLog& Results,
 	TArray<FString>* OutWarnings,
@@ -571,19 +589,6 @@ UWidget* UMCTWidgetBlueprintBuilder::AddWidget(
 		return nullptr;
 	}
 
-	UClass* OwnerClass = nullptr;
-	if (FProperty* InheritedProperty = FindInheritedPropertyByName(WidgetBP, FName(*WidgetName), &OwnerClass))
-	{
-		const FString Error = FString::Printf(
-			TEXT("Widget name '%s' shadows inherited property '%s' on parent class '%s'. Use a unique local widget name or composition instead of duplicating inherited designer variables."),
-			*WidgetName,
-			*InheritedProperty->GetName(),
-			OwnerClass ? *OwnerClass->GetName() : TEXT("unknown"));
-		UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: %s"), *Error);
-		SetBuilderError(OutError, Error);
-		return nullptr;
-	}
-
 	// Resolve widget class
 	UClass* WidgetClass = ResolveWidgetClass(WidgetClassName);
 	if (!WidgetClass)
@@ -591,6 +596,22 @@ UWidget* UMCTWidgetBlueprintBuilder::AddWidget(
 		UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: Could not resolve class '%s'"), *WidgetClassName);
 		SetBuilderError(OutError, FString::Printf(TEXT("Could not resolve widget class '%s'"), *WidgetClassName));
 		return nullptr;
+	}
+
+	UClass* OwnerClass = nullptr;
+	if (FProperty* InheritedProperty = FindInheritedPropertyByName(WidgetBP, FName(*WidgetName), &OwnerClass))
+	{
+		if (!IsCompatibleInheritedBindWidgetProperty(InheritedProperty, WidgetClass))
+		{
+			const FString Error = FString::Printf(
+				TEXT("Widget name '%s' shadows incompatible inherited property '%s' on parent class '%s'. Only type-compatible BindWidget/BindWidgetOptional properties may share a designer widget name."),
+				*WidgetName,
+				*InheritedProperty->GetName(),
+				OwnerClass ? *OwnerClass->GetName() : TEXT("unknown"));
+			UE_LOG(LogAIWidgetBuilder, Error, TEXT("AddWidget: %s"), *Error);
+			SetBuilderError(OutError, Error);
+			return nullptr;
+		}
 	}
 
 	UPanelWidget* ResolvedPanelParent = nullptr;
@@ -913,14 +934,17 @@ UWidget* UMCTWidgetBlueprintBuilder::ReplaceWidget(
 		UClass* OwnerClass = nullptr;
 		if (FProperty* InheritedProperty = FindInheritedPropertyByName(WidgetBP, FName(*FinalWidgetName), &OwnerClass))
 		{
-			const FString Error = FString::Printf(
-				TEXT("Widget name '%s' shadows inherited property '%s' on parent class '%s'. Use a unique local widget name or composition instead of duplicating inherited designer variables."),
-				*FinalWidgetName,
-				*InheritedProperty->GetName(),
-				OwnerClass ? *OwnerClass->GetName() : TEXT("unknown"));
-			UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
-			SetBuilderError(OutError, Error);
-			return nullptr;
+			if (!IsCompatibleInheritedBindWidgetProperty(InheritedProperty, WidgetClass))
+			{
+				const FString Error = FString::Printf(
+					TEXT("Widget name '%s' shadows incompatible inherited property '%s' on parent class '%s'. Only type-compatible BindWidget/BindWidgetOptional properties may share a designer widget name."),
+					*FinalWidgetName,
+					*InheritedProperty->GetName(),
+					OwnerClass ? *OwnerClass->GetName() : TEXT("unknown"));
+				UE_LOG(LogAIWidgetBuilder, Error, TEXT("ReplaceWidget: %s"), *Error);
+				SetBuilderError(OutError, Error);
+				return nullptr;
+			}
 		}
 	}
 
