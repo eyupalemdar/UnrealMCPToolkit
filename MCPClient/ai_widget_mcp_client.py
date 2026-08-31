@@ -30,6 +30,7 @@ import shlex
 import sys
 import urllib.request
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from fastmcp import FastMCP
 
@@ -100,6 +101,7 @@ except Exception:
 CLIENT_ONLY_TOOLS = {
     "editors_list",
     "editor_call",
+    "editor_call_many",
     "asset_transfer_plan",
     "asset_transfer_execute",
     "asset_transfer_verify",
@@ -526,18 +528,44 @@ def _probe_editor(entry: dict) -> dict:
     return probed
 
 
-def _list_editors(include_stale: bool = False) -> list[dict]:
-    """List known editor entries, probing each TCP endpoint."""
-    editors: list[dict] = []
+def _probe_editor_entries(entries: list[dict]) -> list[dict]:
+    """Probe distinct editor ports concurrently while preserving input order."""
+    unique_entries: list[dict] = []
     seen_ports: set[int] = set()
-
-    for entry in _read_registry_entries():
+    for entry in entries:
         port = int(entry["port"])
         if port in seen_ports:
             continue
         seen_ports.add(port)
+        unique_entries.append(entry)
 
-        probed = _probe_editor(entry)
+    if len(unique_entries) <= 1:
+        return [_probe_editor(entry) for entry in unique_entries]
+
+    worker_count = min(len(unique_entries), 16)
+    with ThreadPoolExecutor(max_workers=worker_count, thread_name_prefix="mct-editor-probe") as executor:
+        return list(executor.map(_probe_editor, unique_entries))
+
+
+def _normalized_project_dir(project_dir: str) -> str:
+    """Normalize a project directory for stable registry comparisons."""
+    if not project_dir:
+        return ""
+    return str(Path(project_dir).resolve()).rstrip("\\/").casefold()
+
+
+def _editor_matches_project_dir(editor: dict, normalized_project_dir: str) -> bool:
+    """Return whether an editor identity matches an already-normalized project path."""
+    if not normalized_project_dir:
+        return True
+    candidate_dir = str(editor.get("project_dir", ""))
+    return bool(candidate_dir) and _normalized_project_dir(candidate_dir) == normalized_project_dir
+
+
+def _list_editors(include_stale: bool = False) -> list[dict]:
+    """List known editor entries, probing distinct TCP endpoints concurrently."""
+    editors: list[dict] = []
+    for probed in _probe_editor_entries(_read_registry_entries()):
         if include_stale or probed.get("alive"):
             editors.append(probed)
 
@@ -546,11 +574,81 @@ def _list_editors(include_stale: bool = False) -> list[dict]:
 
 def _resolve_editor(editor_id: str = "", project_dir: str = "", port: int = 0) -> tuple[dict | None, dict | None]:
     """Resolve an editor target by id, project dir, or explicit port."""
+    normalized_project_dir = _normalized_project_dir(project_dir)
+
     if port > 0:
         entry = {"editor_id": f"port-{port}", "host": "127.0.0.1", "port": port}
-        return _probe_editor(entry), None
+        probed = _probe_editor(entry)
+        if not probed.get("alive"):
+            return None, {
+                "success": False,
+                "error": "Explicit MCPToolkit editor port is not live",
+                "requested": {"editor_id": editor_id, "project_dir": project_dir, "port": port},
+                "matched_entry": probed,
+            }
+        if editor_id and probed.get("editor_id") != editor_id:
+            return None, {
+                "success": False,
+                "error": "Explicit port resolved to a different MCPToolkit editor_id",
+                "requested": {"editor_id": editor_id, "project_dir": project_dir, "port": port},
+                "matched_entry": probed,
+            }
+        if normalized_project_dir and not _editor_matches_project_dir(probed, normalized_project_dir):
+            return None, {
+                "success": False,
+                "error": "Explicit port resolved to a different Unreal project directory",
+                "requested": {"editor_id": editor_id, "project_dir": project_dir, "port": port},
+                "matched_entry": probed,
+            }
+        return probed, None
 
-    normalized_project_dir = str(Path(project_dir).resolve()).lower() if project_dir else ""
+    registry_entries = _read_registry_entries()
+
+    # An exact editor_id contains the process/port identity. Probe only matching
+    # registry records instead of paying for every stale commandlet/editor entry.
+    if editor_id:
+        exact_entries = [entry for entry in registry_entries if entry.get("editor_id") == editor_id]
+        if exact_entries:
+            probed_entries = _probe_editor_entries(exact_entries)
+            matches = [
+                editor
+                for editor in probed_entries
+                if editor.get("alive")
+                and editor.get("editor_id") == editor_id
+                and _editor_matches_project_dir(editor, normalized_project_dir)
+            ]
+            if len(matches) == 1:
+                return matches[0], None
+            return None, {
+                "success": False,
+                "error": "Exact MCPToolkit editor_id registry entry is stale, mismatched, or ambiguous",
+                "requested": {"editor_id": editor_id, "project_dir": project_dir, "port": port},
+                "matched_registry_entries": probed_entries,
+            }
+
+    # Project-only routing can have several historical commandlet entries. Probe
+    # just that project's candidates, concurrently, before falling back to a full
+    # registry diagnostic scan.
+    if normalized_project_dir:
+        project_entries = [
+            entry for entry in registry_entries if _editor_matches_project_dir(entry, normalized_project_dir)
+        ]
+        if project_entries:
+            probed_entries = _probe_editor_entries(project_entries)
+            matches = [
+                editor
+                for editor in probed_entries
+                if editor.get("alive") and _editor_matches_project_dir(editor, normalized_project_dir)
+            ]
+            if len(matches) == 1:
+                return matches[0], None
+            if len(matches) > 1:
+                return None, {
+                    "success": False,
+                    "error": "Multiple live MCPToolkit editors matched; pass editor_id or port",
+                    "matches": matches,
+                }
+
     editors = _list_editors(include_stale=False)
 
     if not editor_id and not normalized_project_dir:
@@ -565,10 +663,8 @@ def _resolve_editor(editor_id: str = "", project_dir: str = "", port: int = 0) -
         if editor_id and editor.get("editor_id") == editor_id:
             matches.append(editor)
             continue
-        if normalized_project_dir:
-            candidate_dir = str(Path(str(editor.get("project_dir", ""))).resolve()).lower()
-            if candidate_dir == normalized_project_dir:
-                matches.append(editor)
+        if normalized_project_dir and _editor_matches_project_dir(editor, normalized_project_dir):
+            matches.append(editor)
 
     if not matches:
         return None, {
@@ -2007,6 +2103,121 @@ def editor_call(
     }
     if not response.get("success"):
         data["error"] = response.get("error", "target command failed")
+    return _format_response(data)
+
+
+@mcp.tool()
+def editor_call_many(
+    commands: list[dict],
+    editor_id: str = "",
+    project_dir: str = "",
+    port: int = 0,
+    scope: str = "",
+    dry_run: bool = False,
+    stop_on_error: bool = True,
+) -> str:
+    """
+    Route a bounded sequence of MCPToolkit TCP commands to one selected editor.
+
+    The editor target is resolved and identity-checked once. Commands execute
+    sequentially and keep their individual scope/dry-run checks. This is a
+    round-trip optimization, not a cross-command transaction or rollback
+    boundary. Long-running build/cook jobs should remain separate calls.
+
+    Args:
+        commands: One to 100 objects with `command`, optional `params`, optional
+                  `scope`, and optional `dry_run` fields.
+        editor_id: Exact target editor id from editors_list.
+        project_dir: Target project directory if editor_id is omitted.
+        port: Explicit TCP port. When editor_id/project_dir are also supplied,
+              the live identity must match them.
+        scope: Default scope for commands that omit their own scope.
+        dry_run: Default dry-run value for commands that omit their own value.
+        stop_on_error: Stop after the first invalid or failed command.
+
+    Returns:
+        JSON with target metadata, requested/executed counts, and ordered
+        per-command responses. No automatic rollback is attempted.
+    """
+    if not isinstance(commands, list) or not commands:
+        return _format_response({
+            "success": False,
+            "error": "commands must be a non-empty array",
+        })
+    if len(commands) > 100:
+        return _format_response({
+            "success": False,
+            "error": "commands exceeds the maximum batch size of 100",
+            "requested_count": len(commands),
+        })
+
+    target, error = _resolve_editor(editor_id, project_dir, port)
+    if error:
+        return _format_response(error)
+    assert target is not None
+
+    results: list[dict] = []
+    failure_count = 0
+    for index, item in enumerate(commands):
+        if not isinstance(item, dict):
+            response = {"success": False, "error": "batch item must be an object"}
+            command_name = ""
+        else:
+            command_name = str(item.get("command", "")).strip()
+            command_params = item.get("params")
+            command_scope = item.get("scope", scope)
+            command_dry_run = item.get("dry_run", dry_run)
+
+            if not command_name:
+                response = {"success": False, "error": "batch item is missing command"}
+            elif command_params is not None and not isinstance(command_params, dict):
+                response = {"success": False, "error": "batch item params must be an object when provided"}
+            elif not isinstance(command_scope, str):
+                response = {"success": False, "error": "batch item scope must be a string"}
+            elif not isinstance(command_dry_run, bool):
+                response = {"success": False, "error": "batch item dry_run must be a boolean"}
+            else:
+                response = _send_command_to_port(
+                    int(target["port"]),
+                    command_name,
+                    command_params,
+                    _request_meta(command_scope, command_dry_run),
+                )
+
+        succeeded = bool(response.get("success"))
+        result = {
+            "index": index,
+            "command": command_name,
+            "success": succeeded,
+            "response": response,
+        }
+        if not succeeded:
+            failure_count += 1
+            result["error"] = response.get("error", "target command failed")
+        results.append(result)
+
+        if not succeeded and stop_on_error:
+            break
+
+    executed_count = len(results)
+    data = {
+        "success": failure_count == 0 and executed_count == len(commands),
+        "target": {
+            "editor_id": target.get("editor_id", ""),
+            "project_name": target.get("project_name", ""),
+            "project_dir": target.get("project_dir", ""),
+            "port": target.get("port", 0),
+            "pid": target.get("pid", 0),
+        },
+        "requested_count": len(commands),
+        "executed_count": executed_count,
+        "failure_count": failure_count,
+        "stopped_early": executed_count < len(commands),
+        "transactional": False,
+        "results": results,
+    }
+    if failure_count:
+        data["error"] = "One or more target commands failed"
     return _format_response(data)
 
 

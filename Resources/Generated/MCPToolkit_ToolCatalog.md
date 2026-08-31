@@ -3,7 +3,7 @@
 > Generated from `FMCTTcpServer::GetCommandDescriptors`; do not edit by hand.
 
 - TCP commands: 182
-- MCP tools: 201
+- MCP tools: 202
 - Categories: 38
 - Parameter schemas: strict top-level JSON Schema from Python MCP wrapper signatures
 - Wrapper registry: `Resources/Generated/MCPToolkit_WrapperSpec.json`
@@ -254,6 +254,7 @@
 - `commonai_resource_read`
 - `commonai_resources_list`
 - `editor_call`
+- `editor_call_many`
 - `editors_list`
 - `guarded_build_status`
 - `mcp_server_metadata_export`

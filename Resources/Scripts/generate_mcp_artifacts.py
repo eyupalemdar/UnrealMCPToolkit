@@ -45,6 +45,7 @@ CAPABILITY_LAYER_ALLOWED_MODES = {
 CLIENT_ONLY_TOOLS = {
     "editors_list",
     "editor_call",
+    "editor_call_many",
     "asset_transfer_plan",
     "asset_transfer_execute",
     "asset_transfer_verify",
@@ -62,6 +63,23 @@ CLIENT_ONLY_TOOLS = {
     "mcp_server_metadata_export",
     "native_http_status",
     "native_mcp_probe",
+}
+
+CLIENT_ONLY_TOOL_POLICIES = {
+    "editor_call": {
+        "required_scope": "delegated",
+        "mutating": True,
+        "supports_dry_run": True,
+        "read_only_hint": False,
+        "idempotent_hint": False,
+    },
+    "editor_call_many": {
+        "required_scope": "delegated",
+        "mutating": True,
+        "supports_dry_run": True,
+        "read_only_hint": False,
+        "idempotent_hint": False,
+    },
 }
 
 PAYLOAD_RULE_OVERRIDES = {
@@ -1139,21 +1157,27 @@ def build_tool_schemas(command_manifest: dict) -> dict:
             tool_name,
             {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
         )
+        policy = CLIENT_ONLY_TOOL_POLICIES.get(tool_name, {})
+        required_scope = policy.get("required_scope", "read")
+        mutating = bool(policy.get("mutating", False))
+        supports_dry_run = bool(policy.get("supports_dry_run", False))
+        read_only_hint = bool(policy.get("read_only_hint", not mutating))
+        idempotent_hint = bool(policy.get("idempotent_hint", not mutating))
         schemas[tool_name] = {
             **signature_schema,
             "x-commonai": {
                 "source": "python_client_only",
                 "schema_source": "python_mcp_signature",
                 "category": "Client",
-                "required_scope": "read",
-                "mutating": False,
-                "supports_dry_run": False,
+                "required_scope": required_scope,
+                "mutating": mutating,
+                "supports_dry_run": supports_dry_run,
                 "async_candidate": False,
             },
             "annotations": {
-                "readOnlyHint": True,
+                "readOnlyHint": read_only_hint,
                 "destructiveHint": False,
-                "idempotentHint": True,
+                "idempotentHint": idempotent_hint,
             },
         }
 

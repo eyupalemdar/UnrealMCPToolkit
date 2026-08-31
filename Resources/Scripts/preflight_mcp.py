@@ -16,6 +16,7 @@ PROJECT_ROOT = SCRIPT_DIR.parents[3]
 GENERATE = SCRIPT_DIR / "generate_mcp_artifacts.py"
 VALIDATE = SCRIPT_DIR / "validate_mcp_contract.py"
 STATIC_TESTS = SCRIPT_DIR / "test_mcp_contract.py"
+ROUTING_TESTS = SCRIPT_DIR / "test_editor_routing.py"
 RUNTIME_SMOKE = SCRIPT_DIR / "smoke_mcp_runtime.py"
 MCP_CLIENT = PLUGIN_ROOT / "MCPClient" / "ai_widget_mcp_client.py"
 GENERATED_WRAPPER_STUBS = PLUGIN_ROOT / "Resources" / "Generated" / "MCPToolkit_MCPWrapperStubs.py"
@@ -26,6 +27,7 @@ PY_COMPILE_TARGETS = [
     GENERATE,
     VALIDATE,
     STATIC_TESTS,
+    ROUTING_TESTS,
     RUNTIME_SMOKE,
     GENERATED_WRAPPER_STUBS,
     GENERATED_WRAPPER_RUNTIME,
@@ -67,6 +69,7 @@ def main() -> int:
         [
             ("Validate MCP contract", [sys.executable, str(VALIDATE)]),
             ("Run MCP static tests", [sys.executable, str(STATIC_TESTS)]),
+            ("Run multi-editor routing tests", [sys.executable, str(ROUTING_TESTS)]),
             (
                 "Compile Python entry points",
                 [sys.executable, "-m", "py_compile", *[str(path) for path in PY_COMPILE_TARGETS]],

@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## 1.1.2 - Multi-Editor Routing Latency
+
+### Added
+
+- Added `editor_call_many` for bounded, ordered calls that resolve and verify a
+  selected editor once while preserving per-command scope and dry-run checks.
+- Added behavioral routing tests to the standard MCP preflight.
+
+### Fixed
+
+- Exact `editor_id` routing now probes only the matching registry record instead
+  of serially probing every historical editor and commandlet entry.
+- Full editor listing and project-directory fallback now probe distinct ports
+  concurrently while preserving deterministic result order.
+- Explicit-port routing now verifies any supplied editor ID and project path,
+  preventing a port-only shortcut from silently reaching the wrong project.
+- Dynamic routing tools no longer advertise themselves as read-only or
+  idempotent in generated MCP metadata.
+
+### Safety
+
+- Multi-call execution is explicitly non-transactional, stops on the first
+  error by default, remains bounded to 100 commands, and does not batch
+  long-running build/cook jobs automatically.
+
 ## 1.1.1 - UE 5.8 API Compatibility
 
 ### Fixed

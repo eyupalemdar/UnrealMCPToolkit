@@ -177,6 +177,17 @@ def _failures() -> list[str]:
         if schema.get("additionalProperties") is not False:
             failures.append(f"{tool_name}: generated schema must be strict with additionalProperties=false")
 
+    for routing_tool in ("editor_call", "editor_call_many"):
+        routing_schema = schemas["tools"].get(routing_tool, {})
+        routing_commonai = routing_schema.get("x-commonai", {})
+        routing_annotations = routing_schema.get("annotations", {})
+        if routing_commonai.get("required_scope") != "delegated":
+            failures.append(f"{routing_tool}: routing scope metadata must remain delegated")
+        if routing_commonai.get("mutating") is not True or routing_commonai.get("supports_dry_run") is not True:
+            failures.append(f"{routing_tool}: dynamic routing must conservatively advertise mutation and dry-run support")
+        if routing_annotations.get("readOnlyHint") is not False or routing_annotations.get("idempotentHint") is not False:
+            failures.append(f"{routing_tool}: dynamic routing cannot advertise read-only or idempotent hints")
+
     runtime_component_props = schemas["tools"].get("runtime_component_list", {}).get("properties", {})
     for prop_name in (
         "include_scene_details",

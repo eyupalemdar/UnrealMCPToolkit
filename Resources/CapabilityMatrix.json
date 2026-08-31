@@ -616,9 +616,10 @@
       "commands": [],
       "client_tools": [
         "editors_list",
-        "editor_call"
+        "editor_call",
+        "editor_call_many"
       ],
-      "extension_policy": "Use this capability for Python client orchestration across editor connections."
+      "extension_policy": "Use this capability for exact-identity Python client orchestration across editor connections. Bounded multi-call execution resolves one editor once, preserves per-command scope and dry-run checks, and never claims cross-command rollback."
     },
     {
       "id": "client_transfer_workflows",

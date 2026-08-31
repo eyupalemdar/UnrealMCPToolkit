@@ -67,6 +67,7 @@ capability matrices, generated docs, or schema metadata:
 ```powershell
 python Resources/Scripts/validate_mcp_contract.py
 python Resources/Scripts/test_mcp_contract.py
+python Resources/Scripts/test_editor_routing.py
 ```
 
 Use the preflight script when you want regeneration and validation in one pass:

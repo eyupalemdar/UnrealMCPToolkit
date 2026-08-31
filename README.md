@@ -122,6 +122,7 @@ Run these after command, wrapper, matrix, or documentation-generation changes:
 python Resources/Scripts/generate_mcp_artifacts.py
 python Resources/Scripts/validate_mcp_contract.py
 python Resources/Scripts/test_mcp_contract.py
+python Resources/Scripts/test_editor_routing.py
 ```
 
 For a quick all-in-one check:

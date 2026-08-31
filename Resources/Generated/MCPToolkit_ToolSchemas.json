@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "server": "MCPToolkit",
-  "generated_at_utc": "2026-08-28T17:22:06.094465Z",
-  "tool_count": 201,
+  "generated_at_utc": "2026-08-31T00:59:34.253222Z",
+  "tool_count": 202,
   "tools": {
     "ping": {
       "type": "object",
@@ -8777,15 +8777,69 @@
         "source": "python_client_only",
         "schema_source": "python_mcp_signature",
         "category": "Client",
-        "required_scope": "read",
-        "mutating": false,
-        "supports_dry_run": false,
+        "required_scope": "delegated",
+        "mutating": true,
+        "supports_dry_run": true,
         "async_candidate": false
       },
       "annotations": {
-        "readOnlyHint": true,
+        "readOnlyHint": false,
         "destructiveHint": false,
-        "idempotentHint": true
+        "idempotentHint": false
+      }
+    },
+    "editor_call_many": {
+      "type": "object",
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "editor_id": {
+          "type": "string",
+          "default": ""
+        },
+        "project_dir": {
+          "type": "string",
+          "default": ""
+        },
+        "port": {
+          "type": "integer",
+          "default": 0
+        },
+        "scope": {
+          "type": "string",
+          "default": ""
+        },
+        "dry_run": {
+          "type": "boolean",
+          "default": false
+        },
+        "stop_on_error": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "commands"
+      ],
+      "additionalProperties": false,
+      "x-commonai": {
+        "source": "python_client_only",
+        "schema_source": "python_mcp_signature",
+        "category": "Client",
+        "required_scope": "delegated",
+        "mutating": true,
+        "supports_dry_run": true,
+        "async_candidate": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
       }
     },
     "editors_list": {
