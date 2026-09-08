@@ -1,5 +1,32 @@
 # MCPToolkit - AI Reference Guide
 
+Runtime property correction (2026-09-07): object_set_property on game-world
+objects imports the resolved property without editor Undo/PostEditChange hooks.
+PIE UMG objects may belong to /Engine/Transient, so package flags alone are not
+a sufficient classification. Persistent asset paths must use asset editing
+commands; existing editor-world Undo behavior is preserved. For UMG properties
+that need a Slate setter, invoke that native setter through object_call_function.
+Game-world function calls no longer invoke UObject.Modify. This prevents Undo
+retaining a live WidgetTree/GameInstance after EndPIE.
+
+Reflection correction (2026-09-07): `object_call_function` imports const-reference
+inputs and mutable reference inputs using UE's input/output flag semantics.
+Const references are not returned in `out_params`; mutable references and pure
+outputs are. Explicit unknown, misspelled, return or pure-output arguments fail
+before invocation. Omitted inputs keep the existing initialized defaults.
+Do not infer input/output direction from `CPF_OutParm` alone: const struct
+inputs also have that flag. Preview function-call capture already imports these
+inputs correctly and was unaffected.
+
+Texture import correction (2026-09-07): `import_texture` accepts friendly or
+canonical UE enum names, including LeaveExistingMips/TMGS_LeaveExistingMips and
+Project01/TEXTUREGROUP_Project01. Unknown explicit compression/mip/group values
+return an error before creating the asset, instead of silently selecting UI
+defaults. Grayscale now resolves to TC_Grayscale. Import reports requested and
+effective sRGB, effective mip/group, source/runtime mip counts and save success;
+a failed save is an error. The AIAssetPipeline manifest layer applies and
+verifies the requested filter and reports authored source-mip dimensions.
+
 > **Read this file to understand ALL plugin capabilities in one place.**
 > 204 MCP tools across 184 native TCP commands in 39 categories plus 20 client-only tools. UE 5.8, TCP port auto-discovery plus multi-editor routing and native localhost HTTP/MCP probe support.
 
@@ -400,6 +427,13 @@ shader compilation and returns an MCP error when Unreal reports compile errors.
 | `get_material_instance_info(asset_path)` | Get MIC info |
 
 ### Material Property Values
+
+`create_material` accepts the friendly names below. `set_material_property`
+uses reflected ImportText instead: for `BlendMode`, use the full enum token
+such as `BLEND_AlphaComposite` (or its verified numeric value). Check nested
+`data.success` as well as outer response success; the setter can report
+transport success with a failed property assignment. Confirm graph readback.
+
 ```
 # Domain
 "Surface", "DeferredDecal", "LightFunction", "PostProcess", "UserInterface"

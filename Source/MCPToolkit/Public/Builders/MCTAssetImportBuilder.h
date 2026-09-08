@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "Engine/Texture.h"
 #include "MCTAssetImportBuilder.generated.h"
 
 class FJsonObject;
@@ -27,6 +28,11 @@ class MCPTOOLKIT_API UMCTAssetImportBuilder : public UObject
 	GENERATED_BODY()
 
 public:
+	/** Parse friendly/canonical texture enums. Unknown explicit values are errors. */
+	static bool ParseTextureSettings(const FString& Compression, const FString& MipGen,
+		const FString& LODGroup, TextureCompressionSettings& OutCompression,
+		TextureMipGenSettings& OutMipGen, TextureGroup& OutGroup, FString& OutError);
+
 	/** Import an image file as a UTexture2D asset. */
 	static TSharedPtr<FJsonObject> ImportTexture(
 		const FString& SourcePath,

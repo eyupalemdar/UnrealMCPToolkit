@@ -40,89 +40,6 @@ FString GammaSpaceToString(const EGammaSpace GammaSpace)
 	}
 }
 
-TextureCompressionSettings ParseTextureCompression(const FString& Compression)
-{
-	if (Compression == TEXT("Default"))
-	{
-		return TC_Default;
-	}
-	if (Compression == TEXT("NormalMap") || Compression == TEXT("Normalmap"))
-	{
-		return TC_Normalmap;
-	}
-	if (Compression == TEXT("Masks"))
-	{
-		return TC_Masks;
-	}
-	if (Compression == TEXT("Grayscale") || Compression == TEXT("Displacementmap"))
-	{
-		return TC_Displacementmap;
-	}
-	if (Compression == TEXT("HDR"))
-	{
-		return TC_HDR;
-	}
-	if (Compression == TEXT("Alpha"))
-	{
-		return TC_Alpha;
-	}
-	return TC_EditorIcon;
-}
-
-TextureMipGenSettings ParseMipGenSettings(const FString& MipGen)
-{
-	if (MipGen == TEXT("FromTextureGroup"))
-	{
-		return TMGS_FromTextureGroup;
-	}
-	if (MipGen == TEXT("Sharpen0") || MipGen == TEXT("Sharpen"))
-	{
-		return TMGS_Sharpen0;
-	}
-	if (MipGen == TEXT("Blur"))
-	{
-		return TMGS_Blur1;
-	}
-	return TMGS_NoMipmaps;
-}
-
-TextureGroup ParseTextureGroup(const FString& LODGroup)
-{
-	if (LODGroup == TEXT("World"))
-	{
-		return TEXTUREGROUP_World;
-	}
-	if (LODGroup == TEXT("WorldNormalMap"))
-	{
-		return TEXTUREGROUP_WorldNormalMap;
-	}
-	if (LODGroup == TEXT("WorldSpecular"))
-	{
-		return TEXTUREGROUP_WorldSpecular;
-	}
-	if (LODGroup == TEXT("Character"))
-	{
-		return TEXTUREGROUP_Character;
-	}
-	if (LODGroup == TEXT("CharacterNormalMap"))
-	{
-		return TEXTUREGROUP_CharacterNormalMap;
-	}
-	if (LODGroup == TEXT("Effects"))
-	{
-		return TEXTUREGROUP_Effects;
-	}
-	if (LODGroup == TEXT("Lightmap"))
-	{
-		return TEXTUREGROUP_Lightmap;
-	}
-	if (LODGroup == TEXT("Shadowmap"))
-	{
-		return TEXTUREGROUP_Shadowmap;
-	}
-	return TEXTUREGROUP_UI;
-}
-
 EFontHinting ParseFontHinting(const FString& Hinting)
 {
 	if (Hinting == TEXT("None"))
@@ -150,6 +67,40 @@ bool SavePackageForAsset(UPackage* Package, UObject* Asset, const FString& LongP
 }
 }
 
+bool UMCTAssetImportBuilder::ParseTextureSettings(const FString& Compression, const FString& MipGen,
+	const FString& LODGroup, TextureCompressionSettings& OutCompression,
+	TextureMipGenSettings& OutMipGen, TextureGroup& OutGroup, FString& OutError)
+{
+	auto Parse = [&OutError](UEnum* Enum, FString Value, const TCHAR* Prefix, const TCHAR* Field, int64& Out)
+	{
+		if (!Value.StartsWith(Prefix)) { Value = FString(Prefix) + Value; }
+		Out = Enum->GetValueByNameString(Value);
+		if (Out == INDEX_NONE || Value.EndsWith(TEXT("_MAX")))
+		{
+			OutError = FString::Printf(TEXT("Unsupported %s: %s"), Field, *Value);
+			return false;
+		}
+		return true;
+	};
+	FString CompressionName = Compression;
+	if (CompressionName == TEXT("UserInterface2D")) { CompressionName = TEXT("EditorIcon"); }
+	if (CompressionName == TEXT("NormalMap")) { CompressionName = TEXT("Normalmap"); }
+	FString MipName = MipGen;
+	if (MipName == TEXT("Sharpen")) { MipName = TEXT("Sharpen0"); }
+	if (MipName == TEXT("Blur")) { MipName = TEXT("Blur1"); }
+	int64 C, M, G;
+	if (!Parse(StaticEnum<TextureCompressionSettings>(), CompressionName, TEXT("TC_"), TEXT("compression"), C)
+		|| !Parse(StaticEnum<TextureMipGenSettings>(), MipName, TEXT("TMGS_"), TEXT("mip_gen"), M)
+		|| !Parse(StaticEnum<TextureGroup>(), LODGroup, TEXT("TEXTUREGROUP_"), TEXT("lod_group"), G))
+	{
+		return false;
+	}
+	OutCompression = static_cast<TextureCompressionSettings>(C);
+	OutMipGen = static_cast<TextureMipGenSettings>(M);
+	OutGroup = static_cast<TextureGroup>(G);
+	return true;
+}
+
 TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 	const FString& SourcePath,
 	const FString& PackagePath,
@@ -165,6 +116,14 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 	if (!FPaths::FileExists(NormalizedSourcePath))
 	{
 		OutError = FString::Printf(TEXT("Source file not found: %s"), *NormalizedSourcePath);
+		return nullptr;
+	}
+
+	TextureCompressionSettings ParsedCompression;
+	TextureMipGenSettings ParsedMipGen;
+	TextureGroup ParsedLODGroup;
+	if (!ParseTextureSettings(Compression, MipGen, LODGroup, ParsedCompression, ParsedMipGen, ParsedLODGroup, OutError))
+	{
 		return nullptr;
 	}
 
@@ -190,9 +149,6 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 		return nullptr;
 	}
 
-	const TextureCompressionSettings ParsedCompression = ParseTextureCompression(Compression);
-	const TextureMipGenSettings ParsedMipGen = ParseMipGenSettings(MipGen);
-	const TextureGroup ParsedLODGroup = ParseTextureGroup(LODGroup);
 
 	const FString FullObjectPath = FString::Printf(TEXT("%s.%s"), *FullPackagePath, *EffectiveAssetName);
 	UTexture2D* ExistingTexture = LoadObject<UTexture2D>(nullptr, *FullObjectPath);
@@ -259,6 +215,11 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 	Package->MarkPackageDirty();
 
 	const bool bSaved = SavePackageForAsset(Package, Texture, FullPackagePath);
+	if (!bSaved)
+	{
+		OutError = FString::Printf(TEXT("Imported texture could not be saved: %s"), *FullPackagePath);
+		return nullptr;
+	}
 	FAssetRegistryModule::AssetCreated(Texture);
 
 	TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
@@ -275,6 +236,10 @@ TSharedPtr<FJsonObject> UMCTAssetImportBuilder::ImportTexture(
 		Data->SetStringField(TEXT("existing_source_gamma"), ExistingSourceGammaString);
 	}
 	Data->SetBoolField(TEXT("saved"), bSaved);
+	Data->SetNumberField(TEXT("source_mip_count"), Texture->Source.GetNumMips());
+	Data->SetNumberField(TEXT("runtime_mip_count"), Texture->GetNumMips());
+	Data->SetStringField(TEXT("effective_mip_gen"), UEnum::GetValueAsString(Texture->MipGenSettings));
+	Data->SetStringField(TEXT("effective_lod_group"), UEnum::GetValueAsString(Texture->LODGroup));
 	return Data;
 }
 

@@ -1187,15 +1187,36 @@ FString HandleObjectSetProperty(TSharedPtr<FJsonObject> Params)
 		}
 
 		const FString ImportText = JsonValueToImportText(Value);
-		const FScopedTransaction Transaction(NSLOCTEXT("MCPToolkit", "ObjectSetProperty", "AI Set Object Property"));
-		Object->Modify();
-		const bool bSet = UMCTDataAssetBuilder::SetProperty(Object, PropertyPath, ImportText);
+		const bool bRuntimeObject = Object->GetWorld() && Object->GetWorld()->IsGameWorld();
+		bool bSet = false;
+		if (bRuntimeObject)
+		{
+			// PIE UMG can belong to /Engine/Transient. Editor Undo/PostEditChange
+			// must not capture these live trees and retain them after EndPIE.
+			FProperty* Property = nullptr;
+			void* ValuePtr = nullptr;
+			UObject* OwnerObject = nullptr;
+			if (!ResolvePropertyPath(Object, PropertyPath, Property, ValuePtr, OwnerObject)
+				|| !OwnerObject || !OwnerObject->GetWorld() || !OwnerObject->GetWorld()->IsGameWorld())
+			{
+				Promise->SetValue(CreateErrorResponse(TEXT("Runtime property path must resolve within a game-world object; use asset commands for persistent assets")));
+				return;
+			}
+			bSet = Property->ImportText_Direct(*ImportText, ValuePtr, OwnerObject, PPF_None) != nullptr;
+		}
+		else
+		{
+			const FScopedTransaction Transaction(NSLOCTEXT("MCPToolkit", "ObjectSetProperty", "AI Set Object Property"));
+			Object->Modify();
+			bSet = UMCTDataAssetBuilder::SetProperty(Object, PropertyPath, ImportText);
+		}
 
 		TSharedPtr<FJsonObject> Data = MakeShared<FJsonObject>();
 		Data->SetBoolField(TEXT("set"), bSet);
 		Data->SetStringField(TEXT("object_path"), Object->GetPathName());
 		Data->SetStringField(TEXT("property_path"), PropertyPath);
 		Data->SetStringField(TEXT("import_text"), ImportText);
+		Data->SetBoolField(TEXT("editor_transaction"), !bRuntimeObject);
 		Promise->SetValue(bSet ? CreateSuccessResponse(Data) : CreateErrorResponse(FString::Printf(TEXT("Failed to set property: %s"), *PropertyPath)));
 	});
 
@@ -1241,6 +1262,32 @@ FString HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
 
 		const TSharedPtr<FJsonObject>* ArgsObject = nullptr;
 		Params->TryGetObjectField(TEXT("args"), ArgsObject);
+		// Match UE's PyUtil::IsInputParameter: const references also carry OutParm.
+		const auto IsInputParameter = [](const FProperty* Param)
+		{
+			return Param && Param->HasAnyPropertyFlags(CPF_Parm)
+				&& !Param->HasAnyPropertyFlags(CPF_ReturnParm)
+				&& (!Param->HasAnyPropertyFlags(CPF_OutParm)
+					|| Param->HasAnyPropertyFlags(CPF_ConstParm | CPF_ReferenceParm));
+		};
+		if (Params->HasField(TEXT("args")) && (!ArgsObject || !ArgsObject->IsValid()))
+		{
+			Promise->SetValue(CreateErrorResponse(TEXT("'args' must be an object")));
+			return;
+		}
+		if (ArgsObject && ArgsObject->IsValid())
+		{
+			for (const auto& Pair : (*ArgsObject)->Values)
+			{
+				const FProperty* Param = FindFProperty<FProperty>(Function, FName(*Pair.Key));
+				if (!IsInputParameter(Param) || !Param->GetName().Equals(*Pair.Key, ESearchCase::CaseSensitive))
+				{
+					Promise->SetValue(CreateErrorResponse(FString::Printf(
+						TEXT("Unknown or non-input argument %s for %s"), *Pair.Key, *FunctionName)));
+					return;
+				}
+			}
+		}
 
 		TArray<uint8> ParamBuffer;
 		void* ParamData = nullptr;
@@ -1261,7 +1308,7 @@ FString HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
 		for (TFieldIterator<FProperty> It(Function); It; ++It)
 		{
 			FProperty* Param = *It;
-			if (!Param || !Param->HasAnyPropertyFlags(CPF_Parm) || Param->HasAnyPropertyFlags(CPF_ReturnParm | CPF_OutParm))
+			if (!IsInputParameter(Param))
 			{
 				continue;
 			}
@@ -1290,7 +1337,10 @@ FString HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
 			}
 		}
 
-		Object->Modify();
+		if (!Object->GetWorld() || !Object->GetWorld()->IsGameWorld())
+		{
+			Object->Modify();
+		}
 		Object->ProcessEvent(Function, ParamData);
 
 		TArray<TSharedPtr<FJsonValue>> OutParams;
@@ -1315,7 +1365,7 @@ FString HandleObjectCallFunction(TSharedPtr<FJsonObject> Params)
 				ReturnValue = ValueText;
 				continue;
 			}
-			if (Param->HasAnyPropertyFlags(CPF_OutParm))
+			if (Param->HasAnyPropertyFlags(CPF_OutParm) && !Param->HasAnyPropertyFlags(CPF_ConstParm))
 			{
 				TSharedPtr<FJsonObject> OutParam = MakeShared<FJsonObject>();
 				OutParam->SetStringField(TEXT("name"), Param->GetName());
