@@ -1,5 +1,25 @@
 # MCPToolkit - AI Reference Guide
 
+## Measured texture density (optional AIAssetPipeline 0.1.17)
+
+The companion plugin registers the read-only command
+`asset_pipeline_measure_widgets(widget_class, components)`. It reports actual
+PIE viewport pixels and per-widget geometry without a Python FGeometry
+round-trip. Compile/restart the consuming editor and verify
+`asset_pipeline_status.widget_pixel_footprints_supported`; a descriptor
+version alone does not prove native command availability.
+
+Each component binds explicit widget names with `sampling: "full_uv"` for
+untiled full-UV Images, or `sampling: "geometry_only"` for outer geometry of
+composite/rounded/nine-slice widgets. Geometry-only data does not prove atlas
+or material texture coverage and is rejected by automatic standalone sizing.
+Read the renderer's cell fractions, destination rectangles and source UV crops
+before deriving texture requirements. Preserve the host's approval/TSpec rules.
+
+AIAssetPipeline's `measure-widget-pixels` and `plan-density` CLI commands pin
+source/layout/evidence hashes and generate separate review candidates. See the
+[density workflow](https://github.com/eyupalemdar/AIAssetPipeline/blob/main/Docs/TEXTURE_DENSITY.md).
+
 Runtime property correction (2026-09-07): object_set_property on game-world
 objects imports the resolved property without editor Undo/PostEditChange hooks.
 PIE UMG objects may belong to /Engine/Transient, so package flags alone are not
