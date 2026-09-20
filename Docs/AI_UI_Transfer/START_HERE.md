@@ -14,6 +14,11 @@ design. During Unreal build, the agent is only a TSpec executor.
 
 ## Required Reading
 
+For raster art or image quality work, also read
+`component_recipes/UITexture_Minification.recipe.md` and the consuming
+project's `Plugins/AIAssetPipeline/Docs/IMAGE_QUALITY.md`. These mechanisms are
+provider-neutral, including Image 2.5 sources; host approval policies prevail.
+
 Before building or mutating any WBP:
 
 1. `Docs/AI_SESSION_HANDOFF.md`

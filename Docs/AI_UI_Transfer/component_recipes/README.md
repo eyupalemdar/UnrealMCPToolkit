@@ -1,5 +1,9 @@
 # UE Component Recipes
 
+For raster minification, alpha edges and atlas mip safety, read
+`UITexture_Minification.recipe.md` and the consuming project's
+`Plugins/AIAssetPipeline/Docs/IMAGE_QUALITY.md` before choosing import settings.
+
 Component recipes are short, verified notes for Unreal/UMG/CommonUI widgets that
 agents commonly misuse.
 
