@@ -328,18 +328,67 @@ def cmd_check(args):
     return 0
 
 
+def cmd_call(args):
+    """Call an arbitrary TCP command with optional JSON parameters: call <command_name> [json_params]"""
+    if not args:
+        print("Error: Missing command name")
+        print("Usage: ai_export_client.py call <command_name> [json_params]")
+        return 1
+
+    cmd_name = args[0]
+    params = None
+    if len(args) > 1:
+        param_str = " ".join(args[1:])
+        try:
+            params = json.loads(param_str)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON parameters: {e}")
+            return 1
+
+    response = send_command(cmd_name, params=params)
+    print(json.dumps(response, indent=2))
+    return 0 if response.get("success") else 1
+
+
+def cmd_viewport_capture(args):
+    """Capture viewport screenshot: viewport_capture [show_ui] [output_path]"""
+    show_ui = True
+    output_path = ""
+    if len(args) > 0:
+        show_ui = args[0].lower() not in ("0", "false", "no")
+    if len(args) > 1:
+        output_path = args[1]
+
+    params = {"show_ui": show_ui}
+    if output_path:
+        params["output_path"] = output_path
+
+    response = send_command("viewport_capture", params=params)
+    if response.get("success"):
+        data = response.get("data", {})
+        print(f"Screenshot requested -> {data.get('output_path', 'unknown')}")
+        return 0
+    else:
+        print(f"Error: {response.get('error')}")
+        return 1
+
+
 def print_usage():
     """Print usage information"""
     print(__doc__)
     print("\nCommands:")
     print("  ping [port]                     - Check if server is running")
     print("  check                           - Scan port range for servers")
+    print("  call <command> [json_params]    - Send any arbitrary TCP command")
+    print("  viewport_capture [ui] [path]    - Request viewport screenshot")
     print("  export_widget <path> [outdir]   - Export widget blueprint")
     print("  export_blueprint <path> [outdir] - Export blueprint")
     print("  list_types                      - List supported asset types")
     print("  list_commands                   - List registered TCP commands")
     print("\nExamples:")
     print("  python ai_export_client.py ping")
+    print("  python ai_export_client.py call pie_start")
+    print("  python ai_export_client.py viewport_capture 1 Saved/Screenshots/test.png")
     print("  python ai_export_client.py export_widget /Game/UI/W_MainMenu")
     print("  python ai_export_client.py export_blueprint /Game/Blueprints/BP_Player")
 
@@ -356,6 +405,8 @@ def main():
     commands = {
         "ping": cmd_ping,
         "check": cmd_check,
+        "call": cmd_call,
+        "viewport_capture": cmd_viewport_capture,
         "export_widget": cmd_export_widget,
         "export_blueprint": cmd_export_blueprint,
         "list_commands": cmd_list_commands,

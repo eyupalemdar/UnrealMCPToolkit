@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add direct TCP client `call <command> [json_params]` and `viewport_capture`
+  shortcuts using the existing server commands and port discovery. Preserve
+  nonzero exit status for rejected requests and invalid JSON.
+
 ## 1.1.4 - Native BindWidget Authoring
 
 ### Fixed

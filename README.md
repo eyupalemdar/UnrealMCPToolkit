@@ -46,7 +46,14 @@ For direct TCP testing from a host project:
 ```powershell
 python Plugins/MCPToolkit/Resources/Scripts/ai_export_client.py ping
 python Plugins/MCPToolkit/Resources/Scripts/ai_export_client.py list_commands
+python Plugins/MCPToolkit/Resources/Scripts/ai_export_client.py call pie_status
+python Plugins/MCPToolkit/Resources/Scripts/ai_export_client.py viewport_capture 1 Saved/Screenshots/viewport.png
 ```
+
+`call <command> [json_params]` sends a registered TCP command through the existing
+transport. `viewport_capture [show_ui] [output_path]` requests a screenshot;
+success acknowledges the request, not completion of the image file. Run from
+the intended host project so port discovery selects that editor.
 
 From this plugin repository:
 
